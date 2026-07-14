@@ -1,0 +1,133 @@
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { authAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { toast } from 'react-toastify';
+import { Eye, EyeOff, Heart } from 'lucide-react';
+
+const Login = () => {
+    const { t } = useTranslation();
+    const navigate = useNavigate();
+    const { login, user, loading: authLoading } = useAuth();
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+    });
+    const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+
+    // Redirect if already logged in
+    React.useEffect(() => {
+        if (user) {
+            navigate((user?.role || '').toString().toLowerCase() === 'admin' ? '/admin' : '/dashboard');
+        }
+    }, [user, navigate]);
+
+    if (user || authLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary-600"></div>
+            </div>
+        );
+    }
+
+    const { email, password } = formData;
+
+    const onChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const onSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            const response = await authAPI.login(formData);
+            login(response.data, response.data.token);
+            toast.success(t('auth.loginSuccess'));
+
+            if (response.data.role === 'admin') {
+                navigate('/admin');
+            } else {
+                navigate('/dashboard');
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || t('auth.loginFailed', { defaultValue: 'Login failed' }));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+            <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+                <div className="text-center mb-8">
+                    <Heart className="w-16 h-16 mx-auto text-primary-600 mb-4" />
+                    <h2 className="text-3xl font-bold text-gray-900">{t('auth.welcomeBack', { defaultValue: 'Welcome Back' })}</h2>
+                    <p className="text-gray-600 mt-2">{t('auth.signInSubtitle', { defaultValue: 'Sign in to your account' })}</p>
+                </div>
+
+                <form onSubmit={onSubmit} className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.email')}</label>
+                        <input
+                            type="email"
+                            name="email"
+                            value={email}
+                            onChange={onChange}
+                            required
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            placeholder={t('auth.emailPlaceholder', { defaultValue: 'Enter your email' })}
+                        />
+                    </div>
+
+                    <div>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="block text-sm font-medium text-gray-700">{t('auth.password')}</label>
+                            <Link to="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                                {t('auth.forgotPassword')}
+                            </Link>
+                        </div>
+                        <div className="relative">
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                name="password"
+                                value={password}
+                                onChange={onChange}
+                                required
+                                className="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                placeholder={t('auth.passwordPlaceholder', { defaultValue: 'Enter your password' })}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword((prev) => !prev)}
+                                className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+                                aria-label={showPassword ? t('auth.hidePassword', { defaultValue: 'Hide password' }) : t('auth.showPassword', { defaultValue: 'Show password' })}
+                            >
+                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                            </button>
+                        </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 transition disabled:bg-gray-400 font-semibold"
+                    >
+                        {loading ? t('auth.signingIn', { defaultValue: 'Signing In...' }) : t('auth.loginBtn')}
+                    </button>
+                </form>
+
+                <p className="text-center text-gray-600 mt-6">
+                    {t('auth.noAccount')}{' '}
+                    <Link to="/register" className="text-primary-600 hover:text-primary-700 font-semibold">
+                        {t('auth.registerBtn')}
+                    </Link>
+                </p>
+            </div>
+        </div>
+    );
+};
+
+export default Login;
