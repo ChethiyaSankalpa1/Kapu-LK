@@ -376,9 +376,9 @@ const Dashboard = () => {
         <div className="min-h-screen">
             {/* Hero / Welcome banner */}
             <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600 text-white">
-                <div className="container mx-auto px-4 py-10 md:py-16 flex flex-col md:flex-row md:items-center md:space-x-8">
-                    <div className="flex items-center mb-6 md:mb-0 space-x-4">
-                        <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/40">
+                <div className="container mx-auto px-4 py-6 sm:py-10 md:py-16 flex flex-col md:flex-row md:items-center md:gap-8">
+                    <div className="flex items-center mb-4 sm:mb-6 md:mb-0 space-x-3 sm:space-x-4 min-w-0">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/40 shrink-0">
                             {user?.profileImageUrl ? (
                                 <img
                                     src={user.profileImageUrl}
@@ -386,76 +386,76 @@ const Dashboard = () => {
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                <User className="w-10 h-10 md:w-12 md:h-12 text-white" />
+                                <User className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white" />
                             )}
                         </div>
-                        <div>
-                            <p className="text-sm uppercase tracking-wide text-white/80">{t('dashboard.title', { defaultValue: 'Kapu LK dashboard' })}</p>
-                            <h1 className="text-3xl md:text-4xl font-bold">
+                        <div className="min-w-0">
+                            <p className="text-xs sm:text-sm uppercase tracking-wide text-white/80">{t('dashboard.title', { defaultValue: 'Kapu LK dashboard' })}</p>
+                            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold truncate">
                                 {t('dashboard.welcomeBack')}, {user?.name || t('common.member', { defaultValue: 'Member' })}!
                             </h1>
-                            <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+                            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
                                 {user?.role === 'admin' ? (
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/30">
-                                        <CheckCircle className="w-4 h-4 mr-2" />
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/10 border border-white/30 text-xs font-semibold">
+                                        <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
                                         {t('admin.title')}
                                     </span>
                                 ) : user?.isApproved ? (
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-500/20 border border-green-300 text-green-100">
-                                        <CheckCircle className="w-4 h-4 mr-2" />
-                                        {t('dashboard.profileApproved', { defaultValue: 'Profile approved' })}
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-green-500/20 border border-green-300 text-green-100 text-xs font-semibold">
+                                        <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
+                                        {t('dashboard.profileApproved', { defaultValue: 'Approved' })}
                                     </span>
                                 ) : (
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-yellow-500/20 border border-yellow-300 text-yellow-100">
-                                        <Clock className="w-4 h-4 mr-2" />
-                                        {t('dashboard.pendingApproval', { defaultValue: 'Pending approval' })}
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-yellow-500/20 border border-yellow-300 text-yellow-100 text-xs font-semibold">
+                                        <Clock className="w-3.5 h-3.5 mr-1.5" />
+                                        {t('dashboard.pendingApproval', { defaultValue: 'Pending' })}
                                     </span>
                                 )}
                                 {premiumStatus?.isPremium && (
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-yellow-400/30 border border-yellow-300 text-yellow-100">
-                                        <Crown className="w-4 h-4 mr-2" />
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-yellow-400/30 border border-yellow-300 text-yellow-100 text-xs font-semibold">
+                                        <Crown className="w-3.5 h-3.5 mr-1.5" />
                                         {t('profile.premiumMember')}
                                     </span>
                                 )}
                             </div>
-                            <div className="mt-3 flex flex-wrap gap-3 text-xs md:text-sm">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/20">
-                                    <MessageCircle className="w-4 h-4 mr-2" />
-                                    {t('dashboard.unreadMessages', { defaultValue: '{{count}} unread messages', count: unreadMessagesCount })}
+                            <div className="mt-2.5 flex flex-wrap gap-2 text-[10px] sm:text-xs">
+                                <span className="inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full bg-white/10 border border-white/20">
+                                    <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
+                                    {t('dashboard.unreadMessages', { defaultValue: '{{count}} unread', count: unreadMessagesCount })}
                                 </span>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/10 border border-white/20">
-                                    <Bell className="w-4 h-4 mr-2" />
-                                    {t('dashboard.unreadNotifications', { defaultValue: '{{count}} notifications', count: unreadNotificationCount })}
+                                <span className="inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full bg-white/10 border border-white/20">
+                                    <Bell className="w-3.5 h-3.5 mr-1.5" />
+                                    {t('dashboard.unreadNotifications', { defaultValue: '{{count}} alerts', count: unreadNotificationCount })}
                                 </span>
                                 {!premiumStatus?.isPremium && (
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-orange-500/20 border border-orange-300 text-orange-100">
-                                        <MessageCircle className="w-4 h-4 mr-2" />
-                                        {t('dashboard.messagesLeft', { defaultValue: '{{count}} messages left', count: messagesLeft })}
+                                    <span className="inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full bg-orange-500/20 border border-orange-300 text-orange-100">
+                                        <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
+                                        {t('dashboard.messagesLeft', { defaultValue: '{{count}} left', count: messagesLeft })}
                                     </span>
                                 )}
                             </div>
                         </div>
                     </div>
 
-                    <div className="md:ml-auto flex flex-col sm:flex-row gap-3">
+                    <div className="md:ml-auto grid grid-cols-2 sm:flex sm:flex-row gap-2.5 w-full md:w-auto mt-4 md:mt-0">
                         <Link
                             to="/users"
-                            className="inline-flex justify-center items-center px-6 py-3 rounded-lg bg-white text-purple-600 font-semibold shadow-md hover:bg-gray-100 transition"
+                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3 rounded-xl bg-white text-purple-600 font-bold shadow-md hover:bg-gray-50 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[44px]"
                         >
-                            {t('nav.browse', { defaultValue: 'Browse Profiles' })}
+                            Browse
                         </Link>
                         <Link
                             to="/profile"
-                            className="inline-flex justify-center items-center px-6 py-3 rounded-lg border-2 border-white text-white font-semibold hover:bg-white/10 transition"
+                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3 rounded-xl border-2 border-white/80 text-white font-bold hover:bg-white/15 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[44px]"
                         >
                             {t('profile.editProfile')}
                         </Link>
                         {!premiumStatus?.isPremium && !premiumStatus?.premiumRequested && (
                             <Link
                                 to="/premium"
-                                className="inline-flex justify-center items-center px-6 py-3 rounded-lg bg-yellow-400 text-purple-900 font-semibold shadow-md hover:bg-yellow-300 transition"
+                                className="col-span-2 sm:col-span-1 inline-flex justify-center items-center gap-2 px-4 sm:px-6 py-3 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold shadow-lg hover:shadow-xl hover:from-amber-500 hover:to-orange-600 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[44px]"
                             >
-                                <Crown className="w-5 h-5 mr-2" />
+                                <Crown className="w-4 h-4" />
                                 {t('dashboard.goPremium')}
                             </Link>
                         )}
@@ -463,65 +463,65 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            <div className="container mx-auto px-4 pb-12 -mt-8 space-y-6">
-                <div className="glass-card p-3 flex flex-wrap gap-2">
+            <div className="container mx-auto px-3 sm:px-4 pb-8 sm:pb-12 -mt-2 sm:-mt-4 md:-mt-8 space-y-4 sm:space-y-6">
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white/40 dark:border-gray-700/50 shadow-lg rounded-2xl p-2 mobile-tab-list w-full">
                     <button
                         onClick={() => setActiveTab('overview')}
-                        className={`px-4 py-2 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'overview'
-                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        className={`px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-bold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'overview'
+                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md'
+                            : 'bg-gray-100/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-200 hover:bg-gray-200/80 dark:hover:bg-gray-700'
                             }`}
                     >
                         <span>{t('dashboard.overview')}</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('matches')}
-                        className={`px-4 py-2 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'matches'
-                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        className={`px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-bold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'matches'
+                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md'
+                            : 'bg-gray-100/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-200 hover:bg-gray-200/80 dark:hover:bg-gray-700'
                             }`}
                     >
-                        <Heart className="w-4 h-4" />
+                        <Heart className="w-3.5 h-3.5" />
                         <span>{t('dashboard.matches')}</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('messages')}
-                        className={`px-4 py-2 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'messages'
-                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        className={`px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-bold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'messages'
+                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md'
+                            : 'bg-gray-100/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-200 hover:bg-gray-200/80 dark:hover:bg-gray-700'
                             }`}
                     >
-                        <MessageCircle className="w-4 h-4" />
+                        <MessageCircle className="w-3.5 h-3.5" />
                         <span>{t('dashboard.messages')}</span>
                         {unreadMessagesCount > 0 && (
-                            <span className="ml-1 inline-flex items-center justify-center px-2 py-0.5 text-xs rounded-full bg-red-500 text-white">
-                                {unreadMessagesCount}
+                            <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-[10px] rounded-full bg-red-500 text-white font-bold">
+                                {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
                             </span>
                         )}
                     </button>
                     <button
                         onClick={() => setActiveTab('notifications')}
-                        className={`px-4 py-2 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'notifications'
-                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        className={`px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-bold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'notifications'
+                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md'
+                            : 'bg-gray-100/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-200 hover:bg-gray-200/80 dark:hover:bg-gray-700'
                             }`}
                     >
-                        <Bell className="w-4 h-4" />
+                        <Bell className="w-3.5 h-3.5" />
                         <span>{t('dashboard.notifications')}</span>
                         {unreadNotificationCount > 0 && (
-                            <span className="ml-1 inline-flex items-center justify-center px-2 py-0.5 text-xs rounded-full bg-red-500 text-white">
-                                {unreadNotificationCount}
+                            <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-[10px] rounded-full bg-red-500 text-white font-bold">
+                                {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
                             </span>
                         )}
                     </button>
                     <button
                         onClick={() => setActiveTab('search')}
-                        className={`px-4 py-2 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'search'
-                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        className={`px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-bold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'search'
+                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md'
+                            : 'bg-gray-100/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-200 hover:bg-gray-200/80 dark:hover:bg-gray-700'
                             }`}
                     >
-                        <Search className="w-4 h-4" />
+                        <Search className="w-3.5 h-3.5" />
                         <span>{t('common.search')}</span>
                     </button>
                 </div>
@@ -778,31 +778,32 @@ const Dashboard = () => {
 
                 {activeTab === 'search' && (
                     <div className="space-y-6">
-                        <div className="glass-card">
+                        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-5 sm:p-6 transition-all duration-300">
                             {!isProfileComplete ? (
                                 <div className="text-center py-8">
-                                    <p className="text-gray-700 dark:text-gray-300 mb-2">Complete your profile to use advanced search.</p>
+                                    <p className="text-gray-750 dark:text-gray-300 mb-3">Complete your profile to use advanced search.</p>
                                     {missingFields().length > 0 && (
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Missing: {missingFields().join(', ')}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-5">Missing fields: {missingFields().join(', ')}</p>
                                     )}
-                                    <Link to="/profile" className="inline-block btn-primary">Complete Profile</Link>
+                                    <Link to="/profile" className="inline-flex btn-primary">Complete Profile</Link>
                                 </div>
                             ) : (
                                 <>
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center space-x-2">
-                                            <Search className="w-6 h-6 text-purple-500" />
+                                    <div className="flex items-center justify-between mb-5">
+                                        <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                            <Search className="w-5.5 h-5.5 text-purple-600 flex-shrink-0" />
                                             <span>Search Profiles</span>
                                         </h2>
                                     </div>
 
-                                    <div className="grid md:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                        {/* Gender */}
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gender</label>
+                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Gender</label>
                                             <select
                                                 value={searchFilters.gender}
                                                 onChange={(e) => setSearchFilters({ ...searchFilters, gender: e.target.value })}
-                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
+                                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition text-sm min-h-[44px]"
                                             >
                                                 <option value="">All</option>
                                                 <option value="male">Male</option>
@@ -811,64 +812,69 @@ const Dashboard = () => {
                                             </select>
                                         </div>
 
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Min Age</label>
-                                            <input
-                                                type="number"
-                                                value={searchFilters.minAge}
-                                                onChange={(e) => setSearchFilters({ ...searchFilters, minAge: e.target.value })}
-                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
-                                                placeholder="18"
-                                            />
+                                        {/* Age Range Grid */}
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Min Age</label>
+                                                <input
+                                                    type="number"
+                                                    value={searchFilters.minAge}
+                                                    onChange={(e) => setSearchFilters({ ...searchFilters, minAge: e.target.value })}
+                                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200/70 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition text-sm min-h-[44px]"
+                                                    placeholder="18"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Max Age</label>
+                                                <input
+                                                    type="number"
+                                                    value={searchFilters.maxAge}
+                                                    onChange={(e) => setSearchFilters({ ...searchFilters, maxAge: e.target.value })}
+                                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200/70 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition text-sm min-h-[44px]"
+                                                    placeholder="50"
+                                                />
+                                            </div>
                                         </div>
 
+                                        {/* Location */}
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Age</label>
-                                            <input
-                                                type="number"
-                                                value={searchFilters.maxAge}
-                                                onChange={(e) => setSearchFilters({ ...searchFilters, maxAge: e.target.value })}
-                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
-                                                placeholder="50"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Location</label>
                                             <input
                                                 type="text"
                                                 value={searchFilters.location}
                                                 onChange={(e) => setSearchFilters({ ...searchFilters, location: e.target.value })}
-                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
+                                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition text-sm min-h-[44px]"
                                                 placeholder="Enter location"
                                             />
                                         </div>
 
-                                        <div className="md:col-span-2">
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Interests</label>
+                                        {/* Interests */}
+                                        <div className="sm:col-span-2 md:col-span-1">
+                                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Interests</label>
                                             <input
                                                 type="text"
                                                 value={searchFilters.interests}
                                                 onChange={(e) => setSearchFilters({ ...searchFilters, interests: e.target.value })}
-                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
+                                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition text-sm min-h-[44px]"
                                                 placeholder="e.g. music, travel"
                                             />
                                         </div>
                                     </div>
 
-                                    <div className="flex space-x-4 mt-4">
+                                    {/* Actions */}
+                                    <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100 dark:border-gray-750">
                                         <button
                                             onClick={handleSearch}
-                                            className="flex-1 btn-primary flex items-center justify-center space-x-2"
+                                            className="flex-1 btn-primary"
                                         >
-                                            <Search className="w-5 h-5" />
+                                            <Search className="w-4 h-4" />
                                             <span>Search</span>
                                         </button>
                                         <button
                                             onClick={handleResetSearch}
-                                            className="flex-1 btn-secondary flex items-center justify-center space-x-2"
+                                            className="flex-1 btn-secondary"
                                         >
-                                            <Filter className="w-5 h-5" />
+                                            <RefreshCw className="w-4 h-4 text-gray-550" />
                                             <span>Reset</span>
                                         </button>
                                     </div>
@@ -876,19 +882,23 @@ const Dashboard = () => {
                             )}
                         </div>
 
-                        <div className="glass-card">
+                        {/* Search Results */}
+                        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-5">
                             {!isProfileComplete ? (
                                 <div className="text-center py-8">
-                                    <p className="text-gray-700 dark:text-gray-300">Complete your profile to see search results.</p>
+                                    <p className="text-gray-600 dark:text-gray-300">Complete your profile to see search results.</p>
                                 </div>
                             ) : searchLoading ? (
                                 <div className="text-center py-12">
-                                    <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-500 mx-auto"></div>
+                                    <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-purple-500 mx-auto"></div>
                                 </div>
                             ) : searchResults.length > 0 ? (
                                 <>
-                                    <p className="text-gray-600 dark:text-gray-300 mb-4">{searchResults.length} profiles found</p>
-                                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    <p className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-4 flex items-center gap-1.5">
+                                        <span>🔍</span>
+                                        <span>{searchResults.length} profiles found</span>
+                                    </p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {searchResults.map((u) => (
                                             <ProfileCard
                                                 key={u._id}
@@ -903,7 +913,7 @@ const Dashboard = () => {
                                 </>
                             ) : (
                                 <div className="text-center py-12">
-                                    <p className="text-gray-600 dark:text-gray-300">Use the filters above and click Search to find matching profiles.</p>
+                                    <p className="text-gray-500 dark:text-gray-400">Use the filters above and click Search to find matching profiles.</p>
                                 </div>
                             )}
                         </div>

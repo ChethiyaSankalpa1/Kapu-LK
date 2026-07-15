@@ -28,6 +28,7 @@ import Users from './pages/user/Users';
 import UserDetail from './pages/user/UserDetail';
 import PremiumPayment from './pages/user/PremiumPayment';
 import Conversation from './pages/user/Conversation';
+import ContactAdmin from './pages/user/ContactAdmin';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -98,6 +99,14 @@ function App() {
                 <PrivateRoute>
                   <Conversation />
                 </PrivateRoute>
+              }
+            />
+            <Route
+              path="/contact-admin"
+              element={
+                <UserRoute>
+                  <ContactAdmin />
+                </UserRoute>
               }
             />
 

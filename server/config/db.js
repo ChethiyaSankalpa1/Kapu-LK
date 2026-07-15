@@ -1,11 +1,27 @@
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
+let memoryServer;
+
 const connectDB = async () => {
   try {
     if (!process.env.MONGO_URI) {
-      console.warn('MongoDB not configured: missing MONGO_URI in environment');
-      return false;
+      if (process.env.NODE_ENV === 'production') {
+        console.warn('MongoDB not configured: missing MONGO_URI in environment');
+        return false;
+      }
+
+      console.warn('MongoDB not configured: missing MONGO_URI. Using in-memory MongoDB for development.');
+      try {
+        memoryServer = await MongoMemoryServer.create();
+        const uri = memoryServer.getUri();
+        const conn = await mongoose.connect(uri);
+        console.log(`MongoDB Connected: ${conn.connection.host}`);
+        return true;
+      } catch (fallbackError) {
+        console.error(`Fallback in-memory MongoDB error: ${fallbackError.message}`);
+        return false;
+      }
     }
 
     const conn = await mongoose.connect(process.env.MONGO_URI, {
@@ -40,13 +56,17 @@ const connectDB = async () => {
       console.log('2. MongoDB Atlas IP whitelist at https://cloud.mongodb.com');
       console.log('3. Your MongoDB connection string in .env file\n');
     }
-    try {
-      const memServer = await MongoMemoryServer.create();
-      const uri = memServer.getUri();
-      const conn = await mongoose.connect(uri);
-      console.log(`MongoDB Connected: ${conn.connection.host}`);
-    } catch (fallbackError) {
-      console.error(`Fallback in-memory MongoDB error: ${fallbackError.message}`);
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        memoryServer = await MongoMemoryServer.create();
+        const uri = memoryServer.getUri();
+        const conn = await mongoose.connect(uri);
+        console.log(`MongoDB Connected: ${conn.connection.host}`);
+      } catch (fallbackError) {
+        console.error(`Fallback in-memory MongoDB error: ${fallbackError.message}`);
+        return false;
+      }
+    } else {
       return false;
     }
   }

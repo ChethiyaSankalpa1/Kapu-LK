@@ -3,12 +3,20 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const seedUsers = require('./utils/seeder');
+const { startMessageCleanup } = require('./utils/messageCleanup');
 
 // Load env vars
 dotenv.config({ override: true });
 
+process.env.NODE_ENV = process.env.NODE_ENV || 'development';
+
 if (!process.env.JWT_SECRET) {
-  console.warn('JWT not configured: missing JWT_SECRET in environment');
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('JWT not configured: missing JWT_SECRET in environment');
+  } else {
+    process.env.JWT_SECRET = 'dev_jwt_secret_change_me';
+    console.warn('JWT not configured: missing JWT_SECRET. Using a development default.');
+  }
 }
 
 // Connect to database
@@ -17,6 +25,7 @@ let dbConnected = false;
   dbConnected = await connectDB();
   if (dbConnected) {
     await seedUsers();
+    startMessageCleanup();
   }
 })();
 

@@ -114,13 +114,13 @@ const PremiumPayment = () => {
     const selectedBank = BANKS.find(b => b.name === formData.bank);
 
     return (
-        <div className="container mx-auto px-4 py-12">
-            <button onClick={() => navigate('/dashboard')} className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 mb-8 hover:text-purple-600 dark:hover:text-purple-400 transition">
+        <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-12">
+            <button onClick={() => navigate('/dashboard')} className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 mb-5 sm:mb-8 hover:text-purple-600 dark:hover:text-purple-400 transition">
                 <ArrowLeft className="w-5 h-5" />
                 <span className="font-medium">Back to Dashboard</span>
             </button>
 
-            <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-8">
+            <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-5 sm:gap-8">
                 {/* Bank Details */}
                 <div className="space-y-6">
                     <div className="glass-card">
@@ -174,7 +174,7 @@ const PremiumPayment = () => {
                                     {!canViewBankDetails && (
                                         <div className="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-gray-900/60 text-center px-4">
                                             <p className="text-sm font-semibold text-gray-800 dark:text-white">
-                                                Approve your account to view bank details
+                                                Account approval required to view bank details
                                             </p>
                                         </div>
                                     )}
@@ -218,7 +218,7 @@ const PremiumPayment = () => {
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 min-[440px]:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Email
@@ -249,7 +249,7 @@ const PremiumPayment = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 min-[440px]:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Payment Date
@@ -280,7 +280,7 @@ const PremiumPayment = () => {
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Upload Payment Slip
                             </label>
-                            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center">
+                            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-5 sm:p-6 text-center">
                                 <input
                                     type="file"
                                     id="slip"

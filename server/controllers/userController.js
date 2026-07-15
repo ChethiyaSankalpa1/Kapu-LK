@@ -142,7 +142,7 @@ exports.getAllUsers = async (req, res) => {
   try {
     const query = req.user.role === 'admin'
       ? {}
-      : { isApproved: true, isActive: true, _id: { $ne: req.user._id } };
+      : { isApproved: true, isActive: true, _id: { $ne: req.user._id }, role: { $ne: 'admin' } };
 
     const users = await User.find(query).select('-password');
     res.json(users);
@@ -184,7 +184,7 @@ exports.searchUsers = async (req, res) => {
   try {
     const { gender, minAge, maxAge, location, religion, maritalStatus, interests } = req.query;
 
-    let query = { isApproved: true, isActive: true };
+    let query = { isApproved: true, isActive: true, role: { $ne: 'admin' } };
 
     if (gender) query.gender = gender;
     if (location) query.location = { $regex: location, $options: 'i' };
@@ -219,6 +219,7 @@ exports.getMatches = async (req, res) => {
       _id: { $ne: currentUser._id },
       isApproved: true,
       isActive: true,
+      role: { $ne: 'admin' },
     };
 
     if (currentUser.gender === 'male') {
@@ -226,6 +227,23 @@ exports.getMatches = async (req, res) => {
     } else if (currentUser.gender === 'female') {
       baseQuery.gender = 'male';
     }
+
+    // Apply partner preferences (if provided) as soft filters
+    const prefs = currentUser.partnerPreferences || {};
+    const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (prefs.minAge || prefs.maxAge) {
+      baseQuery.age = {};
+      if (typeof prefs.minAge === 'number') baseQuery.age.$gte = prefs.minAge;
+      if (typeof prefs.maxAge === 'number') baseQuery.age.$lte = prefs.maxAge;
+    }
+    if (prefs.religion) baseQuery.religion = { $regex: `^${escapeRegex(prefs.religion)}$`, $options: 'i' };
+    if (prefs.caste) baseQuery.caste = { $regex: `^${escapeRegex(prefs.caste)}$`, $options: 'i' };
+    if (prefs.district) baseQuery.district = { $regex: `^${escapeRegex(prefs.district)}$`, $options: 'i' };
+    if (prefs.maritalStatus) baseQuery.maritalStatus = prefs.maritalStatus;
+    if (prefs.smoking) baseQuery.smoking = { $regex: `^${escapeRegex(prefs.smoking)}$`, $options: 'i' };
+    if (prefs.drinking) baseQuery.drinking = { $regex: `^${escapeRegex(prefs.drinking)}$`, $options: 'i' };
+    if (prefs.education) baseQuery.education = { $regex: `^${escapeRegex(prefs.education)}$`, $options: 'i' };
+    if (prefs.bodyType) baseQuery.bodyType = { $regex: `^${escapeRegex(prefs.bodyType)}$`, $options: 'i' };
 
     const candidates = await User.find(baseQuery).select('-password');
 
@@ -254,6 +272,13 @@ exports.getMatches = async (req, res) => {
           score += Math.min(30, common.length * 10);
         }
       }
+
+      // Preference alignment bonus (helps ranking even if prefs are not strict)
+      if (prefs.religion && user.religion && user.religion.toLowerCase() === prefs.religion.toLowerCase()) score += 10;
+      if (prefs.district && user.district && user.district.toLowerCase() === prefs.district.toLowerCase()) score += 10;
+      if (prefs.maritalStatus && user.maritalStatus === prefs.maritalStatus) score += 10;
+
+      score = Math.min(100, score);
 
       return {
         ...user.toObject(),

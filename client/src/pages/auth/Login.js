@@ -60,31 +60,31 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-            <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-                <div className="text-center mb-8">
-                    <Heart className="w-16 h-16 mx-auto text-primary-600 mb-4" />
-                    <h2 className="text-3xl font-bold text-gray-900">{t('auth.welcomeBack', { defaultValue: 'Welcome Back' })}</h2>
-                    <p className="text-gray-600 mt-2">{t('auth.signInSubtitle', { defaultValue: 'Sign in to your account' })}</p>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-8 sm:py-12 px-4">
+            <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl sm:rounded-lg shadow-lg p-6 sm:p-8">
+                <div className="text-center mb-6 sm:mb-8">
+                    <Heart className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-primary-600 mb-3 sm:mb-4" />
+                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{t('auth.welcomeBack', { defaultValue: 'Welcome Back' })}</h2>
+                    <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm sm:text-base">{t('auth.signInSubtitle', { defaultValue: 'Sign in to your account' })}</p>
                 </div>
 
-                <form onSubmit={onSubmit} className="space-y-6">
+                <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.email')}</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.email')}</label>
                         <input
                             type="email"
                             name="email"
                             value={email}
                             onChange={onChange}
                             required
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
                             placeholder={t('auth.emailPlaceholder', { defaultValue: 'Enter your email' })}
                         />
                     </div>
 
                     <div>
                         <div className="flex items-center justify-between mb-1">
-                            <label className="block text-sm font-medium text-gray-700">{t('auth.password')}</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('auth.password')}</label>
                             <Link to="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
                                 {t('auth.forgotPassword')}
                             </Link>
@@ -96,13 +96,13 @@ const Login = () => {
                                 value={password}
                                 onChange={onChange}
                                 required
-                                className="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                className="w-full px-4 py-2.5 sm:py-3 pr-12 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
                                 placeholder={t('auth.passwordPlaceholder', { defaultValue: 'Enter your password' })}
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword((prev) => !prev)}
-                                className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+                                className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                                 aria-label={showPassword ? t('auth.hidePassword', { defaultValue: 'Hide password' }) : t('auth.showPassword', { defaultValue: 'Show password' })}
                             >
                                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -113,13 +113,13 @@ const Login = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 transition disabled:bg-gray-400 font-semibold"
+                        className="w-full bg-primary-600 text-white py-3 sm:py-3.5 rounded-lg hover:bg-primary-700 transition disabled:bg-gray-400 font-semibold text-sm sm:text-base"
                     >
                         {loading ? t('auth.signingIn', { defaultValue: 'Signing In...' }) : t('auth.loginBtn')}
                     </button>
                 </form>
 
-                <p className="text-center text-gray-600 mt-6">
+                <p className="text-center text-gray-600 dark:text-gray-300 mt-6 text-sm sm:text-base">
                     {t('auth.noAccount')}{' '}
                     <Link to="/register" className="text-primary-600 hover:text-primary-700 font-semibold">
                         {t('auth.registerBtn')}

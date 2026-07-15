@@ -78,56 +78,56 @@ const Register = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-            <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-                <div className="text-center mb-8">
-                    <Heart className="w-16 h-16 mx-auto text-primary-600 mb-4" />
-                    <h2 className="text-3xl font-bold text-gray-900">{t('auth.createAccount', { defaultValue: 'Create Account' })}</h2>
-                    <p className="text-gray-600 mt-2">{t('auth.registerSubtitle', { defaultValue: 'Join us to find your perfect match' })}</p>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-8 sm:py-12 px-4">
+            <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl sm:rounded-lg shadow-lg p-6 sm:p-8">
+                <div className="text-center mb-6 sm:mb-8">
+                    <Heart className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-primary-600 mb-3 sm:mb-4" />
+                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{t('auth.createAccount', { defaultValue: 'Create Account' })}</h2>
+                    <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm sm:text-base">{t('auth.registerSubtitle', { defaultValue: 'Join us to find your perfect match' })}</p>
                 </div>
 
-                <form onSubmit={onSubmit} className="space-y-4">
+                <form onSubmit={onSubmit} className="space-y-3 sm:space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.fullName', { defaultValue: 'Full Name' })}</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.fullName', { defaultValue: 'Full Name' })}</label>
                         <input
                             type="text"
                             name="name"
                             value={name}
                             onChange={onChange}
                             required
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
                             placeholder={t('auth.fullNamePlaceholder', { defaultValue: 'Enter your full name' })}
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.username', { defaultValue: 'Username' })}</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.username', { defaultValue: 'Username' })}</label>
                         <input
                             type="text"
                             name="username"
                             value={username}
                             onChange={onChange}
                             required
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
                             placeholder={t('auth.usernamePlaceholder', { defaultValue: 'Choose a unique username' })}
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.email')}</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.email')}</label>
                         <input
                             type="email"
                             name="email"
                             value={email}
                             onChange={onChange}
                             required
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
                             placeholder={t('auth.emailPlaceholder', { defaultValue: 'Enter your email' })}
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.password')}</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.password')}</label>
                         <div className="relative">
                             <input
                                 type={showPassword ? 'text' : 'password'}
@@ -136,13 +136,13 @@ const Register = () => {
                                 onChange={onChange}
                                 required
                                 minLength="6"
-                                className="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                className="w-full px-4 py-2.5 sm:py-3 pr-12 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
                                 placeholder={t('auth.passwordPlaceholder', { defaultValue: 'Enter your password' })}
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword((prev) => !prev)}
-                                className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+                                className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                                 aria-label={showPassword ? t('auth.hidePassword', { defaultValue: 'Hide password' }) : t('auth.showPassword', { defaultValue: 'Show password' })}
                             >
                                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -151,7 +151,7 @@ const Register = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.phone', { defaultValue: 'Phone Number' })}</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.phone', { defaultValue: 'Phone Number' })}</label>
                         <input
                             type="tel"
                             name="phoneNumber"
@@ -159,14 +159,14 @@ const Register = () => {
                             onChange={onChange}
                             inputMode="numeric"
                             pattern="[0-9]*"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
                             placeholder={t('auth.phonePlaceholder', { defaultValue: 'Enter your phone number' })}
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.age', { defaultValue: 'Age' })}</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.age', { defaultValue: 'Age' })}</label>
                             <input
                                 type="number"
                                 name="age"
@@ -174,18 +174,18 @@ const Register = () => {
                                 onChange={onChange}
                                 min="18"
                                 max="100"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
                                 placeholder={t('auth.age', { defaultValue: 'Age' })}
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.gender', { defaultValue: 'Gender' })}</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.gender', { defaultValue: 'Gender' })}</label>
                             <select
                                 name="gender"
                                 value={gender}
                                 onChange={onChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
                             >
                                 <option value="male">{t('common.male', { defaultValue: 'Male' })}</option>
                                 <option value="female">{t('common.female', { defaultValue: 'Female' })}</option>
@@ -195,7 +195,7 @@ const Register = () => {
                     </div>
 
                     <div className="pt-2">
-                        <label className="flex items-start space-x-2 text-sm text-gray-600">
+                        <label className="flex items-start space-x-2 text-sm text-gray-600 dark:text-gray-300">
                             <input
                                 type="checkbox"
                                 name="agreedToTerms"
@@ -208,7 +208,7 @@ const Register = () => {
                                 }
                                 className="mt-1 h-4 w-4 text-primary-600 border-gray-300 rounded"
                             />
-                            <span>
+                            <span className="text-xs sm:text-sm">
                                 {t('auth.termsIntro', { defaultValue: 'I have read and agree to the' })}
                                 <span className="font-semibold"> {t('auth.termsAndConditions', { defaultValue: 'Terms & Conditions' })}</span> {t('auth.and', { defaultValue: 'and' })}
                                 <span className="font-semibold"> {t('auth.privacyPolicy', { defaultValue: 'Privacy Policy' })}</span> {t('auth.platformTerms', { defaultValue: 'of this matrimonial platform.' })}
@@ -219,13 +219,13 @@ const Register = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 transition disabled:bg-gray-400 font-semibold"
+                        className="w-full bg-primary-600 text-white py-3 sm:py-3.5 rounded-lg hover:bg-primary-700 transition disabled:bg-gray-400 font-semibold text-sm sm:text-base"
                     >
                         {loading ? t('auth.creatingAccount', { defaultValue: 'Creating Account...' }) : t('auth.registerBtn')}
                     </button>
                 </form>
 
-                <p className="text-center text-gray-600 mt-6">
+                <p className="text-center text-gray-600 dark:text-gray-300 mt-6 text-sm sm:text-base">
                     {t('auth.hasAccount')}{' '}
                     <Link to="/login" className="text-primary-600 hover:text-primary-700 font-semibold">
                         {t('auth.loginBtn')}

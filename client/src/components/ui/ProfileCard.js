@@ -36,7 +36,7 @@ const ProfileCard = ({ user, onLike, onView, isOwnProfile = false }) => {
         >
             {/* Profile header with image */}
             <div className="relative">
-                <div className="h-52 bg-gradient-to-br from-pink-100 via-purple-100 to-indigo-100 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-indigo-900/30 overflow-hidden">
+                <div className="h-44 sm:h-52 bg-gradient-to-br from-pink-100 via-purple-100 to-indigo-100 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-indigo-900/30 overflow-hidden">
                     {user?.profileImageUrl ? (
                         <img
                             src={user.profileImageUrl}
@@ -45,26 +45,26 @@ const ProfileCard = ({ user, onLike, onView, isOwnProfile = false }) => {
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                            <div className="w-24 h-24 rounded-full bg-white/80 dark:bg-gray-800/80 shadow-md flex items-center justify-center">
-                                <span className="text-4xl font-semibold text-pink-500">
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/80 dark:bg-gray-800/80 shadow-md flex items-center justify-center">
+                                <span className="text-3xl sm:text-4xl font-semibold text-pink-500">
                                     {user?.name?.charAt(0) || t('common.userInitial', { defaultValue: 'U' })}
                                 </span>
                             </div>
                         </div>
                     )}
-                    <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/45 to-transparent pointer-events-none" />
+                    <div className="absolute inset-x-0 bottom-0 h-16 sm:h-20 bg-gradient-to-t from-black/45 to-transparent pointer-events-none" />
                 </div>
 
-                <div className="absolute left-4 bottom-4 right-20">
-                    <div className="inline-flex max-w-full items-center gap-2 rounded-full bg-white/90 dark:bg-gray-900/80 px-3 py-1.5 shadow-sm backdrop-blur-sm">
-                        <h3 className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                <div className="absolute left-3 sm:left-4 bottom-3 sm:bottom-4 right-16 sm:right-20">
+                    <div className="inline-flex max-w-full items-center gap-1.5 sm:gap-2 rounded-full bg-white/90 dark:bg-gray-900/80 px-2.5 sm:px-3 py-1 sm:py-1.5 shadow-sm backdrop-blur-sm">
+                        <h3 className="truncate text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
                             {user?.name || t('common.userName', { defaultValue: 'User Name' })}
                         </h3>
                         {user?.isPremium && (
-                            <Crown className="w-4 h-4 shrink-0 text-yellow-500" />
+                            <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 text-yellow-500" />
                         )}
                         {user?.age && (
-                            <span className="shrink-0 text-sm text-gray-500 dark:text-gray-300">• {user.age}</span>
+                            <span className="shrink-0 text-xs sm:text-sm text-gray-500 dark:text-gray-300">• {user.age}</span>
                         )}
                     </div>
                 </div>
@@ -76,33 +76,33 @@ const ProfileCard = ({ user, onLike, onView, isOwnProfile = false }) => {
                             e.stopPropagation();
                             if (onLike) onLike(e);
                         }}
-                        className="absolute top-2 right-2 p-2 bg-white/90 dark:bg-gray-800/90 rounded-full shadow-md text-pink-500 hover:bg-pink-50 dark:hover:bg-gray-700 transition-colors"
+                        className="absolute top-2 sm:top-3 right-2 sm:right-3 p-1.5 sm:p-2 bg-white/90 dark:bg-gray-800/90 rounded-full shadow-md text-pink-500 hover:bg-pink-50 dark:hover:bg-gray-700 transition-colors"
                     >
-                        <Heart className="w-5 h-5" />
+                        <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                 )}
 
-                {/* Join date */}
-                <div className="absolute top-3 right-3 bg-white/90 dark:bg-gray-800/90 px-2 py-1 rounded-full text-xs text-gray-500 dark:text-gray-400 shadow-sm backdrop-blur-sm">
+                {/* Join date (positioned top-left to avoid overlap with top-right like button) */}
+                <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 bg-white/90 dark:bg-gray-800/90 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 shadow-sm backdrop-blur-sm">
                     <div className="flex items-center">
-                        <Calendar className="w-3 h-3 mr-1" />
-                        {joinDate}
+                        <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" />
+                        <span className="text-[10px] sm:text-xs">{joinDate}</span>
                     </div>
                 </div>
             </div>
 
             {/* Card content */}
-            <div className="px-5 py-5 text-center">
+            <div className="px-4 sm:px-5 py-4 sm:py-5 text-center">
                 {/* Location */}
                 {(user?.district || user?.location) && (
-                    <div className="flex items-center justify-center text-gray-500 dark:text-gray-400 text-sm mb-3">
-                        <MapPin className="w-3.5 h-3.5 mr-1" />
-                        <span>{user.district || user.location}</span>
+                    <div className="flex items-center justify-center text-gray-500 dark:text-gray-400 text-xs sm:text-sm mb-2 sm:mb-3">
+                        <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1" />
+                        <span className="text-xs sm:text-sm">{user.district || user.location}</span>
                     </div>
                 )}
 
                 {/* Description */}
-                <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed line-clamp-3 mb-1">
+                <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm leading-relaxed line-clamp-3 mb-1">
                     {description}
                 </p>
 
@@ -113,7 +113,7 @@ const ProfileCard = ({ user, onLike, onView, isOwnProfile = false }) => {
                             e.stopPropagation();
                             onView();
                         }}
-                        className="mt-3 px-4 py-1.5 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-sm font-medium rounded-full hover:opacity-90 transition-opacity"
+                        className="mt-2 sm:mt-3 px-3 sm:px-4 py-1.5 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs sm:text-sm font-medium rounded-full hover:opacity-90 transition-opacity"
                     >
                         {t('dashboard.viewProfile')}
                     </button>

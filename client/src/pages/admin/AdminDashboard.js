@@ -147,15 +147,15 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="container mx-auto px-4">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8 flex items-center space-x-2">
-          <Shield className="w-8 h-8 text-purple-600" />
+    <div className="min-h-screen py-5 sm:py-8">
+      <div className="container mx-auto px-4 sm:px-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-5 sm:mb-8 flex items-center space-x-2">
+          <Shield className="w-7 h-7 sm:w-8 sm:h-8 text-purple-600" />
           <span>{t('admin.title')}</span>
         </h1>
 
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4 mb-5 sm:mb-8">
           <div className="glass-card">
             <div className="flex items-center justify-between">
               <div>
@@ -228,10 +228,10 @@ const AdminDashboard = () => {
         </div>
 
         {/* Tabs */}
-        <div className="glass-card p-3 flex space-x-2 mb-8">
+        <div className="glass-card p-2 mobile-tab-list mb-5 sm:mb-8">
           <button
             onClick={() => setActiveTab('users')}
-            className={`px-4 py-2 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'users'
+            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'users'
               ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
@@ -241,7 +241,7 @@ const AdminDashboard = () => {
           </button>
           <button
             onClick={() => setActiveTab('premium')}
-            className={`px-4 py-2 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'premium'
+            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'premium'
               ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
@@ -256,7 +256,7 @@ const AdminDashboard = () => {
           </button>
           <button
             onClick={() => setActiveTab('messages')}
-            className={`px-4 py-2 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'messages'
+            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'messages'
               ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}

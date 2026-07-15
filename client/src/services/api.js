@@ -15,6 +15,22 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+// Handle 401 Unauthorized globally
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            // Avoid redirecting if already on login or register page
+            if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+                window.location.href = '/login';
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
 // Auth API
 export const authAPI = {
     register: (data) => api.post('/auth/register', data),
