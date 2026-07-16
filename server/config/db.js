@@ -31,10 +31,10 @@ const connectDB = async () => {
           memoryServer = await MongoMemoryServer.create();
           const uri = memoryServer.getUri();
           const conn = await mongoose.connect(uri);
-          console.log(MongoDB Connected: );
+          console.log(`MongoDB Connected: ${conn.connection.host}`);
           return true;
         } catch (fallbackError) {
-          console.error(Fallback in-memory MongoDB error: );
+          console.error(`Fallback in-memory MongoDB error: ${fallbackError.message}`);
           return false;
         }
       } else {
@@ -53,7 +53,7 @@ const connectDB = async () => {
       minPoolSize: 2
     });
 
-    console.log(MongoDB Connected: );
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
 
     mongoose.connection.on('error', (err) => {
       console.error('MongoDB connection error:', err);
@@ -68,9 +68,9 @@ const connectDB = async () => {
     });
 
   } catch (error) {
-    console.error(MongoDB Connection Error: );
+    console.error(`MongoDB Connection Error: ${error.message}`);
     if (error.message.includes('ENOTFOUND') || error.message.includes('ETIMEDOUT')) {
-      console.log('\n??  IMPORTANT: Please check:');
+      console.log('\n⚠️  IMPORTANT: Please check:');
       console.log('1. Your internet connection');
       console.log('2. MongoDB Atlas IP whitelist at https://cloud.mongodb.com');
       console.log('3. Your MongoDB connection string in .env file\n');
@@ -80,9 +80,9 @@ const connectDB = async () => {
         memoryServer = await MongoMemoryServer.create();
         const uri = memoryServer.getUri();
         const conn = await mongoose.connect(uri);
-        console.log(MongoDB Connected: );
+        console.log(`MongoDB Connected: ${conn.connection.host}`);
       } catch (fallbackError) {
-        console.error(Fallback in-memory MongoDB error: );
+        console.error(`Fallback in-memory MongoDB error: ${fallbackError.message}`);
         return false;
       }
     } else {
