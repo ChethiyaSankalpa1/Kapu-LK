@@ -88,6 +88,14 @@ app.get('/', (req, res) => {
   });
 });
 
+// Health check for Render
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok',
+    database: dbConnected ? 'connected' : 'disconnected'
+  });
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
