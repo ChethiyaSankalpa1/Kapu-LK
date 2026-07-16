@@ -21,7 +21,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   useEffect(() => {
     const intervalId = setInterval(() => {

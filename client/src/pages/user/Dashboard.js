@@ -58,8 +58,6 @@ const Dashboard = () => {
     const [matchesLoading, setMatchesLoading] = useState(false);
 
     const [conversations, setConversations] = useState([]);
-    const [selectedConversationUser, setSelectedConversationUser] = useState(null);
-    const [newMessage, setNewMessage] = useState('');
     const [pendingConversationUserId, setPendingConversationUserId] = useState(null);
 
     const [notifications, setNotifications] = useState([]);
@@ -154,14 +152,14 @@ const Dashboard = () => {
     const handleOpenConversation = useCallback((otherUserId) => {
         const convo = conversations.find((c) => c.user && c.user._id === otherUserId);
         if (convo) {
-            setSelectedConversationUser(convo.user);
+            // User found in conversations
         } else if (matches.length > 0) {
             const fromMatches = matches.find((m) => m._id === otherUserId);
             if (fromMatches) {
-                setSelectedConversationUser(fromMatches);
+                // User found in matches
             }
         }
-    }, [conversations, matches, t]);
+    }, [conversations, matches]);
 
     useEffect(() => {
         if (isProfileComplete) {

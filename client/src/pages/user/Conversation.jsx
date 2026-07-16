@@ -25,16 +25,6 @@ const Conversation = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
-  useEffect(() => {
-    if (userId) {
-      fetchData();
-    }
-  }, [userId, fetchData]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
-
   const fetchData = useCallback(async () => {
     try {
       const [messagesRes, userRes] = await Promise.all([
@@ -50,6 +40,16 @@ const Conversation = () => {
       setLoading(false);
     }
   }, [userId, t]);
+
+  useEffect(() => {
+    if (userId) {
+      fetchData();
+    }
+  }, [userId, fetchData]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
