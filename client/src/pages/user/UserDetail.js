@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 import {
     User, MapPin, Briefcase, GraduationCap, Heart,
     Phone, Mail, Calendar, Users as UsersIcon, ArrowLeft, Send, Crown,
-    MessageSquare, Shield, TrendingUp, Clock, Home, Building, Target
+    MessageSquare, Shield
 } from 'lucide-react';
 
 const UserDetail = () => {

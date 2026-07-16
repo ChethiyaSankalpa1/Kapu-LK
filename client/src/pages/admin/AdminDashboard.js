@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { adminAPI, messageAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
-  Users, UserCheck, UserX, Activity,
+  Users, UserCheck, Activity,
   CheckCircle, XCircle, Trash2, Shield, Crown, AlertTriangle, DollarSign, MessageSquare
 } from 'lucide-react';
 
@@ -42,7 +42,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [statsRes, usersRes, premiumRes, conversationsRes] = await Promise.all([
         adminAPI.getStats(),
@@ -61,7 +61,7 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   const handleApproveUser = async (userId) => {
     try {

@@ -4,11 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { userAPI, messageAPI } from '../../services/api';
 import { toast } from 'react-toastify';
-import { MessageSquare, Shield, Send, ArrowLeft, Clock, CheckCircle } from 'lucide-react';
+import { Shield, Send, ArrowLeft, Clock, CheckCircle } from 'lucide-react';
 
 const ContactAdmin = () => {
     const { t } = useTranslation();
-    const { user, isAdmin } = useAuth();
+    const { isAdmin } = useAuth();
     const navigate = useNavigate();
     const [admin, setAdmin] = useState(null);
     const [messageText, setMessageText] = useState('');

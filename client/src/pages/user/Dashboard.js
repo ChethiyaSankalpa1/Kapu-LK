@@ -2,11 +2,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { userAPI, messageAPI, notificationAPI, premiumAPI } from '../../services/api';
+import { userAPI, messageAPI, notificationAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
-    User, CheckCircle, Clock, MessageCircle, Bell, Search, Filter, Heart, Send,
-    Crown, Zap, X, Lock, RefreshCw
+    User, CheckCircle, Clock, MessageCircle, Bell, Search, Heart,
+    Crown, Zap, X, RefreshCw
 } from 'lucide-react';
 import ProfileCard from '../../components/ui/ProfileCard';
 import CustomSelect from '../../components/ui/CustomSelect';
@@ -59,8 +59,6 @@ const Dashboard = () => {
 
     const [conversations, setConversations] = useState([]);
     const [selectedConversationUser, setSelectedConversationUser] = useState(null);
-    const [messages, setMessages] = useState([]);
-    const [messagesLoading, setMessagesLoading] = useState(false);
     const [newMessage, setNewMessage] = useState('');
     const [pendingConversationUserId, setPendingConversationUserId] = useState(null);
 
@@ -150,7 +148,7 @@ const Dashboard = () => {
         } finally {
             setMatchesLoading(false);
         }
-    }, []);
+    }, [t]);
 
     const fetchMessagesWithUser = useCallback(async (otherUserId) => {
         setMessagesLoading(true);
@@ -163,7 +161,7 @@ const Dashboard = () => {
         } finally {
             setMessagesLoading(false);
         }
-    }, [fetchConversations]);
+    }, [fetchConversations, t]);
 
     const handleOpenConversation = useCallback((otherUserId) => {
         const convo = conversations.find((c) => c.user && c.user._id === otherUserId);
@@ -176,7 +174,7 @@ const Dashboard = () => {
             }
         }
         fetchMessagesWithUser(otherUserId);
-    }, [conversations, matches, fetchMessagesWithUser]);
+    }, [conversations, matches, fetchMessagesWithUser, t]);
 
     useEffect(() => {
         if (isProfileComplete) {
@@ -212,39 +210,6 @@ const Dashboard = () => {
     const handleCardMessage = (otherUserId) => {
         setActiveTab('messages');
         setPendingConversationUserId(otherUserId);
-    };
-
-    const handleSendMessage = async () => {
-        if (!selectedConversationUser || !newMessage.trim()) return;
-
-        // Check limit
-        if (
-            selectedConversationUser.role !== 'admin' &&
-            !premiumStatus?.isPremium &&
-            (premiumStatus?.messagesSent || 0) >= FREE_LIMIT
-        ) {
-            setShowPremiumModal(true);
-            return;
-        }
-
-        try {
-            const payload = {
-                to: selectedConversationUser._id,
-                content: newMessage.trim(),
-                type: 'text',
-            };
-            const response = await messageAPI.sendMessage(payload);
-            setMessages((prev) => [...prev, response.data]);
-            setNewMessage('');
-            await fetchConversations();
-            await refreshPremiumStatus();
-        } catch (error) {
-            if (error.response?.status === 403) {
-                setShowPremiumModal(true);
-            } else {
-                toast.error(error.response?.data?.message || t('dashboard.sendMessageFailed', { defaultValue: 'Failed to send message' }));
-            }
-        }
     };
 
     const handleQuickLike = async (targetUserId) => {

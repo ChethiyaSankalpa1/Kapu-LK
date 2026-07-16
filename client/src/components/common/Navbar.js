@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import {
     Heart, LogOut, User, Users, LayoutDashboard, Menu, X,
-    Sun, Moon, Crown, Globe, ChevronRight, Shield, Sparkles, Settings
+    Sun, Moon, Crown, Globe, ChevronRight, Sparkles
 } from 'lucide-react';
 
 const Navbar = () => {

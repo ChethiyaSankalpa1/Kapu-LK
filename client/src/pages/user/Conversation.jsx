@@ -6,14 +6,14 @@ import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import {
   ArrowLeft, Send, User, MessageSquare, Crown,
-  Clock, CheckCircle2, MoreVertical, Shield
+  Clock, CheckCircle2, Shield
 } from 'lucide-react';
 
 const Conversation = () => {
   const { t } = useTranslation();
   const { userId } = useParams();
   const navigate = useNavigate();
-  const { user: currentUser, isAdmin } = useAuth();
+  const { user: currentUser } = useAuth();
   const [messages, setMessages] = useState([]);
   const [otherUser, setOtherUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -29,13 +29,13 @@ const Conversation = () => {
     if (userId) {
       fetchData();
     }
-  }, [userId]);
+  }, [userId, fetchData]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [messagesRes, userRes] = await Promise.all([
         messageAPI.getConversationWithUser(userId),
@@ -49,7 +49,7 @@ const Conversation = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, t]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
