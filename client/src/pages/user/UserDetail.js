@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { userAPI, messageAPI, adminAPI } from '../../services/api';
+import { userAPI, messageAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import {
     User, MapPin, Briefcase, GraduationCap, Heart,
     Phone, Mail, Calendar, Users as UsersIcon, ArrowLeft, Send, Crown,
-    MessageSquare, Shield, TrendingUp, Clock, Home, Building, Target, CheckCircle2
+    MessageSquare, Shield, TrendingUp, Clock, Home, Building, Target
 } from 'lucide-react';
 
 const UserDetail = () => {
@@ -34,7 +34,7 @@ const UserDetail = () => {
         } finally {
             setLoading(false);
         }
-    }, [id, navigate]);
+    }, [id, navigate, t]);
 
     const fetchAdmin = useCallback(async () => {
         if (isAdmin) return; // If current user is admin, don't fetch

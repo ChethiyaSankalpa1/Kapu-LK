@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { userAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -36,7 +36,7 @@ const Users = () => {
         return () => observer.current?.disconnect?.();
     }, []);
 
-    const lastUserElementRef = React.useCallback(node => {
+    const lastUserElementRef = useCallback(node => {
         if (loading || loadingMore) return;
         if (observer.current) observer.current.disconnect();
         observer.current = new IntersectionObserver(entries => {
@@ -47,22 +47,16 @@ const Users = () => {
         if (node) observer.current.observe(node);
     }, [loading, loadingMore, hasMore]);
 
-    useEffect(() => {
-        if (isSearching) {
-            fetchSearchResults(page);
-        } else {
-            fetchUsers(page);
-        }
-    }, [page, isSearching]);
-
-    const fetchUsers = async (pageNum = 1) => {
+    const fetchUsers = useCallback(async (pageNum = 1) => {
         if (pageNum === 1) setLoading(true);
         else setLoadingMore(true);
 
         try {
             const response = await userAPI.getAllUsers({ page: pageNum, limit: 12 });
-            const filteredUsers = (response.data.data || response.data).filter(u => u._id !== currentUser?._id && u.role !== 'admin');
-            
+            const filteredUsers = (response.data.data || response.data).filter(
+                (u) => u._id !== currentUser?._id && u.role !== 'admin'
+            );
+
             setUsers(prev => pageNum === 1 ? filteredUsers : [...prev, ...filteredUsers]);
             setHasMore(response.data.hasMore ?? false);
         } catch (error) {
@@ -71,16 +65,18 @@ const Users = () => {
             setLoading(false);
             setLoadingMore(false);
         }
-    };
+    }, [currentUser?._id, t]);
 
-    const fetchSearchResults = async (pageNum = 1) => {
+    const fetchSearchResults = useCallback(async (pageNum = 1) => {
         if (pageNum === 1) setLoading(true);
         else setLoadingMore(true);
 
         try {
             const response = await userAPI.searchUsers({ ...filters, page: pageNum, limit: 12 });
-            const filteredUsers = (response.data.data || response.data).filter(u => u._id !== currentUser?._id && u.role !== 'admin');
-            
+            const filteredUsers = (response.data.data || response.data).filter(
+                (u) => u._id !== currentUser?._id && u.role !== 'admin'
+            );
+
             setUsers(prev => pageNum === 1 ? filteredUsers : [...prev, ...filteredUsers]);
             setHasMore(response.data.hasMore ?? false);
             if (pageNum === 1) {
@@ -92,7 +88,15 @@ const Users = () => {
             setLoading(false);
             setLoadingMore(false);
         }
-    };
+    }, [currentUser?._id, filters, t]);
+
+    useEffect(() => {
+        if (isSearching) {
+            fetchSearchResults(page);
+        } else {
+            fetchUsers(page);
+        }
+    }, [page, isSearching, fetchSearchResults, fetchUsers]);
 
     const handleSearch = () => {
         setIsSearching(true);
