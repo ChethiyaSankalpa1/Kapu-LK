@@ -130,7 +130,15 @@ const Dashboard = () => {
             setAllUsers(filteredUsers);
         } catch (error) {
             console.error('Error fetching users:', error);
-            toast.error(t('dashboard.fetchUsersFailed', { defaultValue: 'Failed to fetch users' }));
+            if (error.response?.status === 401) {
+                toast.error('Please login to view users');
+            } else if (error.response?.status === 500) {
+                toast.error('Server error. Please try again later.');
+            } else {
+                toast.error(t('dashboard.fetchUsersFailed', { defaultValue: 'Failed to fetch users' }));
+            }
+            setFeaturedUsers([]);
+            setAllUsers([]);
         } finally {
             setOverviewLoading(false);
         }
@@ -140,9 +148,17 @@ const Dashboard = () => {
         setMatchesLoading(true);
         try {
             const response = await userAPI.getMatches();
-            setMatches(response.data);
+            setMatches(response.data || []);
         } catch (error) {
-            toast.error(t('dashboard.loadMatchesFailed', { defaultValue: 'Failed to load matches' }));
+            console.error('Error fetching matches:', error);
+            if (error.response?.status === 401) {
+                toast.error('Please login to view matches');
+            } else if (error.response?.status === 500) {
+                toast.error('Server error. Please try again later.');
+            } else {
+                toast.error(t('dashboard.loadMatchesFailed', { defaultValue: 'Failed to load matches' }));
+            }
+            setMatches([]);
         } finally {
             setMatchesLoading(false);
         }
@@ -481,6 +497,39 @@ const Dashboard = () => {
                 {activeTab === 'overview' && (
                     <div className="space-y-6">
                         {!isProfileComplete && (
+                            <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 sm:p-6">
+                                <div className="flex items-start gap-3 sm:gap-4">
+                                    <div className="p-2 sm:p-3 bg-amber-100 dark:bg-amber-800 rounded-full shrink-0">
+                                        <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600 dark:text-amber-300" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-base sm:text-lg font-bold text-amber-900 dark:text-amber-100 mb-1 sm:mb-2">
+                                            {t('dashboard.completeProfile', { defaultValue: 'Complete Your Profile' })}
+                                        </h3>
+                                        <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-300 mb-3 sm:mb-4">
+                                            {t('dashboard.completeProfileDesc', { defaultValue: 'Please complete your profile to view other members and access all features.' })}
+                                        </p>
+                                        <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+                                            {missingFields().map((field, idx) => (
+                                                <span key={idx} className="inline-flex items-center px-2 py-1 bg-white dark:bg-gray-800 rounded-md text-xs font-medium text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-700">
+                                                    {field}
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <Link
+                                            to="/profile"
+                                            state={{ reason: 'complete_profile' }}
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-semibold hover:from-amber-600 hover:to-orange-600 transition-all text-sm"
+                                        >
+                                            <User className="w-4 h-4" />
+                                            {t('dashboard.completeNow', { defaultValue: 'Complete Now' })}
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {isProfileComplete && (
                             <div className="grid md:grid-cols-3 gap-6">
                                 <div className="glass-card">
                                     <h2 className="text-sm font-semibold text-gray-500 mb-2">Profile status</h2>
@@ -538,11 +587,12 @@ const Dashboard = () => {
 
                             {overviewLoading ? (
                                 <div className="text-center py-12">
-                                    <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-500 mx-auto"></div>
+                                    <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-t-4 border-b-4 border-purple-500 mx-auto mb-4"></div>
+                                    <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">Loading profiles...</p>
                                 </div>
                             ) : featuredUsers.length > 0 ? (
-                                <div className="space-y-8">
-                                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div className="space-y-6 sm:space-y-8">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                                         {featuredUsers.map((u) => (
                                             <ProfileCard
                                                 key={u._id}
@@ -554,9 +604,9 @@ const Dashboard = () => {
                                     </div>
 
                                     {showAllProfiles && allUsers.length > 6 && (
-                                        <div className="mt-8">
-                                            <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">All Profiles</h3>
-                                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        <div className="mt-6 sm:mt-8">
+                                            <h3 className="text-lg sm:text-xl font-semibold mb-4 text-gray-800 dark:text-white">All Profiles</h3>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                                                 {allUsers.slice(6).map((u) => (
                                                     <ProfileCard
                                                         key={u._id}
@@ -571,7 +621,8 @@ const Dashboard = () => {
                                 </div>
                             ) : (
                                 <div className="text-center py-12">
-                                    <p className="text-gray-600 dark:text-gray-300">No profiles available yet. Check back soon!</p>
+                                    <User className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                                    <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">No profiles available yet. Check back soon!</p>
                                 </div>
                             )}
                         </div>
@@ -599,10 +650,11 @@ const Dashboard = () => {
 
                                 {matchesLoading ? (
                                     <div className="text-center py-12">
-                                        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-500 mx-auto"></div>
+                                        <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-t-4 border-b-4 border-purple-500 mx-auto mb-4"></div>
+                                        <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">Finding matches...</p>
                                     </div>
                                 ) : matches.length > 0 ? (
-                                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                                         {matches.map((m) => (
                                             <div key={m._id} className="relative">
                                                 <ProfileCard
@@ -620,7 +672,8 @@ const Dashboard = () => {
                                     </div>
                                 ) : (
                                     <div className="text-center py-12">
-                                        <p className="text-gray-600 dark:text-gray-300">No matches found yet. Complete your profile and add interests for better suggestions.</p>
+                                        <Heart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                                        <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">No matches found yet. Complete your profile and add interests for better suggestions.</p>
                                     </div>
                                 )}
                             </>

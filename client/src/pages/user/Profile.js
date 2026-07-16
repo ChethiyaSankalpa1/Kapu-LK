@@ -102,6 +102,19 @@ const Profile = () => {
             return;
         }
 
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        if (!allowedTypes.includes(selectedFile.type)) {
+            toast.error('Please select a valid image file (JPEG, PNG, or WebP)');
+            return;
+        }
+
+        // Validate file size (max 5MB)
+        if (selectedFile.size > 5 * 1024 * 1024) {
+            toast.error('Image size must be less than 5MB');
+            return;
+        }
+
         const formDataImg = new FormData();
         formDataImg.append('profileImage', selectedFile);
         setUploadingImage(true);
@@ -112,7 +125,14 @@ const Profile = () => {
             toast.success('Profile image uploaded successfully!');
             setSelectedFile(null);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Image upload failed');
+            console.error('Image upload error:', error);
+            if (error.response?.status === 401) {
+                toast.error('Please login to upload image');
+            } else if (error.response?.status === 413) {
+                toast.error('Image size too large');
+            } else {
+                toast.error(error.response?.data?.message || 'Image upload failed');
+            }
         } finally {
             setUploadingImage(false);
         }
@@ -132,6 +152,22 @@ const Profile = () => {
 
     const onSubmit = async (e) => {
         e.preventDefault();
+
+        // Validate required fields
+        const requiredFields = ['age', 'gender', 'education', 'occupation', 'maritalStatus', 'religion', 'bio'];
+        const missingFields = requiredFields.filter(field => !formData[field] || formData[field].trim() === '');
+
+        if (missingFields.length > 0) {
+            toast.error(`Please fill in all required fields: ${missingFields.join(', ')}`);
+            return;
+        }
+
+        // Validate age
+        if (formData.age < 18 || formData.age > 100) {
+            toast.error('Age must be between 18 and 100');
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -141,7 +177,14 @@ const Profile = () => {
             toast.success(isProfileComplete(merged) ? 'Profile completed successfully!' : 'Profile saved successfully!');
             navigate('/dashboard');
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Update failed');
+            console.error('Profile update error:', error);
+            if (error.response?.status === 401) {
+                toast.error('Please login to update your profile');
+            } else if (error.response?.status === 400) {
+                toast.error(error.response?.data?.message || 'Invalid data provided');
+            } else {
+                toast.error(error.response?.data?.message || 'Update failed');
+            }
         } finally {
             setLoading(false);
         }
