@@ -3,6 +3,23 @@ const Notification = require('../models/Notification');
 
 const isValidPhoneNumber = (value) => !value || /^[0-9]+$/.test(value);
 
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Keep list payload small for performance (browse/search pages)
+const USER_LIST_SELECT = [
+  'name',
+  'age',
+  'gender',
+  'district',
+  'location',
+  'occupation',
+  'education',
+  'maritalStatus',
+  'profileImageUrl',
+  'isPremium',
+  'createdAt',
+].join(' ');
+
 // @desc    Update user profile
 // @route   PUT /api/users/profile
 // @access  Private
@@ -140,12 +157,29 @@ exports.updateProfile = async (req, res) => {
 // @access  Private
 exports.getAllUsers = async (req, res) => {
   try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const skip = (page - 1) * limit;
+
     const query = req.user.role === 'admin'
       ? {}
       : { isApproved: true, isActive: true, _id: { $ne: req.user._id }, role: { $ne: 'admin' } };
 
-    const users = await User.find(query).select('-password');
-    res.json(users);
+    const users = await User.find(query)
+      .select(req.user.role === 'admin' ? '-password' : USER_LIST_SELECT)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+    const total = await User.countDocuments(query);
+
+    res.json({
+      data: users,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalCount: total,
+      hasMore: skip + users.length < total
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -182,23 +216,40 @@ exports.getUserById = async (req, res) => {
 // @access  Private
 exports.searchUsers = async (req, res) => {
   try {
-    const { gender, minAge, maxAge, location, religion, maritalStatus, interests } = req.query;
+    const { gender, minAge, maxAge, location, religion, maritalStatus, interests, page = 1, limit = 20 } = req.query;
+    
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const skip = (pageNum - 1) * limitNum;
 
     let query = { isApproved: true, isActive: true, role: { $ne: 'admin' } };
 
     if (gender) query.gender = gender;
-    if (location) query.location = { $regex: location, $options: 'i' };
-    if (religion) query.religion = { $regex: religion, $options: 'i' };
+    if (location) query.location = { $regex: escapeRegex(location), $options: 'i' };
+    if (religion) query.religion = { $regex: escapeRegex(religion), $options: 'i' };
     if (maritalStatus) query.maritalStatus = maritalStatus;
-    if (interests) query.interests = { $regex: interests, $options: 'i' };
+    if (interests) query.interests = { $regex: escapeRegex(interests), $options: 'i' };
     if (minAge || maxAge) {
       query.age = {};
       if (minAge) query.age.$gte = parseInt(minAge);
       if (maxAge) query.age.$lte = parseInt(maxAge);
     }
 
-    const users = await User.find(query).select('-password');
-    res.json(users);
+    const users = await User.find(query)
+      .select(USER_LIST_SELECT)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .lean();
+    const total = await User.countDocuments(query);
+
+    res.json({
+      data: users,
+      currentPage: pageNum,
+      totalPages: Math.ceil(total / limitNum),
+      totalCount: total,
+      hasMore: skip + users.length < total
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -209,6 +260,10 @@ exports.searchUsers = async (req, res) => {
 // @access  Private
 exports.getMatches = async (req, res) => {
   try {
+    const pageNum = parseInt(req.query.page, 10) || 1;
+    const limitNum = parseInt(req.query.limit, 10) || 20;
+    const skip = (pageNum - 1) * limitNum;
+
     const currentUser = await User.findById(req.user._id);
 
     if (!currentUser) {
@@ -245,7 +300,13 @@ exports.getMatches = async (req, res) => {
     if (prefs.education) baseQuery.education = { $regex: `^${escapeRegex(prefs.education)}$`, $options: 'i' };
     if (prefs.bodyType) baseQuery.bodyType = { $regex: `^${escapeRegex(prefs.bodyType)}$`, $options: 'i' };
 
-    const candidates = await User.find(baseQuery).select('-password');
+    // IMPORTANT: in large databases, fetching ALL candidates will not scale.
+    // Use a capped candidate pool to prevent memory/CPU spikes.
+    const candidatePoolLimit = Math.max(100, parseInt(process.env.MATCH_CANDIDATE_POOL_LIMIT || '1500', 10));
+    const candidates = await User.find(baseQuery)
+      .select(`${USER_LIST_SELECT} religion interests`)
+      .limit(candidatePoolLimit)
+      .lean();
 
     const matches = candidates.map((user) => {
       let score = 0;
@@ -287,8 +348,16 @@ exports.getMatches = async (req, res) => {
     });
 
     matches.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
+    
+    const paginatedMatches = matches.slice(skip, skip + limitNum);
 
-    res.json(matches);
+    res.json({
+      data: paginatedMatches,
+      currentPage: pageNum,
+      totalPages: Math.ceil(matches.length / limitNum),
+      totalCount: matches.length,
+      hasMore: skip + paginatedMatches.length < matches.length
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

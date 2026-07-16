@@ -6,9 +6,10 @@ import { userAPI, messageAPI, notificationAPI, premiumAPI } from '../../services
 import { toast } from 'react-toastify';
 import {
     User, CheckCircle, Clock, MessageCircle, Bell, Search, Filter, Heart, Send,
-    Crown, Zap, X, Lock
+    Crown, Zap, X, Lock, RefreshCw
 } from 'lucide-react';
 import ProfileCard from '../../components/ui/ProfileCard';
+import CustomSelect from '../../components/ui/CustomSelect';
 
 const Dashboard = () => {
     const { t } = useTranslation();
@@ -280,8 +281,9 @@ const Dashboard = () => {
         setSearchLoading(true);
         try {
             const response = await userAPI.searchUsers(searchFilters);
-            setSearchResults(response.data || []);
-            toast.success(t('dashboard.profilesFound', { defaultValue: 'Found {{count}} profiles', count: response.data.length }));
+            const filteredUsers = (response.data || []).filter(u => u._id !== user?._id && u.role !== 'admin');
+            setSearchResults(filteredUsers);
+            toast.success(t('dashboard.profilesFound', { defaultValue: 'Found {{count}} profiles', count: filteredUsers.length }));
         } catch (error) {
             toast.error(t('dashboard.searchFailed', { defaultValue: 'Search failed' }));
         } finally {
@@ -800,16 +802,16 @@ const Dashboard = () => {
                                         {/* Gender */}
                                         <div>
                                             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Gender</label>
-                                            <select
+                                            <CustomSelect
                                                 value={searchFilters.gender}
-                                                onChange={(e) => setSearchFilters({ ...searchFilters, gender: e.target.value })}
-                                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition text-sm min-h-[44px]"
-                                            >
-                                                <option value="">All</option>
-                                                <option value="male">Male</option>
-                                                <option value="female">Female</option>
-                                                <option value="other">Other</option>
-                                            </select>
+                                                onChange={(val) => setSearchFilters({ ...searchFilters, gender: val })}
+                                                options={[
+                                                    { value: '', label: 'All' },
+                                                    { value: 'male', label: 'Male' },
+                                                    { value: 'female', label: 'Female' },
+                                                    { value: 'other', label: 'Other' }
+                                                ]}
+                                            />
                                         </div>
 
                                         {/* Age Range Grid */}
@@ -820,7 +822,7 @@ const Dashboard = () => {
                                                     type="number"
                                                     value={searchFilters.minAge}
                                                     onChange={(e) => setSearchFilters({ ...searchFilters, minAge: e.target.value })}
-                                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200/70 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition text-sm min-h-[44px]"
+                                                    className="form-input"
                                                     placeholder="18"
                                                 />
                                             </div>
@@ -830,7 +832,7 @@ const Dashboard = () => {
                                                     type="number"
                                                     value={searchFilters.maxAge}
                                                     onChange={(e) => setSearchFilters({ ...searchFilters, maxAge: e.target.value })}
-                                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200/70 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition text-sm min-h-[44px]"
+                                                    className="form-input"
                                                     placeholder="50"
                                                 />
                                             </div>
@@ -843,7 +845,7 @@ const Dashboard = () => {
                                                 type="text"
                                                 value={searchFilters.location}
                                                 onChange={(e) => setSearchFilters({ ...searchFilters, location: e.target.value })}
-                                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition text-sm min-h-[44px]"
+                                                className="form-input"
                                                 placeholder="Enter location"
                                             />
                                         </div>
@@ -855,7 +857,7 @@ const Dashboard = () => {
                                                 type="text"
                                                 value={searchFilters.interests}
                                                 onChange={(e) => setSearchFilters({ ...searchFilters, interests: e.target.value })}
-                                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition text-sm min-h-[44px]"
+                                                className="form-input"
                                                 placeholder="e.g. music, travel"
                                             />
                                         </div>

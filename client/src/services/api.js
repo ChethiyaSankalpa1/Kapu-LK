@@ -45,11 +45,11 @@ export const authAPI = {
 
 // User API
 export const userAPI = {
-    getAllUsers: () => api.get('/users'),
+    getAllUsers: (params = {}) => api.get('/users', { params }),
     getUserById: (id) => api.get(`/users/${id}`),
     updateProfile: (data) => api.put('/users/profile', data),
-    searchUsers: (params) => api.get('/users/search', { params }),
-    getMatches: () => api.get('/users/matches'),
+    searchUsers: (params = {}) => api.get('/users/search', { params }),
+    getMatches: (params = {}) => api.get('/users/matches', { params }),
     getAdminUser: () => api.get('/users/admin'),
 };
 

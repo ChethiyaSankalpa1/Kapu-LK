@@ -1,6 +1,9 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
 const seedUsers = require('./utils/seeder');
 const { startMessageCleanup } = require('./utils/messageCleanup');
@@ -24,16 +27,49 @@ let dbConnected = false;
 (async () => {
   dbConnected = await connectDB();
   if (dbConnected) {
-    await seedUsers();
-    startMessageCleanup();
+    // Safety: only seed / cleanup when explicitly enabled (never by default in production)
+    const allowSeed = process.env.ENABLE_SEEDER === 'true' || process.env.NODE_ENV !== 'production';
+    const allowCleanup = process.env.ENABLE_MESSAGE_CLEANUP === 'true' && process.env.NODE_ENV !== 'production';
+
+    if (allowSeed) {
+      await seedUsers();
+    }
+    if (allowCleanup) {
+      startMessageCleanup();
+    }
   }
 })();
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 // Middleware
-app.use(cors());
-app.use(express.json());
+// Security headers
+app.use(helmet());
+
+// Response compression
+app.use(compression());
+
+// CORS (restrict in production via CORS_ORIGIN="https://site.com,https://www.site.com")
+const corsOriginEnv = process.env.CORS_ORIGIN;
+const corsOrigins = corsOriginEnv
+  ? corsOriginEnv.split(',').map((s) => s.trim()).filter(Boolean)
+  : null;
+app.use(cors({
+  origin: corsOrigins || true,
+  credentials: true,
+}));
+
+// Basic rate limiting (adjust as needed)
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_MAX || '900', 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+}));
+
+app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
@@ -52,10 +88,15 @@ app.get('/', (req, res) => {
   });
 });
 
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route not found' });
+});
+
 // Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: err.message || 'Server Error' });
+  res.status(err.statusCode || 500).json({ message: err.message || 'Server Error' });
 });
 
 const PORT = process.env.PORT || 5000;

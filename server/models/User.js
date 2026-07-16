@@ -222,6 +222,14 @@ const userSchema = new mongoose.Schema({
   timestamps: true,
 });
 
+// Indexes for common list/search queries (improves scalability)
+userSchema.index({ role: 1, isApproved: 1, isActive: 1 });
+userSchema.index({ gender: 1, age: 1 });
+userSchema.index({ district: 1 });
+userSchema.index({ location: 1 });
+userSchema.index({ religion: 1 });
+userSchema.index({ maritalStatus: 1 });
+
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {

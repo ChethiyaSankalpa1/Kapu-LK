@@ -5,6 +5,11 @@ let memoryServer;
 
 const connectDB = async () => {
   try {
+    // Security hardening (helps prevent operator injection patterns)
+    mongoose.set('strictQuery', true);
+    mongoose.set('sanitizeFilter', true);
+    mongoose.set('autoIndex', process.env.NODE_ENV !== 'production');
+
     if (!process.env.MONGO_URI) {
       if (process.env.NODE_ENV === 'production') {
         console.warn('MongoDB not configured: missing MONGO_URI in environment');

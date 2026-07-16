@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { userAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import ProfileCard from '../../components/ui/ProfileCard';
+import CustomSelect from '../../components/ui/CustomSelect';
 import { Search, Filter, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -12,6 +13,11 @@ const Users = () => {
     const { user: currentUser } = useAuth();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [isSearching, setIsSearching] = useState(false);
+
     const [filters, setFilters] = useState({
         gender: '',
         minAge: '',
@@ -23,36 +29,80 @@ const Users = () => {
     });
     const [showFilters, setShowFilters] = useState(false);
     const navigate = useNavigate();
+    const observer = useRef(null);
 
+    // Cleanup observer on unmount (prevents leaks)
     useEffect(() => {
-        fetchUsers();
+        return () => observer.current?.disconnect?.();
     }, []);
 
-    const fetchUsers = async () => {
+    const lastUserElementRef = React.useCallback(node => {
+        if (loading || loadingMore) return;
+        if (observer.current) observer.current.disconnect();
+        observer.current = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting && hasMore) {
+                setPage(prevPage => prevPage + 1);
+            }
+        });
+        if (node) observer.current.observe(node);
+    }, [loading, loadingMore, hasMore]);
+
+    useEffect(() => {
+        if (isSearching) {
+            fetchSearchResults(page);
+        } else {
+            fetchUsers(page);
+        }
+    }, [page, isSearching]);
+
+    const fetchUsers = async (pageNum = 1) => {
+        if (pageNum === 1) setLoading(true);
+        else setLoadingMore(true);
+
         try {
-            const response = await userAPI.getAllUsers();
-            // Filter out the current user and admin users
-            const filteredUsers = response.data.filter(u => u._id !== currentUser?._id && u.role !== 'admin');
-            setUsers(filteredUsers);
+            const response = await userAPI.getAllUsers({ page: pageNum, limit: 12 });
+            const filteredUsers = (response.data.data || response.data).filter(u => u._id !== currentUser?._id && u.role !== 'admin');
+            
+            setUsers(prev => pageNum === 1 ? filteredUsers : [...prev, ...filteredUsers]);
+            setHasMore(response.data.hasMore ?? false);
         } catch (error) {
             toast.error(t('users.fetchFailed', { defaultValue: 'Failed to fetch users' }));
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     };
 
-    const handleSearch = async () => {
-        setLoading(true);
+    const fetchSearchResults = async (pageNum = 1) => {
+        if (pageNum === 1) setLoading(true);
+        else setLoadingMore(true);
+
         try {
-            const response = await userAPI.searchUsers(filters);
-            // Filter out the current user and admin users
-            const filteredUsers = response.data.filter(u => u._id !== currentUser?._id && u.role !== 'admin');
-            setUsers(filteredUsers);
-            toast.success(t('users.profilesFound', { defaultValue: 'Found {{count}} profiles', count: filteredUsers.length }));
+            const response = await userAPI.searchUsers({ ...filters, page: pageNum, limit: 12 });
+            const filteredUsers = (response.data.data || response.data).filter(u => u._id !== currentUser?._id && u.role !== 'admin');
+            
+            setUsers(prev => pageNum === 1 ? filteredUsers : [...prev, ...filteredUsers]);
+            setHasMore(response.data.hasMore ?? false);
+            if (pageNum === 1) {
+                toast.success(t('users.profilesFound', { defaultValue: 'Found {{count}} profiles', count: response.data.totalCount || filteredUsers.length }));
+            }
         } catch (error) {
             toast.error(t('users.searchFailed', { defaultValue: 'Search failed' }));
         } finally {
             setLoading(false);
+            setLoadingMore(false);
+        }
+    };
+
+    const handleSearch = () => {
+        setIsSearching(true);
+        setHasMore(true);
+
+        // If already on page 1, trigger fetch directly (otherwise useEffect will run)
+        if (page !== 1) {
+            setPage(1);
+        } else {
+            fetchSearchResults(1);
         }
     };
 
@@ -66,7 +116,15 @@ const Users = () => {
             maritalStatus: '',
             interests: '',
         });
-        fetchUsers();
+        setIsSearching(false);
+        setHasMore(true);
+
+        // If already on page 1, trigger fetch directly (otherwise useEffect will run)
+        if (page !== 1) {
+            setPage(1);
+        } else {
+            fetchUsers(1);
+        }
     };
 
     // For the browse grid, we show a single View Profile action per card.
@@ -100,8 +158,8 @@ const Users = () => {
 
                     {/* Redesigned Premium Filters Container */}
                     {showFilters && (
-                        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-5 sm:p-6 mb-6 transition-all duration-300">
-                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-5">
+                        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl rounded-[1.5rem] shadow-2xl border border-white/40 dark:border-gray-700/50 p-5 sm:p-6 mb-6 transition-all duration-500 animate-in fade-in slide-in-from-top-4">
+                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-5 font-medium">
                                 Refine your match preferences below to find compatible profiles.
                             </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -110,16 +168,16 @@ const Users = () => {
                                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                                         {t('auth.gender', { defaultValue: 'Gender' })}
                                     </label>
-                                    <select
+                                    <CustomSelect
                                         value={filters.gender}
-                                        onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition text-sm min-h-[44px]"
-                                    >
-                                        <option value="">{t('common.all', { defaultValue: 'All' })}</option>
-                                        <option value="male">{t('common.male', { defaultValue: 'Male' })}</option>
-                                        <option value="female">{t('common.female', { defaultValue: 'Female' })}</option>
-                                        <option value="other">{t('common.other', { defaultValue: 'Other' })}</option>
-                                    </select>
+                                        onChange={(val) => setFilters({ ...filters, gender: val })}
+                                        options={[
+                                            { value: '', label: t('common.all', { defaultValue: 'All' }) },
+                                            { value: 'male', label: t('common.male', { defaultValue: 'Male' }) },
+                                            { value: 'female', label: t('common.female', { defaultValue: 'Female' }) },
+                                            { value: 'other', label: t('common.other', { defaultValue: 'Other' }) }
+                                        ]}
+                                    />
                                 </div>
 
                                 {/* Age Range Grouped */}
@@ -130,7 +188,7 @@ const Users = () => {
                                             type="number"
                                             value={filters.minAge}
                                             onChange={(e) => setFilters({ ...filters, minAge: e.target.value })}
-                                            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition text-sm min-h-[44px]"
+                                            className="form-input"
                                             placeholder="18"
                                             min="18"
                                             max="100"
@@ -142,7 +200,7 @@ const Users = () => {
                                             type="number"
                                             value={filters.maxAge}
                                             onChange={(e) => setFilters({ ...filters, maxAge: e.target.value })}
-                                            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition text-sm min-h-[44px]"
+                                            className="form-input"
                                             placeholder="50"
                                             min="18"
                                             max="100"
@@ -159,7 +217,7 @@ const Users = () => {
                                         type="text"
                                         value={filters.location}
                                         onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition text-sm min-h-[44px]"
+                                        className="form-input"
                                         placeholder="Enter city or district"
                                     />
                                 </div>
@@ -173,7 +231,7 @@ const Users = () => {
                                         type="text"
                                         value={filters.religion}
                                         onChange={(e) => setFilters({ ...filters, religion: e.target.value })}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition text-sm min-h-[44px]"
+                                        className="form-input"
                                         placeholder="Enter religion"
                                     />
                                 </div>
@@ -183,16 +241,16 @@ const Users = () => {
                                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                                         {t('users.maritalStatus', { defaultValue: 'Marital Status' })}
                                     </label>
-                                    <select
+                                    <CustomSelect
                                         value={filters.maritalStatus}
-                                        onChange={(e) => setFilters({ ...filters, maritalStatus: e.target.value })}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition text-sm min-h-[44px]"
-                                    >
-                                        <option value="">{t('common.all', { defaultValue: 'All' })}</option>
-                                        <option value="single">{t('users.single', { defaultValue: 'Single' })}</option>
-                                        <option value="divorced">{t('users.divorced', { defaultValue: 'Divorced' })}</option>
-                                        <option value="widowed">{t('users.widowed', { defaultValue: 'Widowed' })}</option>
-                                    </select>
+                                        onChange={(val) => setFilters({ ...filters, maritalStatus: val })}
+                                        options={[
+                                            { value: '', label: t('common.all', { defaultValue: 'All' }) },
+                                            { value: 'single', label: t('users.single', { defaultValue: 'Single' }) },
+                                            { value: 'divorced', label: t('users.divorced', { defaultValue: 'Divorced' }) },
+                                            { value: 'widowed', label: t('users.widowed', { defaultValue: 'Widowed' }) }
+                                        ]}
+                                    />
                                 </div>
 
                                 {/* Interests */}
@@ -204,7 +262,7 @@ const Users = () => {
                                         type="text"
                                         value={filters.interests}
                                         onChange={(e) => setFilters({ ...filters, interests: e.target.value })}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition text-sm min-h-[44px]"
+                                        className="form-input"
                                         placeholder="e.g. music, travel"
                                     />
                                 </div>
@@ -244,15 +302,34 @@ const Users = () => {
                         </p>
                         {/* Perfect Responsive Grid */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {users.map((u) => (
-                                <ProfileCard
-                                    key={u._id}
-                                    user={u}
-                                    onView={() => handleView(u._id)}
-                                    isOwnProfile={false}
-                                />
-                            ))}
+                            {users.map((u, index) => {
+                                if (users.length === index + 1) {
+                                    return (
+                                        <div ref={lastUserElementRef} key={u._id}>
+                                            <ProfileCard
+                                                user={u}
+                                                onView={() => handleView(u._id)}
+                                                isOwnProfile={false}
+                                            />
+                                        </div>
+                                    );
+                                } else {
+                                    return (
+                                        <ProfileCard
+                                            key={u._id}
+                                            user={u}
+                                            onView={() => handleView(u._id)}
+                                            isOwnProfile={false}
+                                        />
+                                    );
+                                }
+                            })}
                         </div>
+                        {loadingMore && (
+                            <div className="text-center py-6 mt-4">
+                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500 mx-auto"></div>
+                            </div>
+                        )}
                     </>
                 ) : (
                     <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm">

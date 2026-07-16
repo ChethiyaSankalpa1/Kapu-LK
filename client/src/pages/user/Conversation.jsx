@@ -178,7 +178,7 @@ const Conversation = () => {
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
               placeholder={t('messages.typeMessage')}
-              className="flex-1 bg-gray-55 dark:bg-gray-750 border border-gray-205 dark:border-gray-650 text-gray-900 dark:text-white rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none text-sm min-h-[40px] max-h-[100px]"
+              className="flex-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none text-sm min-h-[40px] max-h-[100px]"
               rows={1}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Heart, MapPin, Calendar, Crown } from 'lucide-react';
+import { Heart, MapPin, Calendar, Crown, ChevronRight } from 'lucide-react';
 import moment from 'moment';
 
 const ProfileCard = ({ user, onLike, onView, isOwnProfile = false }) => {
@@ -27,82 +27,85 @@ const ProfileCard = ({ user, onLike, onView, isOwnProfile = false }) => {
         <div
             onClick={onView || undefined}
             className={`
-        bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700
-        overflow-hidden transition-all duration-200
-        hover:shadow-md hover:border-gray-200 dark:hover:border-gray-600
-        ${compact ? 'cursor-pointer' : ''}
-        w-full max-w-xs mx-auto
-      `}
+                group relative bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl rounded-[1.5rem] 
+                border border-white/40 dark:border-gray-700/50 shadow-xl overflow-hidden 
+                transition-all duration-300 transform hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-purple-500/20
+                ${compact ? 'cursor-pointer' : ''}
+                w-full max-w-sm mx-auto
+            `}
         >
             {/* Profile header with image */}
-            <div className="relative">
-                <div className="h-44 sm:h-52 bg-gradient-to-br from-pink-100 via-purple-100 to-indigo-100 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-indigo-900/30 overflow-hidden">
+            <div className="relative p-2">
+                <div className="relative h-56 sm:h-64 w-full rounded-2xl overflow-hidden bg-gradient-to-br from-pink-100 via-purple-100 to-indigo-100 dark:from-pink-900/40 dark:via-purple-900/40 dark:to-indigo-900/40">
                     {user?.profileImageUrl ? (
                         <img
                             src={user.profileImageUrl}
                             alt={user?.name}
-                            className="w-full h-full object-cover object-center"
+                            className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/80 dark:bg-gray-800/80 shadow-md flex items-center justify-center">
-                                <span className="text-3xl sm:text-4xl font-semibold text-pink-500">
+                            <div className="w-24 h-24 rounded-[2rem] bg-white/90 dark:bg-gray-800/90 shadow-xl flex items-center justify-center rotate-3 transition-transform duration-500 group-hover:rotate-0 group-hover:scale-110">
+                                <span className="text-4xl font-extrabold bg-gradient-to-br from-pink-500 to-purple-600 bg-clip-text text-transparent">
                                     {user?.name?.charAt(0) || t('common.userInitial', { defaultValue: 'U' })}
                                 </span>
                             </div>
                         </div>
                     )}
-                    <div className="absolute inset-x-0 bottom-0 h-16 sm:h-20 bg-gradient-to-t from-black/45 to-transparent pointer-events-none" />
-                </div>
-
-                <div className="absolute left-3 sm:left-4 bottom-3 sm:bottom-4 right-16 sm:right-20">
-                    <div className="inline-flex max-w-full items-center gap-1.5 sm:gap-2 rounded-full bg-white/90 dark:bg-gray-900/80 px-2.5 sm:px-3 py-1 sm:py-1.5 shadow-sm backdrop-blur-sm">
-                        <h3 className="truncate text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                            {user?.name || t('common.userName', { defaultValue: 'User Name' })}
-                        </h3>
-                        {user?.isPremium && (
-                            <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 text-yellow-500" />
-                        )}
-                        {user?.age && (
-                            <span className="shrink-0 text-xs sm:text-sm text-gray-500 dark:text-gray-300">• {user.age}</span>
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none opacity-80" />
+                    
+                    {/* Top Badges */}
+                    <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
+                        {/* Join date */}
+                        <div className="bg-black/30 backdrop-blur-md px-2.5 py-1.5 rounded-xl text-white/90 text-[11px] font-medium flex items-center gap-1.5 border border-white/10">
+                            <Calendar className="w-3 h-3" />
+                            <span>{joinDate}</span>
+                        </div>
+                        
+                        {/* Like button */}
+                        {!isOwnProfile && !onView && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onLike) onLike(e);
+                                }}
+                                className="p-2.5 bg-white/20 hover:bg-pink-500 backdrop-blur-md rounded-xl text-white transition-all duration-300 border border-white/20 shadow-lg hover:shadow-pink-500/50 hover:scale-110 active:scale-95"
+                            >
+                                <Heart className="w-5 h-5" />
+                            </button>
                         )}
                     </div>
-                </div>
 
-                {/* Like button */}
-                {!isOwnProfile && !onView && (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (onLike) onLike(e);
-                        }}
-                        className="absolute top-2 sm:top-3 right-2 sm:right-3 p-1.5 sm:p-2 bg-white/90 dark:bg-gray-800/90 rounded-full shadow-md text-pink-500 hover:bg-pink-50 dark:hover:bg-gray-700 transition-colors"
-                    >
-                        <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </button>
-                )}
-
-                {/* Join date (positioned top-left to avoid overlap with top-right like button) */}
-                <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 bg-white/90 dark:bg-gray-800/90 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 shadow-sm backdrop-blur-sm">
-                    <div className="flex items-center">
-                        <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" />
-                        <span className="text-[10px] sm:text-xs">{joinDate}</span>
+                    {/* Bottom Info inside Image */}
+                    <div className="absolute bottom-4 left-4 right-4">
+                        <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-xl font-bold text-white tracking-tight drop-shadow-md">
+                                {user?.name || t('common.userName', { defaultValue: 'User Name' })}
+                            </h3>
+                            {user?.age && (
+                                <span className="text-lg text-white/90 font-medium drop-shadow-md">, {user.age}</span>
+                            )}
+                            {user?.isPremium && (
+                                <div className="ml-1 bg-yellow-500/20 text-yellow-300 p-1 rounded-full border border-yellow-500/30 backdrop-blur-sm">
+                                    <Crown className="w-3.5 h-3.5" />
+                                </div>
+                            )}
+                        </div>
+                        {(user?.district || user?.location) && (
+                            <div className="flex items-center text-white/80 text-sm font-medium">
+                                <MapPin className="w-3.5 h-3.5 mr-1 text-pink-400" />
+                                <span className="drop-shadow-sm">{user.district || user.location}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Card content */}
-            <div className="px-4 sm:px-5 py-4 sm:py-5 text-center">
-                {/* Location */}
-                {(user?.district || user?.location) && (
-                    <div className="flex items-center justify-center text-gray-500 dark:text-gray-400 text-xs sm:text-sm mb-2 sm:mb-3">
-                        <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1" />
-                        <span className="text-xs sm:text-sm">{user.district || user.location}</span>
-                    </div>
-                )}
-
+            {/* Card Footer Content */}
+            <div className="px-5 pb-5 pt-2">
                 {/* Description */}
-                <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm leading-relaxed line-clamp-3 mb-1">
+                <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed line-clamp-2 mb-4 font-medium">
                     {description}
                 </p>
 
@@ -113,9 +116,12 @@ const ProfileCard = ({ user, onLike, onView, isOwnProfile = false }) => {
                             e.stopPropagation();
                             onView();
                         }}
-                        className="mt-2 sm:mt-3 px-3 sm:px-4 py-1.5 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs sm:text-sm font-medium rounded-full hover:opacity-90 transition-opacity"
+                        className="w-full flex items-center justify-between px-5 py-3.5 bg-gray-50 dark:bg-gray-800/80 rounded-xl text-sm font-bold text-gray-900 dark:text-white border border-gray-100 dark:border-gray-700 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-200 dark:hover:border-purple-800 transition-all group-hover:shadow-md"
                     >
-                        {t('dashboard.viewProfile')}
+                        <span>{t('dashboard.viewProfile')}</span>
+                        <div className="w-7 h-7 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center shadow-sm group-hover:bg-purple-500 group-hover:text-white transition-colors">
+                            <ChevronRight className="w-4 h-4" />
+                        </div>
                     </button>
                 )}
             </div>
@@ -123,4 +129,5 @@ const ProfileCard = ({ user, onLike, onView, isOwnProfile = false }) => {
     );
 };
 
-export default ProfileCard;
+export default React.memo(ProfileCard);
+

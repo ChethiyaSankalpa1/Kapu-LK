@@ -26,23 +26,25 @@ const Home = () => {
     return (
         <div className="min-h-screen">
             {/* Hero Section */}
-            <div className="bg-gradient-to-br from-pink-600 via-purple-600 to-indigo-700 text-white py-10 sm:py-16 md:py-24 overflow-hidden relative">
+            <div className="bg-gradient-to-br from-pink-600 via-purple-600 to-indigo-700 text-white py-14 sm:py-20 md:py-24 overflow-hidden relative">
                 {/* Optional subtle background pattern overlay can go here */}
-                <div className="container mx-auto px-4 text-center relative z-10">
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold mb-4 sm:mb-6 leading-tight">{t('home.heroTitle', { defaultValue: 'Find Your Perfect Life Partner' })}</h1>
-                    <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-8 text-pink-100 max-w-2xl mx-auto px-4">
+                <div className="container mx-auto px-4 sm:px-6 text-center relative z-10">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 sm:mb-6 leading-tight tracking-tight">
+                        {t('home.heroTitle', { defaultValue: 'Find Your Perfect Life Partner' })}
+                    </h1>
+                    <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-8 sm:mb-10 text-pink-100 max-w-2xl mx-auto px-2">
                         {t('home.heroSubtitle', { defaultValue: 'Join thousands of people finding their soulmate through our trusted matrimonial service' })}
                     </p>
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 px-4">
                         <Link
                             to="/register"
-                            className="bg-white text-purple-700 px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-bold text-base sm:text-lg shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all w-full sm:w-auto"
+                            className="bg-white text-purple-700 px-8 py-3.5 sm:py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all w-full sm:w-auto min-h-[48px] flex items-center justify-center"
                         >
                             {t('home.getStarted', { defaultValue: 'Get Started' })}
                         </Link>
                         <Link
                             to="/login"
-                            className="bg-transparent border-2 border-white/80 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-bold text-base sm:text-lg hover:bg-white hover:text-purple-700 transition-all w-full sm:w-auto"
+                            className="bg-transparent border-2 border-white/80 text-white px-8 py-3.5 sm:py-4 rounded-xl font-bold text-lg hover:bg-white hover:text-purple-700 transition-all w-full sm:w-auto min-h-[48px] flex items-center justify-center"
                         >
                             {t('auth.loginBtn')}
                         </Link>

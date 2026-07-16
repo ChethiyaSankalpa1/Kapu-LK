@@ -1,5 +1,4 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
-import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { authAPI, userAPI, premiumAPI } from '../services/api';
 
@@ -65,7 +64,6 @@ export const AuthProvider = ({ children }) => {
     const init = async () => {
       const token = localStorage.getItem('token');
       if (token) {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         const me = await refreshUser();
         if (me) {
           try {
@@ -87,7 +85,6 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (loginPayload, token) => {
     localStorage.setItem('token', token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     const me = await refreshUser();
     if (me) {
       try {
@@ -105,7 +102,6 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    delete axios.defaults.headers.common['Authorization'];
     setUser(null);
     setPremiumStatus(null);
   };
