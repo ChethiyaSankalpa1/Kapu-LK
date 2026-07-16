@@ -134,7 +134,7 @@ const Dashboard = () => {
         } finally {
             setOverviewLoading(false);
         }
-    }, [user?._id]);
+    }, [user?._id, t]);
 
     const fetchMatches = useCallback(async () => {
         setMatchesLoading(true);

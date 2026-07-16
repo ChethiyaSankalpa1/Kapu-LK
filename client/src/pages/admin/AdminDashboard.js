@@ -19,18 +19,6 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('users');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      fetchConversations();
-    }, 20000);
-
-    return () => clearInterval(intervalId);
-  }, []);
-
   const fetchConversations = async () => {
     try {
       const response = await messageAPI.getConversations();
@@ -53,15 +41,27 @@ const AdminDashboard = () => {
       setStats(statsRes.data);
       setUsers(usersRes.data);
       setPremiumRequests(premiumRes.data);
-      const items = conversationsRes.data || [];
-      setConversations(items);
-      setUnreadMessagesCount(items.reduce((sum, convo) => sum + (convo.unreadCount || 0), 0));
+      setConversations(conversationsRes.data);
+      setUnreadMessagesCount(conversationsRes.data.reduce((sum, convo) => sum + (convo.unreadCount || 0), 0));
     } catch (error) {
-      toast.error(t('admin.fetchDataFailed', { defaultValue: 'Failed to fetch data' }));
+      console.error('Failed to fetch admin data', error);
+      toast.error(t('admin.fetchFailed', { defaultValue: 'Failed to fetch data' }));
     } finally {
       setLoading(false);
     }
   }, [t]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      fetchConversations();
+    }, 20000);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   const handleApproveUser = async (userId) => {
     try {
