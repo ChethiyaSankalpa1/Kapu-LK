@@ -150,18 +150,6 @@ const Dashboard = () => {
         }
     }, [t]);
 
-    const fetchMessagesWithUser = useCallback(async (otherUserId) => {
-        setMessagesLoading(true);
-        try {
-            const response = await messageAPI.getConversationWithUser(otherUserId);
-            setMessages(response.data || []);
-            await fetchConversations();
-        } catch (error) {
-            toast.error(t('dashboard.loadMessagesFailed', { defaultValue: 'Failed to load messages' }));
-        } finally {
-            setMessagesLoading(false);
-        }
-    }, [fetchConversations, t]);
 
     const handleOpenConversation = useCallback((otherUserId) => {
         const convo = conversations.find((c) => c.user && c.user._id === otherUserId);
@@ -173,8 +161,7 @@ const Dashboard = () => {
                 setSelectedConversationUser(fromMatches);
             }
         }
-        fetchMessagesWithUser(otherUserId);
-    }, [conversations, matches, fetchMessagesWithUser, t]);
+    }, [conversations, matches, t]);
 
     useEffect(() => {
         if (isProfileComplete) {
