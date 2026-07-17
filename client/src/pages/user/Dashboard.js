@@ -384,11 +384,36 @@ const Dashboard = () => {
     );
 
     return (
-        <div className="min-h-screen">
+        <div className="min-h-screen bg-slate-950 text-white relative overflow-hidden">
+            <div className="absolute inset-0 pointer-events-none">
+                <div
+                    className="absolute inset-0 opacity-95"
+                    style={{
+                        background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 38%, #4f46e5 68%, #0f172a 100%)',
+                    }}
+                />
+                <div className="absolute -top-24 -left-16 h-72 w-72 rounded-full bg-pink-300/30 blur-3xl" />
+                <div className="absolute top-0 right-0 h-80 w-80 rounded-full bg-indigo-300/25 blur-3xl" />
+                <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-fuchsia-400/20 blur-3xl" />
+                <div
+                    className="absolute inset-0 opacity-20"
+                    style={{
+                        backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.18) 1px, transparent 0)',
+                        backgroundSize: '24px 24px',
+                    }}
+                />
+                <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent via-slate-950/60 to-slate-950" />
+            </div>
+
             {/* Hero / Welcome banner */}
-            <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600 text-white">
-                <div className="container mx-auto px-4 py-6 sm:py-10 md:py-16 flex flex-col md:flex-row md:items-center md:gap-8">
-                    <div className="flex items-center mb-4 sm:mb-6 md:mb-0 space-x-3 sm:space-x-4 min-w-0">
+            <div className="relative text-white">
+                <div className="container mx-auto px-4 pt-6 sm:pt-10 md:pt-14 pb-16 sm:pb-20 md:pb-24">
+                    <div className="relative overflow-hidden rounded-[28px] border border-white/15 bg-white/10 backdrop-blur-xl shadow-[0_25px_80px_rgba(15,23,42,0.35)] px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 flex flex-col md:flex-row md:items-center md:gap-8">
+                    <div className="absolute inset-0 pointer-events-none">
+                        <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-white/12 to-transparent" />
+                        <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+                    </div>
+                    <div className="relative z-10 flex items-center mb-4 sm:mb-6 md:mb-0 space-x-3 sm:space-x-4 min-w-0">
                         <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/40 shrink-0">
                             {user?.profileImageUrl ? (
                                 <img
@@ -448,16 +473,16 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    <div className="md:ml-auto grid grid-cols-2 sm:flex sm:flex-row gap-2.5 w-full md:w-auto mt-4 md:mt-0">
+                    <div className="relative z-10 md:ml-auto grid grid-cols-2 sm:flex sm:flex-row gap-2.5 w-full md:w-auto mt-4 md:mt-0">
                         <Link
                             to="/users"
-                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3 rounded-xl bg-white text-purple-600 font-bold shadow-md hover:bg-gray-50 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[44px]"
+                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3 rounded-xl bg-white text-purple-700 font-bold shadow-lg hover:bg-purple-50 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[44px]"
                         >
                             Browse
                         </Link>
                         <Link
                             to="/profile"
-                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3 rounded-xl border-2 border-white/80 text-white font-bold hover:bg-white/15 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[44px]"
+                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3 rounded-xl border border-white/30 bg-white/10 text-white font-bold hover:bg-white/15 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[44px] backdrop-blur-md"
                         >
                             {t('profile.editProfile')}
                         </Link>
@@ -472,9 +497,10 @@ const Dashboard = () => {
                         )}
                     </div>
                 </div>
+                </div>
             </div>
 
-            <div className="container mx-auto px-3 sm:px-4 pb-8 sm:pb-12 -mt-2 sm:-mt-4 md:-mt-8 space-y-4 sm:space-y-6">
+            <div className="relative container mx-auto px-3 sm:px-4 pb-8 sm:pb-12 -mt-8 sm:-mt-10 md:-mt-14 space-y-4 sm:space-y-6 z-10">
                 <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white/40 dark:border-gray-700/50 shadow-lg rounded-2xl p-2 mobile-tab-list w-full">
                     <button
                         onClick={() => setActiveTab('overview')}
