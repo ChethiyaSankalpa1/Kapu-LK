@@ -57,6 +57,8 @@ const Conversation = () => {
     }
   }, []);
 
+  const prevMsgCountRef = useRef(0);
+
   // Fetch messages for the active conversation
   const fetchChatMessages = useCallback(async (silent = false) => {
     if (!userId) return;
@@ -70,7 +72,7 @@ const Conversation = () => {
       const newMsgs = messagesRes.data || [];
       
       // Simulate typing indicator if there is a new message from the other user
-      if (messages.length > 0 && newMsgs.length > messages.length) {
+      if (prevMsgCountRef.current > 0 && newMsgs.length > prevMsgCountRef.current) {
         const lastMsg = newMsgs[newMsgs.length - 1];
         const isFromOther = lastMsg.from._id === userId || lastMsg.from === userId;
         
@@ -79,6 +81,7 @@ const Conversation = () => {
           scrollToBottom('smooth');
           setTimeout(() => {
             setMessages(newMsgs);
+            prevMsgCountRef.current = newMsgs.length;
             setIsTyping(false);
             scrollToBottom('smooth');
           }, 1500);
@@ -88,13 +91,14 @@ const Conversation = () => {
       }
 
       setMessages(newMsgs);
+      prevMsgCountRef.current = newMsgs.length;
       setOtherUser(userRes.data);
     } catch (error) {
       console.error('Failed to load chat messages', error);
     } finally {
       if (!silent) setChatLoading(false);
     }
-  }, [userId, messages.length, scrollToBottom]);
+  }, [userId, scrollToBottom]);
 
   // Initial load
   useEffect(() => {
@@ -105,6 +109,7 @@ const Conversation = () => {
   useEffect(() => {
     if (userId) {
       setMessages([]);
+      prevMsgCountRef.current = 0;
       setOtherUser(null);
       fetchChatMessages(false);
       setShowEmojiPicker(false);

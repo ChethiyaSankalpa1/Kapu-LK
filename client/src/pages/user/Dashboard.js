@@ -482,11 +482,9 @@ const Dashboard = () => {
                         </Link>
                         <Link
                             to="/profile"
-                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3.5 rounded-2xl border border-[#ccd0d5] dark:border-white/20 bg-white dark:bg-white/8 text-[#1c1e21] dark:text-white font-semibold hover:bg-[#f0f2f5] dark:hover:bg-white/14 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[48px] min-w-[140px] whitespace-nowrap"
+                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3.5 rounded-2xl border border-[#ccd0d5] dark:border-white/20 bg-white dark:bg-slate-700 text-[#1c1e21] dark:text-white font-semibold hover:bg-[#f0f2f5] dark:hover:bg-slate-600 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[48px] min-w-[140px] whitespace-nowrap"
                         >
-                            <span className="text-[#1c1e21] dark:text-white">
-                                {t('profile.editProfile', { defaultValue: 'Edit Profile' })}
-                            </span>
+                            {t('profile.editProfile', { defaultValue: 'Edit Profile' })}
                         </Link>
                         {!premiumStatus?.isPremium && !premiumStatus?.premiumRequested && (
                             <Link
