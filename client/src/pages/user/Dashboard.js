@@ -92,12 +92,13 @@ const Dashboard = () => {
 
     // Premium popup logic - show every 10 minutes for non-premium users
     useEffect(() => {
-        if (user?.isPremium) return;
+        if (user?.isPremium || user?.role === 'admin') return;
+
+        const TEN_MINUTES = 10 * 60 * 1000;
 
         const checkPopupTiming = () => {
             const lastShown = localStorage.getItem('premiumPopupLastShown');
             const now = Date.now();
-            const TEN_MINUTES = 10 * 60 * 1000;
 
             if (!lastShown || now - parseInt(lastShown) > TEN_MINUTES) {
                 setShowPremiumPopup(true);
@@ -115,7 +116,7 @@ const Dashboard = () => {
             clearTimeout(initialTimer);
             clearInterval(intervalTimer);
         };
-    }, [user?.isPremium]);
+    }, [user?.isPremium, user?.role]);
 
     const fetchConversations = useCallback(async () => {
         try {

@@ -205,7 +205,7 @@ exports.getUserById = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (!user._id.equals(req.user._id)) {
+    if (!user._id.equals(req.user._id) && req.user.role !== 'admin') {
       await Notification.create({
         user: user._id,
         type: 'profile_view',

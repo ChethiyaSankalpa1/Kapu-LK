@@ -131,10 +131,35 @@ const Users = () => {
         }
     };
 
-    // For the browse grid, we show a single View Profile action per card.
     const handleView = (id) => {
+        if (!currentUser?.isApproved && currentUser?.role !== 'admin') {
+            toast.error('Account approval is required before viewing member profiles.');
+            return;
+        }
         navigate(`/users/${id}`);
     };
+
+    if (!currentUser?.isApproved && currentUser?.role !== 'admin') {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 max-w-md w-full text-center border border-gray-250/30">
+                    <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span className="text-3xl text-amber-500">🔒</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Approval Required</h2>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6">
+                        Your account has not yet been approved by an administrator. You must wait for account approval before you can browse, search, or view other member profiles.
+                    </p>
+                    <button
+                        onClick={() => navigate('/dashboard')}
+                        className="btn-primary w-full py-3"
+                    >
+                        Go to Dashboard
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-6 sm:py-8 transition-colors duration-300">

@@ -9,7 +9,7 @@ const {
   getMatches,
   getAdminUser,
 } = require('../controllers/userController');
-const { protect } = require('../middleware/auth');
+const { protect, approved } = require('../middleware/auth');
 const validate = require('../middleware/validate');
 
 router.put(
@@ -24,10 +24,10 @@ router.put(
   validate,
   updateProfile
 );
-router.get('/', protect, getAllUsers);
-router.get('/search', protect, searchUsers);
-router.get('/matches', protect, getMatches);
+router.get('/', protect, approved, getAllUsers);
+router.get('/search', protect, approved, searchUsers);
+router.get('/matches', protect, approved, getMatches);
 router.get('/admin', protect, getAdminUser);
-router.get('/:id', protect, getUserById);
+router.get('/:id', protect, approved, getUserById);
 
 module.exports = router;

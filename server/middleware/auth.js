@@ -43,3 +43,12 @@ exports.admin = (req, res, next) => {
     res.status(403).json({ message: 'Not authorized as admin' });
   }
 };
+
+// Approved middleware
+exports.approved = (req, res, next) => {
+  if (req.user && (req.user.isApproved || req.user.role === 'admin')) {
+    next();
+  } else {
+    res.status(403).json({ message: 'Account approval required. An administrator must approve your account before you can browse, search, or view other member profiles.' });
+  }
+};
