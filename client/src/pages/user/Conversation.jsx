@@ -54,18 +54,37 @@ const Conversation = () => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!messageText.trim()) return;
+    
+    const newMessage = {
+      _id: Date.now().toString(), // Temporary ID
+      from: currentUser._id,
+      to: userId,
+      content: messageText.trim(),
+      type: 'text',
+      createdAt: new Date().toISOString(),
+      isRead: false
+    };
+    
+    // Optimistically add message to UI
+    setMessages(prev => [...prev, newMessage]);
+    setMessageText('');
+    scrollToBottom();
+    
     setSending(true);
     try {
       await messageAPI.sendMessage({
         to: userId,
-        content: messageText.trim(),
+        content: newMessage.content,
         type: 'text'
       });
       toast.success(t('messages.sentSuccess', { defaultValue: 'Message sent!' }));
-      setMessageText('');
+      // Refresh to get the actual message from server
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.message || t('messages.sendFailed', { defaultValue: 'Failed to send message' }));
+      // Remove the optimistic message if send failed
+      setMessages(prev => prev.filter(msg => msg._id !== newMessage._id));
+      setMessageText(newMessage.content);
     } finally {
       setSending(false);
     }
