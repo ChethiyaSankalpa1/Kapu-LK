@@ -384,38 +384,37 @@ const Dashboard = () => {
     );
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white relative overflow-hidden">
+        <div className="min-h-screen bg-[#f0f2f5] dark:bg-slate-950 text-gray-900 dark:text-white relative overflow-hidden">
             <div className="absolute inset-0 pointer-events-none">
                 <div
-                    className="absolute inset-0 opacity-95"
+                    className="absolute inset-0 opacity-100 dark:opacity-20"
                     style={{
-                        background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 38%, #4f46e5 68%, #0f172a 100%)',
+                        background: 'linear-gradient(180deg, #e7f3ff 0%, #f0f2f5 48%, #f0f2f5 100%)',
                     }}
                 />
-                <div className="absolute -top-24 -left-16 h-72 w-72 rounded-full bg-pink-300/30 blur-3xl" />
-                <div className="absolute top-0 right-0 h-80 w-80 rounded-full bg-indigo-300/25 blur-3xl" />
-                <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-fuchsia-400/20 blur-3xl" />
+                <div className="absolute -top-16 left-0 h-64 w-64 rounded-full bg-blue-200/60 dark:bg-blue-400/10 blur-3xl" />
+                <div className="absolute top-0 right-0 h-72 w-72 rounded-full bg-sky-100/70 dark:bg-sky-400/10 blur-3xl" />
                 <div
-                    className="absolute inset-0 opacity-20"
+                    className="absolute inset-0 opacity-[0.06] dark:opacity-0"
                     style={{
-                        backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.18) 1px, transparent 0)',
-                        backgroundSize: '24px 24px',
+                        backgroundImage: 'linear-gradient(rgba(24,119,242,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(24,119,242,0.18) 1px, transparent 1px)',
+                        backgroundSize: '22px 22px',
                     }}
                 />
-                <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent via-slate-950/60 to-slate-950" />
+                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-[#f0f2f5] dark:to-slate-950" />
             </div>
 
             {/* Hero / Welcome banner */}
-            <div className="relative text-white">
+            <div className="relative text-gray-900 dark:text-white">
                 <div className="container mx-auto px-3 sm:px-4 pt-4 sm:pt-10 md:pt-14 pb-16 sm:pb-20 md:pb-24">
-                    <div className="relative overflow-hidden rounded-[24px] sm:rounded-[28px] border border-white/12 bg-black/10 sm:bg-white/10 backdrop-blur-2xl shadow-[0_25px_80px_rgba(15,23,42,0.35)] px-4 py-5 sm:px-6 sm:py-8 md:px-8 md:py-10 flex flex-col gap-5 md:flex-row md:items-center md:gap-8">
+                    <div className="relative overflow-hidden rounded-[24px] sm:rounded-[28px] border border-[#dbe4f0] dark:border-white/10 bg-white/95 dark:bg-slate-900/75 backdrop-blur-xl shadow-[0_18px_45px_rgba(15,23,42,0.08)] px-4 py-5 sm:px-6 sm:py-8 md:px-8 md:py-10 flex flex-col gap-5 md:flex-row md:items-center md:gap-8">
                     <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-white/10 to-transparent" />
-                        <div className="absolute -right-12 -top-12 h-32 w-32 sm:h-40 sm:w-40 rounded-full bg-white/10 blur-3xl" />
-                        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                        <div className="absolute inset-y-0 left-0 w-2/3 bg-gradient-to-r from-[#e7f3ff] via-[#f5f9ff] to-transparent dark:from-blue-500/10 dark:to-transparent" />
+                        <div className="absolute -right-12 -top-12 h-32 w-32 sm:h-40 sm:w-40 rounded-full bg-blue-200/40 dark:bg-white/10 blur-3xl" />
+                        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#dbe4f0] to-transparent dark:via-white/20" />
                     </div>
                     <div className="relative z-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:space-x-4 min-w-0">
-                        <div className="w-14 h-14 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-2xl sm:rounded-full bg-white/15 flex items-center justify-center overflow-hidden border border-white/25 shrink-0 shadow-lg shadow-slate-950/20">
+                        <div className="w-14 h-14 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-2xl sm:rounded-full bg-[#e7f3ff] dark:bg-white/15 flex items-center justify-center overflow-hidden border border-[#d0def1] dark:border-white/25 shrink-0 shadow-md">
                             {user?.profileImageUrl ? (
                                 <img
                                     src={user.profileImageUrl}
@@ -423,49 +422,49 @@ const Dashboard = () => {
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                <User className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white" />
+                                <User className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-[#1877F2] dark:text-white" />
                             )}
                         </div>
                         <div className="min-w-0 w-full">
-                            <p className="text-[11px] sm:text-sm uppercase tracking-[0.24em] text-white/65">{t('dashboard.title', { defaultValue: 'Kapu LK dashboard' })}</p>
-                            <h1 className="mt-1 text-[1.75rem] sm:text-2xl md:text-3xl lg:text-4xl font-bold leading-tight max-w-[14ch] sm:max-w-none">
+                            <p className="text-[11px] sm:text-sm uppercase tracking-[0.24em] text-[#1877F2] dark:text-white/65 font-semibold">{t('dashboard.title', { defaultValue: 'Kapu LK dashboard' })}</p>
+                            <h1 className="mt-1 text-[1.75rem] sm:text-2xl md:text-3xl lg:text-4xl font-bold leading-tight max-w-[14ch] sm:max-w-none text-[#1c1e21] dark:text-white">
                                 {t('dashboard.welcomeBack')}, {user?.name || t('common.member', { defaultValue: 'Member' })}!
                             </h1>
                             <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] sm:text-sm">
                                 {user?.role === 'admin' ? (
-                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-[11px] sm:text-xs font-semibold text-white/90">
+                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#e7f3ff] dark:bg-white/10 border border-[#d0def1] dark:border-white/20 text-[11px] sm:text-xs font-semibold text-[#1877F2] dark:text-white/90">
                                         <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
                                         {t('admin.title')}
                                     </span>
                                 ) : user?.isApproved ? (
-                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-400/15 border border-emerald-200/30 text-emerald-50 text-[11px] sm:text-xs font-semibold">
+                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-400/15 border border-emerald-200 dark:border-emerald-200/30 text-emerald-700 dark:text-emerald-50 text-[11px] sm:text-xs font-semibold">
                                         <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
                                         {t('dashboard.profileApproved', { defaultValue: 'Approved' })}
                                     </span>
                                 ) : (
-                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-amber-400/15 border border-amber-200/30 text-amber-50 text-[11px] sm:text-xs font-semibold">
+                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-400/15 border border-amber-200 dark:border-amber-200/30 text-amber-700 dark:text-amber-50 text-[11px] sm:text-xs font-semibold">
                                         <Clock className="w-3.5 h-3.5 mr-1.5" />
                                         {t('dashboard.pendingApproval', { defaultValue: 'Pending' })}
                                     </span>
                                 )}
                                 {premiumStatus?.isPremium && (
-                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-yellow-400/20 border border-yellow-200/30 text-yellow-50 text-[11px] sm:text-xs font-semibold">
+                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-yellow-50 dark:bg-yellow-400/20 border border-yellow-200 dark:border-yellow-200/30 text-yellow-700 dark:text-yellow-50 text-[11px] sm:text-xs font-semibold">
                                         <Crown className="w-3.5 h-3.5 mr-1.5" />
                                         {t('profile.premiumMember')}
                                     </span>
                                 )}
                             </div>
                             <div className="mt-3 flex flex-wrap gap-2 text-[11px] sm:text-xs">
-                                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-slate-950/25 border border-white/10">
+                                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#f0f2f5] dark:bg-slate-950/25 border border-[#dbe4f0] dark:border-white/10 text-[#4b4f56] dark:text-white">
                                     <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
                                     {t('dashboard.unreadMessages', { defaultValue: '{{count}} unread', count: unreadMessagesCount })}
                                 </span>
-                                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-slate-950/25 border border-white/10">
+                                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#f0f2f5] dark:bg-slate-950/25 border border-[#dbe4f0] dark:border-white/10 text-[#4b4f56] dark:text-white">
                                     <Bell className="w-3.5 h-3.5 mr-1.5" />
                                     {t('dashboard.unreadNotifications', { defaultValue: '{{count}} alerts', count: unreadNotificationCount })}
                                 </span>
                                 {!premiumStatus?.isPremium && (
-                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-orange-500/15 border border-orange-200/20 text-orange-50">
+                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-orange-50 dark:bg-orange-500/15 border border-orange-200 dark:border-orange-200/20 text-orange-700 dark:text-orange-50">
                                         <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
                                         {t('dashboard.messagesLeft', { defaultValue: '{{count}} left', count: messagesLeft })}
                                     </span>
@@ -477,20 +476,20 @@ const Dashboard = () => {
                     <div className="relative z-10 md:ml-auto grid grid-cols-1 min-[420px]:grid-cols-2 md:flex md:flex-row gap-2.5 w-full md:w-auto mt-1 md:mt-0">
                         <Link
                             to="/users"
-                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3.5 rounded-2xl bg-white text-slate-900 font-semibold shadow-lg hover:bg-slate-100 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[48px]"
+                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3.5 rounded-2xl bg-[#1877F2] text-white font-semibold shadow-md hover:bg-[#166fe5] active:scale-95 transition-all text-sm w-full md:w-auto min-h-[48px]"
                         >
                             Browse
                         </Link>
                         <Link
                             to="/profile"
-                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3.5 rounded-2xl border border-white/20 bg-white/8 text-white font-semibold hover:bg-white/14 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[48px] backdrop-blur-md"
+                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3.5 rounded-2xl border border-[#ccd0d5] dark:border-white/20 bg-white dark:bg-white/8 text-[#1c1e21] dark:text-white font-semibold hover:bg-[#f0f2f5] dark:hover:bg-white/14 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[48px]"
                         >
                             {t('profile.editProfile')}
                         </Link>
                         {!premiumStatus?.isPremium && !premiumStatus?.premiumRequested && (
                             <Link
                                 to="/premium"
-                                className="col-span-1 min-[420px]:col-span-2 md:col-span-1 inline-flex justify-center items-center gap-2 px-4 sm:px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 text-white font-semibold shadow-lg hover:shadow-xl hover:from-amber-500 hover:to-orange-600 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[48px]"
+                                className="col-span-1 min-[420px]:col-span-2 md:col-span-1 inline-flex justify-center items-center gap-2 px-4 sm:px-6 py-3.5 rounded-2xl bg-[#42b72a] text-white font-semibold shadow-md hover:bg-[#36a420] active:scale-95 transition-all text-sm w-full md:w-auto min-h-[48px]"
                             >
                                 <Crown className="w-4 h-4" />
                                 {t('dashboard.goPremium')}
@@ -502,12 +501,12 @@ const Dashboard = () => {
             </div>
 
             <div className="relative container mx-auto px-3 sm:px-4 pb-8 sm:pb-12 -mt-8 sm:-mt-10 md:-mt-14 space-y-4 sm:space-y-6 z-10">
-                <div className="bg-slate-950/70 dark:bg-gray-900/80 backdrop-blur-xl border border-white/10 dark:border-gray-700/50 shadow-[0_18px_50px_rgba(15,23,42,0.28)] rounded-[22px] p-1.5 sm:p-2 mobile-tab-list w-full">
+                <div className="bg-white/95 dark:bg-gray-900/80 backdrop-blur-xl border border-[#dbe4f0] dark:border-gray-700/50 shadow-[0_10px_30px_rgba(15,23,42,0.08)] rounded-[22px] p-1.5 sm:p-2 mobile-tab-list w-full">
                     <button
                         onClick={() => setActiveTab('overview')}
                         className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'overview'
-                            ? 'bg-gradient-to-r from-fuchsia-500 via-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-900/30'
-                            : 'bg-white/5 text-white/75 hover:bg-white/10 hover:text-white'
+                            ? 'bg-[#e7f3ff] text-[#1877F2] shadow-sm'
+                            : 'bg-transparent text-[#65676b] dark:text-white/75 hover:bg-[#f0f2f5] dark:hover:bg-white/10 hover:text-[#1c1e21] dark:hover:text-white'
                             }`}
                     >
                         <span>{t('dashboard.overview')}</span>
@@ -515,8 +514,8 @@ const Dashboard = () => {
                     <button
                         onClick={() => setActiveTab('matches')}
                         className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'matches'
-                            ? 'bg-gradient-to-r from-fuchsia-500 via-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-900/30'
-                            : 'bg-white/5 text-white/75 hover:bg-white/10 hover:text-white'
+                            ? 'bg-[#e7f3ff] text-[#1877F2] shadow-sm'
+                            : 'bg-transparent text-[#65676b] dark:text-white/75 hover:bg-[#f0f2f5] dark:hover:bg-white/10 hover:text-[#1c1e21] dark:hover:text-white'
                             }`}
                     >
                         <Heart className="w-3.5 h-3.5" />
@@ -525,8 +524,8 @@ const Dashboard = () => {
                     <button
                         onClick={() => setActiveTab('messages')}
                         className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'messages'
-                            ? 'bg-gradient-to-r from-fuchsia-500 via-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-900/30'
-                            : 'bg-white/5 text-white/75 hover:bg-white/10 hover:text-white'
+                            ? 'bg-[#e7f3ff] text-[#1877F2] shadow-sm'
+                            : 'bg-transparent text-[#65676b] dark:text-white/75 hover:bg-[#f0f2f5] dark:hover:bg-white/10 hover:text-[#1c1e21] dark:hover:text-white'
                             }`}
                     >
                         <MessageCircle className="w-3.5 h-3.5" />
@@ -540,8 +539,8 @@ const Dashboard = () => {
                     <button
                         onClick={() => setActiveTab('notifications')}
                         className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'notifications'
-                            ? 'bg-gradient-to-r from-fuchsia-500 via-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-900/30'
-                            : 'bg-white/5 text-white/75 hover:bg-white/10 hover:text-white'
+                            ? 'bg-[#e7f3ff] text-[#1877F2] shadow-sm'
+                            : 'bg-transparent text-[#65676b] dark:text-white/75 hover:bg-[#f0f2f5] dark:hover:bg-white/10 hover:text-[#1c1e21] dark:hover:text-white'
                             }`}
                     >
                         <Bell className="w-3.5 h-3.5" />
@@ -555,8 +554,8 @@ const Dashboard = () => {
                     <button
                         onClick={() => setActiveTab('search')}
                         className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'search'
-                            ? 'bg-gradient-to-r from-fuchsia-500 via-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-900/30'
-                            : 'bg-white/5 text-white/75 hover:bg-white/10 hover:text-white'
+                            ? 'bg-[#e7f3ff] text-[#1877F2] shadow-sm'
+                            : 'bg-transparent text-[#65676b] dark:text-white/75 hover:bg-[#f0f2f5] dark:hover:bg-white/10 hover:text-[#1c1e21] dark:hover:text-white'
                             }`}
                     >
                         <Search className="w-3.5 h-3.5" />
@@ -567,7 +566,7 @@ const Dashboard = () => {
                 {activeTab === 'overview' && (
                     <div className="space-y-6">
                         {!isProfileComplete && (
-                            <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 sm:p-6">
+                            <div className="bg-white dark:bg-slate-900/70 border border-[#e4e6eb] dark:border-amber-800 rounded-2xl p-4 sm:p-6 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
                                 <div className="flex items-start gap-3 sm:gap-4">
                                     <div className="p-2 sm:p-3 bg-amber-100 dark:bg-amber-800 rounded-full shrink-0">
                                         <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600 dark:text-amber-300" />
@@ -589,7 +588,7 @@ const Dashboard = () => {
                                         <Link
                                             to="/profile"
                                             state={{ reason: 'complete_profile' }}
-                                            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-semibold hover:from-amber-600 hover:to-orange-600 transition-all text-sm"
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-[#1877F2] text-white rounded-lg font-semibold hover:bg-[#166fe5] transition-all text-sm"
                                         >
                                             <User className="w-4 h-4" />
                                             {t('dashboard.completeNow', { defaultValue: 'Complete Now' })}
@@ -644,12 +643,12 @@ const Dashboard = () => {
                             </div>
                         )}
 
-                        <div className="glass-card">
+                        <div className="rounded-3xl border border-[#dfe3e8] dark:border-white/10 bg-white dark:bg-slate-900/70 p-5 sm:p-6 shadow-[0_10px_28px_rgba(15,23,42,0.08)]">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Recently Joined</h2>
                                 <button
                                     onClick={() => setShowAllProfiles(!showAllProfiles)}
-                                    className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 flex items-center space-x-1"
+                                    className="text-sm text-[#1877F2] dark:text-blue-400 hover:text-[#166fe5] dark:hover:text-blue-300 flex items-center space-x-1 font-medium"
                                 >
                                     <span>{showAllProfiles ? 'Show Less' : 'View All Profiles'}</span>
                                 </button>
@@ -700,7 +699,7 @@ const Dashboard = () => {
                 )}
 
                 {activeTab === 'matches' && (
-                    <div className="glass-card">
+                    <div className="rounded-3xl border border-[#dfe3e8] dark:border-white/10 bg-white dark:bg-slate-900/70 p-5 sm:p-6 shadow-[0_10px_28px_rgba(15,23,42,0.08)]">
                         {!isProfileComplete ? (
                             <div className="text-center py-8">
                                 <p className="text-gray-700 dark:text-gray-300 mb-2">Complete your profile to view suggested matches.</p>
@@ -734,7 +733,7 @@ const Dashboard = () => {
                                                     onShare={() => { }}
                                                     isOwnProfile={false}
                                                 />
-                                                <div className="absolute top-4 left-4 bg-white/90 dark:bg-gray-800/90 rounded-full px-3 py-1 text-xs font-semibold text-purple-700 dark:text-purple-300 shadow">
+                                                <div className="absolute top-4 left-4 bg-white/95 dark:bg-gray-800/90 rounded-full px-3 py-1 text-xs font-semibold text-[#1877F2] dark:text-blue-300 shadow">
                                                     Compatibility: {m.compatibilityScore || 0}%
                                                 </div>
                                             </div>
@@ -752,7 +751,7 @@ const Dashboard = () => {
                 )}
 
                 {activeTab === 'messages' && (
-                    <div className="glass-card">
+                    <div className="rounded-3xl border border-[#dfe3e8] dark:border-white/10 bg-white dark:bg-slate-900/70 p-5 sm:p-6 shadow-[0_10px_28px_rgba(15,23,42,0.08)]">
                         <div className="grid md:grid-cols-3 gap-6">
                             <div className="md:col-span-1 border-r border-gray-200 dark:border-gray-700 pr-0 md:pr-4">
                                 <div className="flex items-center justify-between mb-4">
@@ -799,7 +798,7 @@ const Dashboard = () => {
                 )}
 
                 {activeTab === 'notifications' && (
-                    <div className="glass-card">
+                    <div className="rounded-3xl border border-[#dfe3e8] dark:border-white/10 bg-white dark:bg-slate-900/70 p-5 sm:p-6 shadow-[0_10px_28px_rgba(15,23,42,0.08)]">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center space-x-2">
                                 <Bell className="w-6 h-6 text-purple-500" />
@@ -853,7 +852,7 @@ const Dashboard = () => {
 
                 {activeTab === 'search' && (
                     <div className="space-y-6">
-                        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-5 sm:p-6 transition-all duration-300">
+                        <div className="bg-white dark:bg-slate-900/70 backdrop-blur-md rounded-3xl shadow-[0_10px_28px_rgba(15,23,42,0.08)] border border-[#dfe3e8] dark:border-white/10 p-5 sm:p-6 transition-all duration-300">
                             {!isProfileComplete ? (
                                 <div className="text-center py-8">
                                     <p className="text-gray-750 dark:text-gray-300 mb-3">Complete your profile to use advanced search.</p>
@@ -958,7 +957,7 @@ const Dashboard = () => {
                         </div>
 
                         {/* Search Results */}
-                        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-5">
+                        <div className="bg-white dark:bg-slate-900/70 backdrop-blur-md rounded-3xl shadow-[0_10px_28px_rgba(15,23,42,0.08)] border border-[#dfe3e8] dark:border-white/10 p-5">
                             {!isProfileComplete ? (
                                 <div className="text-center py-8">
                                     <p className="text-gray-600 dark:text-gray-300">Complete your profile to see search results.</p>
