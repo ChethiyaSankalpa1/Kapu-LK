@@ -947,7 +947,7 @@ const Dashboard = () => {
                                             onClick={handleResetSearch}
                                             className="flex-1 btn-secondary"
                                         >
-                                            <RefreshCw className="w-4 h-4 text-gray-550" />
+                                            <RefreshCw className="w-4 h-4 text-gray-500" />
                                             <span>Reset</span>
                                         </button>
                                     </div>

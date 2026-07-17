@@ -269,7 +269,7 @@ const Conversation = () => {
           userId ? 'hidden md:flex' : 'flex'
         }`}>
           {/* Sidebar Header */}
-          <div className="p-4 border-b border-gray-100 dark:border-slate-850 bg-white dark:bg-slate-900 shrink-0">
+          <div className="p-4 border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
             <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-purple-600" />
               <span>Messages</span>
@@ -282,7 +282,7 @@ const Conversation = () => {
                 placeholder="Search or start new chat..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-gray-50 dark:bg-slate-850 text-gray-800 dark:text-white border border-gray-200 dark:border-slate-700 rounded-xl py-2 px-3.5 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                className="w-full bg-gray-50 dark:bg-slate-800 text-gray-800 dark:text-white border border-gray-200 dark:border-slate-700 rounded-xl py-2 px-3.5 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
               />
               <Search className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3.5 top-3" />
               {searchQuery && (
@@ -609,7 +609,7 @@ const Conversation = () => {
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
                     placeholder={t('messages.typeMessage', { defaultValue: 'Type a message...' })}
-                    className="flex-1 bg-gray-50 dark:bg-slate-850 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none text-sm min-h-[44px] max-h-[120px] transition-all leading-normal"
+                    className="flex-1 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none text-sm min-h-[44px] max-h-[120px] transition-all leading-normal"
                     rows={1}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
