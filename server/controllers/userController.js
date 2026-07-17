@@ -17,6 +17,9 @@ const USER_LIST_SELECT = [
   'maritalStatus',
   'profileImageUrl',
   'isPremium',
+  'isApproved',
+  'isActive',
+  'role',
   'createdAt',
 ].join(' ');
 
@@ -342,7 +345,7 @@ exports.getMatches = async (req, res) => {
       score = Math.min(100, score);
 
       return {
-        ...user.toObject(),
+        ...user,
         compatibilityScore: score,
       };
     });

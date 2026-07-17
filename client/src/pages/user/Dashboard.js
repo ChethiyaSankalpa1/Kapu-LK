@@ -119,8 +119,9 @@ const Dashboard = () => {
             const response = await userAPI.getAllUsers();
             const oneMonthAgo = new Date();
             oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+            const users = response.data?.data || response.data || [];
 
-            const filteredUsers = (response.data || [])
+            const filteredUsers = users
                 .filter(u =>
                     u &&
                     u._id &&
@@ -160,7 +161,7 @@ const Dashboard = () => {
         setMatchesLoading(true);
         try {
             const response = await userAPI.getMatches();
-            setMatches(response.data || []);
+            setMatches(response.data?.data || response.data || []);
         } catch (error) {
             console.error('Error fetching matches:', error);
             if (error.response?.status === 401) {
