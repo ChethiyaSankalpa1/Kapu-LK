@@ -52,12 +52,26 @@ app.use(helmet());
 app.use(compression());
 
 // CORS (restrict in production via CORS_ORIGIN="https://site.com,https://www.site.com")
+const knownOrigins = [
+  'https://kapu-lk-client.vercel.app',
+  'https://client-khaki-beta.vercel.app',
+  'http://localhost:3000',
+];
 const corsOriginEnv = process.env.CORS_ORIGIN;
-const corsOrigins = corsOriginEnv
+const envOrigins = corsOriginEnv
   ? corsOriginEnv.split(',').map((s) => s.trim()).filter(Boolean)
-  : null;
+  : [];
+const allowedOrigins = [...new Set([...knownOrigins, ...envOrigins])];
+
 app.use(cors({
-  origin: corsOrigins || true,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.some(allowed => origin === allowed || origin.endsWith('.vercel.app'))) {
+      return callback(null, true);
+    }
+    return callback(null, false);
+  },
   credentials: true,
 }));
 
