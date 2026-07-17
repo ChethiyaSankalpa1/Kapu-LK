@@ -407,14 +407,15 @@ const Dashboard = () => {
 
             {/* Hero / Welcome banner */}
             <div className="relative text-white">
-                <div className="container mx-auto px-4 pt-6 sm:pt-10 md:pt-14 pb-16 sm:pb-20 md:pb-24">
-                    <div className="relative overflow-hidden rounded-[28px] border border-white/15 bg-white/10 backdrop-blur-xl shadow-[0_25px_80px_rgba(15,23,42,0.35)] px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 flex flex-col md:flex-row md:items-center md:gap-8">
+                <div className="container mx-auto px-3 sm:px-4 pt-4 sm:pt-10 md:pt-14 pb-16 sm:pb-20 md:pb-24">
+                    <div className="relative overflow-hidden rounded-[24px] sm:rounded-[28px] border border-white/12 bg-black/10 sm:bg-white/10 backdrop-blur-2xl shadow-[0_25px_80px_rgba(15,23,42,0.35)] px-4 py-5 sm:px-6 sm:py-8 md:px-8 md:py-10 flex flex-col gap-5 md:flex-row md:items-center md:gap-8">
                     <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-white/12 to-transparent" />
-                        <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+                        <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-white/10 to-transparent" />
+                        <div className="absolute -right-12 -top-12 h-32 w-32 sm:h-40 sm:w-40 rounded-full bg-white/10 blur-3xl" />
+                        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                     </div>
-                    <div className="relative z-10 flex items-center mb-4 sm:mb-6 md:mb-0 space-x-3 sm:space-x-4 min-w-0">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/40 shrink-0">
+                    <div className="relative z-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:space-x-4 min-w-0">
+                        <div className="w-14 h-14 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-2xl sm:rounded-full bg-white/15 flex items-center justify-center overflow-hidden border border-white/25 shrink-0 shadow-lg shadow-slate-950/20">
                             {user?.profileImageUrl ? (
                                 <img
                                     src={user.profileImageUrl}
@@ -425,46 +426,46 @@ const Dashboard = () => {
                                 <User className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white" />
                             )}
                         </div>
-                        <div className="min-w-0">
-                            <p className="text-xs sm:text-sm uppercase tracking-wide text-white/80">{t('dashboard.title', { defaultValue: 'Kapu LK dashboard' })}</p>
-                            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold truncate">
+                        <div className="min-w-0 w-full">
+                            <p className="text-[11px] sm:text-sm uppercase tracking-[0.24em] text-white/65">{t('dashboard.title', { defaultValue: 'Kapu LK dashboard' })}</p>
+                            <h1 className="mt-1 text-[1.75rem] sm:text-2xl md:text-3xl lg:text-4xl font-bold leading-tight max-w-[14ch] sm:max-w-none">
                                 {t('dashboard.welcomeBack')}, {user?.name || t('common.member', { defaultValue: 'Member' })}!
                             </h1>
-                            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                            <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] sm:text-sm">
                                 {user?.role === 'admin' ? (
-                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/10 border border-white/30 text-xs font-semibold">
+                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-[11px] sm:text-xs font-semibold text-white/90">
                                         <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
                                         {t('admin.title')}
                                     </span>
                                 ) : user?.isApproved ? (
-                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-green-500/20 border border-green-300 text-green-100 text-xs font-semibold">
+                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-400/15 border border-emerald-200/30 text-emerald-50 text-[11px] sm:text-xs font-semibold">
                                         <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
                                         {t('dashboard.profileApproved', { defaultValue: 'Approved' })}
                                     </span>
                                 ) : (
-                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-yellow-500/20 border border-yellow-300 text-yellow-100 text-xs font-semibold">
+                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-amber-400/15 border border-amber-200/30 text-amber-50 text-[11px] sm:text-xs font-semibold">
                                         <Clock className="w-3.5 h-3.5 mr-1.5" />
                                         {t('dashboard.pendingApproval', { defaultValue: 'Pending' })}
                                     </span>
                                 )}
                                 {premiumStatus?.isPremium && (
-                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-yellow-400/30 border border-yellow-300 text-yellow-100 text-xs font-semibold">
+                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-yellow-400/20 border border-yellow-200/30 text-yellow-50 text-[11px] sm:text-xs font-semibold">
                                         <Crown className="w-3.5 h-3.5 mr-1.5" />
                                         {t('profile.premiumMember')}
                                     </span>
                                 )}
                             </div>
-                            <div className="mt-2.5 flex flex-wrap gap-2 text-[10px] sm:text-xs">
-                                <span className="inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full bg-white/10 border border-white/20">
+                            <div className="mt-3 flex flex-wrap gap-2 text-[11px] sm:text-xs">
+                                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-slate-950/25 border border-white/10">
                                     <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
                                     {t('dashboard.unreadMessages', { defaultValue: '{{count}} unread', count: unreadMessagesCount })}
                                 </span>
-                                <span className="inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full bg-white/10 border border-white/20">
+                                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-slate-950/25 border border-white/10">
                                     <Bell className="w-3.5 h-3.5 mr-1.5" />
                                     {t('dashboard.unreadNotifications', { defaultValue: '{{count}} alerts', count: unreadNotificationCount })}
                                 </span>
                                 {!premiumStatus?.isPremium && (
-                                    <span className="inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full bg-orange-500/20 border border-orange-300 text-orange-100">
+                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-orange-500/15 border border-orange-200/20 text-orange-50">
                                         <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
                                         {t('dashboard.messagesLeft', { defaultValue: '{{count}} left', count: messagesLeft })}
                                     </span>
@@ -473,23 +474,23 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    <div className="relative z-10 md:ml-auto grid grid-cols-2 sm:flex sm:flex-row gap-2.5 w-full md:w-auto mt-4 md:mt-0">
+                    <div className="relative z-10 md:ml-auto grid grid-cols-1 min-[420px]:grid-cols-2 md:flex md:flex-row gap-2.5 w-full md:w-auto mt-1 md:mt-0">
                         <Link
                             to="/users"
-                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3 rounded-xl bg-white text-purple-700 font-bold shadow-lg hover:bg-purple-50 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[44px]"
+                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3.5 rounded-2xl bg-white text-slate-900 font-semibold shadow-lg hover:bg-slate-100 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[48px]"
                         >
                             Browse
                         </Link>
                         <Link
                             to="/profile"
-                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3 rounded-xl border border-white/30 bg-white/10 text-white font-bold hover:bg-white/15 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[44px] backdrop-blur-md"
+                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3.5 rounded-2xl border border-white/20 bg-white/8 text-white font-semibold hover:bg-white/14 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[48px] backdrop-blur-md"
                         >
                             {t('profile.editProfile')}
                         </Link>
                         {!premiumStatus?.isPremium && !premiumStatus?.premiumRequested && (
                             <Link
                                 to="/premium"
-                                className="col-span-2 sm:col-span-1 inline-flex justify-center items-center gap-2 px-4 sm:px-6 py-3 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold shadow-lg hover:shadow-xl hover:from-amber-500 hover:to-orange-600 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[44px]"
+                                className="col-span-1 min-[420px]:col-span-2 md:col-span-1 inline-flex justify-center items-center gap-2 px-4 sm:px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 text-white font-semibold shadow-lg hover:shadow-xl hover:from-amber-500 hover:to-orange-600 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[48px]"
                             >
                                 <Crown className="w-4 h-4" />
                                 {t('dashboard.goPremium')}
@@ -501,21 +502,21 @@ const Dashboard = () => {
             </div>
 
             <div className="relative container mx-auto px-3 sm:px-4 pb-8 sm:pb-12 -mt-8 sm:-mt-10 md:-mt-14 space-y-4 sm:space-y-6 z-10">
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white/40 dark:border-gray-700/50 shadow-lg rounded-2xl p-2 mobile-tab-list w-full">
+                <div className="bg-slate-950/70 dark:bg-gray-900/80 backdrop-blur-xl border border-white/10 dark:border-gray-700/50 shadow-[0_18px_50px_rgba(15,23,42,0.28)] rounded-[22px] p-1.5 sm:p-2 mobile-tab-list w-full">
                     <button
                         onClick={() => setActiveTab('overview')}
-                        className={`px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-bold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'overview'
-                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md'
-                            : 'bg-gray-100/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-200 hover:bg-gray-200/80 dark:hover:bg-gray-700'
+                        className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'overview'
+                            ? 'bg-gradient-to-r from-fuchsia-500 via-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-900/30'
+                            : 'bg-white/5 text-white/75 hover:bg-white/10 hover:text-white'
                             }`}
                     >
                         <span>{t('dashboard.overview')}</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('matches')}
-                        className={`px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-bold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'matches'
-                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md'
-                            : 'bg-gray-100/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-200 hover:bg-gray-200/80 dark:hover:bg-gray-700'
+                        className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'matches'
+                            ? 'bg-gradient-to-r from-fuchsia-500 via-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-900/30'
+                            : 'bg-white/5 text-white/75 hover:bg-white/10 hover:text-white'
                             }`}
                     >
                         <Heart className="w-3.5 h-3.5" />
@@ -523,9 +524,9 @@ const Dashboard = () => {
                     </button>
                     <button
                         onClick={() => setActiveTab('messages')}
-                        className={`px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-bold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'messages'
-                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md'
-                            : 'bg-gray-100/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-200 hover:bg-gray-200/80 dark:hover:bg-gray-700'
+                        className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'messages'
+                            ? 'bg-gradient-to-r from-fuchsia-500 via-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-900/30'
+                            : 'bg-white/5 text-white/75 hover:bg-white/10 hover:text-white'
                             }`}
                     >
                         <MessageCircle className="w-3.5 h-3.5" />
@@ -538,9 +539,9 @@ const Dashboard = () => {
                     </button>
                     <button
                         onClick={() => setActiveTab('notifications')}
-                        className={`px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-bold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'notifications'
-                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md'
-                            : 'bg-gray-100/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-200 hover:bg-gray-200/80 dark:hover:bg-gray-700'
+                        className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'notifications'
+                            ? 'bg-gradient-to-r from-fuchsia-500 via-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-900/30'
+                            : 'bg-white/5 text-white/75 hover:bg-white/10 hover:text-white'
                             }`}
                     >
                         <Bell className="w-3.5 h-3.5" />
@@ -553,9 +554,9 @@ const Dashboard = () => {
                     </button>
                     <button
                         onClick={() => setActiveTab('search')}
-                        className={`px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-bold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'search'
-                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md'
-                            : 'bg-gray-100/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-200 hover:bg-gray-200/80 dark:hover:bg-gray-700'
+                        className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'search'
+                            ? 'bg-gradient-to-r from-fuchsia-500 via-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-900/30'
+                            : 'bg-white/5 text-white/75 hover:bg-white/10 hover:text-white'
                             }`}
                     >
                         <Search className="w-3.5 h-3.5" />
@@ -599,8 +600,8 @@ const Dashboard = () => {
                         )}
 
                         {isProfileComplete && (
-                            <div className="grid md:grid-cols-3 gap-6">
-                                <div className="glass-card">
+                            <div className="grid md:grid-cols-3 gap-4 sm:gap-6">
+                                <div className="rounded-3xl border border-slate-200/70 bg-white/90 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-slate-900/70">
                                     <h2 className="text-sm font-semibold text-gray-500 mb-2">Profile status</h2>
                                     <p className="text-lg font-bold text-gray-900 dark:text-white mb-1">
                                         {user?.role === 'admin'
@@ -614,7 +615,7 @@ const Dashboard = () => {
                                     </p>
                                 </div>
 
-                                <div className="glass-card">
+                                <div className="rounded-3xl border border-slate-200/70 bg-white/90 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-slate-900/70">
                                     <h2 className="text-sm font-semibold text-gray-500 mb-2">Next step</h2>
                                     <p className="text-sm text-gray-600 dark:text-gray-300">
                                         {user?.isApproved || user?.role === 'admin'
@@ -623,7 +624,7 @@ const Dashboard = () => {
                                     </p>
                                 </div>
 
-                                <div className="glass-card">
+                                <div className="rounded-3xl border border-slate-200/70 bg-white/90 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-slate-900/70">
                                     <h2 className="text-sm font-semibold text-gray-500 mb-2">Quick tips</h2>
                                     <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1 list-disc list-inside">
                                         <li>Add a clear profile photo.</li>
