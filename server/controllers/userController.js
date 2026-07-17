@@ -238,12 +238,12 @@ exports.searchUsers = async (req, res) => {
     };
 
     if (gender) query.gender = gender;
-    if (location) query.location = { $regex: escapeRegex(location), $options: 'i' };
-    if (religion) query.religion = { $regex: escapeRegex(religion), $options: 'i' };
+    if (location) query.location = mongoose.trusted({ $regex: escapeRegex(location), $options: 'i' });
+    if (religion) query.religion = mongoose.trusted({ $regex: escapeRegex(religion), $options: 'i' });
     if (maritalStatus) query.maritalStatus = maritalStatus;
-    if (interests) query.interests = { $regex: escapeRegex(interests), $options: 'i' };
+    if (interests) query.interests = mongoose.trusted({ $regex: escapeRegex(interests), $options: 'i' });
     if (minAge || maxAge) {
-      query.age = {};
+      query.age = mongoose.trusted({});
       if (minAge) query.age.$gte = parseInt(minAge);
       if (maxAge) query.age.$lte = parseInt(maxAge);
     }
@@ -300,18 +300,18 @@ exports.getMatches = async (req, res) => {
     const prefs = currentUser.partnerPreferences || {};
     const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     if (prefs.minAge || prefs.maxAge) {
-      baseQuery.age = {};
+      baseQuery.age = mongoose.trusted({});
       if (typeof prefs.minAge === 'number') baseQuery.age.$gte = prefs.minAge;
       if (typeof prefs.maxAge === 'number') baseQuery.age.$lte = prefs.maxAge;
     }
-    if (prefs.religion) baseQuery.religion = { $regex: `^${escapeRegex(prefs.religion)}$`, $options: 'i' };
-    if (prefs.caste) baseQuery.caste = { $regex: `^${escapeRegex(prefs.caste)}$`, $options: 'i' };
-    if (prefs.district) baseQuery.district = { $regex: `^${escapeRegex(prefs.district)}$`, $options: 'i' };
+    if (prefs.religion) baseQuery.religion = mongoose.trusted({ $regex: `^${escapeRegex(prefs.religion)}$`, $options: 'i' });
+    if (prefs.caste) baseQuery.caste = mongoose.trusted({ $regex: `^${escapeRegex(prefs.caste)}$`, $options: 'i' });
+    if (prefs.district) baseQuery.district = mongoose.trusted({ $regex: `^${escapeRegex(prefs.district)}$`, $options: 'i' });
     if (prefs.maritalStatus) baseQuery.maritalStatus = prefs.maritalStatus;
-    if (prefs.smoking) baseQuery.smoking = { $regex: `^${escapeRegex(prefs.smoking)}$`, $options: 'i' };
-    if (prefs.drinking) baseQuery.drinking = { $regex: `^${escapeRegex(prefs.drinking)}$`, $options: 'i' };
-    if (prefs.education) baseQuery.education = { $regex: `^${escapeRegex(prefs.education)}$`, $options: 'i' };
-    if (prefs.bodyType) baseQuery.bodyType = { $regex: `^${escapeRegex(prefs.bodyType)}$`, $options: 'i' };
+    if (prefs.smoking) baseQuery.smoking = mongoose.trusted({ $regex: `^${escapeRegex(prefs.smoking)}$`, $options: 'i' });
+    if (prefs.drinking) baseQuery.drinking = mongoose.trusted({ $regex: `^${escapeRegex(prefs.drinking)}$`, $options: 'i' });
+    if (prefs.education) baseQuery.education = mongoose.trusted({ $regex: `^${escapeRegex(prefs.education)}$`, $options: 'i' });
+    if (prefs.bodyType) baseQuery.bodyType = mongoose.trusted({ $regex: `^${escapeRegex(prefs.bodyType)}$`, $options: 'i' });
 
     // IMPORTANT: in large databases, fetching ALL candidates will not scale.
     // Use a capped candidate pool to prevent memory/CPU spikes.
