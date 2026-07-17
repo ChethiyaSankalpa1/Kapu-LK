@@ -221,7 +221,7 @@ const Dashboard = () => {
     }, [conversations, matches]);
 
     useEffect(() => {
-        if (isProfileComplete) {
+        if (isProfileComplete && (user?.isApproved || user?.role === 'admin')) {
             fetchOverviewUsers();
         } else {
             setOverviewLoading(false);
@@ -236,7 +236,7 @@ const Dashboard = () => {
             fetchNotifications();
         }, 20000);
         return () => clearInterval(notifInterval);
-    }, [isProfileComplete, fetchOverviewUsers, fetchNotifications, fetchConversations]);
+    }, [isProfileComplete, user?.isApproved, user?.role, fetchOverviewUsers, fetchNotifications, fetchConversations]);
 
     useEffect(() => {
         if (activeTab === 'matches' && matches.length === 0) {
