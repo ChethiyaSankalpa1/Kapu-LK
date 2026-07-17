@@ -171,7 +171,6 @@ exports.getAllUsers = async (req, res) => {
           isApproved: true,
           isActive: true,
           _id: mongoose.trusted({ $ne: req.user._id }),
-          role: mongoose.trusted({ $ne: 'admin' }),
         };
 
     const users = await User.find(query)

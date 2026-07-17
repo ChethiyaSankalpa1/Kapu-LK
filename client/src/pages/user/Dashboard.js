@@ -10,12 +10,14 @@ import {
 } from 'lucide-react';
 import ProfileCard from '../../components/ui/ProfileCard';
 import CustomSelect from '../../components/ui/CustomSelect';
+import PremiumPopup from '../../components/ui/PremiumPopup';
 
 const Dashboard = () => {
     const { t } = useTranslation();
     const { user, premiumStatus, refreshPremiumStatus } = useAuth();
     const navigate = useNavigate();
     const [showPremiumModal, setShowPremiumModal] = useState(false);
+    const [showPremiumPopup, setShowPremiumPopup] = useState(false);
 
     const FREE_LIMIT = 5;
     const messagesLeft = premiumStatus?.isPremium
@@ -87,6 +89,33 @@ const Dashboard = () => {
 
     const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
     const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+
+    // Premium popup logic - show every 10 minutes for non-premium users
+    useEffect(() => {
+        if (user?.isPremium) return;
+
+        const checkPopupTiming = () => {
+            const lastShown = localStorage.getItem('premiumPopupLastShown');
+            const now = Date.now();
+            const TEN_MINUTES = 10 * 60 * 1000;
+
+            if (!lastShown || now - parseInt(lastShown) > TEN_MINUTES) {
+                setShowPremiumPopup(true);
+                localStorage.setItem('premiumPopupLastShown', now.toString());
+            }
+        };
+
+        // Initial check after 30 seconds
+        const initialTimer = setTimeout(checkPopupTiming, 30000);
+        
+        // Then check every 10 minutes
+        const intervalTimer = setInterval(checkPopupTiming, TEN_MINUTES);
+
+        return () => {
+            clearTimeout(initialTimer);
+            clearInterval(intervalTimer);
+        };
+    }, [user?.isPremium]);
 
     const fetchConversations = useCallback(async () => {
         try {
@@ -940,6 +969,12 @@ const Dashboard = () => {
             </div>
 
             {showPremiumModal && <PremiumModal />}
+            {showPremiumPopup && (
+                <PremiumPopup 
+                    onClose={() => setShowPremiumPopup(false)} 
+                    onUpgrade={() => navigate('/premium')} 
+                />
+            )}
         </div>
     );
 };
