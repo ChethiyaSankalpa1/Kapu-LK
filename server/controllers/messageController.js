@@ -28,7 +28,11 @@ exports.sendMessage = async (req, res) => {
     const MESSAGE_COOLDOWN_MS = 60 * 1000;
     const isAdminConversation = recipient.role === 'admin';
 
+    // Only apply cooldown for non-premium users and non-admin conversations
     if (
+      sender.role !== 'admin' &&
+      !isAdminConversation &&
+      !sender.isPremium &&
       sender.lastMessageSentAt &&
       Date.now() - new Date(sender.lastMessageSentAt).getTime() < MESSAGE_COOLDOWN_MS
     ) {
