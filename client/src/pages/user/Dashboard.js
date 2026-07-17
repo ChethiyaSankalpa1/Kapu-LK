@@ -30,7 +30,13 @@ const Dashboard = () => {
         (user?.occupation || user?.workplace) &&
         (user?.maritalStatus || '').length > 0 &&
         (user?.religion || '').length > 0 &&
-        (user?.bio || '').trim().length > 0
+        (user?.bio || '').trim().length > 0 &&
+        user?.partnerPreferences?.minAge &&
+        user?.partnerPreferences?.maxAge &&
+        (user?.partnerPreferences?.religion || '').length > 0 &&
+        (user?.partnerPreferences?.district || '').length > 0 &&
+        (user?.partnerPreferences?.education || '').length > 0 &&
+        (user?.partnerPreferences?.maritalStatus || '').length > 0
     );
 
     const missingFields = () => {
@@ -44,6 +50,12 @@ const Dashboard = () => {
         if (!(user.maritalStatus || '').length) m.push('Marital Status');
         if (!(user.religion || '').length) m.push('Religion');
         if (!((user.bio || '').trim().length)) m.push('Bio');
+        if (!user.partnerPreferences?.minAge) m.push('Partner Min Age');
+        if (!user.partnerPreferences?.maxAge) m.push('Partner Max Age');
+        if (!(user.partnerPreferences?.religion || '').length) m.push('Partner Religion');
+        if (!(user.partnerPreferences?.district || '').length) m.push('Partner District');
+        if (!(user.partnerPreferences?.education || '').length) m.push('Partner Education');
+        if (!(user.partnerPreferences?.maritalStatus || '').length) m.push('Partner Marital Status');
         return m;
     };
 

@@ -86,6 +86,12 @@ const Profile = () => {
         maritalStatus: !(formData.maritalStatus || '').length,
         religion: !(formData.religion || '').length,
         bio: !((formData.bio || '').trim().length),
+        partnerMinAge: !formData.partnerPreferences?.minAge,
+        partnerMaxAge: !formData.partnerPreferences?.maxAge,
+        partnerReligion: !(formData.partnerPreferences?.religion || '').length,
+        partnerDistrict: !(formData.partnerPreferences?.district || '').length,
+        partnerEducation: !(formData.partnerPreferences?.education || '').length,
+        partnerMaritalStatus: !(formData.partnerPreferences?.maritalStatus || '').length,
     };
 
     const onFileChange = (e) => {
@@ -147,7 +153,13 @@ const Profile = () => {
             (u?.occupation || u?.workplace) &&
             (u?.maritalStatus || '').length > 0 &&
             (u?.religion || '').length > 0 &&
-            (u?.bio || '').trim().length > 0
+            (u?.bio || '').trim().length > 0 &&
+            u?.partnerPreferences?.minAge &&
+            u?.partnerPreferences?.maxAge &&
+            (u?.partnerPreferences?.religion || '').length > 0 &&
+            (u?.partnerPreferences?.district || '').length > 0 &&
+            (u?.partnerPreferences?.education || '').length > 0 &&
+            (u?.partnerPreferences?.maritalStatus || '').length > 0
         );
 
     const onSubmit = async (e) => {
@@ -155,10 +167,18 @@ const Profile = () => {
 
         // Validate required fields
         const requiredFields = ['age', 'gender', 'education', 'occupation', 'maritalStatus', 'religion', 'bio'];
-        const missingFields = requiredFields.filter(field => !formData[field] || formData[field].trim() === '');
+        const missingFields = requiredFields.filter(field => !formData[field] || String(formData[field]).trim() === '');
 
-        if (missingFields.length > 0) {
-            toast.error(`Please fill in all required fields: ${missingFields.join(', ')}`);
+        const partner = formData.partnerPreferences || {};
+        const requiredPartnerFields = ['minAge', 'maxAge', 'religion', 'district', 'education', 'maritalStatus'];
+        const missingPartnerFields = requiredPartnerFields.filter(field => !partner[field] || String(partner[field]).trim() === '');
+
+        if (missingFields.length > 0 || missingPartnerFields.length > 0) {
+            const allMissing = [
+                ...missingFields.map(f => f.charAt(0).toUpperCase() + f.slice(1)),
+                ...missingPartnerFields.map(f => `Partner ${f.charAt(0).toUpperCase() + f.slice(1)}`)
+            ];
+            toast.error(`Please fill in all required fields: ${allMissing.join(', ')}`);
             return;
         }
 
@@ -323,7 +343,9 @@ const Profile = () => {
                                     </div>
                                     <div className="space-y-1.5 sm:space-y-2">
                                         <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Occupation</label>
-                                        <input type="text" name="occupation" value={formData.occupation} onChange={onChange} className={"w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-3 transition-all text-xs sm:text-base " + (missing.occupationOrWorkplace ? 'border-red-500 focus:ring-red-100 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500')} />
+                                        <select name="occupation" value={formData.occupation} onChange={onChange} className={"w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-3 transition-all text-xs sm:text-base " + (missing.occupationOrWorkplace ? 'border-red-500 focus:ring-red-100 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500')}>
+                                            {['', 'Software Engineer', 'Engineer', 'Doctor', 'Nurse', 'Teacher', 'Lecturer', 'Government Servant', 'Private Sector Employee', 'Business Owner', 'Student', 'Housewife', 'Unemployed', 'Other'].map((o) => (<option key={o} value={o}>{o || 'Select'}</option>))}
+                                        </select>
                                         {missing.occupationOrWorkplace && (<p className="text-xs text-red-600 mt-0.5">Required</p>)}
                                     </div>
                                 </div>
@@ -372,7 +394,9 @@ const Profile = () => {
                                 </div>
                                 <div className="space-y-1.5 sm:space-y-2">
                                     <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Social Class</label>
-                                    <input type="text" name="socialClass" value={formData.socialClass} onChange={onChange} className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all text-xs sm:text-base" />
+                                    <select name="socialClass" value={formData.socialClass} onChange={onChange} className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all text-xs sm:text-base">
+                                        {['', 'Lower Class', 'Middle Class', 'Upper Middle Class', 'Upper Class'].map((o) => (<option key={o} value={o}>{o || 'Select'}</option>))}
+                                    </select>
                                 </div>
                             </div>
                         )}
@@ -381,15 +405,21 @@ const Profile = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                 <div className="space-y-1.5 sm:space-y-2">
                                     <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Family</label>
-                                    <input type="text" name="family" value={formData.family} onChange={onChange} className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all text-xs sm:text-base" />
+                                    <select name="family" value={formData.family} onChange={onChange} className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all text-xs sm:text-base">
+                                        {['', 'Nuclear Family', 'Joint Family', 'Extended Family'].map((o) => (<option key={o} value={o}>{o || 'Select'}</option>))}
+                                    </select>
                                 </div>
                                 <div className="space-y-1.5 sm:space-y-2">
                                     <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Residency</label>
-                                    <input type="text" name="residency" value={formData.residency} onChange={onChange} className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all text-xs sm:text-base" />
+                                    <select name="residency" value={formData.residency} onChange={onChange} className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all text-xs sm:text-base">
+                                        {['', 'Citizen', 'Permanent Resident', 'Work Visa', 'Student Visa', 'Other'].map((o) => (<option key={o} value={o}>{o || 'Select'}</option>))}
+                                    </select>
                                 </div>
                                 <div className="space-y-1.5 sm:space-y-2 sm:col-span-2">
                                     <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Status</label>
-                                    <input type="text" name="status" value={formData.status} onChange={onChange} className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all text-xs sm:text-base" />
+                                    <select name="status" value={formData.status} onChange={onChange} className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all text-xs sm:text-base">
+                                        {['', 'Middle Class', 'Upper Middle Class', 'Rich', 'Affluent'].map((o) => (<option key={o} value={o}>{o || 'Select'}</option>))}
+                                    </select>
                                 </div>
                             </div>
                         )}
@@ -456,15 +486,21 @@ const Profile = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-2">
                                     <div className="space-y-1.5 sm:space-y-2">
                                         <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Personality</label>
-                                        <input type="text" name="personality" value={formData.personality} onChange={onChange} className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all text-xs sm:text-base" />
+                                        <select name="personality" value={formData.personality} onChange={onChange} className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all text-xs sm:text-base">
+                                            {['', 'Introvert', 'Extrovert', 'Ambivert', 'Easygoing', 'Serious', 'Fun-loving'].map((o) => (<option key={o} value={o}>{o || 'Select'}</option>))}
+                                        </select>
                                     </div>
                                     <div className="space-y-1.5 sm:space-y-2">
                                         <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">First Date</label>
-                                        <input type="text" name="firstDatePreference" value={formData.firstDatePreference} onChange={onChange} className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all text-xs sm:text-base" />
+                                        <select name="firstDatePreference" value={formData.firstDatePreference} onChange={onChange} className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all text-xs sm:text-base">
+                                            {['', 'Coffee/Tea', 'Dinner', 'Walk in the park', 'Movie', 'Other'].map((o) => (<option key={o} value={o}>{o || 'Select'}</option>))}
+                                        </select>
                                     </div>
                                     <div className="sm:col-span-2 space-y-1.5 sm:space-y-2">
                                         <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Living Arrangements</label>
-                                        <input type="text" name="livingArrangements" value={formData.livingArrangements} onChange={onChange} className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all text-xs sm:text-base" />
+                                        <select name="livingArrangements" value={formData.livingArrangements} onChange={onChange} className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all text-xs sm:text-base">
+                                            {['', 'With parents', 'Alone', 'With roommates', 'Other'].map((o) => (<option key={o} value={o}>{o || 'Select'}</option>))}
+                                        </select>
                                     </div>
                                 </div>
                             </>

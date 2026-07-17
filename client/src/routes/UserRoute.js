@@ -31,7 +31,13 @@ const UserRoute = ({ children }) => {
         (user?.occupation || user?.workplace) &&
         (user?.maritalStatus || '').length > 0 &&
         (user?.religion || '').length > 0 &&
-        (user?.bio || '').trim().length > 0
+        (user?.bio || '').trim().length > 0 &&
+        user?.partnerPreferences?.minAge &&
+        user?.partnerPreferences?.maxAge &&
+        (user?.partnerPreferences?.religion || '').length > 0 &&
+        (user?.partnerPreferences?.district || '').length > 0 &&
+        (user?.partnerPreferences?.education || '').length > 0 &&
+        (user?.partnerPreferences?.maritalStatus || '').length > 0
     );
 
     if (!isProfileComplete && location.pathname.startsWith('/users')) {

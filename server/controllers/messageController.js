@@ -41,6 +41,25 @@ exports.sendMessage = async (req, res) => {
       });
     }
 
+    // Reset daily message counter if it's a new calendar day
+    const today = new Date();
+    const lastSent = sender.lastMessageSentAt ? new Date(sender.lastMessageSentAt) : null;
+    let isNewDay = false;
+    if (!lastSent) {
+      isNewDay = true;
+    } else {
+      const todayDateStr = today.toDateString();
+      const lastSentDateStr = lastSent.toDateString();
+      if (todayDateStr !== lastSentDateStr) {
+        isNewDay = true;
+      }
+    }
+
+    if (isNewDay) {
+      sender.messagesSent = 0;
+      await sender.save();
+    }
+
     if (sender.role !== 'admin' && !isAdminConversation && !sender.isPremium && sender.messagesSent >= FREE_MESSAGE_LIMIT) {
       return res.status(403).json({
         message: 'Free message limit reached',

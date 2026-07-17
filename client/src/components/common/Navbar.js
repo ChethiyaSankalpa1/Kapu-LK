@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import {
     Heart, LogOut, User, Users, LayoutDashboard, Menu, X,
-    Sun, Moon, Crown, Globe, ChevronRight, Sparkles
+    Sun, Moon, Crown, Globe, ChevronRight, Sparkles, MessageSquare
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -154,6 +154,10 @@ const Navbar = () => {
                                                 <Users className="w-4 h-4" />
                                                 <span>Browse</span>
                                             </Link>
+                                            <Link to="/contact-admin" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/contact-admin') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                                                <MessageSquare className="w-4 h-4" />
+                                                <span>Contact Admin</span>
+                                            </Link>
                                             <Link to="/profile" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/profile') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
                                                 <User className="w-4 h-4" />
                                                 <span className="max-w-[120px] truncate">{user.name}</span>
@@ -275,6 +279,7 @@ const Navbar = () => {
                                         <NavItem to="/dashboard" icon={LayoutDashboard} label={t('nav.dashboard')} />
                                         <NavItem to="/users" icon={Users} label="Browse Profiles" />
                                         <NavItem to="/profile" icon={User} label="My Profile" />
+                                        <NavItem to="/contact-admin" icon={MessageSquare} label="Contact Admin" />
                                     </>
                                 )
                             ) : (

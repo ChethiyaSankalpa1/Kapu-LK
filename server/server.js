@@ -27,9 +27,9 @@ let dbConnected = false;
 (async () => {
   dbConnected = await connectDB();
   if (dbConnected) {
-    // Safety: only seed / cleanup when explicitly enabled (never by default in production)
+    // Safety: only seed / cleanup when explicitly enabled
     const allowSeed = process.env.ENABLE_SEEDER === 'true' || process.env.NODE_ENV !== 'production';
-    const allowCleanup = process.env.ENABLE_MESSAGE_CLEANUP === 'true' && process.env.NODE_ENV !== 'production';
+    const allowCleanup = process.env.ENABLE_MESSAGE_CLEANUP !== 'false';
 
     if (allowSeed) {
       await seedUsers();
