@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 import moment from 'moment';
 import {
   ArrowLeft, Send, User, MessageSquare, Crown,
-  Clock, Check, CheckCheck, Shield, Smile, Paperclip,
+  Check, CheckCheck, Shield, Smile, Paperclip,
   Image, Search, X
 } from 'lucide-react';
 
