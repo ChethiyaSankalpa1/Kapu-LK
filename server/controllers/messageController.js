@@ -123,11 +123,24 @@ exports.getConversations = async (req, res) => {
     const conversationsMap = new Map();
 
     messages.forEach((msg) => {
+      if (!msg.from || !msg.to) return; // Skip invalid messages
+      
       const otherUser = msg.from._id.equals(userId) ? msg.to : msg.from;
+      if (!otherUser) return; // Skip if other user is null
+      
       const key = otherUser._id.toString();
+      
+      let decryptedContent = '';
+      try {
+        decryptedContent = decryptMessage(msg.content, msg.contentIv);
+      } catch (decryptError) {
+        console.error('Message decryption error:', decryptError);
+        decryptedContent = '[Encrypted message]';
+      }
+      
       const normalizedMessage = {
         ...msg.toObject(),
-        content: decryptMessage(msg.content, msg.contentIv),
+        content: decryptedContent,
       };
 
       if (!conversationsMap.has(key)) {
@@ -139,14 +152,15 @@ exports.getConversations = async (req, res) => {
       }
 
       const convo = conversationsMap.get(key);
-      if (!msg.isRead && msg.to._id.equals(userId)) {
+      if (!msg.isRead && msg.to._id && msg.to._id.equals(userId)) {
         convo.unreadCount += 1;
       }
     });
 
     res.json(Array.from(conversationsMap.values()));
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching conversations:', error);
+    res.status(500).json({ message: 'Failed to fetch conversations' });
   }
 };
 
