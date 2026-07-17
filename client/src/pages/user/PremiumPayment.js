@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { premiumAPI } from '../../services/api';
@@ -7,7 +7,7 @@ import { Crown, CreditCard, CheckCircle, ArrowLeft, Upload, Building, Banknote }
 
 const PremiumPayment = () => {
     const navigate = useNavigate();
-    const { user, premiumStatus, refreshPremiumStatus, refreshUser } = useAuth();
+    const { user, premiumStatus, refreshPremiumStatus } = useAuth();
 
     const [formData, setFormData] = useState({
         bank: '',
@@ -19,7 +19,6 @@ const PremiumPayment = () => {
     });
     const [paymentSlip, setPaymentSlip] = useState(null);
     const [submitting, setSubmitting] = useState(false);
-    const canViewBankDetails = Boolean(user?.isApproved || user?.role === 'admin');
 
     const BANKS = [
         { name: 'Hatton National Bank (HNB)', account: '018021102658', branch: 'Kandy', holder: 'S. Kumarasinghe' },
@@ -28,22 +27,14 @@ const PremiumPayment = () => {
         { name: 'Regional Development Bank (RDB)', account: '409010110698', branch: 'Kandy', holder: 'T. Dharmapriya' },
     ];
 
-    useEffect(() => {
-        if (canViewBankDetails) {
-            return undefined;
-        }
-
-        refreshUser();
-
-        const intervalId = setInterval(() => {
-            refreshUser();
-        }, 15000);
-
-        return () => clearInterval(intervalId);
-    }, [canViewBankDetails, refreshUser]);
-
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (!formData.bank) {
+            toast.error('Please select a bank');
+            return;
+        }
+
         if (!paymentSlip) {
             toast.error('Please upload payment slip');
             return;
@@ -158,26 +149,16 @@ const PremiumPayment = () => {
                                 <button
                                     key={i}
                                     type="button"
-                                    disabled={!canViewBankDetails}
                                     onClick={() => setFormData({ ...formData, bank: bank.name })}
                                     className={`w-full text-left p-4 rounded-xl border-2 transition-all relative overflow-hidden ${formData.bank === bank.name
                                         ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
                                         : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700'
-                                        } ${!canViewBankDetails ? 'cursor-not-allowed' : ''}`}
+                                        }`}
                                 >
-                                    <div className={!canViewBankDetails ? 'blur-sm select-none' : ''}>
-                                        <p className="font-bold text-gray-800 dark:text-white">{bank.name}</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Account: {bank.account}</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Branch: {bank.branch}</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Name: {bank.holder}</p>
-                                    </div>
-                                    {!canViewBankDetails && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-gray-900/60 text-center px-4">
-                                            <p className="text-sm font-semibold text-gray-800 dark:text-white">
-                                                Account approval required to view bank details
-                                            </p>
-                                        </div>
-                                    )}
+                                    <p className="font-bold text-gray-800 dark:text-white">{bank.name}</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Account: {bank.account}</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Branch: {bank.branch}</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Name: {bank.holder}</p>
                                 </button>
                             ))}
                         </div>
@@ -284,7 +265,7 @@ const PremiumPayment = () => {
                                 <input
                                     type="file"
                                     id="slip"
-                                    accept="image/*,.pdf"
+                                    accept="image/*"
                                     onChange={(e) => setPaymentSlip(e.target.files[0])}
                                     className="hidden"
                                 />
@@ -301,7 +282,7 @@ const PremiumPayment = () => {
 
                         <button
                             type="submit"
-                            disabled={!formData.bank || submitting || !canViewBankDetails}
+                            disabled={submitting}
                             className="w-full btn-primary flex items-center justify-center space-x-2"
                         >
                             {submitting ? (
