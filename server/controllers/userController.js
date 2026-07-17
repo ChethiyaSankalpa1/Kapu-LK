@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 
@@ -166,7 +167,12 @@ exports.getAllUsers = async (req, res) => {
 
     const query = req.user.role === 'admin'
       ? {}
-      : { isApproved: true, isActive: true, _id: { $ne: req.user._id }, role: { $ne: 'admin' } };
+      : {
+          isApproved: true,
+          isActive: true,
+          _id: mongoose.trusted({ $ne: req.user._id }),
+          role: mongoose.trusted({ $ne: 'admin' }),
+        };
 
     const users = await User.find(query)
       .select(req.user.role === 'admin' ? '-password' : USER_LIST_SELECT)
@@ -225,7 +231,11 @@ exports.searchUsers = async (req, res) => {
     const limitNum = parseInt(limit, 10);
     const skip = (pageNum - 1) * limitNum;
 
-    let query = { isApproved: true, isActive: true, role: { $ne: 'admin' } };
+    let query = {
+      isApproved: true,
+      isActive: true,
+      role: mongoose.trusted({ $ne: 'admin' }),
+    };
 
     if (gender) query.gender = gender;
     if (location) query.location = { $regex: escapeRegex(location), $options: 'i' };
@@ -274,10 +284,10 @@ exports.getMatches = async (req, res) => {
     }
 
     const baseQuery = {
-      _id: { $ne: currentUser._id },
+      _id: mongoose.trusted({ $ne: currentUser._id }),
       isApproved: true,
       isActive: true,
-      role: { $ne: 'admin' },
+      role: mongoose.trusted({ $ne: 'admin' }),
     };
 
     if (currentUser.gender === 'male') {

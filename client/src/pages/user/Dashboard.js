@@ -260,7 +260,7 @@ const Dashboard = () => {
         setSearchLoading(true);
         try {
             const response = await userAPI.searchUsers(searchFilters);
-            const filteredUsers = (response.data || []).filter(u => u._id !== user?._id && u.role !== 'admin');
+            const filteredUsers = (response.data?.data || response.data || []).filter(u => u._id !== user?._id && u.role !== 'admin');
             setSearchResults(filteredUsers);
             toast.success(t('dashboard.profilesFound', { defaultValue: 'Found {{count}} profiles', count: filteredUsers.length }));
         } catch (error) {
