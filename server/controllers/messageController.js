@@ -2,6 +2,7 @@ const Message = require('../models/Message');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const { encryptMessage, decryptMessage } = require('../utils/messageCrypto');
+const cloudinary = require('../config/cloudinary');
 
 // @desc    Send a message
 // @route   POST /api/messages
@@ -118,7 +119,7 @@ exports.getConversations = async (req, res) => {
       $or: [{ from: userId }, { to: userId }],
     })
       .sort({ createdAt: -1 })
-      .populate('from to', 'name profileImageUrl age location');
+      .populate('from to', 'name profileImageUrl age location isOnline lastLogin');
 
     const conversationsMap = new Map();
 
@@ -179,7 +180,7 @@ exports.getConversationWithUser = async (req, res) => {
       ],
     })
       .sort({ createdAt: 1 })
-      .populate('from to', 'name profileImageUrl');
+      .populate('from to', 'name profileImageUrl isOnline lastLogin');
 
     await Message.updateMany(
       { from: otherUserId, to: userId, isRead: false },
@@ -203,6 +204,39 @@ exports.getConversationWithUser = async (req, res) => {
 
     res.json(normalizedMessages);
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Upload chat image to Cloudinary
+// @route   POST /api/messages/upload
+// @access  Private
+exports.uploadChatImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Please upload an image' });
+    }
+
+    // Convert buffer to base64
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: 'matrimonial_chats',
+      resource_type: 'auto',
+      transformation: [
+        { width: 1200, height: 1200, crop: 'limit' },
+        { quality: 'auto' },
+      ],
+    });
+
+    res.json({
+      message: 'Chat image uploaded successfully',
+      imageUrl: result.secure_url,
+    });
+  } catch (error) {
+    console.error('Chat image upload error:', error);
     res.status(500).json({ message: error.message });
   }
 };

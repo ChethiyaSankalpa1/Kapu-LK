@@ -482,9 +482,11 @@ const Dashboard = () => {
                         </Link>
                         <Link
                             to="/profile"
-                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3.5 rounded-2xl border border-[#ccd0d5] dark:border-white/20 bg-white dark:bg-white/8 text-[#1c1e21] dark:text-white font-semibold hover:bg-[#f0f2f5] dark:hover:bg-white/14 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[48px]"
+                            className="col-span-1 inline-flex justify-center items-center gap-1.5 px-4 sm:px-6 py-3.5 rounded-2xl border border-[#ccd0d5] dark:border-white/20 bg-white dark:bg-white/8 text-[#1c1e21] dark:text-white font-semibold hover:bg-[#f0f2f5] dark:hover:bg-white/14 active:scale-95 transition-all text-sm w-full md:w-auto min-h-[48px] min-w-[140px] whitespace-nowrap"
                         >
-                            {t('profile.editProfile')}
+                            <span className="text-[#1c1e21] dark:text-white">
+                                {t('profile.editProfile', { defaultValue: 'Edit Profile' })}
+                            </span>
                         </Link>
                         {!premiumStatus?.isPremium && !premiumStatus?.premiumRequested && (
                             <Link
@@ -522,11 +524,8 @@ const Dashboard = () => {
                         <span>{t('dashboard.matches')}</span>
                     </button>
                     <button
-                        onClick={() => setActiveTab('messages')}
-                        className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'messages'
-                            ? 'bg-[#e7f3ff] text-[#1877F2] shadow-sm'
-                            : 'bg-transparent text-[#65676b] dark:text-white/75 hover:bg-[#f0f2f5] dark:hover:bg-white/10 hover:text-[#1c1e21] dark:hover:text-white'
-                            }`}
+                        onClick={() => navigate('/conversation')}
+                        className="px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 bg-transparent text-[#65676b] dark:text-white/75 hover:bg-[#f0f2f5] dark:hover:bg-white/10 hover:text-[#1c1e21] dark:hover:text-white"
                     >
                         <MessageCircle className="w-3.5 h-3.5" />
                         <span>{t('dashboard.messages')}</span>

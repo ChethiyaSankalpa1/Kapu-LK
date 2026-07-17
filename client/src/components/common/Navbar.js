@@ -154,8 +154,12 @@ const Navbar = () => {
                                                 <Users className="w-4 h-4" />
                                                 <span>Browse</span>
                                             </Link>
-                                            <Link to="/contact-admin" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/contact-admin') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                                            <Link to="/conversation" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/conversation') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
                                                 <MessageSquare className="w-4 h-4" />
+                                                <span>Messages</span>
+                                            </Link>
+                                            <Link to="/contact-admin" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/contact-admin') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                                                <Shield className="w-4 h-4" />
                                                 <span>Contact Admin</span>
                                             </Link>
                                             <Link to="/profile" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/profile') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
@@ -278,8 +282,9 @@ const Navbar = () => {
                                     <>
                                         <NavItem to="/dashboard" icon={LayoutDashboard} label={t('nav.dashboard')} />
                                         <NavItem to="/users" icon={Users} label="Browse Profiles" />
+                                        <NavItem to="/conversation" icon={MessageSquare} label="Messages" />
                                         <NavItem to="/profile" icon={User} label="My Profile" />
-                                        <NavItem to="/contact-admin" icon={MessageSquare} label="Contact Admin" />
+                                        <NavItem to="/contact-admin" icon={Shield} label="Contact Admin" />
                                     </>
                                 )
                             ) : (

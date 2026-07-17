@@ -98,6 +98,14 @@ function App() {
                 }
               />
               <Route
+                path="/conversation"
+                element={
+                  <PrivateRoute>
+                    <Conversation />
+                  </PrivateRoute>
+                }
+              />
+              <Route
                 path="/conversation/:userId"
                 element={
                   <PrivateRoute>

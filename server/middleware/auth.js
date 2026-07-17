@@ -23,6 +23,17 @@ exports.protect = async (req, res, next) => {
         return res.status(401).json({ message: 'Not authorized, user not found' });
       }
 
+      // Update user isOnline status and lastLogin timestamp (throttled to once a minute)
+      if (!req.user.isOnline || !req.user.lastLogin || Date.now() - new Date(req.user.lastLogin).getTime() > 60000) {
+        try {
+          req.user.isOnline = true;
+          req.user.lastLogin = Date.now();
+          await req.user.save();
+        } catch (saveError) {
+          console.error('Failed to save user online status:', saveError.message);
+        }
+      }
+
       next();
     } catch (error) {
       console.warn('JWT verification failed:', error.message);

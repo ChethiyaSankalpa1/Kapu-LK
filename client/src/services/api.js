@@ -82,6 +82,9 @@ export const messageAPI = {
     getConversations: () => api.get('/messages'),
     getConversationWithUser: (userId) => api.get(`/messages/${userId}`),
     sendMessage: (data) => api.post('/messages', data),
+    uploadChatImage: (formData) => api.post('/messages/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    }),
 };
 
 export const notificationAPI = {
