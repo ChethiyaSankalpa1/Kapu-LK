@@ -239,10 +239,10 @@ const Dashboard = () => {
     }, [isProfileComplete, user?.isApproved, user?.role, fetchOverviewUsers, fetchNotifications, fetchConversations]);
 
     useEffect(() => {
-        if (activeTab === 'matches' && matches.length === 0) {
+        if (activeTab === 'matches' && matches.length === 0 && (user?.isApproved || user?.role === 'admin')) {
             fetchMatches();
         }
-    }, [activeTab, matches.length, fetchMatches]);
+    }, [activeTab, matches.length, user?.isApproved, user?.role, fetchMatches]);
 
     useEffect(() => {
         if (activeTab === 'messages' && pendingConversationUserId) {
