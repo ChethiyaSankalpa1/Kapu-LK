@@ -5,7 +5,7 @@ import { adminAPI, messageAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
   Users, UserCheck, Activity,
-  CheckCircle, XCircle, Trash2, Shield, Crown, AlertTriangle, DollarSign, MessageSquare
+  CheckCircle, XCircle, Trash2, Shield, Crown, AlertTriangle, DollarSign, MessageSquare, MoreVertical
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -18,6 +18,7 @@ const AdminDashboard = () => {
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [activeTab, setActiveTab] = useState('users');
   const [loading, setLoading] = useState(true);
+  const [activeDropdown, setActiveDropdown] = useState(null);
 
   const fetchConversations = async () => {
     try {
@@ -366,47 +367,85 @@ const AdminDashboard = () => {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="flex flex-wrap gap-2">
+                        <div className="relative">
                           <button
-                            onClick={() => navigate(`/conversation/${user._id}`)}
-                            className="text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                            title="Message User"
+                            onClick={() => setActiveDropdown(activeDropdown === user._id ? null : user._id)}
+                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            title="Actions"
                           >
-                            <MessageSquare className="w-5 h-5" />
-                            <span className="hidden sm:inline">Chat</span>
+                            <MoreVertical className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                           </button>
-                          {!user.isApproved ? (
-                            <button
-                              onClick={() => handleApproveUser(user._id)}
-                              className="text-green-600 hover:text-green-700"
-                              title="Approve"
-                            >
-                              <CheckCircle className="w-5 h-5" />
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleRejectUser(user._id)}
-                              className="text-orange-600 hover:text-orange-700"
-                              title="Revoke Approval"
-                            >
-                              <XCircle className="w-5 h-5" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleTogglePremium(user._id)}
-                            className={`${user.isPremium ? 'text-yellow-600 hover:text-yellow-700' : 'text-gray-600 hover:text-gray-700'}`}
-                            title={user.isPremium ? "Remove Premium" : "Add Premium"}
-                          >
-                            <Crown className="w-5 h-5" />
-                          </button>
-                          {user.role !== 'admin' && (
-                            <button
-                              onClick={() => handleDelete(user._id)}
-                              className="text-red-600 hover:text-red-700"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
+                          
+                          {activeDropdown === user._id && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
+                              <div className="py-1">
+                                <button
+                                  onClick={() => {
+                                    navigate(`/conversation/${user._id}`);
+                                    setActiveDropdown(null);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                >
+                                  <MessageSquare className="w-4 h-4" />
+                                  <span>Chat</span>
+                                </button>
+                                {!user.isApproved ? (
+                                  <button
+                                    onClick={() => {
+                                      handleApproveUser(user._id);
+                                      setActiveDropdown(null);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-sm text-green-600 dark:text-green-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                  >
+                                    <CheckCircle className="w-4 h-4" />
+                                    <span>Approve</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      handleRejectUser(user._id);
+                                      setActiveDropdown(null);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-sm text-orange-600 dark:text-orange-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                  >
+                                    <XCircle className="w-4 h-4" />
+                                    <span>Revoke Approval</span>
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    handleTogglePremium(user._id);
+                                    setActiveDropdown(null);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                >
+                                  <Crown className="w-4 h-4" />
+                                  <span>{user.isPremium ? 'Remove Premium' : 'Add Premium'}</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    handleToggleStatus(user._id);
+                                    setActiveDropdown(null);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                >
+                                  <Activity className="w-4 h-4" />
+                                  <span>{user.isActive ? 'Deactivate' : 'Activate'}</span>
+                                </button>
+                                {user.role !== 'admin' && (
+                                  <button
+                                    onClick={() => {
+                                      handleDelete(user._id);
+                                      setActiveDropdown(null);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    <span>Delete</span>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           )}
                         </div>
                       </td>

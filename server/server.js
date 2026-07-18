@@ -7,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
 const seedUsers = require('./utils/seeder');
 const { startMessageCleanup } = require('./utils/messageCleanup');
+const { startNotificationCleanup } = require('./utils/notificationCleanup');
 
 // Load env vars
 dotenv.config({ override: true });
@@ -30,12 +31,16 @@ let dbConnected = false;
     // Safety: only seed / cleanup when explicitly enabled
     const allowSeed = process.env.ENABLE_SEEDER === 'true' || process.env.NODE_ENV !== 'production';
     const allowCleanup = process.env.ENABLE_MESSAGE_CLEANUP !== 'false';
+    const allowNotificationCleanup = process.env.ENABLE_NOTIFICATION_CLEANUP !== 'false';
 
     if (allowSeed) {
       await seedUsers();
     }
     if (allowCleanup) {
       startMessageCleanup();
+    }
+    if (allowNotificationCleanup) {
+      startNotificationCleanup();
     }
   }
 })();

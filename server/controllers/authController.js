@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const cloudinary = require('../config/cloudinary');
 const { sendPasswordResetEmail } = require('../utils/mailer');
 
@@ -76,6 +77,13 @@ exports.register = async (req, res) => {
     });
 
     if (user) {
+      // Create profile picture reminder notification
+      await Notification.create({
+        user: user._id,
+        type: 'profile_reminder',
+        message: 'Add a profile picture to improve your profile visibility and receive better match suggestions.',
+      });
+
       res.status(201).json({
         _id: user._id,
         name: user.name,
@@ -176,6 +184,12 @@ exports.uploadProfileImage = async (req, res) => {
       { profileImageUrl: result.secure_url },
       { new: true }
     );
+
+    // Remove profile reminder notification if it exists
+    await Notification.deleteMany({
+      user: req.user._id,
+      type: 'profile_reminder',
+    });
 
     res.json({
       message: 'Profile image uploaded successfully',

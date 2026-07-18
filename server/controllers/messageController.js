@@ -73,7 +73,13 @@ exports.sendMessage = async (req, res) => {
       });
     }
 
-    const encryptedMessage = encryptMessage(content);
+    let encryptedMessage;
+    try {
+      encryptedMessage = encryptMessage(content);
+    } catch (encryptError) {
+      console.error('Message encryption error:', encryptError);
+      return res.status(500).json({ message: 'Failed to encrypt message' });
+    }
 
     const message = await Message.create({
       from: req.user._id,
@@ -115,7 +121,8 @@ exports.sendMessage = async (req, res) => {
       limit: FREE_MESSAGE_LIMIT
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Send message error:', error);
+    res.status(500).json({ message: error.message || 'Failed to send message' });
   }
 };
 
