@@ -138,6 +138,18 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDeletePremiumRequest = async (requestId) => {
+    if (!window.confirm(t('admin.confirmDeletePremiumRequest', { defaultValue: 'Are you sure you want to delete this premium request?' }))) return;
+
+    try {
+      await adminAPI.deletePremiumRequest(requestId);
+      toast.success(t('admin.premiumRequestDeleted', { defaultValue: 'Premium request deleted successfully' }));
+      fetchData();
+    } catch (error) {
+      toast.error(t('admin.deletePremiumRequestFailed', { defaultValue: 'Failed to delete premium request' }));
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -483,14 +495,30 @@ const AdminDashboard = () => {
                       )}
 
                       {request.status === 'approved' && (
-                        <span className="text-center text-green-600 font-semibold">Approved</span>
+                        <div className="flex space-x-2">
+                          <span className="flex-1 text-center text-green-600 font-semibold">Approved</span>
+                          <button
+                            onClick={() => handleDeletePremiumRequest(request._id)}
+                            className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-semibold flex items-center justify-center space-x-1"
+                            title="Delete Request"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
                       )}
+
                       {request.status === 'rejected' && (
-                        <div className="text-center">
-                          <p className="text-red-600 font-semibold">Rejected</p>
-                          {request.rejectionReason && (
-                            <p className="text-sm text-gray-500">{request.rejectionReason}</p>
-                          )}
+                        <div className="flex space-x-2">
+                          <span className="flex-1 text-center text-red-600 font-semibold">Rejected</span>
+                          <button
+                            onClick={() => handleDeletePremiumRequest(request._id)}
+                            className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-semibold flex items-center justify-center space-x-1"
+                            title="Delete Request"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span>Delete</span>
+                          </button>
                         </div>
                       )}
                     </div>

@@ -247,3 +247,22 @@ exports.createAdmin = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Delete premium request
+// @route   DELETE /api/admin/premium-requests/:id
+// @access  Private/Admin
+exports.deletePremiumRequest = async (req, res) => {
+  try {
+    const request = await PremiumPaymentRequest.findById(req.params.id);
+
+    if (!request) {
+      return res.status(404).json({ message: 'Premium request not found' });
+    }
+
+    await PremiumPaymentRequest.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'Premium request deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

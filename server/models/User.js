@@ -229,6 +229,10 @@ userSchema.index({ district: 1 });
 userSchema.index({ location: 1 });
 userSchema.index({ religion: 1 });
 userSchema.index({ maritalStatus: 1 });
+userSchema.index({ isApproved: 1, isActive: 1, createdAt: -1 });
+userSchema.index({ isPremium: 1 });
+userSchema.index({ createdAt: -1 });
+userSchema.index({ lastLogin: -1 });
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {

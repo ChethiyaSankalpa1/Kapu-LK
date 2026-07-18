@@ -76,6 +76,7 @@ export const adminAPI = {
     getPremiumRequests: () => api.get('/admin/premium-requests'),
     approvePremium: (id) => api.put(`/admin/premium-requests/${id}/approve`),
     rejectPremium: (id, reason) => api.put(`/admin/premium-requests/${id}/reject`, { rejectionReason: reason }),
+    deletePremiumRequest: (id) => api.delete(`/admin/premium-requests/${id}`),
 };
 
 export const messageAPI = {

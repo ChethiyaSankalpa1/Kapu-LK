@@ -9,7 +9,8 @@ const {
   toggleUserStatus,
   togglePremiumStatus,
   getDashboardStats,
-  createAdmin
+  createAdmin,
+  deletePremiumRequest
 } = require('../controllers/adminController');
 const { 
   getAllRequests, 
@@ -33,5 +34,6 @@ router.delete('/users/:id', protect, admin, deleteUser);
 router.get('/premium-requests', protect, admin, getAllRequests);
 router.put('/premium-requests/:id/approve', protect, admin, approveRequest);
 router.put('/premium-requests/:id/reject', protect, admin, rejectRequest);
+router.delete('/premium-requests/:id', protect, admin, deletePremiumRequest);
 
 module.exports = router;

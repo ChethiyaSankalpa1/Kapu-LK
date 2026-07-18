@@ -296,22 +296,18 @@ exports.getMatches = async (req, res) => {
       baseQuery.gender = 'male';
     }
 
-    // Apply partner preferences (if provided) as soft filters
+    // Apply partner preferences (if provided) as soft filters - only use basic filters
     const prefs = currentUser.partnerPreferences || {};
     const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    
+    // Only apply age range as a basic filter (optional)
     if (prefs.minAge || prefs.maxAge) {
       baseQuery.age = mongoose.trusted({});
       if (typeof prefs.minAge === 'number') baseQuery.age.$gte = prefs.minAge;
       if (typeof prefs.maxAge === 'number') baseQuery.age.$lte = prefs.maxAge;
     }
-    if (prefs.religion) baseQuery.religion = mongoose.trusted({ $regex: `^${escapeRegex(prefs.religion)}$`, $options: 'i' });
-    if (prefs.caste) baseQuery.caste = mongoose.trusted({ $regex: `^${escapeRegex(prefs.caste)}$`, $options: 'i' });
-    if (prefs.district) baseQuery.district = mongoose.trusted({ $regex: `^${escapeRegex(prefs.district)}$`, $options: 'i' });
-    if (prefs.maritalStatus) baseQuery.maritalStatus = prefs.maritalStatus;
-    if (prefs.smoking) baseQuery.smoking = mongoose.trusted({ $regex: `^${escapeRegex(prefs.smoking)}$`, $options: 'i' });
-    if (prefs.drinking) baseQuery.drinking = mongoose.trusted({ $regex: `^${escapeRegex(prefs.drinking)}$`, $options: 'i' });
-    if (prefs.education) baseQuery.education = mongoose.trusted({ $regex: `^${escapeRegex(prefs.education)}$`, $options: 'i' });
-    if (prefs.bodyType) baseQuery.bodyType = mongoose.trusted({ $regex: `^${escapeRegex(prefs.bodyType)}$`, $options: 'i' });
+    
+    // Don't apply strict filters for religion, caste, district, etc. - use them for scoring instead
 
     // IMPORTANT: in large databases, fetching ALL candidates will not scale.
     // Use a capped candidate pool to prevent memory/CPU spikes.

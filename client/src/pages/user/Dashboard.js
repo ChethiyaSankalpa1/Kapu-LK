@@ -144,7 +144,19 @@ const Dashboard = () => {
         }
     }, []);
 
+    // Cache for users data to avoid repeated fetches
+    const [usersCache, setUsersCache] = useState(null);
+    const [cacheTimestamp, setCacheTimestamp] = useState(0);
+
     const fetchOverviewUsers = useCallback(async () => {
+        // Use cache if available and less than 5 minutes old
+        const now = Date.now();
+        if (usersCache && (now - cacheTimestamp) < 5 * 60 * 1000) {
+            setFeaturedUsers(usersCache.featured);
+            setAllUsers(usersCache.all);
+            return;
+        }
+
         try {
             const response = await userAPI.getAllUsers();
             const oneMonthAgo = new Date();
@@ -171,6 +183,13 @@ const Dashboard = () => {
 
             // Set all users for the view more section
             setAllUsers(filteredUsers);
+
+            // Update cache
+            setUsersCache({
+                featured: filteredUsers.slice(0, 6),
+                all: filteredUsers
+            });
+            setCacheTimestamp(now);
         } catch (error) {
             console.error('Error fetching users:', error);
             if (error.response?.status === 401) {
@@ -185,7 +204,7 @@ const Dashboard = () => {
         } finally {
             setOverviewLoading(false);
         }
-    }, [user?._id, t]);
+    }, [user?._id, t, usersCache, cacheTimestamp]);
 
     const fetchMatches = useCallback(async () => {
         setMatchesLoading(true);

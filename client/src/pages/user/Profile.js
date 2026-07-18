@@ -94,53 +94,50 @@ const Profile = () => {
         partnerMaritalStatus: !(formData.partnerPreferences?.maritalStatus || '').length,
     };
 
-    const onFileChange = (e) => {
+    const onFileChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                toast.error('Please select a valid image file (JPEG, PNG, or WebP)');
+                return;
+            }
+
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error('Image size must be less than 5MB');
+                return;
+            }
+
             setSelectedFile(file);
             setPreview(URL.createObjectURL(file));
-        }
-    };
 
-    const handleImageUpload = async () => {
-        if (!selectedFile) {
-            toast.error('Please select an image');
-            return;
-        }
+            // Auto-upload immediately
+            const formDataImg = new FormData();
+            formDataImg.append('profileImage', file);
+            setUploadingImage(true);
 
-        // Validate file type
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-        if (!allowedTypes.includes(selectedFile.type)) {
-            toast.error('Please select a valid image file (JPEG, PNG, or WebP)');
-            return;
-        }
-
-        // Validate file size (max 5MB)
-        if (selectedFile.size > 5 * 1024 * 1024) {
-            toast.error('Image size must be less than 5MB');
-            return;
-        }
-
-        const formDataImg = new FormData();
-        formDataImg.append('profileImage', selectedFile);
-        setUploadingImage(true);
-
-        try {
-            const response = await authAPI.uploadProfileImage(formDataImg);
-            updateUser({ ...user, profileImageUrl: response.data.profileImageUrl });
-            toast.success('Profile image uploaded successfully!');
-            setSelectedFile(null);
-        } catch (error) {
-            console.error('Image upload error:', error);
-            if (error.response?.status === 401) {
-                toast.error('Please login to upload image');
-            } else if (error.response?.status === 413) {
-                toast.error('Image size too large');
-            } else {
-                toast.error(error.response?.data?.message || 'Image upload failed');
+            try {
+                const response = await authAPI.uploadProfileImage(formDataImg);
+                updateUser({ ...user, profileImageUrl: response.data.profileImageUrl });
+                toast.success('Profile image uploaded successfully!');
+                setSelectedFile(null);
+            } catch (error) {
+                console.error('Image upload error:', error);
+                if (error.response?.status === 401) {
+                    toast.error('Please login to upload image');
+                } else if (error.response?.status === 413) {
+                    toast.error('Image size too large');
+                } else {
+                    toast.error(error.response?.data?.message || 'Image upload failed');
+                }
+                // Reset preview on error
+                setPreview(user?.profileImageUrl || '');
+                setSelectedFile(null);
+            } finally {
+                setUploadingImage(false);
             }
-        } finally {
-            setUploadingImage(false);
         }
     };
 
@@ -230,38 +227,29 @@ const Profile = () => {
                             {preview ? (
                                 <img src={preview} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
-                                <User className="w-12 h-12 sm:w-20 sm:h-20 text-white" />
+                                <div className="text-white text-center">
+                                    {formData.gender === 'male' ? (
+                                        <div className="text-4xl sm:text-6xl">👨</div>
+                                    ) : (
+                                        <div className="text-4xl sm:text-6xl">👩</div>
+                                    )}
+                                </div>
                             )}
                         </div>
                         <div className="flex flex-col items-center sm:items-start gap-2 sm:gap-3 w-full sm:w-auto">
                             <label className="cursor-pointer bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 sm:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold inline-flex items-center gap-2 transition-all transform hover:scale-105 shadow-md text-xs sm:text-sm sm:text-base whitespace-nowrap">
                                 <Upload className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                <span>Choose Image</span>
+                                <span>{uploadingImage ? 'Uploading...' : 'Choose Image'}</span>
                                 <input
                                     type="file"
                                     accept="image/*"
                                     onChange={onFileChange}
                                     className="hidden"
+                                    disabled={uploadingImage}
                                 />
                             </label>
-                            {selectedFile && (
-                                <button
-                                    onClick={handleImageUpload}
-                                    disabled={uploadingImage}
-                                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 sm:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-xs sm:text-sm sm:text-base whitespace-nowrap"
-                                >
-                                    {uploadingImage ? (
-                                        <>
-                                            <div className="w-3 h-3 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            <span>Uploading...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckCircle2 className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                            <span>Upload</span>
-                                        </>
-                                    )}
-                                </button>
+                            {uploadingImage && (
+                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Uploading image...</p>
                             )}
                         </div>
                     </div>

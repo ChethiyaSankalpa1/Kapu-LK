@@ -51,6 +51,14 @@ app.use(helmet());
 // Response compression
 app.use(compression());
 
+// Static file caching headers
+app.use((req, res, next) => {
+  if (req.url.match(/\.(jpg|jpeg|png|gif|webp|svg|ico|css|js)$/)) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  }
+  next();
+});
+
 // CORS (restrict in production via CORS_ORIGIN="https://site.com,https://www.site.com")
 const knownOrigins = [
   'https://kapu-lk-client.vercel.app',
