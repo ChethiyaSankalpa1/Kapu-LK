@@ -9,7 +9,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['message', 'profile_view', 'match'],
+      enum: ['message', 'profile_view', 'match', 'profile_reminder'],
       required: true,
     },
     message: {
