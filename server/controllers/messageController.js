@@ -96,21 +96,26 @@ exports.sendMessage = async (req, res) => {
     await sender.save();
 
     // Check if a similar notification already exists in the last 5 minutes
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    const existingNotification = await Notification.findOne({
-      user: to,
-      type: 'message',
-      relatedUser: req.user._id,
-      createdAt: { $gte: fiveMinutesAgo }
-    });
-
-    if (!existingNotification) {
-      await Notification.create({
+    try {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      const existingNotification = await Notification.findOne({
         user: to,
         type: 'message',
-        message: `New message from ${req.user.name}`,
         relatedUser: req.user._id,
+        createdAt: { $gte: fiveMinutesAgo }
       });
+
+      if (!existingNotification) {
+        await Notification.create({
+          user: to,
+          type: 'message',
+          message: `New message from ${sender.name}`,
+          relatedUser: req.user._id,
+        });
+      }
+    } catch (notificationError) {
+      console.error('Notification creation error (non-critical):', notificationError);
+      // Don't fail the message send if notification fails
     }
 
     res.status(201).json({
