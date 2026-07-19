@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 import {
     User, MapPin, Briefcase, GraduationCap, Heart,
     Phone, Mail, Calendar, Users as UsersIcon, ArrowLeft, Send, Crown,
-    MessageSquare, Shield
+    MessageSquare, Shield, Paperclip, X, Image as ImageIcon
 } from 'lucide-react';
 
 const UserDetail = () => {
@@ -23,6 +23,8 @@ const UserDetail = () => {
     const [adminMessageText, setAdminMessageText] = useState(''); // for contact admin
     const [sendingMessage, setSendingMessage] = useState(false);
     const [sendingAdminMessage, setSendingAdminMessage] = useState(false);
+    const [adminAttachments, setAdminAttachments] = useState([]);
+    const [attachmentPreviews, setAttachmentPreviews] = useState([]);
 
     const fetchUser = useCallback(async () => {
         try {
@@ -105,24 +107,73 @@ const UserDetail = () => {
 
     const handleContactAdmin = async () => {
         if (!admin) return;
-        if (!adminMessageText.trim()) {
-            toast.error(t('messages.typeAdminPrompt', { defaultValue: 'Please type a message for admin' }));
+        if (!adminMessageText.trim() && adminAttachments.length === 0) {
+            toast.error(t('messages.typeAdminPrompt', { defaultValue: 'Please type a message or attach a file for admin' }));
             return;
         }
         setSendingAdminMessage(true);
         try {
             await messageAPI.sendMessage({
                 to: admin._id,
-                content: adminMessageText.trim(),
+                content: adminMessageText.trim() || 'Attached files',
                 type: 'text',
+                attachments: adminAttachments
             });
             toast.success(t('messages.sentToAdmin', { defaultValue: 'Message sent to admin' }));
             setAdminMessageText('');
+            setAdminAttachments([]);
+            setAttachmentPreviews([]);
         } catch (error) {
             toast.error(error.response?.data?.message || t('messages.sendAdminFailed', { defaultValue: 'Failed to send message to admin' }));
         } finally {
             setSendingAdminMessage(false);
         }
+    };
+
+    const handleFileSelect = (e) => {
+        const files = Array.from(e.target.files);
+        const validFiles = files.filter(file => {
+            const isValidType = file.type.startsWith('image/') || file.type === 'application/pdf';
+            const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB
+            if (!isValidType) {
+                toast.error('Only images and PDF files are allowed');
+                return false;
+            }
+            if (!isValidSize) {
+                toast.error('File size must be less than 5MB');
+                return false;
+            }
+            return true;
+        });
+
+        setAdminAttachments(prev => [...prev, ...validFiles]);
+
+        // Create previews for images
+        validFiles.forEach(file => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setAttachmentPreviews(prev => [...prev, {
+                        file,
+                        preview: reader.result,
+                        type: 'image'
+                    }]);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                setAttachmentPreviews(prev => [...prev, {
+                    file,
+                    preview: null,
+                    type: 'file',
+                    name: file.name
+                }]);
+            }
+        });
+    };
+
+    const removeAttachment = (index) => {
+        setAdminAttachments(prev => prev.filter((_, i) => i !== index));
+        setAttachmentPreviews(prev => prev.filter((_, i) => i !== index));
     };
 
     if (loading) {
@@ -256,6 +307,59 @@ const UserDetail = () => {
                                             className="w-full px-3.5 py-2.5 border border-blue-200 dark:border-blue-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm rounded-xl mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none min-h-[80px]"
                                             rows={3}
                                         />
+                                        
+                                        {/* File Attachments */}
+                                        <div className="mb-3">
+                                            <input
+                                                type="file"
+                                                id="admin-attachments"
+                                                multiple
+                                                accept="image/*,.pdf"
+                                                onChange={handleFileSelect}
+                                                className="hidden"
+                                            />
+                                            <label
+                                                htmlFor="admin-attachments"
+                                                className="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 rounded-lg text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition"
+                                            >
+                                                <Paperclip className="w-4 h-4" />
+                                                <span>Attach Files</span>
+                                            </label>
+                                            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                                                (Images & PDF, max 5MB each)
+                                            </span>
+                                        </div>
+
+                                        {/* Attachment Previews */}
+                                        {attachmentPreviews.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mb-3">
+                                                {attachmentPreviews.map((attachment, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className="relative group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-2"
+                                                    >
+                                                        {attachment.type === 'image' ? (
+                                                            <img
+                                                                src={attachment.preview}
+                                                                alt={`Attachment ${index + 1}`}
+                                                                className="w-16 h-16 object-cover rounded"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-16 h-16 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded">
+                                                                <ImageIcon className="w-8 h-8 text-gray-400" />
+                                                            </div>
+                                                        )}
+                                                        <button
+                                                            onClick={() => removeAttachment(index)}
+                                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <X className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
                                         <button
                                             onClick={handleContactAdmin}
                                             disabled={sendingAdminMessage}

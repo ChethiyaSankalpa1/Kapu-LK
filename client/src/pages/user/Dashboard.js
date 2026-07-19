@@ -67,6 +67,7 @@ const Dashboard = () => {
     const [allUsers, setAllUsers] = useState([]);
     const [overviewLoading, setOverviewLoading] = useState(true);
     const [showAllProfiles, setShowAllProfiles] = useState(false);
+    const [lastRandomizeTime, setLastRandomizeTime] = useState(null);
 
     const [matches, setMatches] = useState([]);
     const [matchesLoading, setMatchesLoading] = useState(false);
@@ -149,15 +150,14 @@ const Dashboard = () => {
     const [cacheTimestamp, setCacheTimestamp] = useState(0);
 
     const fetchOverviewUsers = useCallback(async () => {
-        // Use cache if available and less than 5 minutes old
-        const now = Date.now();
-        if (usersCache && (now - cacheTimestamp) < 5 * 60 * 1000) {
-            setFeaturedUsers(usersCache.featured);
-            setAllUsers(usersCache.all);
-            return;
-        }
-
+        setOverviewLoading(true);
         try {
+            const now = Date.now();
+            const TEN_MINUTES = 10 * 60 * 1000;
+            
+            // Check if we should randomize (every 10 minutes or first time)
+            const shouldRandomize = !lastRandomizeTime || (now - lastRandomizeTime > TEN_MINUTES);
+            
             const response = await userAPI.getAllUsers();
             const oneMonthAgo = new Date();
             oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
@@ -175,19 +175,25 @@ const Dashboard = () => {
                 .map(u => ({
                     ...u,
                     registeredDate: new Date(u.createdAt)
-                }))
-                .sort((a, b) => b.registeredDate - a.registeredDate);
+                }));
 
-            // Set featured users (most recent 6)
-            setFeaturedUsers(filteredUsers.slice(0, 6));
+            // Randomize if needed
+            let randomizedUsers = filteredUsers;
+            if (shouldRandomize) {
+                randomizedUsers = [...filteredUsers].sort(() => Math.random() - 0.5);
+                setLastRandomizeTime(now);
+            }
+
+            // Set featured users (first 6 after randomization)
+            setFeaturedUsers(randomizedUsers.slice(0, 6));
 
             // Set all users for the view more section
-            setAllUsers(filteredUsers);
+            setAllUsers(randomizedUsers);
 
             // Update cache
             setUsersCache({
-                featured: filteredUsers.slice(0, 6),
-                all: filteredUsers
+                featured: randomizedUsers.slice(0, 6),
+                all: randomizedUsers
             });
             setCacheTimestamp(now);
         } catch (error) {
@@ -204,7 +210,7 @@ const Dashboard = () => {
         } finally {
             setOverviewLoading(false);
         }
-    }, [user?._id, t, usersCache, cacheTimestamp]);
+    }, [user?._id, t, usersCache, cacheTimestamp, lastRandomizeTime]);
 
     const fetchMatches = useCallback(async () => {
         setMatchesLoading(true);
