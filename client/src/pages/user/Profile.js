@@ -45,7 +45,6 @@ const Profile = () => {
         livingArrangements: user?.livingArrangements || '',
         partnerPreferences: user?.partnerPreferences || {},
     });
-    const [selectedFile, setSelectedFile] = useState(null);
     const [preview, setPreview] = useState(user?.profileImageUrl || '');
     const [loading, setLoading] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
@@ -110,7 +109,6 @@ const Profile = () => {
                 return;
             }
 
-            setSelectedFile(file);
             setPreview(URL.createObjectURL(file));
 
             // Auto-upload immediately
@@ -122,7 +120,6 @@ const Profile = () => {
                 const response = await authAPI.uploadProfileImage(formDataImg);
                 updateUser({ ...user, profileImageUrl: response.data.profileImageUrl });
                 toast.success('Profile image uploaded successfully!');
-                setSelectedFile(null);
             } catch (error) {
                 console.error('Image upload error:', error);
                 if (error.response?.status === 401) {
@@ -134,7 +131,6 @@ const Profile = () => {
                 }
                 // Reset preview on error
                 setPreview(user?.profileImageUrl || '');
-                setSelectedFile(null);
             } finally {
                 setUploadingImage(false);
             }

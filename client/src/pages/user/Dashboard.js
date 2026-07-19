@@ -145,10 +145,6 @@ const Dashboard = () => {
         }
     }, []);
 
-    // Cache for users data to avoid repeated fetches
-    const [usersCache, setUsersCache] = useState(null);
-    const [cacheTimestamp, setCacheTimestamp] = useState(0);
-
     const fetchOverviewUsers = useCallback(async () => {
         setOverviewLoading(true);
         try {
