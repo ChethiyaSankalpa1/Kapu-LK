@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { userAPI, messageAPI } from '../../services/api';
 import { toast } from 'react-toastify';
-import { Shield, Send, ArrowLeft, Clock, CheckCircle } from 'lucide-react';
+import { Shield, Send, ArrowLeft, Clock, CheckCircle, Upload, X, Image as ImageIcon, AlertCircle, HelpCircle, CreditCard, User as UserIcon, Settings, Bug, FileText } from 'lucide-react';
 
 const ContactAdmin = () => {
     const { t } = useTranslation();
@@ -15,6 +15,19 @@ const ContactAdmin = () => {
     const [sending, setSending] = useState(false);
     const [loading, setLoading] = useState(true);
     const [conversations, setConversations] = useState([]);
+    const [issueType, setIssueType] = useState('');
+    const [attachments, setAttachments] = useState([]);
+    const [uploading, setUploading] = useState(false);
+
+    const issueTypes = [
+        { id: 'bug', label: 'Bug Report', icon: Bug, color: 'red' },
+        { id: 'payment', label: 'Payment Issue', icon: CreditCard, color: 'yellow' },
+        { id: 'profile', label: 'Profile Issue', icon: UserIcon, color: 'blue' },
+        { id: 'account', label: 'Account Settings', icon: Settings, color: 'purple' },
+        { id: 'report', label: 'Report User', icon: AlertCircle, color: 'orange' },
+        { id: 'technical', label: 'Technical Support', icon: HelpCircle, color: 'cyan' },
+        { id: 'other', label: 'Other', icon: FileText, color: 'gray' },
+    ];
 
     const fetchAdmin = useCallback(async () => {
         if (isAdmin) {
@@ -55,8 +68,8 @@ const ContactAdmin = () => {
             toast.error('Admin not available');
             return;
         }
-        if (!messageText.trim()) {
-            toast.error('Please type a message');
+        if (!messageText.trim() && attachments.length === 0) {
+            toast.error('Please type a message or attach an image');
             return;
         }
         setSending(true);
@@ -65,15 +78,62 @@ const ContactAdmin = () => {
                 to: admin._id,
                 content: messageText.trim(),
                 type: 'text',
+                attachments: attachments,
             });
             toast.success('Message sent to admin successfully');
             setMessageText('');
+            setIssueType('');
+            setAttachments([]);
             await fetchConversations();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to send message');
         } finally {
             setSending(false);
         }
+    };
+
+    const handleFileSelect = async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        setUploading(true);
+        const newAttachments = [];
+
+        for (const file of files) {
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                toast.error(`Invalid file type: ${file.name}. Only images (JPEG, PNG, WebP, GIF) are allowed.`);
+                continue;
+            }
+
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error(`File too large: ${file.name}. Maximum size is 5MB.`);
+                continue;
+            }
+
+            // Create preview
+            const preview = URL.createObjectURL(file);
+            newAttachments.push({
+                file,
+                preview,
+                name: file.name,
+                size: file.size,
+            });
+        }
+
+        setAttachments(prev => [...prev, ...newAttachments]);
+        setUploading(false);
+    };
+
+    const removeAttachment = (index) => {
+        setAttachments(prev => {
+            const newAttachments = [...prev];
+            URL.revokeObjectURL(newAttachments[index].preview);
+            newAttachments.splice(index, 1);
+            return newAttachments;
+        });
     };
 
     if (isAdmin) {
@@ -105,7 +165,7 @@ const ContactAdmin = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8">
-            <div className="container mx-auto px-4 max-w-4xl">
+            <div className="container mx-auto px-4 max-w-5xl">
                 <button
                     onClick={() => navigate(-1)}
                     className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-purple-600 mb-8 transition-colors"
@@ -114,100 +174,183 @@ const ContactAdmin = () => {
                     <span className="text-lg font-medium">{t('common.back')}</span>
                 </button>
 
-                <div className="glass-card">
-                    <div className="flex items-center gap-3 mb-6">
-                        <Shield className="w-8 h-8 text-purple-600" />
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                            Contact Admin
-                        </h1>
+                {/* Header */}
+                <div className="text-center mb-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl mb-4 shadow-lg">
+                        <Shield className="w-8 h-8 text-white" />
                     </div>
+                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3">
+                        Support Center
+                    </h1>
+                    <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                        We're here to help! Select an issue type below and describe your problem. Our team typically responds within 24 hours.
+                    </p>
+                </div>
 
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100 dark:border-blue-800/50 rounded-xl p-6 mb-6">
-                        <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                                <Shield className="w-6 h-6 text-blue-600" />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="font-bold text-gray-900 dark:text-white mb-1">
-                                    {admin?.name || 'Admin Support'}
-                                </h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                                    Need help? Contact our admin team for assistance with your account, profile, or any issues.
-                                </p>
-                                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                    <Clock className="w-4 h-4" />
-                                    <span>Response time: Within 24 hours</span>
-                                </div>
-                            </div>
+                {/* Admin Info Card */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100 dark:border-blue-800/50 rounded-2xl p-6 mb-8">
+                    <div className="flex items-start gap-4">
+                        <div className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                            <Shield className="w-7 h-7 text-blue-600" />
                         </div>
-                    </div>
-
-                    {conversations.length > 0 && (
-                        <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                            <div className="flex items-center gap-2 text-green-700 dark:text-green-300 mb-2">
-                                <CheckCircle className="w-5 h-5" />
-                                <span className="font-medium">Conversation Started</span>
-                            </div>
-                            <p className="text-sm text-green-600 dark:text-green-400">
-                                You have an ongoing conversation with admin. Continue below.
+                        <div className="flex-1">
+                            <h3 className="font-bold text-gray-900 dark:text-white mb-1 text-lg">
+                                {admin?.name || 'Admin Support Team'}
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                                Need help? Contact our admin team for assistance with your account, profile, payments, or any technical issues.
                             </p>
+                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                <Clock className="w-4 h-4" />
+                                <span>Response time: Within 24 hours</span>
+                            </div>
                         </div>
-                    )}
+                    </div>
+                </div>
 
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Your Message
-                            </label>
-                            <textarea
-                                value={messageText}
-                                onChange={(e) => setMessageText(e.target.value)}
-                                placeholder="Describe your issue or question..."
-                                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                                rows={6}
+                {conversations.length > 0 && (
+                    <div className="mb-8 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                        <div className="flex items-center gap-2 text-green-700 dark:text-green-300 mb-2">
+                            <CheckCircle className="w-5 h-5" />
+                            <span className="font-medium">Conversation Started</span>
+                        </div>
+                        <p className="text-sm text-green-600 dark:text-green-400">
+                            You have an ongoing conversation with admin. Continue below.
+                        </p>
+                    </div>
+                )}
+
+                <div className="glass-card rounded-2xl p-6 sm:p-8">
+                    {/* Issue Type Selection */}
+                    <div className="mb-8">
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+                            What type of issue are you experiencing?
+                        </label>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            {issueTypes.map((type) => {
+                                const Icon = type.icon;
+                                const colorClasses = {
+                                    red: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400',
+                                    yellow: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-600 dark:text-yellow-400',
+                                    blue: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400',
+                                    purple: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 text-purple-600 dark:text-purple-400',
+                                    orange: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-600 dark:text-orange-400',
+                                    cyan: 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800 text-cyan-600 dark:text-cyan-400',
+                                    gray: 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400',
+                                };
+                                return (
+                                    <button
+                                        key={type.id}
+                                        onClick={() => setIssueType(type.id)}
+                                        className={`p-3 rounded-xl border-2 transition-all ${
+                                            issueType === type.id
+                                                ? `${colorClasses[type.color]} border-current ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-900`
+                                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-purple-300 dark:hover:border-purple-700'
+                                        }`}
+                                    >
+                                        <Icon className="w-6 h-6 mx-auto mb-2" />
+                                        <span className="text-xs font-medium">{type.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Message Input */}
+                    <div className="mb-6">
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            Describe your issue
+                        </label>
+                        <textarea
+                            value={messageText}
+                            onChange={(e) => setMessageText(e.target.value)}
+                            placeholder="Please provide detailed information about your issue..."
+                            className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                            rows={6}
+                        />
+                    </div>
+
+                    {/* File Upload */}
+                    <div className="mb-6">
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            Attach screenshots (optional)
+                        </label>
+                        <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center hover:border-purple-400 dark:hover:border-purple-600 transition-colors">
+                            <input
+                                type="file"
+                                id="file-upload"
+                                multiple
+                                accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                                onChange={handleFileSelect}
+                                className="hidden"
+                                disabled={uploading}
                             />
+                            <label
+                                htmlFor="file-upload"
+                                className="cursor-pointer flex flex-col items-center"
+                            >
+                                <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-3">
+                                    <ImageIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                                </div>
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    {uploading ? 'Uploading...' : 'Click to upload images'}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    JPEG, PNG, WebP, GIF (max 5MB each)
+                                </p>
+                            </label>
                         </div>
 
-                        <button
-                            onClick={handleSendMessage}
-                            disabled={sending || !admin}
-                            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3.5 px-6 rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all transform hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            {sending ? (
-                                <>
-                                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-                                    <span>Sending...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Send className="w-5 h-5" />
-                                    <span>Send Message to Admin</span>
-                                </>
-                            )}
-                        </button>
+                        {/* Image Previews */}
+                        {attachments.length > 0 && (
+                            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                {attachments.map((attachment, index) => (
+                                    <div key={index} className="relative group">
+                                        <img
+                                            src={attachment.preview}
+                                            alt={attachment.name}
+                                            className="w-full h-24 object-cover rounded-lg"
+                                        />
+                                        <button
+                                            onClick={() => removeAttachment(index)}
+                                            className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                                            {attachment.name}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
-                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Common Issues</h4>
-                        <div className="grid md:grid-cols-2 gap-3">
-                            {[
-                                'Profile approval',
-                                'Premium upgrade',
-                                'Account settings',
-                                'Report a user',
-                                'Payment issues',
-                                'Technical support'
-                            ].map((issue, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => setMessageText(`I need help with: ${issue}`)}
-                                    className="text-left px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300"
-                                >
-                                    {issue}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                    {/* Submit Button */}
+                    <button
+                        onClick={handleSendMessage}
+                        disabled={sending || !admin || (!messageText.trim() && attachments.length === 0)}
+                        className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all transform hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 text-lg"
+                    >
+                        {sending ? (
+                            <>
+                                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+                                <span>Sending...</span>
+                            </>
+                        ) : (
+                            <>
+                                <Send className="w-5 h-5" />
+                                <span>Send to Support Team</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+
+                {/* Help Section */}
+                <div className="mt-8 text-center">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        For urgent matters, please include detailed information and screenshots to help us resolve your issue faster.
+                    </p>
                 </div>
             </div>
         </div>

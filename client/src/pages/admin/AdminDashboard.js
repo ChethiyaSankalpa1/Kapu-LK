@@ -392,9 +392,9 @@ const AdminDashboard = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {user.isApproved ? (
-                          <CheckCircle className="w-5 h-5 text-green-500" />
+                          <span className="text-green-600 dark:text-green-400 font-medium">Approved</span>
                         ) : (
-                          <XCircle className="w-5 h-5 text-red-500" />
+                          <span className="text-red-600 dark:text-red-400 font-medium">Pending</span>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -737,9 +737,6 @@ const AdminDashboard = () => {
                         </h3>
                         {inspectedUser.isPremium && (
                           <Crown className="w-5 h-5 text-yellow-500" />
-                        )}
-                        {inspectedUser.isApproved && (
-                          <CheckCircle className="w-5 h-5 text-green-500" />
                         )}
                       </div>
                       <p className="text-gray-600 dark:text-gray-300 mb-3">

@@ -72,14 +72,6 @@ const ProfileCard = ({ user, onLike, onView, isOwnProfile = false }) => {
                             <Calendar className="w-3 h-3" />
                             <span>{joinDate}</span>
                         </div>
-                        
-                        {/* Verified Badge */}
-                        {user?.isApproved && (
-                            <div className="bg-green-500/95 backdrop-blur-md px-2 py-1.5 rounded-full text-white text-[11px] font-semibold flex items-center gap-1 shadow-lg">
-                                <CheckCircle className="w-3 h-3" />
-                                <span className="hidden sm:inline">Verified</span>
-                            </div>
-                        )}
                     </div>
 
                     {/* Bottom Info inside Image */}

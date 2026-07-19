@@ -450,11 +450,6 @@ const Dashboard = () => {
                                         <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
                                         {t('admin.title')}
                                     </span>
-                                ) : user?.isApproved ? (
-                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-400/15 border border-emerald-200 dark:border-emerald-200/30 text-emerald-700 dark:text-emerald-50 text-[11px] sm:text-xs font-semibold">
-                                        <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
-                                        {t('dashboard.profileApproved', { defaultValue: 'Approved' })}
-                                    </span>
                                 ) : (
                                     <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-400/15 border border-amber-200 dark:border-amber-200/30 text-amber-700 dark:text-amber-50 text-[11px] sm:text-xs font-semibold">
                                         <Clock className="w-3.5 h-3.5 mr-1.5" />

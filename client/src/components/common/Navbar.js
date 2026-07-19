@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
     Heart, LogOut, User, Users, LayoutDashboard, Menu, X,
     Sun, Moon, Crown, Globe, ChevronRight, Sparkles, MessageSquare,
-    Shield
+    Shield, FileText
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -163,6 +163,10 @@ const Navbar = () => {
                                                 <Shield className="w-4 h-4" />
                                                 <span>Contact Admin</span>
                                             </Link>
+                                            <Link to="/privacy-policy" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/privacy-policy') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                                                <FileText className="w-4 h-4" />
+                                                <span>Privacy Policy</span>
+                                            </Link>
                                             <Link to="/profile" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/profile') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
                                                 <User className="w-4 h-4" />
                                                 <span className="max-w-[120px] truncate">{user.name}</span>
@@ -286,6 +290,7 @@ const Navbar = () => {
                                         <NavItem to="/conversation" icon={MessageSquare} label="Messages" />
                                         <NavItem to="/profile" icon={User} label="My Profile" />
                                         <NavItem to="/contact-admin" icon={Shield} label="Contact Admin" />
+                                        <NavItem to="/privacy-policy" icon={FileText} label="Privacy Policy" />
                                     </>
                                 )
                             ) : (
