@@ -14,6 +14,7 @@ import Navbar from './components/common/Navbar';
 
 // Lazy-loaded pages (reduces initial bundle size)
 const Home = lazy(() => import('./pages/public/Home'));
+const PrivacyPolicy = lazy(() => import('./pages/public/PrivacyPolicy'));
 
 const Login = lazy(() => import('./pages/auth/Login'));
 const Register = lazy(() => import('./pages/auth/Register'));
@@ -51,6 +52,7 @@ function App() {
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Home />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />

@@ -211,7 +211,9 @@ const Register = () => {
                             <span className="text-xs sm:text-sm">
                                 {t('auth.termsIntro', { defaultValue: 'I have read and agree to the' })}
                                 <span className="font-semibold"> {t('auth.termsAndConditions', { defaultValue: 'Terms & Conditions' })}</span> {t('auth.and', { defaultValue: 'and' })}
-                                <span className="font-semibold"> {t('auth.privacyPolicy', { defaultValue: 'Privacy Policy' })}</span> {t('auth.platformTerms', { defaultValue: 'of this matrimonial platform.' })}
+                                <Link to="/privacy-policy" className="font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
+                                    {t('auth.privacyPolicy', { defaultValue: 'Privacy Policy' })}
+                                </Link> {t('auth.platformTerms', { defaultValue: 'of this matrimonial platform.' })}
                             </span>
                         </label>
                     </div>
