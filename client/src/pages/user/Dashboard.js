@@ -210,7 +210,7 @@ const Dashboard = () => {
         } finally {
             setOverviewLoading(false);
         }
-    }, [user?._id, t, usersCache, cacheTimestamp, lastRandomizeTime]);
+    }, [user?._id, t, lastRandomizeTime]);
 
     const fetchMatches = useCallback(async () => {
         setMatchesLoading(true);

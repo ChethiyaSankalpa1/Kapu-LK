@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI, userAPI } from '../../services/api';
 import { toast } from 'react-toastify';
-import { User, Upload, Save, ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { User, Upload, Save, ArrowLeft, ArrowRight } from 'lucide-react';
 
 const Profile = () => {
     const navigate = useNavigate();
@@ -45,7 +45,6 @@ const Profile = () => {
         livingArrangements: user?.livingArrangements || '',
         partnerPreferences: user?.partnerPreferences || {},
     });
-    const [selectedFile, setSelectedFile] = useState(null);
     const [preview, setPreview] = useState(user?.profileImageUrl || '');
     const [loading, setLoading] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);

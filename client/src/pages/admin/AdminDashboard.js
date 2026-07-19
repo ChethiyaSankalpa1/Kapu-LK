@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 import {
   Users, User, UserCheck, Activity,
   CheckCircle, XCircle, Trash2, Shield, Crown, AlertTriangle, DollarSign, MessageSquare, MoreVertical,
-  Eye, X, Calendar, MapPin, Briefcase, GraduationCap, Heart, Phone, Mail, Star, Clock, FileText
+  Eye, X, Heart, Phone, Star, Clock
 } from 'lucide-react';
 
 const AdminDashboard = () => {
