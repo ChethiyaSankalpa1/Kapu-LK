@@ -185,13 +185,6 @@ const Dashboard = () => {
 
             // Set all users for the view more section
             setAllUsers(randomizedUsers);
-
-            // Update cache
-            setUsersCache({
-                featured: randomizedUsers.slice(0, 6),
-                all: randomizedUsers
-            });
-            setCacheTimestamp(now);
         } catch (error) {
             console.error('Error fetching users:', error);
             if (error.response?.status === 401) {
