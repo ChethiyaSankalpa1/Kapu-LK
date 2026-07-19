@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { userAPI, messageAPI } from '../../services/api';
 import { toast } from 'react-toastify';
-import { Shield, Send, ArrowLeft, Clock, CheckCircle, Upload, X, Image as ImageIcon, AlertCircle, HelpCircle, CreditCard, User as UserIcon, Settings, Bug, FileText } from 'lucide-react';
+import { Shield, Send, ArrowLeft, Clock, CheckCircle, X, Image as ImageIcon, AlertCircle, HelpCircle, CreditCard, User as UserIcon, Settings, Bug, FileText } from 'lucide-react';
 
 const ContactAdmin = () => {
     const { t } = useTranslation();

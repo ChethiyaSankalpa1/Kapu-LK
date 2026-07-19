@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Calendar, Crown, ChevronRight, CheckCircle, Sparkles } from 'lucide-react';
+import { MapPin, Calendar, Crown, ChevronRight, Sparkles } from 'lucide-react';
 import moment from 'moment';
 
 const ProfileCard = ({ user, onLike, onView, isOwnProfile = false }) => {
