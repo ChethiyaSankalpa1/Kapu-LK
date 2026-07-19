@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { adminAPI, messageAPI, userAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
-  Users, UserCheck, Activity,
+  Users, User, UserCheck, Activity,
   CheckCircle, XCircle, Trash2, Shield, Crown, AlertTriangle, DollarSign, MessageSquare, MoreVertical,
   Eye, X, Calendar, MapPin, Briefcase, GraduationCap, Heart, Phone, Mail, Star, Clock, FileText
 } from 'lucide-react';
