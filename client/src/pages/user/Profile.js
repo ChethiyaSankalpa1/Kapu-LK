@@ -45,6 +45,7 @@ const Profile = () => {
         livingArrangements: user?.livingArrangements || '',
         partnerPreferences: user?.partnerPreferences || {},
     });
+    const [selectedFile, setSelectedFile] = useState(null);
     const [preview, setPreview] = useState(user?.profileImageUrl || '');
     const [loading, setLoading] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
