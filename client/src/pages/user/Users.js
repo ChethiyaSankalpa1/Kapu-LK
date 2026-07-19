@@ -144,7 +144,7 @@ const Users = () => {
             toast.error('Account approval is required before messaging.');
             return;
         }
-        navigate(`/conversation`, { state: { userId: id } });
+        navigate(`/conversation/${id}`);
     };
 
     if (!currentUser?.isApproved && currentUser?.role !== 'admin') {

@@ -266,8 +266,7 @@ const Dashboard = () => {
     }, [activeTab, pendingConversationUserId, handleOpenConversation]);
 
     const handleCardMessage = (otherUserId) => {
-        setActiveTab('messages');
-        setPendingConversationUserId(otherUserId);
+        navigate(`/conversation/${otherUserId}`);
     };
 
     const handleQuickLike = async (targetUserId) => {
