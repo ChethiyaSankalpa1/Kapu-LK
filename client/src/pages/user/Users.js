@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 const Users = () => {
     const { t } = useTranslation();
     const { user: currentUser } = useAuth();
+    const navigate = useNavigate();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -28,7 +29,6 @@ const Users = () => {
         interests: '',
     });
     const [showFilters, setShowFilters] = useState(false);
-    const navigate = useNavigate();
     const observer = useRef(null);
 
     // Cleanup observer on unmount (prevents leaks)
@@ -137,6 +137,14 @@ const Users = () => {
             return;
         }
         navigate(`/users/${id}`);
+    };
+
+    const handleMessage = (id) => {
+        if (!currentUser?.isApproved && currentUser?.role !== 'admin') {
+            toast.error('Account approval is required before messaging.');
+            return;
+        }
+        navigate(`/conversation`, { state: { userId: id } });
     };
 
     if (!currentUser?.isApproved && currentUser?.role !== 'admin') {
@@ -338,6 +346,7 @@ const Users = () => {
                                             <ProfileCard
                                                 user={u}
                                                 onView={() => handleView(u._id)}
+                                                onMessage={() => handleMessage(u._id)}
                                                 isOwnProfile={false}
                                             />
                                         </div>
@@ -348,6 +357,7 @@ const Users = () => {
                                             key={u._id}
                                             user={u}
                                             onView={() => handleView(u._id)}
+                                            onMessage={() => handleMessage(u._id)}
                                             isOwnProfile={false}
                                         />
                                     );

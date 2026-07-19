@@ -1,9 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Calendar, Crown, ChevronRight, Sparkles } from 'lucide-react';
+import { MapPin, Calendar, Crown, ChevronRight, Sparkles, MessageCircle } from 'lucide-react';
 import moment from 'moment';
 
-const ProfileCard = ({ user, onLike, onView, isOwnProfile = false }) => {
+const ProfileCard = ({ user, onLike, onView, onMessage, isOwnProfile = false }) => {
     const { t } = useTranslation();
     const compact = Boolean(onView);
 
@@ -106,22 +106,31 @@ const ProfileCard = ({ user, onLike, onView, isOwnProfile = false }) => {
                     {description}
                 </p>
 
-                {/* View Profile Button */}
+                {/* Action Buttons */}
                 {onView && (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onView();
-                        }}
-                        className="w-full flex items-center justify-between px-5 py-3.5 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl text-sm font-bold text-gray-800 dark:text-white border border-purple-100 dark:border-purple-800/30 hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 transition-all group-hover:shadow-lg"
-                    >
-                        <span className="flex items-center gap-2">
+                    <div className="flex gap-3">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onView();
+                            }}
+                            className="flex-1 flex items-center justify-center px-4 py-3.5 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl text-sm font-bold text-gray-800 dark:text-white border border-purple-100 dark:border-purple-800/30 hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 transition-all group-hover:shadow-lg"
+                        >
                             <span>{t('dashboard.viewProfile')}</span>
-                        </span>
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                            <ChevronRight className="w-4 h-4 text-white" />
-                        </div>
-                    </button>
+                        </button>
+                        {onMessage && !isOwnProfile && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onMessage();
+                                }}
+                                className="flex items-center justify-center px-4 py-3.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl text-sm font-bold text-gray-800 dark:text-white border border-blue-100 dark:border-blue-800/30 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 transition-all group-hover:shadow-lg"
+                                title={t('dashboard.sendMessage', { defaultValue: 'Send Message' })}
+                            >
+                                <MessageCircle className="w-5 h-5" />
+                            </button>
+                        )}
+                    </div>
                 )}
             </div>
         </div>

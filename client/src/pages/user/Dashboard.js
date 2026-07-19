@@ -677,6 +677,7 @@ const Dashboard = () => {
                                                 key={u._id}
                                                 user={u}
                                                 onView={() => navigate(`/users/${u._id}`)}
+                                                onMessage={() => handleCardMessage(u._id)}
                                                 isOwnProfile={u._id === user._id}
                                             />
                                         ))}
@@ -691,6 +692,7 @@ const Dashboard = () => {
                                                         key={u._id}
                                                         user={u}
                                                         onView={() => navigate(`/users/${u._id}`)}
+                                                        onMessage={() => handleCardMessage(u._id)}
                                                         isOwnProfile={u._id === user._id}
                                                     />
                                                 ))}
