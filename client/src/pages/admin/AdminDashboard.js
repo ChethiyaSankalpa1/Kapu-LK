@@ -157,10 +157,19 @@ const AdminDashboard = () => {
   const handleInspectUser = async (userId) => {
     setInspectorLoading(true);
     try {
-      const response = await userAPI.getUserById(userId);
-      setInspectedUser(response.data);
-      setActiveDropdown(null);
+      // Use the user data already available from the users array
+      const userToInspect = users.find(u => u._id === userId);
+      if (userToInspect) {
+        setInspectedUser(userToInspect);
+        setActiveDropdown(null);
+      } else {
+        // Fallback to API call if user not found in array
+        const response = await userAPI.getUserById(userId);
+        setInspectedUser(response.data);
+        setActiveDropdown(null);
+      }
     } catch (error) {
+      console.error('Error inspecting user:', error);
       toast.error(t('admin.fetchUserFailed', { defaultValue: 'Failed to fetch user details' }));
     } finally {
       setInspectorLoading(false);
