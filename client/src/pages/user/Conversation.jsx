@@ -275,10 +275,19 @@ const Conversation = () => {
         }`}>
           {/* Sidebar Header */}
           <div className="p-4 border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-purple-600" />
-              <span>Messages</span>
-            </h1>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="p-2 -ml-2 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all"
+                aria-label="Back to dashboard"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              </button>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-purple-600" />
+                <span>Messages</span>
+              </h1>
+            </div>
             
             {/* Search Box */}
             <div className="mt-3.5 relative">

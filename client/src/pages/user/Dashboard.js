@@ -740,6 +740,7 @@ const Dashboard = () => {
                                             <div key={m._id} className="relative">
                                                 <ProfileCard
                                                     user={m}
+                                                    onView={() => navigate(`/users/${m._id}`)}
                                                     onLike={() => handleQuickLike(m._id)}
                                                     onMessage={() => handleCardMessage(m._id)}
                                                     onShare={() => { }}
