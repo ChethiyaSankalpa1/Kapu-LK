@@ -7,7 +7,7 @@ import {
     User, Lock, ShieldCheck, BellRing, Globe, Palette,
     Monitor, Smartphone, UserMinus, Key, Trash2, HelpCircle,
     Info, CreditCard, Eye, EyeOff, ChevronRight, ArrowLeft,
-    Save, X, AlertTriangle, CheckCircle
+    Save, X, AlertTriangle, CheckCircle, Sun, Moon
 } from 'lucide-react';
 
 const Settings = () => {
