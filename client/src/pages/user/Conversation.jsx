@@ -266,24 +266,24 @@ const Conversation = () => {
   );
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] bg-gray-100 dark:bg-slate-950 transition-colors duration-300 overflow-hidden">
-      <div className="h-full flex max-w-7xl mx-auto border-x border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden">
+    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 transition-colors duration-500 overflow-hidden">
+      <div className="h-full flex max-w-7xl mx-auto border-x border-slate-200/60 dark:border-slate-800/60 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl overflow-hidden">
         
         {/* ================= SIDEBAR: Conversation List ================= */}
-        <div className={`w-full md:w-[360px] lg:w-[400px] flex flex-col h-full border-r border-gray-200 dark:border-slate-800 shrink-0 ${
+        <div className={`w-full md:w-[360px] lg:w-[400px] flex flex-col h-full border-r border-slate-200/60 dark:border-slate-800/60 shrink-0 ${
           userId ? 'hidden md:flex' : 'flex'
         }`}>
           {/* Sidebar Header */}
-          <div className="p-4 border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+          <div className="p-4 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shrink-0">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => navigate('/dashboard')}
-                className="p-2 -ml-2 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all"
+                className="p-2 -ml-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl transition-all"
                 aria-label="Back to dashboard"
               >
-                <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                <ArrowLeft className="w-5 h-5 text-slate-700 dark:text-slate-300" />
               </button>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-purple-600" />
                 <span>Messages</span>
               </h1>
@@ -296,13 +296,13 @@ const Conversation = () => {
                 placeholder="Search or start new chat..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-gray-50 dark:bg-slate-800 text-gray-800 dark:text-white border border-gray-200 dark:border-slate-700 rounded-xl py-2 px-3.5 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                className="form-input pl-10 text-sm"
               />
-              <Search className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3.5 top-3" />
+              <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-4" />
               {searchQuery && (
                 <button 
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-2.5 p-0.5 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-full text-gray-400"
+                  className="absolute right-3 top-3.5 p-0.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-400"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -311,24 +311,24 @@ const Conversation = () => {
           </div>
 
           {/* Conversations List */}
-          <div className="flex-1 overflow-y-auto chat-scrollbar bg-gray-50/50 dark:bg-slate-900/40">
+          <div className="flex-1 overflow-y-auto chat-scrollbar bg-slate-50/50 dark:bg-slate-900/40">
             {listLoading ? (
               <div className="flex flex-col items-center justify-center h-48 gap-2">
                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500" />
-                <span className="text-xs text-gray-400">Loading chats...</span>
+                <span className="text-xs text-slate-400">Loading chats...</span>
               </div>
             ) : filteredConversations.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-8 text-center h-48">
-                <MessageSquare className="w-10 h-10 text-gray-300 dark:text-slate-700 mb-2" />
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                <MessageSquare className="w-10 h-10 text-slate-300 dark:text-slate-700 mb-2" />
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
                   {searchQuery ? 'No chats found matching query' : 'No conversations yet'}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-slate-400 mt-1">
                   {searchQuery ? 'Check spelling or try another name' : 'Start matches or like profiles to message!'}
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-105 dark:divide-slate-800">
+              <div className="divide-y divide-slate-200/60 dark:divide-slate-800/60">
                 {filteredConversations.map((c) => {
                   const active = userId === c.user._id;
                   const online = isUserOnline(c.user);
@@ -338,13 +338,13 @@ const Conversation = () => {
                       onClick={() => navigate(`/conversation/${c.user._id}`)}
                       className={`w-full text-left px-4 py-3.5 flex gap-3.5 items-center transition-all ${
                         active 
-                          ? 'bg-purple-50/70 dark:bg-purple-950/20 border-l-4 border-purple-600'
-                          : 'bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800/50'
+                          ? 'bg-purple-100/70 dark:bg-purple-950/20 border-l-4 border-purple-600'
+                          : 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                       }`}
                     >
                       {/* Avatar */}
                       <div className="relative shrink-0">
-                        <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-pink-400 to-purple-600 flex items-center justify-center overflow-hidden border border-gray-150 dark:border-slate-700 shadow-sm">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-400 via-pink-500 to-violet-600 flex items-center justify-center overflow-hidden border-2 border-white dark:border-slate-700 shadow-lg">
                           {c.user.profileImageUrl ? (
                             <img
                               src={c.user.profileImageUrl}
@@ -400,27 +400,27 @@ const Conversation = () => {
         </div>
 
         {/* ================= WORKSPACE: Message Feed ================= */}
-        <div className={`flex-1 flex flex-col h-full bg-gray-50 dark:bg-slate-950 ${
-          !userId ? 'hidden md:flex items-center justify-center p-8 bg-gray-50 dark:bg-slate-950' : 'flex'
+        <div className={`flex-1 flex flex-col h-full bg-slate-50/50 dark:bg-slate-950 ${
+          !userId ? 'hidden md:flex items-center justify-center p-8 bg-slate-50/50 dark:bg-slate-950' : 'flex'
         }`}>
           {userId ? (
             <>
               {/* Header */}
-              <div className="py-3 px-4 flex items-center justify-between bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shrink-0 shadow-sm z-10">
+              <div className="py-3 px-4 flex items-center justify-between bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/60 shrink-0 shadow-lg z-10">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => navigate('/conversation')}
-                    className="p-2 -ml-2 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all md:hidden"
+                    className="p-2 -ml-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl transition-all md:hidden"
                     aria-label="Back to conversations list"
                   >
-                    <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                    <ArrowLeft className="w-5 h-5 text-slate-700 dark:text-slate-300" />
                   </button>
                   
                   {otherUser && (
                     <div className="flex items-center gap-3">
                       {/* Avatar */}
                       <Link to={`/users/${otherUser._id}`} className="relative block group">
-                        <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-pink-400 to-purple-600 flex items-center justify-center overflow-hidden border border-gray-150 dark:border-slate-700 shadow-sm group-hover:scale-105 transition-transform">
+                        <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-purple-400 via-pink-500 to-violet-600 flex items-center justify-center overflow-hidden border-2 border-white dark:border-slate-700 shadow-lg group-hover:scale-105 transition-transform">
                           {otherUser.profileImageUrl ? (
                             <img
                               src={otherUser.profileImageUrl}
@@ -439,13 +439,13 @@ const Conversation = () => {
                       {/* Name & status */}
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <Link to={`/users/${otherUser._id}`} className="text-sm sm:text-base font-bold text-gray-900 dark:text-white hover:text-purple-600 transition-colors leading-none">
+                          <Link to={`/users/${otherUser._id}`} className="text-sm sm:text-base font-bold text-slate-900 dark:text-white hover:text-purple-600 transition-colors leading-none">
                             {otherUser.name}
                           </Link>
                           {otherUser.isPremium && <Crown className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
                           {otherUser.role === 'admin' && <Shield className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
                         </div>
-                        <span className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 block font-medium">
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 block font-medium">
                           {getOnlineStatusText(otherUser)}
                         </span>
                       </div>
@@ -455,16 +455,16 @@ const Conversation = () => {
               </div>
 
               {/* Messages scroll area */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 chat-scrollbar bg-[#f4f3f0] dark:bg-slate-950 bg-opacity-70 dark:bg-opacity-100 relative">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 chat-scrollbar bg-slate-100/50 dark:bg-slate-950 bg-opacity-70 dark:bg-opacity-100 relative">
                 {chatLoading && messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-500" />
                   </div>
                 ) : messages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-white/40 dark:bg-slate-900/10 rounded-3xl m-4 border border-dashed border-gray-200 dark:border-slate-800">
+                  <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-white/40 dark:bg-slate-900/10 rounded-3xl m-4 border border-dashed border-slate-200 dark:border-slate-800">
                     <MessageSquare className="w-14 h-14 text-purple-300 dark:text-slate-700 mb-3 animate-pulse" />
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Say Hello!</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Say Hello!</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs">
                       Start your matrimonial conversation. Keep it polite, respect privacy, and find your matches.
                     </p>
                   </div>
@@ -623,7 +623,7 @@ const Conversation = () => {
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
                     placeholder={t('messages.typeMessage', { defaultValue: 'Type a message...' })}
-                    className="flex-1 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none text-sm min-h-[44px] max-h-[120px] transition-all leading-normal"
+                    className="flex-1 bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-none text-sm min-h-[52px] max-h-[120px] transition-all leading-normal"
                     rows={1}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -637,7 +637,7 @@ const Conversation = () => {
                   <button
                     type="submit"
                     disabled={sending || uploadingImage || !messageText.trim()}
-                    className="bg-purple-600 hover:bg-purple-700 disabled:opacity-40 text-white p-3 rounded-xl shadow-md transition-all shrink-0 active:scale-95 flex items-center justify-center min-h-[44px] w-11 h-11"
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-40 text-white p-3 rounded-2xl shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/50 transition-all shrink-0 active:scale-95 flex items-center justify-center min-h-[52px] w-11 h-11"
                     aria-label="Send Message"
                   >
                     <Send className="w-5.5 h-5.5" />
@@ -648,18 +648,18 @@ const Conversation = () => {
           ) : (
             // Empty view on desktop when no conversation is selected
             <div className="flex flex-col items-center justify-center text-center p-8 max-w-sm">
-              <div className="w-20 h-20 rounded-3xl bg-purple-50 dark:bg-slate-800 flex items-center justify-center text-purple-600 dark:text-purple-400 mb-6 shadow-md shadow-purple-500/10">
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 mb-6 shadow-2xl shadow-purple-500/20">
                 <MessageSquare className="w-10 h-10" />
               </div>
-              <h2 className="text-xl font-extrabold text-gray-900 dark:text-white mb-2">LoveLK Messenger</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-2">Kapu LK Messenger</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Redesigned chat interface inspired by professional messaging platforms. Select a match to start private, secure, and encrypted conversations.
               </p>
               <div className="mt-6 flex flex-wrap gap-2 justify-center">
-                <Link to="/users" className="text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 font-bold px-3 py-1.5 rounded-full transition-colors">
+                <Link to="/users" className="text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 font-bold px-4 py-2 rounded-full transition-colors">
                   Find matches
                 </Link>
-                <Link to="/dashboard" className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-slate-800 dark:text-gray-300 font-bold px-3 py-1.5 rounded-full transition-colors">
+                <Link to="/dashboard" className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-bold px-4 py-2 rounded-full transition-colors">
                   Back to Dashboard
                 </Link>
               </div>
