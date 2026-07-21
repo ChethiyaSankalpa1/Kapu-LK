@@ -415,6 +415,58 @@ const Navbar = () => {
                 </div>
             </nav>
 
+            {/* ===== MOBILE BOTTOM NAVIGATION ===== */}
+            {user && (
+                <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/60 dark:border-slate-800/60 shadow-2xl">
+                    <div className="flex items-center justify-around py-2 px-2">
+                        <Link
+                            to="/dashboard"
+                            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all ${
+                                isActive('/dashboard')
+                                    ? 'text-purple-600 dark:text-purple-400'
+                                    : 'text-slate-500 dark:text-slate-400'
+                            }`}
+                        >
+                            <LayoutDashboard className="w-6 h-6" />
+                            <span className="text-[10px] font-medium">{t('nav.dashboard')}</span>
+                        </Link>
+                        <Link
+                            to="/users"
+                            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all ${
+                                isActive('/users')
+                                    ? 'text-purple-600 dark:text-purple-400'
+                                    : 'text-slate-500 dark:text-slate-400'
+                            }`}
+                        >
+                            <Users className="w-6 h-6" />
+                            <span className="text-[10px] font-medium">{t('nav.browse')}</span>
+                        </Link>
+                        <Link
+                            to="/conversation"
+                            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all relative ${
+                                isActive('/conversation')
+                                    ? 'text-purple-600 dark:text-purple-400'
+                                    : 'text-slate-500 dark:text-slate-400'
+                            }`}
+                        >
+                            <MessageSquare className="w-6 h-6" />
+                            <span className="text-[10px] font-medium">{t('nav.messages')}</span>
+                        </Link>
+                        <Link
+                            to="/profile"
+                            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all ${
+                                isActive('/profile')
+                                    ? 'text-purple-600 dark:text-purple-400'
+                                    : 'text-slate-500 dark:text-slate-400'
+                            }`}
+                        >
+                            <User className="w-6 h-6" />
+                            <span className="text-[10px] font-medium">{t('nav.profile')}</span>
+                        </Link>
+                    </div>
+                </div>
+            )}
+
             {/* ===== MOBILE OVERLAY ===== */}
             <div
                 aria-hidden="true"
