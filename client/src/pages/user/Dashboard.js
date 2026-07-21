@@ -500,21 +500,21 @@ const Dashboard = () => {
             </div>
 
             <div className="relative container mx-auto px-3 sm:px-4 pb-8 sm:pb-12 -mt-8 sm:-mt-10 md:-mt-14 space-y-4 sm:space-y-6 z-10">
-                <div className="bg-white/95 dark:bg-gray-900/80 backdrop-blur-xl border border-[#dbe4f0] dark:border-gray-700/50 shadow-[0_10px_30px_rgba(15,23,42,0.08)] rounded-[22px] p-1.5 sm:p-2 mobile-tab-list w-full">
+                <div className="glass-card p-2 mobile-tab-list w-full">
                     <button
                         onClick={() => setActiveTab('overview')}
-                        className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'overview'
-                            ? 'bg-[#e7f3ff] text-[#1877F2] shadow-sm'
-                            : 'bg-transparent text-[#65676b] dark:text-white/75 hover:bg-[#f0f2f5] dark:hover:bg-white/10 hover:text-[#1c1e21] dark:hover:text-white'
+                        className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-200 ${activeTab === 'overview'
+                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30'
+                            : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                             }`}
                     >
                         <span>{t('dashboard.overview')}</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('matches')}
-                        className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'matches'
-                            ? 'bg-[#e7f3ff] text-[#1877F2] shadow-sm'
-                            : 'bg-transparent text-[#65676b] dark:text-white/75 hover:bg-[#f0f2f5] dark:hover:bg-white/10 hover:text-[#1c1e21] dark:hover:text-white'
+                        className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-200 ${activeTab === 'matches'
+                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30'
+                            : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                             }`}
                     >
                         <Heart className="w-3.5 h-3.5" />
@@ -522,36 +522,36 @@ const Dashboard = () => {
                     </button>
                     <button
                         onClick={() => navigate('/conversation')}
-                        className="px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 bg-transparent text-[#65676b] dark:text-white/75 hover:bg-[#f0f2f5] dark:hover:bg-white/10 hover:text-[#1c1e21] dark:hover:text-white"
+                        className="px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-200 bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
                     >
                         <MessageCircle className="w-3.5 h-3.5" />
                         <span>{t('dashboard.messages')}</span>
                         {unreadMessagesCount > 0 && (
-                            <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-[10px] rounded-full bg-red-500 text-white font-bold">
+                            <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-[10px] rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold">
                                 {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
                             </span>
                         )}
                     </button>
                     <button
                         onClick={() => setActiveTab('notifications')}
-                        className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'notifications'
-                            ? 'bg-[#e7f3ff] text-[#1877F2] shadow-sm'
-                            : 'bg-transparent text-[#65676b] dark:text-white/75 hover:bg-[#f0f2f5] dark:hover:bg-white/10 hover:text-[#1c1e21] dark:hover:text-white'
+                        className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-200 ${activeTab === 'notifications'
+                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30'
+                            : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                             }`}
                     >
                         <Bell className="w-3.5 h-3.5" />
                         <span>{t('dashboard.notifications')}</span>
                         {unreadNotificationCount > 0 && (
-                            <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-[10px] rounded-full bg-red-500 text-white font-bold">
+                            <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-[10px] rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold">
                                 {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
                             </span>
                         )}
                     </button>
                     <button
                         onClick={() => setActiveTab('search')}
-                        className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-150 ${activeTab === 'search'
-                            ? 'bg-[#e7f3ff] text-[#1877F2] shadow-sm'
-                            : 'bg-transparent text-[#65676b] dark:text-white/75 hover:bg-[#f0f2f5] dark:hover:bg-white/10 hover:text-[#1c1e21] dark:hover:text-white'
+                        className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-200 ${activeTab === 'search'
+                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30'
+                            : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                             }`}
                     >
                         <Search className="w-3.5 h-3.5" />
@@ -596,32 +596,32 @@ const Dashboard = () => {
 
                         {isProfileComplete && (
                             <div className="grid md:grid-cols-3 gap-4 sm:gap-6">
-                                <div className="rounded-3xl border border-slate-200/70 bg-white/90 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-slate-900/70">
-                                    <h2 className="text-sm font-semibold text-gray-500 mb-2">Profile status</h2>
-                                    <p className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                                <div className="glass-card">
+                                    <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-2">Profile status</h2>
+                                    <p className="text-lg font-bold text-slate-900 dark:text-white mb-1">
                                         {user?.role === 'admin'
                                             ? 'Administrator account'
                                             : user?.isApproved
                                                 ? 'Approved member'
                                                 : 'Awaiting approval'}
                                     </p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                                    <p className="text-sm text-slate-600 dark:text-slate-300">
                                         Keep your details up to date to get better matches.
                                     </p>
                                 </div>
 
-                                <div className="rounded-3xl border border-slate-200/70 bg-white/90 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-slate-900/70">
-                                    <h2 className="text-sm font-semibold text-gray-500 mb-2">Next step</h2>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                                <div className="glass-card">
+                                    <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-2">Next step</h2>
+                                    <p className="text-sm text-slate-600 dark:text-slate-300">
                                         {user?.isApproved || user?.role === 'admin'
                                             ? 'Browse profiles, view suggested matches and start conversations.'
                                             : 'Our admin team will review your profile shortly. You can still complete your details.'}
                                     </p>
                                 </div>
 
-                                <div className="rounded-3xl border border-slate-200/70 bg-white/90 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-slate-900/70">
-                                    <h2 className="text-sm font-semibold text-gray-500 mb-2">Quick tips</h2>
-                                    <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1 list-disc list-inside">
+                                <div className="glass-card">
+                                    <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-2">Quick tips</h2>
+                                    <ul className="text-sm text-slate-600 dark:text-slate-300 space-y-1 list-disc list-inside">
                                         <li>Add a clear profile photo.</li>
                                         <li>Write a short, honest bio.</li>
                                         <li>Mention your interests for better compatibility.</li>
@@ -639,12 +639,12 @@ const Dashboard = () => {
                             </div>
                         )}
 
-                        <div className="rounded-3xl border border-[#dfe3e8] dark:border-white/10 bg-white dark:bg-slate-900/70 p-5 sm:p-6 shadow-[0_10px_28px_rgba(15,23,42,0.08)]">
+                        <div className="glass-card">
                             <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Recently Joined</h2>
+                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Recently Joined</h2>
                                 <button
                                     onClick={() => setShowAllProfiles(!showAllProfiles)}
-                                    className="text-sm text-[#1877F2] dark:text-blue-400 hover:text-[#166fe5] dark:hover:text-blue-300 flex items-center space-x-1 font-medium"
+                                    className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 flex items-center space-x-1 font-medium"
                                 >
                                     <span>{showAllProfiles ? 'Show Less' : 'View All Profiles'}</span>
                                 </button>
@@ -697,19 +697,19 @@ const Dashboard = () => {
                 )}
 
                 {activeTab === 'matches' && (
-                    <div className="rounded-3xl border border-[#dfe3e8] dark:border-white/10 bg-white dark:bg-slate-900/70 p-5 sm:p-6 shadow-[0_10px_28px_rgba(15,23,42,0.08)]">
+                    <div className="glass-card">
                         {!isProfileComplete ? (
                             <div className="text-center py-8">
-                                <p className="text-gray-700 dark:text-gray-300 mb-2">Complete your profile to view suggested matches.</p>
+                                <p className="text-slate-700 dark:text-slate-300 mb-2">Complete your profile to view suggested matches.</p>
                                 {missingFields().length > 0 && (
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Missing: {missingFields().join(', ')}</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Missing: {missingFields().join(', ')}</p>
                                 )}
                                 <Link to="/profile" className="inline-block btn-primary">Complete Profile</Link>
                             </div>
                         ) : (
                             <>
                                 <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center space-x-2">
+                                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
                                         <Heart className="w-6 h-6 text-pink-500" />
                                         <span>Suggested Matches</span>
                                     </h2>
@@ -718,7 +718,7 @@ const Dashboard = () => {
                                 {matchesLoading ? (
                                     <div className="text-center py-12">
                                         <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-t-4 border-b-4 border-purple-500 mx-auto mb-4"></div>
-                                        <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">Finding matches...</p>
+                                        <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base">Finding matches...</p>
                                     </div>
                                 ) : matches.length > 0 ? (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -732,7 +732,7 @@ const Dashboard = () => {
                                                     onShare={() => { }}
                                                     isOwnProfile={false}
                                                 />
-                                                <div className="absolute top-4 left-4 bg-white/95 dark:bg-gray-800/90 rounded-full px-3 py-1 text-xs font-semibold text-[#1877F2] dark:text-blue-300 shadow">
+                                                <div className="absolute top-4 left-4 bg-white/95 dark:bg-slate-800/90 rounded-full px-3 py-1 text-xs font-semibold text-purple-600 dark:text-purple-300 shadow-lg">
                                                     Compatibility: {m.compatibilityScore || 0}%
                                                 </div>
                                             </div>
@@ -740,8 +740,8 @@ const Dashboard = () => {
                                     </div>
                                 ) : (
                                     <div className="text-center py-12">
-                                        <Heart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                                        <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">No matches found yet. Complete your profile and add interests for better suggestions.</p>
+                                        <Heart className="w-16 h-16 mx-auto text-slate-400 mb-4" />
+                                        <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base">No matches found yet. Complete your profile and add interests for better suggestions.</p>
                                     </div>
                                 )}
                             </>
@@ -750,7 +750,7 @@ const Dashboard = () => {
                 )}
 
                 {activeTab === 'messages' && (
-                    <div className="rounded-3xl border border-[#dfe3e8] dark:border-white/10 bg-white dark:bg-slate-900/70 p-5 sm:p-6 shadow-[0_10px_28px_rgba(15,23,42,0.08)]">
+                    <div className="glass-card">
                         <div className="grid md:grid-cols-3 gap-6">
                             <div className="md:col-span-1 border-r border-gray-200 dark:border-gray-700 pr-0 md:pr-4">
                                 <div className="flex items-center justify-between mb-4">
