@@ -208,6 +208,19 @@ const Profile = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 py-4 sm:py-8 page-transition">
             <div className="container mx-auto px-3 sm:px-4 max-w-5xl">
+                {/* Warning banner if profile image is missing */}
+                {!user?.profileImageUrl && (
+                    <div className="mb-4 sm:mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-700 rounded-2xl flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-800 flex items-center justify-center shrink-0">
+                            <Upload className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-bold text-amber-900 dark:text-amber-100 text-sm sm:text-base mb-1">Profile Image Required</h3>
+                            <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-300">You must upload a profile picture to access all features including browsing users, messaging, and other premium features.</p>
+                        </div>
+                    </div>
+                )}
+
                 <h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4 sm:mb-8 text-center flex items-center justify-center gap-2 sm:gap-3">
                     <User className="w-6 h-6 sm:w-10 sm:h-10 text-purple-600 flex-shrink-0" />
                     <span>My Profile</span>

@@ -24,6 +24,7 @@ const UserRoute = ({ children }) => {
     }
 
     const isProfileComplete = Boolean(
+        user?.profileImageUrl &&
         user?.age &&
         user?.gender &&
         (user?.district || user?.location) &&
@@ -40,7 +41,7 @@ const UserRoute = ({ children }) => {
         (user?.partnerPreferences?.maritalStatus || '').length > 0
     );
 
-    if (!isProfileComplete && location.pathname.startsWith('/users')) {
+    if (!isProfileComplete && location.pathname !== '/profile') {
         return <Navigate to="/profile" state={{ reason: 'complete_profile' }} replace />;
     }
 
