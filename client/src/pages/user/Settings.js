@@ -5,7 +5,8 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import {
     User, BellRing, Globe, Monitor, UserMinus, Trash2, HelpCircle,
-    Info, Eye, EyeOff, ChevronRight, ArrowLeft, Save, AlertTriangle, Sun, Moon
+    Info, Eye, EyeOff, ChevronRight, ArrowLeft, Save, AlertTriangle, Sun, Moon,
+    ShieldCheck, Key, Palette
 } from 'lucide-react';
 
 const Settings = () => {
