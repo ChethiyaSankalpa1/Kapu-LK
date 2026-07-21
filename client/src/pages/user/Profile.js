@@ -206,22 +206,22 @@ const Profile = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-4 sm:py-8">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 py-4 sm:py-8">
             <div className="container mx-auto px-3 sm:px-4 max-w-5xl">
-                <h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-8 text-center flex items-center justify-center gap-2 sm:gap-3">
+                <h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4 sm:mb-8 text-center flex items-center justify-center gap-2 sm:gap-3">
                     <User className="w-6 h-6 sm:w-10 sm:h-10 text-purple-600 flex-shrink-0" />
                     <span>My Profile</span>
                 </h1>
 
                 {/* Profile Image Section */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-8 md:p-10 mb-4 sm:mb-6 border border-gray-100 dark:border-gray-700">
-                    <h2 className="text-lg sm:text-2xl font-bold mb-4 sm:mb-6 text-center text-gray-900 dark:text-white flex items-center justify-center gap-2 sm:gap-3">
+                <div className="glass-card mb-4 sm:mb-6">
+                    <h2 className="text-lg sm:text-2xl font-bold mb-4 sm:mb-6 text-center text-slate-900 dark:text-white flex items-center justify-center gap-2 sm:gap-3">
                         <Upload className="w-5 h-5 sm:w-7 sm:h-7 text-purple-600 flex-shrink-0" />
                         <span className="hidden sm:inline">Profile Picture</span>
                         <span className="sm:hidden">Photo</span>
                     </h2>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6">
-                        <div className="w-28 h-28 sm:w-40 sm:h-40 rounded-full bg-gradient-to-r from-pink-400 to-purple-600 flex items-center justify-center overflow-hidden ring-4 sm:ring-8 ring-purple-100 dark:ring-purple-900/30 shadow-lg flex-shrink-0">
+                        <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gradient-to-br from-purple-400 via-pink-500 to-violet-600 flex items-center justify-center overflow-hidden ring-4 sm:ring-8 ring-purple-200 dark:ring-purple-500/30 shadow-2xl flex-shrink-0">
                             {preview ? (
                                 <img src={preview} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
@@ -235,7 +235,7 @@ const Profile = () => {
                             )}
                         </div>
                         <div className="flex flex-col items-center sm:items-start gap-2 sm:gap-3 w-full sm:w-auto">
-                            <label className="cursor-pointer bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 sm:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold inline-flex items-center gap-2 transition-all transform hover:scale-105 shadow-md text-xs sm:text-sm sm:text-base whitespace-nowrap">
+                            <label className="cursor-pointer bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white px-4 sm:px-8 py-3 sm:py-4 rounded-2xl font-semibold inline-flex items-center gap-2 transition-all transform hover:scale-105 shadow-xl shadow-purple-500/30 text-xs sm:text-sm sm:text-base whitespace-nowrap min-h-[52px]">
                                 <Upload className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                                 <span>{uploadingImage ? 'Uploading...' : 'Choose Image'}</span>
                                 <input
@@ -247,24 +247,24 @@ const Profile = () => {
                                 />
                             </label>
                             {uploadingImage && (
-                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Uploading image...</p>
+                                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">Uploading image...</p>
                             )}
                         </div>
                     </div>
                 </div>
 
                 {/* Profile Form */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-8 md:p-10 border border-gray-100 dark:border-gray-700">
+                <div className="glass-card">
                     {/* Tabs */}
-                    <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-8 justify-center border-b border-gray-200 dark:border-gray-700 pb-3 sm:pb-4 overflow-x-auto">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-8 justify-center border-b border-slate-200 dark:border-slate-700 pb-3 sm:pb-4 overflow-x-auto">
                         {['about', 'religion', 'family', 'lifestyle', 'partner'].map((t) => (
                             <button
                                 key={t}
                                 type="button"
                                 onClick={() => setTab(t)}
-                                className={`px-2.5 sm:px-4 py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap flex-shrink-0 ${tab === t
-                                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md'
-                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                className={`px-3 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap flex-shrink-0 ${tab === t
+                                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                                     }`}
                             >
                                 {t === 'about' ? '👤 Me' : t === 'religion' ? '🙏 Religion' : t === 'family' ? '👨‍👩‍👧 Family' : t === 'lifestyle' ? '🏃 Lifestyle' : '💕 Partner'}
@@ -278,37 +278,37 @@ const Profile = () => {
                             <div className="space-y-3 sm:space-y-4">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                     <div className="space-y-1.5 sm:space-y-2">
-                                        <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Full Name</label>
-                                        <input type="text" name="name" value={formData.name} onChange={onChange} className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all text-xs sm:text-base" />
+                                        <label className="form-label">Full Name</label>
+                                        <input type="text" name="name" value={formData.name} onChange={onChange} className="form-input" />
                                     </div>
                                     <div className="space-y-1.5 sm:space-y-2">
-                                        <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Profile Name</label>
-                                        <input type="text" name="profileName" value={formData.profileName} onChange={onChange} className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all placeholder:text-xs sm:placeholder:text-sm" placeholder="Visible to others" />
+                                        <label className="form-label">Profile Name</label>
+                                        <input type="text" name="profileName" value={formData.profileName} onChange={onChange} className="form-input" placeholder="Visible to others" />
                                     </div>
                                     <div className="space-y-1.5 sm:space-y-2">
-                                        <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Phone</label>
-                                        <input type="tel" inputMode="numeric" pattern="[0-9]*" name="phoneNumber" value={formData.phoneNumber} onChange={onChange} className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all text-xs sm:text-base" />
+                                        <label className="form-label">Phone</label>
+                                        <input type="tel" inputMode="numeric" pattern="[0-9]*" name="phoneNumber" value={formData.phoneNumber} onChange={onChange} className="form-input" />
                                     </div>
                                     <div className="space-y-1.5 sm:space-y-2">
-                                        <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Age</label>
-                                        <input type="number" name="age" value={formData.age} onChange={onChange} min="18" max="100" className={`w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-3 transition-all text-xs sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${missing.age ? 'border-red-500 focus:ring-red-100 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500'}`} />
+                                        <label className="form-label">Age</label>
+                                        <input type="number" name="age" value={formData.age} onChange={onChange} min="18" max="100" className={`form-input ${missing.age ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`} />
                                         {missing.age && (<p className="text-xs text-red-600 mt-0.5">Required</p>)}
                                     </div>
                                     <div className="space-y-1.5 sm:space-y-2">
-                                        <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Gender</label>
-                                        <select name="gender" value={formData.gender} onChange={onChange} className={`w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-3 transition-all text-xs sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${missing.gender ? 'border-red-500 focus:ring-red-100 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500'}`}>
+                                        <label className="form-label">Gender</label>
+                                        <select name="gender" value={formData.gender} onChange={onChange} className={`form-input ${missing.gender ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}>
                                             <option value="male">Male</option>
                                             <option value="female">Female</option>
                                             <option value="other">Other</option>
                                         </select>
                                     </div>
                                     <div className="space-y-1.5 sm:space-y-2">
-                                        <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Location</label>
-                                        <input type="text" name="location" value={formData.location} onChange={onChange} className={`w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-3 transition-all text-xs sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${missing.locOrDistrict ? 'border-red-500 focus:ring-red-100 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500'}`} />
+                                        <label className="form-label">Location</label>
+                                        <input type="text" name="location" value={formData.location} onChange={onChange} className={`form-input ${missing.locOrDistrict ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`} />
                                     </div>
                                     <div className="space-y-1.5 sm:space-y-2">
-                                        <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">District</label>
-                                        <select name="district" value={formData.district} onChange={onChange} className={`w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-3 transition-all text-xs sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${missing.locOrDistrict ? 'border-red-500 focus:ring-red-100 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500'}`}>
+                                        <label className="form-label">District</label>
+                                        <select name="district" value={formData.district} onChange={onChange} className={`form-input ${missing.locOrDistrict ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}>
                                             {['', 'Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya', 'Galle', 'Matara', 'Hambantota', 'Jaffna', 'Kilinochchi', 'Mannar', 'Vavuniya', 'Mullaitivu', 'Batticaloa', 'Ampara', 'Trincomalee', 'Kurunegala', 'Puttalam', 'Anuradhapura', 'Polonnaruwa', 'Badulla', 'Monaragala', 'Ratnapura', 'Kegalle', 'Other'].map((d) => (
                                                 <option key={d} value={d}>{d || 'Select'}</option>
                                             ))}
@@ -316,42 +316,42 @@ const Profile = () => {
                                         {missing.locOrDistrict && (<p className="text-xs text-red-600 mt-0.5">Either is required</p>)}
                                     </div>
                                     <div className="space-y-1.5 sm:space-y-2">
-                                        <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Education</label>
-                                        <select name="education" value={formData.education} onChange={onChange} className={`w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-3 transition-all text-xs sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${missing.education ? 'border-red-500 focus:ring-red-100 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500'}`}>
+                                        <label className="form-label">Education</label>
+                                        <select name="education" value={formData.education} onChange={onChange} className={`form-input ${missing.education ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}>
                                             {['', 'High School', 'Diploma', 'Bachelor\'s', 'Master\'s', 'PhD', 'Other'].map((o) => (<option key={o} value={o}>{o || 'Select'}</option>))}
                                         </select>
                                     </div>
                                     <div className="space-y-1.5 sm:space-y-2">
-                                        <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Workplace</label>
-                                        <select name="workplace" value={formData.workplace} onChange={onChange} className={`w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-3 transition-all text-xs sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${missing.occupationOrWorkplace ? 'border-red-500 focus:ring-red-100 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500'}`}>
+                                        <label className="form-label">Workplace</label>
+                                        <select name="workplace" value={formData.workplace} onChange={onChange} className={`form-input ${missing.occupationOrWorkplace ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}>
                                             {['', 'Government', 'Private', 'Self-employed', 'Student', 'Other'].map((o) => (<option key={o} value={o}>{o || 'Select'}</option>))}
                                         </select>
                                     </div>
                                     <div className="space-y-1.5 sm:space-y-2">
-                                        <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Occupation</label>
-                                        <select name="occupation" value={formData.occupation} onChange={onChange} className={`w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-3 transition-all text-xs sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${missing.occupationOrWorkplace ? 'border-red-500 focus:ring-red-100 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500'}`}>
+                                        <label className="form-label">Occupation</label>
+                                        <select name="occupation" value={formData.occupation} onChange={onChange} className={`form-input ${missing.occupationOrWorkplace ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}>
                                             {['', 'Software Engineer', 'Engineer', 'Doctor', 'Nurse', 'Teacher', 'Lecturer', 'Government Servant', 'Private Sector Employee', 'Business Owner', 'Student', 'Housewife', 'Unemployed', 'Other'].map((o) => (<option key={o} value={o}>{o || 'Select'}</option>))}
                                         </select>
                                         {missing.occupationOrWorkplace && (<p className="text-xs text-red-600 mt-0.5">Required</p>)}
                                     </div>
                                 </div>
                                 <div className="space-y-1.5 sm:space-y-2">
-                                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Bio</label>
-                                    <textarea name="bio" value={formData.bio} onChange={onChange} rows="3" maxLength="500" className={`w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg sm:rounded-xl focus:ring-3 transition-all resize-none text-xs sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${missing.bio ? 'border-red-500 focus:ring-red-100 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500'}`} placeholder="Tell us about yourself..." />
+                                    <label className="form-label">Bio</label>
+                                    <textarea name="bio" value={formData.bio} onChange={onChange} rows="3" maxLength="500" className={`form-input resize-none ${missing.bio ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`} placeholder="Tell us about yourself..." />
                                     {missing.bio && (<p className="text-xs text-red-600 mt-0.5">Required</p>)}
-                                    <p className="text-xs text-gray-500 flex items-center justify-between mt-1">
+                                    <p className="text-xs text-slate-500 flex items-center justify-between mt-1">
                                         <span>Be engaging!</span>
-                                        <span className="font-mono bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-xs">{formData.bio.length}/500</span>
+                                        <span className="font-mono bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-xs">{formData.bio.length}/500</span>
                                     </p>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                     <div className="space-y-1.5 sm:space-y-2">
-                                        <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Interests</label>
-                                        <textarea name="interests" value={formData.interests} onChange={onChange} rows="2" className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all resize-none text-xs sm:text-base" placeholder="e.g. music, travel (comma separated)" />
+                                        <label className="form-label">Interests</label>
+                                        <textarea name="interests" value={formData.interests} onChange={onChange} rows="2" className="form-input resize-none" placeholder="e.g. music, travel (comma separated)" />
                                     </div>
                                     <div className="space-y-1.5 sm:space-y-2">
-                                        <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">Hobbies</label>
-                                        <textarea name="hobbies" value={formData.hobbies} onChange={onChange} rows="2" className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg sm:rounded-xl focus:ring-3 focus:ring-purple-100 dark:focus:ring-purple-900/30 focus:border-purple-500 transition-all resize-none text-xs sm:text-base" placeholder="What you enjoy..." />
+                                        <label className="form-label">Hobbies</label>
+                                        <textarea name="hobbies" value={formData.hobbies} onChange={onChange} rows="2" className="form-input resize-none" placeholder="What you enjoy..." />
                                     </div>
                                 </div>
                             </div>
