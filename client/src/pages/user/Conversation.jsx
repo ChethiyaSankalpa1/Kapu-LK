@@ -455,7 +455,7 @@ const Conversation = () => {
               </div>
 
               {/* Messages scroll area */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 chat-scrollbar bg-slate-100/50 dark:bg-slate-950 bg-opacity-70 dark:bg-opacity-100 relative">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 chat-scrollbar bg-[#efeae2] dark:bg-slate-950 relative">
                 {chatLoading && messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-500" />
@@ -493,10 +493,10 @@ const Conversation = () => {
                           )}
 
                           <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[75%] rounded-2xl p-2.5 px-3.5 shadow-sm relative ${
+                            <div className={`max-w-[75%] rounded-lg p-2.5 px-3 shadow-sm relative ${
                               isCurrentUser
-                                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-tr-none'
-                                : 'bg-white dark:bg-slate-900 text-gray-950 dark:text-white rounded-tl-none border border-gray-150 dark:border-slate-800'
+                                ? 'bg-[#dcf8c6] text-gray-900 rounded-tr-none'
+                                : 'bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-tl-none border border-gray-200 dark:border-slate-700'
                             }`}>
                               
                               {/* Message Content */}
@@ -623,7 +623,7 @@ const Conversation = () => {
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
                     placeholder={t('messages.typeMessage', { defaultValue: 'Type a message...' })}
-                    className="flex-1 bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-none text-sm min-h-[52px] max-h-[120px] transition-all leading-normal"
+                    className="flex-1 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-gray-400 dark:focus:border-slate-600 outline-none resize-none text-sm min-h-[44px] max-h-[120px] transition-all leading-normal"
                     rows={1}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -637,10 +637,10 @@ const Conversation = () => {
                   <button
                     type="submit"
                     disabled={sending || uploadingImage || !messageText.trim()}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-40 text-white p-3 rounded-2xl shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/50 transition-all shrink-0 active:scale-95 flex items-center justify-center min-h-[52px] w-11 h-11"
+                    className="bg-[#008069] hover:bg-[#00a884] disabled:opacity-40 text-white p-2.5 rounded-lg transition-all shrink-0 flex items-center justify-center min-h-[44px] w-11 h-11"
                     aria-label="Send Message"
                   >
-                    <Send className="w-5.5 h-5.5" />
+                    <Send className="w-5 h-5" />
                   </button>
                 </form>
               </div>
