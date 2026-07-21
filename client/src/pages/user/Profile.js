@@ -206,7 +206,7 @@ const Profile = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 py-4 sm:py-8">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 py-4 sm:py-8 page-transition">
             <div className="container mx-auto px-3 sm:px-4 max-w-5xl">
                 <h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4 sm:mb-8 text-center flex items-center justify-center gap-2 sm:gap-3">
                     <User className="w-6 h-6 sm:w-10 sm:h-10 text-purple-600 flex-shrink-0" />

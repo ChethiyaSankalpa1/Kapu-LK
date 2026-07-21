@@ -109,6 +109,22 @@
     animation: fade-out 0.3s ease-in forwards;
   }
 
+  /* ===== PAGE TRANSITIONS ===== */
+  @keyframes page-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .page-transition {
+    animation: page-fade-in 0.4s ease-out forwards;
+  }
+
   /* ===== BUTTONS ===== */
   .btn-primary {
     @apply bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white font-semibold

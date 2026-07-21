@@ -397,7 +397,7 @@ const Dashboard = () => {
     );
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 text-slate-900 dark:text-white relative overflow-hidden">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 text-slate-900 dark:text-white relative overflow-hidden page-transition">
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-purple-300/40 dark:bg-purple-500/20 blur-3xl" />
                 <div className="absolute top-20 right-20 h-80 w-80 rounded-full bg-pink-300/40 dark:bg-pink-500/20 blur-3xl" />
