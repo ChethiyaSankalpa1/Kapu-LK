@@ -188,11 +188,11 @@ const Dashboard = () => {
         } catch (error) {
             console.error('Error fetching users:', error);
             if (error.response?.status === 401) {
-                toast.error('Please login to view users');
+                toast.error(t('toast.errors.unauthorized'));
             } else if (error.response?.status === 500) {
-                toast.error('Server error. Please try again later.');
+                toast.error(t('toast.errors.serverError'));
             } else {
-                toast.error(t('dashboard.fetchUsersFailed', { defaultValue: 'Failed to fetch users' }));
+                toast.error(t('toast.errors.unknownError'));
             }
             setFeaturedUsers([]);
             setAllUsers([]);
@@ -209,11 +209,11 @@ const Dashboard = () => {
         } catch (error) {
             console.error('Error fetching matches:', error);
             if (error.response?.status === 401) {
-                toast.error('Please login to view matches');
+                toast.error(t('toast.errors.unauthorized'));
             } else if (error.response?.status === 500) {
-                toast.error('Server error. Please try again later.');
+                toast.error(t('toast.errors.serverError'));
             } else {
-                toast.error(t('dashboard.loadMatchesFailed', { defaultValue: 'Failed to load matches' }));
+                toast.error(t('toast.errors.unknownError'));
             }
             setMatches([]);
         } finally {
@@ -276,14 +276,14 @@ const Dashboard = () => {
                 content: 'sent you a like on Kapu LK',
                 type: 'like',
             });
-            toast.success(t('dashboard.likeSent', { defaultValue: 'Like sent' }));
+            toast.success(t('toast.likes.likeSent'));
             await fetchConversations();
             await refreshPremiumStatus();
         } catch (error) {
             if (error.response?.status === 403) {
                 setShowPremiumModal(true);
             } else {
-                toast.error(error.response?.data?.message || t('dashboard.sendLikeFailed', { defaultValue: 'Failed to send like' }));
+                toast.error(error.response?.data?.message || t('toast.likes.likeFailed'));
             }
         }
     };
@@ -293,9 +293,9 @@ const Dashboard = () => {
             await notificationAPI.markAllRead();
             setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
             setUnreadNotificationCount(0);
-            toast.success(t('dashboard.notificationsRead', { defaultValue: 'All notifications marked as read' }));
+            toast.success(t('toast.notifications.allRead'));
         } catch (error) {
-            toast.error(t('dashboard.notificationsUpdateFailed', { defaultValue: 'Failed to update notifications' }));
+            toast.error(t('toast.notifications.markAsReadFailed'));
         }
     };
 
@@ -305,9 +305,9 @@ const Dashboard = () => {
             const response = await userAPI.searchUsers(searchFilters);
             const filteredUsers = (response.data?.data || response.data || []).filter(u => u._id !== user?._id && u.role !== 'admin');
             setSearchResults(filteredUsers);
-            toast.success(t('dashboard.profilesFound', { defaultValue: 'Found {{count}} profiles', count: filteredUsers.length }));
+            toast.success(t('toast.search.profilesFound', { count: filteredUsers.length }));
         } catch (error) {
-            toast.error(t('dashboard.searchFailed', { defaultValue: 'Search failed' }));
+            toast.error(t('toast.search.searchFailed'));
         } finally {
             setSearchLoading(false);
         }

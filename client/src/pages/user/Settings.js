@@ -47,12 +47,12 @@ const Settings = () => {
         e.preventDefault();
         
         if (newPassword !== confirmPassword) {
-            toast.error(t('settings.passwordMismatch'));
+            toast.error(t('toast.settings.passwordMismatch'));
             return;
         }
         
         if (newPassword.length < 6) {
-            toast.error(t('settings.passwordMinLength'));
+            toast.error(t('toast.settings.passwordMinLength'));
             return;
         }
         
@@ -62,12 +62,12 @@ const Settings = () => {
             // Add API call to change password here
             // await userAPI.changePassword({ currentPassword, newPassword });
             
-            toast.success(t('settings.passwordChanged'));
+            toast.success(t('toast.settings.passwordChanged'));
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
         } catch (error) {
-            toast.error(error.response?.data?.message || t('settings.deleteFailed'));
+            toast.error(error.response?.data?.message || t('toast.settings.passwordChangeFailed'));
         } finally {
             setChangingPassword(false);
         }
@@ -75,7 +75,7 @@ const Settings = () => {
 
     const handleDeleteAccount = async () => {
         if (deleteConfirmation !== 'DELETE') {
-            toast.error(t('settings.deleteConfirmError'));
+            toast.error(t('toast.settings.deleteConfirmError'));
             return;
         }
         
@@ -85,11 +85,11 @@ const Settings = () => {
             // Add API call to delete account here
             // await userAPI.deleteAccount();
             
-            toast.success(t('settings.accountDeleted'));
+            toast.success(t('toast.settings.accountDeleted'));
             logout();
             navigate('/');
         } catch (error) {
-            toast.error(error.response?.data?.message || t('settings.deleteFailed'));
+            toast.error(error.response?.data?.message || t('toast.settings.deleteFailed'));
         } finally {
             setDeleting(false);
             setShowDeleteModal(false);

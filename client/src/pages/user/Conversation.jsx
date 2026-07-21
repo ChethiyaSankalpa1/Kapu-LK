@@ -179,7 +179,7 @@ const Conversation = () => {
       fetchChatMessages(true);
       fetchConversationsList(true);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to send message');
+      toast.error(error.response?.data?.message || t('toast.messaging.sendFailed'));
       setMessages(prev => prev.filter(msg => msg._id !== tempId));
       setMessageText(textToSend);
     } finally {
@@ -192,11 +192,11 @@ const Conversation = () => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Only image files are allowed');
+      toast.error(t('toast.messaging.invalidImageType'));
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image file size must be less than 5MB');
+      toast.error(t('toast.messaging.imageTooLarge'));
       return;
     }
 
@@ -217,9 +217,9 @@ const Conversation = () => {
 
       fetchChatMessages(true);
       fetchConversationsList(true);
-      toast.success('Image sent successfully');
+      toast.success(t('toast.messaging.imageSendSuccess'));
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to upload image');
+      toast.error(error.response?.data?.message || t('toast.messaging.imageUploadFailed'));
     } finally {
       setUploadingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

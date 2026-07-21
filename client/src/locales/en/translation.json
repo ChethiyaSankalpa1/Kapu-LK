@@ -47,6 +47,111 @@
     "userInitial": "U",
     "userName": "User Name"
   },
+  "toast": {
+    "auth": {
+      "loginSuccess": "Welcome back! You're now signed in. ❤️",
+      "registerSuccess": "Account created successfully! Welcome to LoveLK. 💕",
+      "logoutSuccess": "You've been signed out. See you soon!",
+      "loginFailed": "Couldn't sign in. Please check your credentials and try again.",
+      "registerFailed": "Couldn't create account. Please try again.",
+      "sessionExpired": "Your session has expired. Please sign in again."
+    },
+    "profile": {
+      "updateSuccess": "Profile updated successfully! Looking great! ✨",
+      "photoUploadSuccess": "Photo uploaded successfully! 📸",
+      "photoDeleteSuccess": "Photo removed successfully.",
+      "photoUploadFailed": "Couldn't upload photo. Please try a different image.",
+      "photoDeleteFailed": "Couldn't remove photo. Please try again.",
+      "invalidFileType": "Please select a valid image (JPEG, PNG, or WebP)",
+      "fileTooLarge": "Image size must be less than 5MB",
+      "completeProfile": "Please complete your profile to connect with others",
+      "verificationPending": "Your profile is under review. We'll notify you once approved.",
+      "verificationApproved": "Your profile has been verified! ✓",
+      "verificationRejected": "Your profile couldn't be verified. Please update your information."
+    },
+    "messaging": {
+      "sendSuccess": "Message sent successfully! 💬",
+      "sendFailed": "Couldn't send message. Please try again.",
+      "imageSendSuccess": "Image sent successfully! 🖼️",
+      "imageUploadFailed": "Couldn't upload image. Please try again.",
+      "invalidImageType": "Only image files are allowed",
+      "imageTooLarge": "Image size must be less than 5MB",
+      "conversationStarted": "Conversation started! Say hello 👋",
+      "messageDeleted": "Message deleted successfully",
+      "messageDeleteFailed": "Couldn't delete message. Please try again."
+    },
+    "likes": {
+      "likeSent": "Like sent! They'll be notified 💕",
+      "likeFailed": "Couldn't send like. Please try again.",
+      "likeRemoved": "Like removed",
+      "alreadyLiked": "You've already liked this profile",
+      "cannotLikeSelf": "You can't like your own profile"
+    },
+    "premium": {
+      "upgradeSuccess": "Welcome to Premium! Enjoy all the amazing features 🌟",
+      "upgradeFailed": "Couldn't upgrade. Please try again or contact support.",
+      "paymentSuccess": "Payment received! Your Premium is now active 💎",
+      "paymentFailed": "Payment failed. Please try again.",
+      "paymentPending": "Payment is being processed. We'll notify you shortly.",
+      "subscriptionCancelled": "Premium subscription cancelled. You'll still have access until the end of your billing period.",
+      "subscriptionRenewed": "Premium subscription renewed! Enjoy another month of Premium ✨"
+    },
+    "admin": {
+      "userApproved": "User approved successfully ✓",
+      "userRejected": "User rejected",
+      "userDeleted": "User deleted successfully",
+      "userStatusUpdated": "User status updated",
+      "premiumApproved": "Premium request approved ✓",
+      "premiumRejected": "Premium request rejected",
+      "actionFailed": "Action failed. Please try again.",
+      "adminMessageSent": "Message sent to user successfully",
+      "adminMessageFailed": "Couldn't send message to user"
+    },
+    "settings": {
+      "passwordChanged": "Password changed successfully! 🔒",
+      "passwordMismatch": "Passwords don't match",
+      "passwordMinLength": "Password must be at least 6 characters",
+      "passwordChangeFailed": "Couldn't change password. Please try again.",
+      "accountDeleted": "Account deleted successfully. We're sad to see you go 😢",
+      "deleteFailed": "Couldn't delete account. Please try again.",
+      "deleteConfirmError": "Please type DELETE to confirm",
+      "preferencesSaved": "Preferences saved successfully ✓",
+      "preferencesFailed": "Couldn't save preferences. Please try again.",
+      "languageChanged": "Language changed successfully 🌍",
+      "themeChanged": "Theme changed successfully 🎨"
+    },
+    "errors": {
+      "networkError": "Network error. Please check your connection and try again.",
+      "serverError": "Something went wrong on our end. Please try again later.",
+      "unauthorized": "Please sign in to continue",
+      "forbidden": "You don't have permission to do this",
+      "notFound": "The requested resource wasn't found",
+      "validationError": "Please check your input and try again",
+      "rateLimit": "Too many requests. Please wait a moment and try again",
+      "unknownError": "Something unexpected happened. Please try again"
+    },
+    "contact": {
+      "messageSent": "Message sent to admin successfully! We'll get back to you soon 📧",
+      "messageFailed": "Couldn't send message. Please try again.",
+      "adminNotAvailable": "Admin is currently unavailable. Please try again later.",
+      "emptyMessage": "Please type a message or attach an image",
+      "invalidAttachment": "Invalid file type. Only images are allowed",
+      "attachmentTooLarge": "File size must be less than 5MB"
+    },
+    "search": {
+      "profilesFound": "Found {{count}} profiles matching your criteria",
+      "noResults": "No profiles found matching your criteria",
+      "searchFailed": "Search failed. Please try again.",
+      "filtersApplied": "Filters applied successfully ✓",
+      "filtersCleared": "Filters cleared"
+    },
+    "notifications": {
+      "allRead": "All notifications marked as read ✓",
+      "markAsReadFailed": "Couldn't mark notifications as read",
+      "notificationDeleted": "Notification deleted",
+      "notificationDeleteFailed": "Couldn't delete notification"
+    }
+  },
   "auth": {
     "loginTitle": "Login to LoveLK",
     "registerTitle": "Join LoveLK",

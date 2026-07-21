@@ -39,7 +39,7 @@ const ContactAdmin = () => {
             setAdmin(adminUser.data);
         } catch (err) {
             console.error('Failed to fetch admin', err);
-            toast.error('Failed to load admin information');
+            toast.error(t('toast.contact.adminNotAvailable'));
         } finally {
             setLoading(false);
         }
@@ -65,11 +65,11 @@ const ContactAdmin = () => {
 
     const handleSendMessage = async () => {
         if (!admin) {
-            toast.error('Admin not available');
+            toast.error(t('toast.contact.adminNotAvailable'));
             return;
         }
         if (!messageText.trim() && attachments.length === 0) {
-            toast.error('Please type a message or attach an image');
+            toast.error(t('toast.contact.emptyMessage'));
             return;
         }
         setSending(true);
@@ -80,13 +80,13 @@ const ContactAdmin = () => {
                 type: 'text',
                 attachments: attachments,
             });
-            toast.success('Message sent to admin successfully');
+            toast.success(t('toast.contact.messageSent'));
             setMessageText('');
             setIssueType('');
             setAttachments([]);
             await fetchConversations();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to send message');
+            toast.error(error.response?.data?.message || t('toast.contact.messageFailed'));
         } finally {
             setSending(false);
         }
@@ -103,13 +103,13 @@ const ContactAdmin = () => {
             // Validate file type
             const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
             if (!validTypes.includes(file.type)) {
-                toast.error(`Invalid file type: ${file.name}. Only images (JPEG, PNG, WebP, GIF) are allowed.`);
+                toast.error(t('toast.contact.invalidAttachment') + `: ${file.name}`);
                 continue;
             }
 
             // Validate file size (max 5MB)
             if (file.size > 5 * 1024 * 1024) {
-                toast.error(`File too large: ${file.name}. Maximum size is 5MB.`);
+                toast.error(t('toast.contact.attachmentTooLarge') + `: ${file.name}`);
                 continue;
             }
 

@@ -99,13 +99,13 @@ const Profile = () => {
             // Validate file type
             const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
             if (!allowedTypes.includes(file.type)) {
-                toast.error('Please select a valid image file (JPEG, PNG, or WebP)');
+                toast.error(t('toast.profile.invalidFileType'));
                 return;
             }
 
             // Validate file size (max 5MB)
             if (file.size > 5 * 1024 * 1024) {
-                toast.error('Image size must be less than 5MB');
+                toast.error(t('toast.profile.fileTooLarge'));
                 return;
             }
 
@@ -119,15 +119,15 @@ const Profile = () => {
             try {
                 const response = await authAPI.uploadProfileImage(formDataImg);
                 updateUser({ ...user, profileImageUrl: response.data.profileImageUrl });
-                toast.success('Profile image uploaded successfully!');
+                toast.success(t('toast.profile.photoUploadSuccess'));
             } catch (error) {
                 console.error('Image upload error:', error);
                 if (error.response?.status === 401) {
-                    toast.error('Please login to upload image');
+                    toast.error(t('toast.errors.unauthorized'));
                 } else if (error.response?.status === 413) {
-                    toast.error('Image size too large');
+                    toast.error(t('toast.profile.fileTooLarge'));
                 } else {
-                    toast.error(error.response?.data?.message || 'Image upload failed');
+                    toast.error(error.response?.data?.message || t('toast.profile.photoUploadFailed'));
                 }
                 // Reset preview on error
                 setPreview(user?.profileImageUrl || '');
@@ -171,13 +171,13 @@ const Profile = () => {
                 ...missingFields.map(f => f.charAt(0).toUpperCase() + f.slice(1)),
                 ...missingPartnerFields.map(f => `Partner ${f.charAt(0).toUpperCase() + f.slice(1)}`)
             ];
-            toast.error(`Please fill in all required fields: ${allMissing.join(', ')}`);
+            toast.error(t('toast.errors.validationError') + `: ${allMissing.join(', ')}`);
             return;
         }
 
         // Validate age
         if (formData.age < 18 || formData.age > 100) {
-            toast.error('Age must be between 18 and 100');
+            toast.error(t('toast.errors.validationError') + ': Age must be between 18 and 100');
             return;
         }
 
@@ -187,16 +187,16 @@ const Profile = () => {
             const response = await userAPI.updateProfile(formData);
             const merged = { ...user, ...response.data };
             updateUser(merged);
-            toast.success(isProfileComplete(merged) ? 'Profile completed successfully!' : 'Profile saved successfully!');
+            toast.success(isProfileComplete(merged) ? t('toast.profile.updateSuccess') : t('common.save') + ' ' + t('common.success'));
             navigate('/dashboard');
         } catch (error) {
             console.error('Profile update error:', error);
             if (error.response?.status === 401) {
-                toast.error('Please login to update your profile');
+                toast.error(t('toast.errors.unauthorized'));
             } else if (error.response?.status === 400) {
-                toast.error(error.response?.data?.message || 'Invalid data provided');
+                toast.error(error.response?.data?.message || t('toast.errors.validationError'));
             } else {
-                toast.error(error.response?.data?.message || 'Update failed');
+                toast.error(error.response?.data?.message || t('toast.errors.serverError'));
             }
         } finally {
             setLoading(false);

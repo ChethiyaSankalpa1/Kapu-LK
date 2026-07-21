@@ -68,10 +68,10 @@ const Register = () => {
         try {
             const response = await authAPI.register({ ...formData, language });
             login(response.data, response.data.token);
-            toast.success(t('auth.registerSuccess'));
+            toast.success(t('toast.auth.registerSuccess'));
             navigate('/profile');
         } catch (error) {
-            toast.error(error.response?.data?.message || t('auth.registerFailed', { defaultValue: 'Registration failed' }));
+            toast.error(error.response?.data?.message || t('toast.auth.registerFailed'));
         } finally {
             setLoading(false);
         }

@@ -45,7 +45,7 @@ const Login = () => {
         try {
             const response = await authAPI.login(formData);
             login(response.data, response.data.token);
-            toast.success(t('auth.loginSuccess'));
+            toast.success(t('toast.auth.loginSuccess'));
 
             if (response.data.role === 'admin') {
                 navigate('/admin');
@@ -53,7 +53,7 @@ const Login = () => {
                 navigate('/dashboard');
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || t('auth.loginFailed', { defaultValue: 'Login failed' }));
+            toast.error(error.response?.data?.message || t('toast.auth.loginFailed'));
         } finally {
             setLoading(false);
         }
