@@ -266,7 +266,7 @@ const Conversation = () => {
   );
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 transition-colors duration-500 overflow-hidden page-transition">
+    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 transition-colors duration-500 overflow-hidden page-transition pb-16 md:pb-0">
       <div className="h-full flex max-w-7xl mx-auto border-x border-slate-200/60 dark:border-slate-800/60 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl overflow-hidden">
         
         {/* ================= SIDEBAR: Conversation List ================= */}
@@ -400,7 +400,7 @@ const Conversation = () => {
         </div>
 
         {/* ================= WORKSPACE: Message Feed ================= */}
-        <div className={`flex-1 flex flex-col h-full bg-slate-50/50 dark:bg-slate-950 ${
+        <div className={`flex-1 flex flex-col h-full bg-slate-50/50 dark:bg-slate-950 pb-16 md:pb-0 ${
           !userId ? 'hidden md:flex items-center justify-center p-8 bg-slate-50/50 dark:bg-slate-950' : 'flex'
         }`}>
           {userId ? (
