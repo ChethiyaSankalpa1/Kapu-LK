@@ -27,16 +27,19 @@ const ProfileCard = ({ user, onLike, onView, onMessage, isOwnProfile = false }) 
         <div
             onClick={onView || undefined}
             className={`
-                group relative bg-white dark:bg-slate-900/90 rounded-[1.5rem] sm:rounded-[1.35rem]
-                border border-gray-100 dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.12)] overflow-hidden
-                transition-all duration-500 ease-out transform hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.15)]
+                group relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl
+                border border-white/60 dark:border-slate-700/60 shadow-2xl overflow-hidden
+                transition-all duration-500 ease-out transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-500/20 dark:hover:shadow-purple-500/30 hover:scale-[1.02]
                 ${compact ? 'cursor-pointer' : ''}
                 w-full max-w-sm mx-auto
             `}
         >
             {/* Profile header with image */}
             <div className="relative p-3 pb-0">
-                <div className="relative h-64 sm:h-56 w-full rounded-2xl overflow-hidden bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 dark:from-purple-900/30 dark:via-pink-900/20 dark:to-blue-900/30">
+                <div className="relative h-72 sm:h-64 w-full rounded-3xl overflow-hidden bg-gradient-to-br from-purple-200 via-pink-100 to-violet-200 dark:from-purple-900/40 dark:via-pink-900/30 dark:to-violet-900/40">
+                    {/* Story ring effect */}
+                    <div className="absolute inset-2 rounded-2xl border-2 border-gradient-to-r from-purple-500 via-pink-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                    
                     {user?.profileImageUrl ? (
                         <img
                             src={user.profileImageUrl}
@@ -45,48 +48,45 @@ const ProfileCard = ({ user, onLike, onView, onMessage, isOwnProfile = false }) 
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                            <div className="w-28 h-28 rounded-full bg-white/80 dark:bg-slate-800/80 shadow-xl flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
-                                <span className="text-5xl font-extrabold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            <div className="w-32 h-32 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-2xl flex items-center justify-center transition-transform duration-500 group-hover:scale-105 border-4 border-purple-200 dark:border-purple-500/30">
+                                <span className="text-6xl font-extrabold bg-gradient-to-r from-purple-600 via-pink-600 to-violet-600 bg-clip-text text-transparent">
                                     {user?.name?.charAt(0) || t('common.userInitial', { defaultValue: 'U' })}
                                 </span>
                             </div>
                         </div>
                     )}
                     {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
                     
                     {/* Premium Sparkles Effect */}
                     {user?.isPremium && (
-                        <div className="absolute top-3 right-3">
+                        <div className="absolute top-4 right-4">
                             <div className="relative">
-                                <Sparkles className="w-6 h-6 text-yellow-400 animate-pulse" />
-                                <div className="absolute inset-0 bg-yellow-400/30 blur-xl rounded-full"></div>
+                                <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 blur-lg opacity-60 animate-pulse" />
+                                <div className="relative bg-gradient-to-r from-yellow-400 to-orange-500 p-2 rounded-full border-2 border-white/50 backdrop-blur-sm shadow-xl">
+                                    <Crown className="w-5 h-5 text-white" />
+                                </div>
                             </div>
                         </div>
                     )}
                     
                     {/* Top Badges */}
-                    <div className="absolute top-3 left-3 flex items-center gap-2">
+                    <div className="absolute top-4 left-4 flex items-center gap-2">
                         {/* Join date */}
-                        <div className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-full text-gray-700 dark:text-white/90 text-[11px] font-semibold flex items-center gap-1.5 border border-white/60 dark:border-white/15 shadow-lg">
-                            <Calendar className="w-3 h-3" />
+                        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3 py-1.5 rounded-full text-slate-700 dark:text-white/90 text-[11px] font-semibold flex items-center gap-1.5 border border-white/60 dark:border-slate-600/60 shadow-lg">
+                            <Calendar className="w-3 h-3 text-purple-600" />
                             <span>{joinDate}</span>
                         </div>
                     </div>
 
                     {/* Bottom Info inside Image */}
-                    <div className="absolute bottom-4 left-4 right-4">
+                    <div className="absolute bottom-5 left-5 right-5">
                         <div className="flex items-center gap-2 mb-2">
                             <h3 className="text-2xl sm:text-xl font-bold text-white tracking-tight drop-shadow-lg">
                                 {user?.name || t('common.userName', { defaultValue: 'User Name' })}
                             </h3>
                             {user?.age && (
-                                <span className="text-lg sm:text-base text-white/95 font-semibold drop-shadow-md">, {user.age}</span>
-                            )}
-                            {user?.isPremium && (
-                                <div className="ml-1 bg-gradient-to-r from-yellow-400 to-orange-500 p-1.5 rounded-full border-2 border-white/30 backdrop-blur-sm shadow-lg">
-                                    <Crown className="w-4 h-4 text-white" />
-                                </div>
+                                <span className="text-lg sm:text-base text-white/95 font-semibold drop-shadow-md bg-black/30 px-2 py-0.5 rounded-full backdrop-blur-sm">, {user.age}</span>
                             )}
                         </div>
                         {(user?.district || user?.location) && (
@@ -100,9 +100,9 @@ const ProfileCard = ({ user, onLike, onView, onMessage, isOwnProfile = false }) 
             </div>
 
             {/* Card Footer Content */}
-            <div className="px-5 pb-5 pt-4">
+            <div className="px-6 pb-6 pt-5">
                 {/* Description */}
-                <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed line-clamp-2 mb-4 font-medium">
+                <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed line-clamp-2 mb-5 font-medium">
                     {description}
                 </p>
 
@@ -114,7 +114,7 @@ const ProfileCard = ({ user, onLike, onView, onMessage, isOwnProfile = false }) 
                                 e.stopPropagation();
                                 onView();
                             }}
-                            className="flex-1 flex items-center justify-center px-4 py-3.5 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl text-sm font-bold text-gray-800 dark:text-white border border-purple-100 dark:border-purple-800/30 hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 transition-all group-hover:shadow-lg"
+                            className="flex-1 flex items-center justify-center px-4 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl text-sm font-bold shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/50 hover:from-purple-700 hover:to-pink-700 transition-all active:scale-95"
                         >
                             <span>{t('dashboard.viewProfile')}</span>
                         </button>
@@ -124,10 +124,10 @@ const ProfileCard = ({ user, onLike, onView, onMessage, isOwnProfile = false }) 
                                     e.stopPropagation();
                                     onMessage();
                                 }}
-                                className="flex items-center justify-center px-4 py-3.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl text-sm font-bold text-gray-800 dark:text-white border border-blue-100 dark:border-blue-800/30 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 transition-all group-hover:shadow-lg"
+                                className="flex items-center justify-center px-4 py-4 bg-white dark:bg-slate-800 text-slate-700 dark:text-white rounded-2xl text-sm font-bold border-2 border-slate-200 dark:border-slate-700 shadow-sm hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all active:scale-95"
                                 title={t('dashboard.sendMessage', { defaultValue: 'Send Message' })}
                             >
-                                <MessageCircle className="w-5 h-5" />
+                                <MessageCircle className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                             </button>
                         )}
                     </div>
