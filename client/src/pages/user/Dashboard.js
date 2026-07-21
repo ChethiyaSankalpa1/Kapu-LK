@@ -397,37 +397,24 @@ const Dashboard = () => {
     );
 
     return (
-        <div className="min-h-screen bg-[#f0f2f5] dark:bg-slate-950 text-gray-900 dark:text-white relative overflow-hidden">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 text-slate-900 dark:text-white relative overflow-hidden">
             <div className="absolute inset-0 pointer-events-none">
-                <div
-                    className="absolute inset-0 opacity-100 dark:opacity-20"
-                    style={{
-                        background: 'linear-gradient(180deg, #e7f3ff 0%, #f0f2f5 48%, #f0f2f5 100%)',
-                    }}
-                />
-                <div className="absolute -top-16 left-0 h-64 w-64 rounded-full bg-blue-200/60 dark:bg-blue-400/10 blur-3xl" />
-                <div className="absolute top-0 right-0 h-72 w-72 rounded-full bg-sky-100/70 dark:bg-sky-400/10 blur-3xl" />
-                <div
-                    className="absolute inset-0 opacity-[0.06] dark:opacity-0"
-                    style={{
-                        backgroundImage: 'linear-gradient(rgba(24,119,242,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(24,119,242,0.18) 1px, transparent 1px)',
-                        backgroundSize: '22px 22px',
-                    }}
-                />
-                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-[#f0f2f5] dark:to-slate-950" />
+                <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-purple-300/40 dark:bg-purple-500/20 blur-3xl" />
+                <div className="absolute top-20 right-20 h-80 w-80 rounded-full bg-pink-300/40 dark:bg-pink-500/20 blur-3xl" />
+                <div className="absolute bottom-20 left-1/3 h-72 w-72 rounded-full bg-violet-300/40 dark:bg-violet-500/20 blur-3xl" />
             </div>
 
             {/* Hero / Welcome banner */}
-            <div className="relative text-gray-900 dark:text-white">
+            <div className="relative text-slate-900 dark:text-white">
                 <div className="container mx-auto px-3 sm:px-4 pt-4 sm:pt-10 md:pt-14 pb-16 sm:pb-20 md:pb-24">
-                    <div className="relative overflow-hidden rounded-[24px] sm:rounded-[28px] border border-[#dbe4f0] dark:border-white/10 bg-white/95 dark:bg-slate-900/75 backdrop-blur-xl shadow-[0_18px_45px_rgba(15,23,42,0.08)] px-4 py-5 sm:px-6 sm:py-8 md:px-8 md:py-10 flex flex-col gap-5 md:flex-row md:items-center md:gap-8">
+                    <div className="relative overflow-hidden rounded-3xl border border-white/60 dark:border-slate-700/60 bg-white/95 dark:bg-slate-900/80 backdrop-blur-xl shadow-2xl px-4 py-5 sm:px-6 sm:py-8 md:px-8 md:py-10 flex flex-col gap-5 md:flex-row md:items-center md:gap-8">
                     <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute inset-y-0 left-0 w-2/3 bg-gradient-to-r from-[#e7f3ff] via-[#f5f9ff] to-transparent dark:from-blue-500/10 dark:to-transparent" />
-                        <div className="absolute -right-12 -top-12 h-32 w-32 sm:h-40 sm:w-40 rounded-full bg-blue-200/40 dark:bg-white/10 blur-3xl" />
-                        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#dbe4f0] to-transparent dark:via-white/20" />
+                        <div className="absolute inset-y-0 left-0 w-2/3 bg-gradient-to-r from-purple-100 via-pink-50 to-transparent dark:from-purple-500/10 dark:to-transparent" />
+                        <div className="absolute -right-12 -top-12 h-32 w-32 sm:h-40 sm:w-40 rounded-full bg-purple-300/40 dark:bg-white/10 blur-3xl" />
+                        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-purple-200/50 to-transparent dark:via-white/20" />
                     </div>
                     <div className="relative z-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:space-x-4 min-w-0">
-                        <div className="w-14 h-14 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-2xl sm:rounded-full bg-[#e7f3ff] dark:bg-white/15 flex items-center justify-center overflow-hidden border border-[#d0def1] dark:border-white/25 shrink-0 shadow-md">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-500/20 dark:to-pink-500/20 flex items-center justify-center overflow-hidden border-2 border-purple-200 dark:border-purple-500/30 shrink-0 shadow-lg">
                             {user?.profileImageUrl ? (
                                 <img
                                     src={user.profileImageUrl}
@@ -435,17 +422,17 @@ const Dashboard = () => {
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                <User className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-[#1877F2] dark:text-white" />
+                                <User className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-purple-600 dark:text-purple-400" />
                             )}
                         </div>
                         <div className="min-w-0 w-full">
-                            <p className="text-[11px] sm:text-sm uppercase tracking-[0.24em] text-[#1877F2] dark:text-white/65 font-semibold">{t('dashboard.title', { defaultValue: 'Kapu LK dashboard' })}</p>
-                            <h1 className="mt-1 text-[1.75rem] sm:text-2xl md:text-3xl lg:text-4xl font-bold leading-tight max-w-[14ch] sm:max-w-none text-[#1c1e21] dark:text-white">
+                            <p className="text-[11px] sm:text-sm uppercase tracking-[0.24em] text-purple-600 dark:text-purple-400 font-semibold">{t('dashboard.title', { defaultValue: 'Kapu LK dashboard' })}</p>
+                            <h1 className="mt-1 text-[1.75rem] sm:text-2xl md:text-3xl lg:text-4xl font-bold leading-tight max-w-[14ch] sm:max-w-none bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                                 {t('dashboard.welcomeBack')}, {user?.name || t('common.member', { defaultValue: 'Member' })}!
                             </h1>
                             <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] sm:text-sm">
                                 {user?.role === 'admin' ? (
-                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#e7f3ff] dark:bg-white/10 border border-[#d0def1] dark:border-white/20 text-[11px] sm:text-xs font-semibold text-[#1877F2] dark:text-white/90">
+                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-purple-100 dark:bg-purple-500/20 border border-purple-200 dark:border-purple-500/30 text-[11px] sm:text-xs font-semibold text-purple-700 dark:text-purple-300">
                                         <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
                                         {t('admin.title')}
                                     </span>
