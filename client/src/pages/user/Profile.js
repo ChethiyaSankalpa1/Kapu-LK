@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI, userAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import { User, Upload, Save, ArrowLeft, ArrowRight } from 'lucide-react';
 
 const Profile = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { user, updateUser } = useAuth();
     const location = useLocation();
