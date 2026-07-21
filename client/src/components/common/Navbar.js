@@ -6,10 +6,7 @@ import moment from 'moment';
 import {
     Heart, LogOut, User, Users, LayoutDashboard, Menu, X,
     Sun, Moon, Crown, Globe, ChevronRight, Sparkles, MessageSquare,
-    Shield, FileText, Search, Bell, Settings, ChevronDown,
-    Lock, ShieldCheck, BellRing, CreditCard, HelpCircle, Info,
-    Trash2, Key, Eye, EyeOff, UserMinus, Palette, Monitor,
-    Smartphone, Globe as World
+    Shield, FileText, Search, Bell, Settings, ChevronDown
 } from 'lucide-react';
 
 const Navbar = () => {

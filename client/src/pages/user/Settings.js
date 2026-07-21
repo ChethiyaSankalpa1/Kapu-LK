@@ -1,18 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import {
-    User, Lock, ShieldCheck, BellRing, Globe, Palette,
-    Monitor, Smartphone, UserMinus, Key, Trash2, HelpCircle,
-    Info, CreditCard, Eye, EyeOff, ChevronRight, ArrowLeft,
-    Save, X, AlertTriangle, CheckCircle, Sun, Moon
+    User, BellRing, Globe, Monitor, UserMinus, Trash2, HelpCircle,
+    Info, Eye, EyeOff, ChevronRight, ArrowLeft, Save, AlertTriangle, Sun, Moon
 } from 'lucide-react';
 
 const Settings = () => {
     const { t } = useTranslation();
-    const { user, logout, darkMode, setDarkMode, language, setLanguage } = useAuth();
+    const { logout, darkMode, setDarkMode, language, setLanguage } = useAuth();
     const navigate = useNavigate();
     
     // Theme state
@@ -31,7 +29,7 @@ const Settings = () => {
     const [deleting, setDeleting] = useState(false);
     
     // Blocked users state
-    const [blockedUsers, setBlockedUsers] = useState([]);
+    const [blockedUsers] = useState([]);
     
     const languages = [
         { code: 'en', flag: '🇬🇧', label: 'English' },
