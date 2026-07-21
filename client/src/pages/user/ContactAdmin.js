@@ -43,7 +43,7 @@ const ContactAdmin = () => {
         } finally {
             setLoading(false);
         }
-    }, [isAdmin]);
+    }, [isAdmin, t]);
 
     const fetchConversations = useCallback(async () => {
         if (isAdmin) return;
