@@ -28,6 +28,7 @@ const UserDetail = lazy(() => import('./pages/user/UserDetail'));
 const PremiumPayment = lazy(() => import('./pages/user/PremiumPayment'));
 const Conversation = lazy(() => import('./pages/user/Conversation'));
 const ContactAdmin = lazy(() => import('./pages/user/ContactAdmin'));
+const Settings = lazy(() => import('./pages/user/Settings'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 
@@ -120,6 +121,14 @@ function App() {
                 element={
                   <UserRoute>
                     <ContactAdmin />
+                  </UserRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <UserRoute>
+                    <Settings />
                   </UserRoute>
                 }
               />

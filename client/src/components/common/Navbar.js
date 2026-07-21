@@ -2,20 +2,31 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
+import moment from 'moment';
 import {
     Heart, LogOut, User, Users, LayoutDashboard, Menu, X,
     Sun, Moon, Crown, Globe, ChevronRight, Sparkles, MessageSquare,
-    Shield, FileText
+    Shield, FileText, Search, Bell, Settings, ChevronDown,
+    Lock, ShieldCheck, BellRing, CreditCard, HelpCircle, Info,
+    Trash2, Key, Eye, EyeOff, UserMinus, Palette, Monitor,
+    Smartphone, Globe as World
 } from 'lucide-react';
 
 const Navbar = () => {
     const { t } = useTranslation();
-    const { user, logout, isAdmin, darkMode, setDarkMode, premiumStatus, language, setLanguage } = useAuth();
+    const { user, logout, isAdmin, darkMode, setDarkMode, premiumStatus, language, setLanguage, notifications } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [langOpen, setLangOpen] = useState(false);
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [notifOpen, setNotifOpen] = useState(false);
+    const [profileOpen, setProfileOpen] = useState(false);
     const drawerRef = useRef(null);
+    const searchRef = useRef(null);
+    const notifRef = useRef(null);
+    const profileRef = useRef(null);
 
     // Auto-close on navigation
     useEffect(() => { setMobileOpen(false); }, [location.pathname]);
@@ -32,10 +43,38 @@ const Navbar = () => {
 
     // Close on outside click / Escape
     useEffect(() => {
-        const handleKey = (e) => { if (e.key === 'Escape') setMobileOpen(false); };
+        const handleKey = (e) => { 
+            if (e.key === 'Escape') {
+                setMobileOpen(false);
+                setSearchOpen(false);
+                setNotifOpen(false);
+                setProfileOpen(false);
+                setLangOpen(false);
+            }
+        };
         window.addEventListener('keydown', handleKey);
         return () => window.removeEventListener('keydown', handleKey);
     }, []);
+
+    // Close dropdowns on outside click
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (searchRef.current && !searchRef.current.contains(event.target)) {
+                setSearchOpen(false);
+            }
+            if (notifRef.current && !notifRef.current.contains(event.target)) {
+                setNotifOpen(false);
+            }
+            if (profileRef.current && !profileRef.current.contains(event.target)) {
+                setProfileOpen(false);
+            }
+            if (langOpen && !event.target.closest('.lang-dropdown')) {
+                setLangOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [langOpen]);
 
     const handleLogout = () => {
         setMobileOpen(false);
@@ -48,6 +87,17 @@ const Navbar = () => {
         { code: 'si', flag: '🇱🇰', label: 'සිංහල' },
         { code: 'ta', flag: '🇮🇳', label: 'தமிழ்' },
     ];
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            navigate('/users', { state: { searchQuery } });
+            setSearchQuery('');
+            setSearchOpen(false);
+        }
+    };
+
+    const unreadCount = notifications?.filter(n => !n.read).length || 0;
 
     const isActive = (path) => location.pathname === path;
 
@@ -86,7 +136,7 @@ const Navbar = () => {
     };
 
     const LangButton = ({ isMobile = false }) => (
-        <div className="relative">
+        <div className="relative lang-dropdown">
             <button
                 onClick={() => setLangOpen(v => !v)}
                 className="flex items-center gap-1.5 p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition text-sm font-medium text-gray-700 dark:text-gray-200"
@@ -94,9 +144,10 @@ const Navbar = () => {
             >
                 <Globe className="w-4 h-4" />
                 <span className="uppercase text-xs">{language}</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${langOpen ? 'rotate-180' : ''}`} />
             </button>
             {langOpen && (
-                <div className={`absolute ${isMobile ? 'left-0' : 'right-0'} mt-2 w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden z-[200]`}>
+                <div className={`absolute ${isMobile ? 'left-0' : 'right-0'} mt-2 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden z-[200] animate-in fade-in slide-in-from-top-2 duration-200`}>
                     {languages.map(l => (
                         <button
                             key={l.code}
@@ -107,10 +158,174 @@ const Navbar = () => {
                                     : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
                             }`}
                         >
-                            <span>{l.flag}</span>
+                            <span className="text-lg">{l.flag}</span>
                             <span>{l.label}</span>
                         </button>
                     ))}
+                </div>
+            )}
+        </div>
+    );
+
+    const SearchBar = () => (
+        <div ref={searchRef} className="relative">
+            <button
+                onClick={() => setSearchOpen(v => !v)}
+                className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-300"
+                aria-label="Search"
+            >
+                <Search className="w-5 h-5" />
+            </button>
+            {searchOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden z-[200] animate-in fade-in slide-in-from-top-2 duration-200">
+                    <form onSubmit={handleSearch} className="p-3">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search profiles..."
+                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                autoFocus
+                            />
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                            <button
+                                type="submit"
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-medium hover:from-purple-700 hover:to-pink-700 transition"
+                            >
+                                Search
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSearchOpen(false)}
+                                className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+        </div>
+    );
+
+    const NotificationMenu = () => (
+        <div ref={notifRef} className="relative">
+            <button
+                onClick={() => setNotifOpen(v => !v)}
+                className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-300 relative"
+                aria-label="Notifications"
+            >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                )}
+            </button>
+            {notifOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden z-[200] animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h3 className="font-semibold text-gray-900 dark:text-white">Notifications</h3>
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                        {notifications && notifications.length > 0 ? (
+                            notifications.map((notif, index) => (
+                                <div
+                                    key={index}
+                                    className={`p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
+                                        !notif.read ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''
+                                    }`}
+                                >
+                                    <p className="text-sm text-gray-900 dark:text-white">{notif.message}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        {moment(notif.createdAt).fromNow()}
+                                    </p>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="p-8 text-center">
+                                <BellRing className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+                                <p className="text-sm text-gray-500 dark:text-gray-400">No notifications yet</p>
+                            </div>
+                        )}
+                    </div>
+                    <div className="p-3 border-t border-gray-200 dark:border-gray-700">
+                        <Link
+                            to="/dashboard"
+                            onClick={() => setNotifOpen(false)}
+                            className="block text-center text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium"
+                        >
+                            View all notifications
+                        </Link>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+
+    const ProfileMenu = () => (
+        <div ref={profileRef} className="relative">
+            <button
+                onClick={() => setProfileOpen(v => !v)}
+                className="flex items-center gap-2 p-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                aria-label="Profile menu"
+            >
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-400 to-purple-600 flex items-center justify-center overflow-hidden">
+                    {user?.profileImageUrl ? (
+                        <img src={user.profileImageUrl} alt={user.name} className="w-full h-full object-cover" />
+                    ) : (
+                        <span className="text-sm font-bold text-white">{user?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+                    )}
+                </div>
+                <ChevronDown className={`w-4 h-4 text-gray-600 dark:text-gray-300 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {profileOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden z-[200] animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <p className="font-semibold text-gray-900 dark:text-white truncate">{user?.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</p>
+                    </div>
+                    <div className="py-2">
+                        <Link
+                            to="/profile"
+                            onClick={() => setProfileOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                        >
+                            <User className="w-4 h-4" />
+                            <span>My Profile</span>
+                        </Link>
+                        <Link
+                            to="/settings"
+                            onClick={() => setProfileOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                        >
+                            <Settings className="w-4 h-4" />
+                            <span>Settings</span>
+                        </Link>
+                        <Link
+                            to="/premium"
+                            onClick={() => setProfileOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                        >
+                            <Crown className="w-4 h-4" />
+                            <span>Go Premium</span>
+                        </Link>
+                    </div>
+                    <div className="py-2 border-t border-gray-200 dark:border-gray-700">
+                        <button
+                            onClick={() => {
+                                setProfileOpen(false);
+                                handleLogout();
+                            }}
+                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+                        >
+                            <LogOut className="w-4 h-4" />
+                            <span>Logout</span>
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
@@ -137,7 +352,7 @@ const Navbar = () => {
                         </Link>
 
                         {/* Desktop nav */}
-                        <div className="hidden md:flex items-center gap-3">
+                        <div className="hidden md:flex items-center gap-2">
                             {user ? (
                                 <>
                                     {isAdmin ? (
@@ -153,40 +368,28 @@ const Navbar = () => {
                                             </Link>
                                             <Link to="/users" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/users') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
                                                 <Users className="w-4 h-4" />
-                                                <span>Browse</span>
+                                                <span>{t('nav.browse')}</span>
                                             </Link>
                                             <Link to="/conversation" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/conversation') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
                                                 <MessageSquare className="w-4 h-4" />
-                                                <span>Messages</span>
-                                            </Link>
-                                            <Link to="/contact-admin" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/contact-admin') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                                                <Shield className="w-4 h-4" />
-                                                <span>Contact Admin</span>
-                                            </Link>
-                                            <Link to="/privacy-policy" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/privacy-policy') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                                                <FileText className="w-4 h-4" />
-                                                <span>Privacy Policy</span>
-                                            </Link>
-                                            <Link to="/profile" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/profile') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                                                <User className="w-4 h-4" />
-                                                <span className="max-w-[120px] truncate">{user.name}</span>
+                                                <span>{t('nav.messages')}</span>
                                             </Link>
                                         </>
                                     )}
+                                    <SearchBar />
+                                    <NotificationMenu />
+                                    <ProfileMenu />
                                     <LangButton />
-                                    <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-300">
-                                        {darkMode ? <Sun className="w-4 h-4 text-yellow-500" /> : <Moon className="w-4 h-4" />}
-                                    </button>
-                                    <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition">
-                                        <LogOut className="w-4 h-4" />
-                                        <span>{t('nav.logout')}</span>
+                                    <button onClick={() => setDarkMode(!darkMode)} className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-300">
+                                        {darkMode ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5" />}
                                     </button>
                                 </>
                             ) : (
                                 <>
+                                    <SearchBar />
                                     <LangButton />
-                                    <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-300">
-                                        {darkMode ? <Sun className="w-4 h-4 text-yellow-500" /> : <Moon className="w-4 h-4" />}
+                                    <button onClick={() => setDarkMode(!darkMode)} className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-300">
+                                        {darkMode ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5" />}
                                     </button>
                                     <Link to="/login" className="text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-purple-600 dark:hover:text-purple-400 transition px-3 py-2">
                                         {t('nav.login')}
@@ -286,11 +489,12 @@ const Navbar = () => {
                                 ) : (
                                     <>
                                         <NavItem to="/dashboard" icon={LayoutDashboard} label={t('nav.dashboard')} />
-                                        <NavItem to="/users" icon={Users} label="Browse Profiles" />
-                                        <NavItem to="/conversation" icon={MessageSquare} label="Messages" />
-                                        <NavItem to="/profile" icon={User} label="My Profile" />
-                                        <NavItem to="/contact-admin" icon={Shield} label="Contact Admin" />
-                                        <NavItem to="/privacy-policy" icon={FileText} label="Privacy Policy" />
+                                        <NavItem to="/users" icon={Users} label={t('nav.browse')} />
+                                        <NavItem to="/conversation" icon={MessageSquare} label={t('nav.messages')} />
+                                        <NavItem to="/profile" icon={User} label={t('nav.profile')} />
+                                        <NavItem to="/settings" icon={Settings} label={t('nav.settings')} />
+                                        <NavItem to="/contact-admin" icon={Shield} label={t('nav.contactAdmin')} />
+                                        <NavItem to="/privacy-policy" icon={FileText} label={t('nav.privacyPolicy')} />
                                     </>
                                 )
                             ) : (
@@ -391,7 +595,7 @@ const Navbar = () => {
                             </Link>
                             <div className="mt-3 text-center">
                                 <Link to="/privacy-policy" className="text-xs text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition">
-                                    Privacy Policy
+                                    {t('nav.privacyPolicy')}
                                 </Link>
                             </div>
                         </>
