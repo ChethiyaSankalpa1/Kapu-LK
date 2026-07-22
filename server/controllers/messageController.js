@@ -188,16 +188,15 @@ exports.getConversations = async (req, res) => {
   }
 };
 
-// @desc    Get messages with a specific user (with pagination)
+// @desc    Get messages with a specific user
 // @route   GET /api/messages/:userId
 // @access  Private
 exports.getConversationWithUser = async (req, res) => {
   try {
     const userId = req.user._id;
     const otherUserId = req.params.userId;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
-    const skip = (page - 1) * limit;
+
+    console.log('Fetching conversation between:', userId, 'and', otherUserId);
 
     const messages = await Message.find({
       $or: [
@@ -205,17 +204,10 @@ exports.getConversationWithUser = async (req, res) => {
         { from: otherUserId, to: userId },
       ],
     })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
+      .sort({ createdAt: 1 })
       .populate('from to', 'name profileImageUrl isOnline lastLogin');
 
-    const total = await Message.countDocuments({
-      $or: [
-        { from: userId, to: otherUserId },
-        { from: otherUserId, to: userId },
-      ],
-    });
+    console.log('Found messages count:', messages.length);
 
     await Message.updateMany(
       { from: otherUserId, to: userId, isRead: false },
@@ -232,24 +224,25 @@ exports.getConversationWithUser = async (req, res) => {
       { $set: { isRead: true } }
     );
 
-    const normalizedMessages = messages
-      .reverse()
-      .map((message) => ({
-        ...message.toObject(),
-        content: decryptMessage(message.content, message.contentIv),
-      }));
-
-    res.json({
-      messages: normalizedMessages,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-        hasMore: skip + limit < total,
-      },
+    const normalizedMessages = messages.map((message) => {
+      try {
+        return {
+          ...message.toObject(),
+          content: decryptMessage(message.content, message.contentIv),
+        };
+      } catch (decryptError) {
+        console.error('Decryption error for message:', message._id, decryptError);
+        return {
+          ...message.toObject(),
+          content: '[Encrypted message]',
+        };
+      }
     });
+
+    console.log('Returning messages count:', normalizedMessages.length);
+    res.json(normalizedMessages);
   } catch (error) {
+    console.error('Error in getConversationWithUser:', error);
     res.status(500).json({ message: error.message });
   }
 };

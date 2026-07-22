@@ -73,6 +73,7 @@ const Conversation = () => {
         userAPI.getUserById(userId)
       ]);
 
+      console.log('Messages response:', messagesRes.data);
       const newMsgs = Array.isArray(messagesRes.data) ? messagesRes.data : [];
       
       // Simulate typing indicator if there is a new message from the other user
@@ -99,6 +100,7 @@ const Conversation = () => {
       setOtherUser(userRes.data);
     } catch (error) {
       console.error('Failed to load chat messages', error);
+      setMessages([]);
     } finally {
       if (!silent) setChatLoading(false);
     }
