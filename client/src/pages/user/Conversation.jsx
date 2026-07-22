@@ -456,21 +456,21 @@ const Conversation = () => {
           {userId ? (
             <>
               {/* Header */}
-              <div className="py-3 px-4 flex items-center justify-between bg-[#f0f2f5] dark:bg-[#202c33] border-b border-[#d1d7db] dark:border-[#222d34] shrink-0 z-10">
-                <div className="flex items-center gap-3">
+              <div className="py-2.5 sm:py-3 px-3 sm:px-4 flex items-center justify-between bg-[#f0f2f5] dark:bg-[#202c33] border-b border-[#d1d7db] dark:border-[#222d34] shrink-0 z-10">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <button
                     onClick={() => navigate('/conversation')}
-                    className="p-2 -ml-2 bg-white dark:bg-[#111b21] hover:bg-slate-100 dark:hover:bg-[#0b141a] rounded-full transition-all md:hidden"
+                    className="p-2 -ml-1 sm:-ml-2 bg-white dark:bg-[#111b21] hover:bg-slate-100 dark:hover:bg-[#0b141a] rounded-full transition-all md:hidden"
                     aria-label="Back to conversations list"
                   >
                     <ArrowLeft className="w-5 h-5 text-slate-700 dark:text-slate-300" />
                   </button>
                   
                   {otherUser && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       {/* Avatar */}
                       <Link to={`/users/${otherUser._id}`} className="relative block group">
-                        <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-tr from-[#25d366] to-[#128c7e] flex items-center justify-center overflow-hidden border-2 border-white dark:border-[#2a3942] shadow-sm group-hover:scale-105 transition-transform">
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full bg-gradient-to-tr from-[#25d366] to-[#128c7e] flex items-center justify-center overflow-hidden border-2 border-white dark:border-[#2a3942] shadow-sm group-hover:scale-105 transition-transform">
                           {otherUser.profileImageUrl ? (
                             <img
                               src={otherUser.profileImageUrl}
@@ -478,18 +478,18 @@ const Conversation = () => {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <User className="w-5 h-5 text-white" />
+                            <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                           )}
                         </div>
                         {isUserOnline(otherUser) && (
-                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#25d366] border-2 border-white dark:border-[#111b21] rounded-full" />
+                          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#25d366] border-2 border-white dark:border-[#111b21] rounded-full" />
                         )}
                       </Link>
 
                       {/* Name & status */}
-                      <div>
+                      <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <Link to={`/users/${otherUser._id}`} className="text-sm sm:text-base font-bold text-slate-900 dark:text-white hover:text-[#128c7e] transition-colors leading-none">
+                          <Link to={`/users/${otherUser._id}`} className="text-sm sm:text-base font-bold text-slate-900 dark:text-white hover:text-[#128c7e] transition-colors leading-none truncate">
                             {otherUser.name}
                           </Link>
                           {otherUser.isPremium && <Crown className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
@@ -674,9 +674,9 @@ const Conversation = () => {
                 )}
 
                 {/* Input Controls */}
-                <form onSubmit={editingMessage ? handleSaveEdit : handleSendMessage} className="flex gap-2 items-end">
+                <form onSubmit={editingMessage ? handleSaveEdit : handleSendMessage} className="flex gap-1.5 sm:gap-2 items-end">
                   {editingMessage && (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-[#f0f2f5] dark:bg-[#2a3942] rounded-full text-xs text-gray-600 dark:text-gray-300">
+                    <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-[#f0f2f5] dark:bg-[#2a3942] rounded-full text-xs text-gray-600 dark:text-gray-300">
                       <span>Editing message</span>
                       <button
                         type="button"
@@ -693,12 +693,12 @@ const Conversation = () => {
                     <button
                       type="button"
                       onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                      className={`p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#374248] transition-colors ${
+                      className={`p-2 sm:p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#374248] transition-colors ${
                         showEmojiPicker ? 'text-[#128c7e] bg-green-50 dark:bg-[#374248]' : 'text-gray-500 dark:text-gray-400'
                       }`}
                       aria-label="Add Emoji"
                     >
-                      <Smile className="w-5.5 h-5.5" />
+                      <Smile className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5" />
                     </button>
 
                     {/* Image sharing trigger - hide when editing */}
@@ -707,13 +707,13 @@ const Conversation = () => {
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploadingImage || sending}
-                        className="p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#374248] text-gray-500 dark:text-gray-400 disabled:opacity-40 transition-colors shrink-0"
+                        className="p-2 sm:p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#374248] text-gray-500 dark:text-gray-400 disabled:opacity-40 transition-colors shrink-0"
                         aria-label="Send Image"
                       >
                         {uploadingImage ? (
-                          <div className="w-5.5 h-5.5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                          <div className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
                         ) : (
-                          <Paperclip className="w-5.5 h-5.5" />
+                          <Paperclip className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5" />
                         )}
                       </button>
                     )}
@@ -727,7 +727,7 @@ const Conversation = () => {
                   </div>
 
                   {/* Message Input text field */}
-                  <div className="flex-1 bg-white dark:bg-[#2a3942] border border-[#d1d7db] dark:border-[#2a3942] rounded-[28px] px-4 py-1.5">
+                  <div className="flex-1 bg-white dark:bg-[#2a3942] border border-[#d1d7db] dark:border-[#2a3942] rounded-[24px] sm:rounded-[28px] px-3 sm:px-4 py-1.5">
                     <textarea
                       value={messageText}
                       onChange={(e) => {
@@ -735,7 +735,7 @@ const Conversation = () => {
                         setEditText(e.target.value);
                       }}
                       placeholder={editingMessage ? 'Edit your message...' : t('messages.typeMessage', { defaultValue: 'Type a message...' })}
-                      className="w-full bg-transparent text-slate-900 dark:text-white focus:outline-none outline-none resize-none text-sm min-h-[40px] max-h-[120px] transition-all leading-normal pt-2"
+                      className="w-full bg-transparent text-slate-900 dark:text-white focus:outline-none outline-none resize-none text-sm min-h-[36px] sm:min-h-[40px] max-h-[120px] transition-all leading-normal pt-2"
                       rows={1}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
@@ -754,10 +754,10 @@ const Conversation = () => {
                   <button
                     type="submit"
                     disabled={sending || uploadingImage || !messageText.trim()}
-                    className="bg-[#00a884] hover:bg-[#128c7e] disabled:opacity-40 text-white p-2.5 rounded-full transition-all shrink-0 flex items-center justify-center min-h-[48px] w-12 h-12 shadow-sm"
+                    className="bg-[#00a884] hover:bg-[#128c7e] disabled:opacity-40 text-white p-2 sm:p-2.5 rounded-full transition-all shrink-0 flex items-center justify-center min-h-[44px] sm:min-h-[48px] w-10 h-10 sm:w-12 sm:h-12 shadow-sm"
                     aria-label={editingMessage ? "Save Edit" : "Send Message"}
                   >
-                    {editingMessage ? <Check className="w-5 h-5" /> : <Send className="w-5 h-5" />}
+                    {editingMessage ? <Check className="w-4 h-4 sm:w-5 sm:h-5" /> : <Send className="w-4 h-4 sm:w-5 sm:h-5" />}
                   </button>
                 </form>
               </div>
