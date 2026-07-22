@@ -263,3 +263,87 @@ exports.uploadChatImage = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Edit a message
+// @route   PUT /api/messages/:messageId
+// @access  Private
+exports.editMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { content } = req.body;
+
+    if (!content || content.trim() === '') {
+      return res.status(400).json({ message: 'Content is required' });
+    }
+
+    const message = await Message.findById(messageId);
+
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // Check if user is the sender
+    if (!message.from.equals(req.user._id)) {
+      return res.status(403).json({ message: 'You can only edit your own messages' });
+    }
+
+    // Encrypt the new content
+    let encryptedMessage;
+    try {
+      encryptedMessage = encryptMessage(content);
+    } catch (encryptError) {
+      console.error('Message encryption error:', encryptError);
+      return res.status(500).json({ message: 'Failed to encrypt message' });
+    }
+
+    // Update the message
+    message.content = encryptedMessage.encryptedContent;
+    message.contentIv = encryptedMessage.iv;
+    message.edited = true;
+    message.editedAt = new Date();
+    await message.save();
+
+    res.json({
+      ...message.toObject(),
+      content,
+    });
+  } catch (error) {
+    console.error('Edit message error:', error);
+    res.status(500).json({ message: error.message || 'Failed to edit message' });
+  }
+};
+
+// @desc    Delete a message
+// @route   DELETE /api/messages/:messageId
+// @access  Private
+exports.deleteMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+
+    const message = await Message.findById(messageId);
+
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // Check if user is the sender
+    if (!message.from.equals(req.user._id)) {
+      return res.status(403).json({ message: 'You can only delete your own messages' });
+    }
+
+    // Mark as deleted instead of actually deleting
+    message.deleted = true;
+    message.deletedAt = new Date();
+    message.content = encryptMessage('This message was deleted.').encryptedContent;
+    message.contentIv = encryptMessage('This message was deleted.').iv;
+    await message.save();
+
+    res.json({
+      message: 'Message deleted successfully',
+      deleted: true,
+    });
+  } catch (error) {
+    console.error('Delete message error:', error);
+    res.status(500).json({ message: error.message || 'Failed to delete message' });
+  }
+};
