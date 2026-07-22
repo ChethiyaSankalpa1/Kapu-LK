@@ -335,7 +335,7 @@ const Conversation = () => {
 
   return (
     <div className="h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4rem)] bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 page-transition pb-0 sm:pb-0">
-      <div className="h-full flex max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden">
+      <div className="h-full flex w-full max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden">
         
         {/* ================= SIDEBAR: Conversation List ================= */}
         <div className={`w-full md:w-[360px] lg:w-[400px] flex flex-col h-full border-r border-[#d1d7db] dark:border-[#222d34] shrink-0 bg-white dark:bg-[#111b21] ${
@@ -755,6 +755,9 @@ const Conversation = () => {
                       placeholder={editingMessage ? 'Edit your message...' : t('messages.typeMessage', { defaultValue: 'Type a message...' })}
                       className="w-full bg-transparent text-slate-900 dark:text-white focus:outline-none outline-none resize-none text-xs sm:text-sm min-h-[32px] sm:min-h-[36px] md:min-h-[40px] max-h-[100px] sm:max-h-[120px] transition-all leading-normal pt-1.5 sm:pt-2"
                       rows={1}
+                      onFocus={() => {
+                        setTimeout(() => scrollToBottom('smooth'), 200);
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
