@@ -316,8 +316,8 @@ const Conversation = () => {
   ) : [];
 
   return (
-    <div className="min-h-screen md:h-[calc(100vh-4rem)] bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 page-transition pb-0 md:pb-0">
-      <div className="min-h-full flex flex-col md:flex-row max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden">
+    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 page-transition pb-0 md:pb-0">
+      <div className="h-full flex max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden">
         
         {/* ================= SIDEBAR: Conversation List ================= */}
         <div className={`w-full md:w-[360px] lg:w-[400px] flex flex-col h-full border-r border-[#d1d7db] dark:border-[#222d34] shrink-0 bg-white dark:bg-[#111b21] ${
@@ -505,7 +505,7 @@ const Conversation = () => {
               </div>
 
               {/* Messages scroll area */}
-              <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-4 space-y-3 sm:space-y-4 chat-scrollbar whatsapp-chat-bg relative">
+              <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-4 space-y-3 sm:space-y-4 chat-scrollbar whatsapp-chat-bg relative min-h-0">
                 {chatLoading && messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-500" />
