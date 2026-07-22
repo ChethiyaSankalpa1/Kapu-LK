@@ -208,7 +208,7 @@ const Navbar = () => {
                 <Search className="w-5 h-5" />
             </button>
             {searchOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden z-[200] animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden z-[200] animate-in fade-in slide-in-from-top-2 duration-200">
                     <form onSubmit={handleSearch} className="p-3">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

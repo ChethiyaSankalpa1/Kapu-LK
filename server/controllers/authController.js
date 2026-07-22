@@ -123,9 +123,8 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Update last login and set online status
+    // Update last login
     user.lastLogin = Date.now();
-    user.isOnline = true;
     await user.save();
 
     res.json({
@@ -139,22 +138,6 @@ exports.login = async (req, res) => {
       language: user.language,
       token: generateToken(user._id),
     });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Logout user
-// @route   POST /api/auth/logout
-// @access  Private
-exports.logout = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-    if (user) {
-      user.isOnline = false;
-      await user.save();
-    }
-    res.json({ message: 'Logged out successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

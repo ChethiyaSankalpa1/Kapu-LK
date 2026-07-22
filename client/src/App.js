@@ -146,7 +146,7 @@ function App() {
           </Suspense>
           <ToastContainer
             position="top-right"
-            autoClose={3000}
+            autoClose={1500}
             hideProgressBar={false}
             newestOnTop
             closeOnClick
@@ -154,6 +154,10 @@ function App() {
             pauseOnFocusLoss
             draggable
             pauseOnHover
+            toastClassName="kapu-toast"
+            bodyClassName="kapu-toast-body"
+            progressClassName="kapu-toast-progress"
+            closeButton={false}
           />
         </div>
       </Router>

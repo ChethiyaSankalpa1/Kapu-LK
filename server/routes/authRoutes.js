@@ -4,7 +4,6 @@ const { body, param } = require('express-validator');
 const {
   register,
   login,
-  logout,
   getMe,
   uploadProfileImage,
   forgotPassword,
@@ -30,7 +29,8 @@ router.post(
   register
 );
 
-router.post('/login',
+router.post(
+  '/login',
   [
     body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
     body('password').notEmpty().withMessage('Password is required'),
@@ -38,8 +38,6 @@ router.post('/login',
   validate,
   login
 );
-
-router.post('/logout', protect, logout);
 
 router.post(
   '/forgot-password',

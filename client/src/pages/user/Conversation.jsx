@@ -318,8 +318,8 @@ const Conversation = () => {
   ) : [];
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 page-transition pb-0 md:pb-0">
-      <div className="min-h-full flex max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden">
+    <div className="h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4rem)] bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 page-transition pb-0 sm:pb-0">
+      <div className="h-full flex max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden">
         
         {/* ================= SIDEBAR: Conversation List ================= */}
         <div className={`w-full md:w-[360px] lg:w-[400px] flex flex-col h-full border-r border-[#d1d7db] dark:border-[#222d34] shrink-0 bg-white dark:bg-[#111b21] ${
@@ -452,7 +452,7 @@ const Conversation = () => {
         </div>
 
         {/* ================= WORKSPACE: Message Feed ================= */}
-        <div className={`flex-1 flex flex-col min-h-full bg-[#efeae2] dark:bg-[#0b141a] pb-0 md:pb-0 overflow-hidden ${
+        <div className={`flex-1 flex flex-col h-full bg-[#efeae2] dark:bg-[#0b141a] pb-0 sm:pb-0 overflow-hidden ${
           !userId ? 'hidden md:flex items-center justify-center p-8 bg-[#efeae2] dark:bg-[#0b141a]' : 'flex'
         }`}>
           {userId ? (
@@ -508,11 +508,11 @@ const Conversation = () => {
 
               {/* Messages scroll area */}
               <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-4 space-y-3 sm:space-y-4 chat-scrollbar whatsapp-chat-bg relative min-h-0">
-                {chatLoading && messages.length === 0 ? (
+                {chatLoading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-500" />
                   </div>
-                ) : messages.length === 0 ? (
+                ) : !Array.isArray(messages) || messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-white/70 dark:bg-[#111b21]/70 rounded-3xl m-4 border border-dashed border-slate-200 dark:border-[#222d34]">
                     <MessageSquare className="w-14 h-14 text-[#7b8b95] dark:text-slate-700 mb-3 animate-pulse" />
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Say Hello!</h3>

@@ -36,7 +36,6 @@ api.interceptors.response.use(
 export const authAPI = {
     register: (data) => api.post('/auth/register', data),
     login: (data) => api.post('/auth/login', data),
-    logout: () => api.post('/auth/logout'),
     forgotPassword: (data) => api.post('/auth/forgot-password', data),
     resetPassword: (token, data) => api.post(`/auth/reset-password/${token}`, data),
     getMe: () => api.get('/auth/me'),
@@ -82,7 +81,7 @@ export const adminAPI = {
 
 export const messageAPI = {
     getConversations: () => api.get('/messages'),
-    getConversationWithUser: (userId, page = 1) => api.get(`/messages/${userId}?page=${page}`),
+    getConversationWithUser: (userId) => api.get(`/messages/${userId}`),
     sendMessage: (data) => api.post('/messages', data),
     uploadChatImage: (formData) => api.post('/messages/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },

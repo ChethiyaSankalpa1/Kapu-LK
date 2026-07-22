@@ -99,12 +99,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
-    try {
-      await authAPI.logout();
-    } catch (err) {
-      console.error('Logout API call failed', err);
-    }
+  const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
