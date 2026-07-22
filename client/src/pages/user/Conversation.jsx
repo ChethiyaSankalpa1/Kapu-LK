@@ -28,9 +28,6 @@ const Conversation = () => {
   const [chatLoading, setChatLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [messageText, setMessageText] = useState('');
-  
-  // Cache for chat data
-  const chatCacheRef = useRef(new Map());
 
   // UI Interactive States
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -46,10 +43,8 @@ const Conversation = () => {
 
   const scrollToBottom = useCallback((behavior = 'smooth') => {
     setTimeout(() => {
-      if (messagesEndRef.current) {
-        messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
-      }
-    }, 100);
+      messagesEndRef.current?.scrollIntoView({ behavior });
+    }, 50);
   }, []);
 
   // Fetch all conversations for the sidebar
@@ -68,50 +63,16 @@ const Conversation = () => {
   const prevMsgCountRef = useRef(0);
 
   // Fetch messages for the active conversation
-  const fetchChatMessages = useCallback(async (silent = false, page = 1) => {
+  const fetchChatMessages = useCallback(async (silent = false) => {
     if (!userId) return;
     if (!silent) setChatLoading(true);
     try {
-      // Check cache first
-      const cacheKey = `${userId}_page_${page}`;
-      if (chatCacheRef.current.has(cacheKey) && page === 1) {
-        const cached = chatCacheRef.current.get(cacheKey);
-        const cacheAge = Date.now() - cached.timestamp;
-        // Use cache if less than 30 seconds old
-        if (cacheAge < 30000) {
-          setMessages(cached.messages);
-          setOtherUser(cached.otherUser);
-          prevMsgCountRef.current = cached.messages.length;
-          if (!silent) setChatLoading(false);
-          return;
-        }
-      }
-
       const [messagesRes, userRes] = await Promise.all([
-        messageAPI.getConversationWithUser(userId, page),
+        messageAPI.getConversationWithUser(userId),
         userAPI.getUserById(userId)
       ]);
 
-      const response = messagesRes.data;
-      const newMsgs = response.messages || [];
-      
-      // Update cache
-      chatCacheRef.current.set(cacheKey, {
-        messages: newMsgs,
-        otherUser: userRes.data,
-        timestamp: Date.now(),
-      });
-      
-      // Clean old cache entries (keep only last 5 per user)
-      const userCacheKeys = Array.from(chatCacheRef.current.keys())
-        .filter(key => key.startsWith(userId))
-        .sort((a, b) => {
-          const pageA = parseInt(a.split('_page_')[1]);
-          const pageB = parseInt(b.split('_page_')[1]);
-          return pageB - pageA;
-        });
-      
-      userCacheKeys.slice(5).forEach(key => chatCacheRef.current.delete(key));
+      const newMsgs = messagesRes.data || [];
       
       // Simulate typing indicator if there is a new message from the other user
       if (prevMsgCountRef.current > 0 && newMsgs.length > prevMsgCountRef.current) {
@@ -172,7 +133,7 @@ const Conversation = () => {
       if (userId) {
         fetchChatMessages(true);
       }
-    }, 2000);
+    }, 4000);
     return () => clearInterval(interval);
   }, [userId, fetchConversationsList, fetchChatMessages]);
 
@@ -195,10 +156,8 @@ const Conversation = () => {
     setMessageText('');
     setShowEmojiPicker(false);
 
-    // Generate unique ID for this message
-    const tempId = `${currentUser._id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
     // Optimistically add message
+    const tempId = Date.now().toString();
     const optimisticMsg = {
       _id: tempId,
       from: currentUser._id,
@@ -206,21 +165,10 @@ const Conversation = () => {
       content: textToSend,
       type: 'text',
       createdAt: new Date().toISOString(),
-      isRead: false,
-      isOptimistic: true
+      isRead: false
     };
 
-    setMessages(prev => {
-      // Check for duplicates by content and recent timestamp
-      const isDuplicate = prev.some(msg => 
-        msg.content === textToSend && 
-        msg.from === currentUser._id &&
-        Date.now() - new Date(msg.createdAt).getTime() < 5000
-      );
-      
-      if (isDuplicate) return prev;
-      return [...prev, optimisticMsg];
-    });
+    setMessages(prev => [...prev, optimisticMsg]);
     scrollToBottom('smooth');
     setSending(true);
 
@@ -230,13 +178,9 @@ const Conversation = () => {
         content: textToSend,
         type: 'text'
       });
-      
-      // Remove optimistic message - polling will handle refresh
-      setMessages(prev => prev.filter(msg => msg._id !== tempId));
-      
-      // Invalidate cache for this conversation
-      const cacheKey = `${userId}_page_1`;
-      chatCacheRef.current.delete(cacheKey);
+      // Refresh list and chat
+      fetchChatMessages(true);
+      fetchConversationsList(true);
     } catch (error) {
       toast.error(error.response?.data?.message || t('toast.messaging.sendFailed'));
       setMessages(prev => prev.filter(msg => msg._id !== tempId));
@@ -371,7 +315,7 @@ const Conversation = () => {
   );
 
   return (
-    <div className="h-[100dvh] md:h-[calc(100vh-4rem)] bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 overflow-hidden page-transition">
+    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 overflow-hidden page-transition pb-0 md:pb-0">
       <div className="h-full flex max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden">
         
         {/* ================= SIDEBAR: Conversation List ================= */}
@@ -505,27 +449,27 @@ const Conversation = () => {
         </div>
 
         {/* ================= WORKSPACE: Message Feed ================= */}
-        <div className={`flex-1 flex flex-col h-full bg-[#efeae2] dark:bg-[#0b141a] overflow-hidden ${
+        <div className={`flex-1 flex flex-col h-full bg-[#efeae2] dark:bg-[#0b141a] pb-0 md:pb-0 ${
           !userId ? 'hidden md:flex items-center justify-center p-8 bg-[#efeae2] dark:bg-[#0b141a]' : 'flex'
         }`}>
           {userId ? (
             <>
               {/* Header */}
-              <div className="py-3 px-3 sm:px-4 md:px-5 flex items-center justify-between bg-[#f0f2f5] dark:bg-[#202c33] border-b border-[#d1d7db] dark:border-[#222d34] shrink-0 z-10 min-h-[64px]">
-                <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-1 min-w-0">
+              <div className="py-2.5 sm:py-3 px-3 sm:px-4 flex items-center justify-between bg-[#f0f2f5] dark:bg-[#202c33] border-b border-[#d1d7db] dark:border-[#222d34] shrink-0 z-10">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <button
                     onClick={() => navigate('/conversation')}
-                    className="p-2 sm:p-2.5 -ml-1 sm:-ml-2 bg-white dark:bg-[#111b21] hover:bg-slate-200 dark:hover:bg-[#0b141a] rounded-full transition-all md:hidden shrink-0 shadow-sm border border-gray-200 dark:border-[#2a3942]"
+                    className="p-2 -ml-1 sm:-ml-2 bg-white dark:bg-[#111b21] hover:bg-slate-100 dark:hover:bg-[#0b141a] rounded-full transition-all md:hidden"
                     aria-label="Back to conversations list"
                   >
-                    <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-slate-800 dark:text-slate-200" />
+                    <ArrowLeft className="w-5 h-5 text-slate-700 dark:text-slate-300" />
                   </button>
                   
-                  {otherUser ? (
-                    <div className="flex items-center gap-2 sm:gap-3 md:gap-4 min-w-0">
+                  {otherUser && (
+                    <div className="flex items-center gap-2 sm:gap-3">
                       {/* Avatar */}
-                      <Link to={`/users/${otherUser._id}`} className="relative block group shrink-0">
-                        <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full bg-gradient-to-tr from-[#25d366] to-[#128c7e] flex items-center justify-center overflow-hidden border-2 border-white dark:border-[#2a3942] shadow-md group-hover:scale-105 transition-transform">
+                      <Link to={`/users/${otherUser._id}`} className="relative block group">
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full bg-gradient-to-tr from-[#25d366] to-[#128c7e] flex items-center justify-center overflow-hidden border-2 border-white dark:border-[#2a3942] shadow-sm group-hover:scale-105 transition-transform">
                           {otherUser.profileImageUrl ? (
                             <img
                               src={otherUser.profileImageUrl}
@@ -533,30 +477,28 @@ const Conversation = () => {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <User className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />
+                            <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                           )}
                         </div>
                         {isUserOnline(otherUser) && (
-                          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5 bg-[#25d366] border-2 border-white dark:border-[#111b21] rounded-full" />
+                          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#25d366] border-2 border-white dark:border-[#111b21] rounded-full" />
                         )}
                       </Link>
 
                       {/* Name & status */}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 sm:gap-2">
-                          <Link to={`/users/${otherUser._id}`} className="text-sm sm:text-base md:text-lg font-bold text-slate-900 dark:text-white hover:text-[#128c7e] transition-colors leading-tight truncate block">
-                            {otherUser.name || otherUser.profileName || 'Unknown User'}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <Link to={`/users/${otherUser._id}`} className="text-sm sm:text-base font-bold text-slate-900 dark:text-white hover:text-[#128c7e] transition-colors leading-none truncate">
+                            {otherUser.name}
                           </Link>
-                          {otherUser.isPremium && <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-500 shrink-0" />}
-                          {otherUser.role === 'admin' && <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 shrink-0" />}
+                          {otherUser.isPremium && <Crown className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
+                          {otherUser.role === 'admin' && <Shield className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
                         </div>
-                        <span className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 mt-0.5 sm:mt-1 block font-medium">
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 block font-medium">
                           {getOnlineStatusText(otherUser)}
                         </span>
                       </div>
                     </div>
-                  ) : (
-                    <div className="text-sm sm:text-base text-slate-600 dark:text-slate-400 font-medium">Loading...</div>
                   )}
                 </div>
               </div>
@@ -702,12 +644,12 @@ const Conversation = () => {
               </div>
 
               {/* Input Area */}
-              <div className="p-2 sm:p-2.5 md:p-3 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#d1d7db] dark:border-[#222d34] shrink-0 relative z-20 safe-bottom">
+              <div className="p-2 sm:p-3 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#d1d7db] dark:border-[#222d34] shrink-0 relative z-30">
                 {/* Emoji Picker dropdown */}
                 {showEmojiPicker && (
                   <div
                     ref={emojiPickerRef}
-                    className="absolute bottom-16 left-3 w-72 max-w-[95%] bg-white dark:bg-[#111b21] border border-gray-200 dark:border-[#26353d] rounded-2xl shadow-2xl p-3 z-[100] animate-scale-in animate-in fade-in slide-in-from-bottom-2 duration-150"
+                    className="absolute bottom-full left-2 sm:left-3 mb-2 w-72 max-w-[95%] bg-white dark:bg-[#111b21] border border-gray-200 dark:border-[#26353d] rounded-2xl shadow-2xl p-3 z-[100] animate-scale-in animate-in fade-in slide-in-from-bottom-2 duration-150"
                   >
                     <div className="flex justify-between items-center pb-2 mb-2 border-b border-gray-100 dark:border-slate-800">
                       <span className="text-xs font-bold text-gray-500 uppercase">Popular Emojis</span>
@@ -731,7 +673,7 @@ const Conversation = () => {
                 )}
 
                 {/* Input Controls */}
-                <form onSubmit={editingMessage ? handleSaveEdit : handleSendMessage} className="flex items-center gap-2">
+                <form onSubmit={editingMessage ? handleSaveEdit : handleSendMessage} className="flex gap-1 sm:gap-1.5 md:gap-2 items-end">
                   {editingMessage && (
                     <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-[#f0f2f5] dark:bg-[#2a3942] rounded-full text-xs text-gray-600 dark:text-gray-300">
                       <span>Editing message</span>
@@ -745,44 +687,46 @@ const Conversation = () => {
                     </div>
                   )}
                   
-                  {/* Emoji Trigger */}
-                  <button
-                    type="button"
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className={`p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#374248] transition-colors ${
-                      showEmojiPicker ? 'text-[#128c7e]' : 'text-gray-500 dark:text-gray-400'
-                    }`}
-                    aria-label="Add Emoji"
-                  >
-                    <Smile className="w-5 h-5" />
-                  </button>
-
-                  {/* Image sharing trigger - hide when editing */}
-                  {!editingMessage && (
+                  <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 bg-white dark:bg-[#2a3942] rounded-full px-1 py-1">
+                    {/* Emoji Trigger */}
                     <button
                       type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingImage || sending}
-                      className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#374248] text-gray-500 dark:text-gray-400 disabled:opacity-40 transition-colors"
-                      aria-label="Send Image"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      className={`p-1.5 sm:p-2 md:p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#374248] transition-colors ${
+                        showEmojiPicker ? 'text-[#128c7e] bg-green-50 dark:bg-[#374248]' : 'text-gray-500 dark:text-gray-400'
+                      }`}
+                      aria-label="Add Emoji"
                     >
-                      {uploadingImage ? (
-                        <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <Paperclip className="w-5 h-5" />
-                      )}
+                      <Smile className="w-4 h-4 sm:w-4.5 sm:h-4.5 md:w-5.5 md:h-5.5" />
                     </button>
-                  )}
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    accept="image/*"
-                    className="hidden"
-                  />
+
+                    {/* Image sharing trigger - hide when editing */}
+                    {!editingMessage && (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingImage || sending}
+                        className="p-1.5 sm:p-2 md:p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#374248] text-gray-500 dark:text-gray-400 disabled:opacity-40 transition-colors shrink-0"
+                        aria-label="Send Image"
+                      >
+                        {uploadingImage ? (
+                          <div className="w-4 h-4 sm:w-4.5 sm:h-4.5 md:w-5.5 md:h-5.5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Paperclip className="w-4 h-4 sm:w-4.5 sm:h-4.5 md:w-5.5 md:h-5.5" />
+                        )}
+                      </button>
+                    )}
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                  </div>
 
                   {/* Message Input text field */}
-                  <div className="flex-1 bg-white dark:bg-[#2a3942] rounded-full px-4 py-2.5">
+                  <div className="flex-1 bg-white dark:bg-[#2a3942] border border-[#d1d7db] dark:border-[#2a3942] rounded-[20px] sm:rounded-[24px] md:rounded-[28px] px-2.5 sm:px-3 md:px-4 py-1.5">
                     <textarea
                       value={messageText}
                       onChange={(e) => {
@@ -790,7 +734,7 @@ const Conversation = () => {
                         setEditText(e.target.value);
                       }}
                       placeholder={editingMessage ? 'Edit your message...' : t('messages.typeMessage', { defaultValue: 'Type a message...' })}
-                      className="w-full bg-transparent text-slate-900 dark:text-white focus:outline-none outline-none resize-none text-sm min-h-[36px] max-h-[120px] transition-all leading-normal"
+                      className="w-full bg-transparent text-slate-900 dark:text-white focus:outline-none outline-none resize-none text-xs sm:text-sm min-h-[32px] sm:min-h-[36px] md:min-h-[40px] max-h-[100px] sm:max-h-[120px] transition-all leading-normal pt-1.5 sm:pt-2"
                       rows={1}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
@@ -809,10 +753,10 @@ const Conversation = () => {
                   <button
                     type="submit"
                     disabled={sending || uploadingImage || !messageText.trim()}
-                    className="bg-[#00a884] hover:bg-[#128c7e] disabled:opacity-40 disabled:bg-gray-300 text-white p-2.5 rounded-full transition-all shrink-0 flex items-center justify-center"
+                    className="bg-[#00a884] hover:bg-[#128c7e] disabled:opacity-40 text-white p-1.5 sm:p-2 md:p-2.5 rounded-full transition-all shrink-0 flex items-center justify-center min-h-[40px] sm:min-h-[44px] md:min-h-[48px] w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 shadow-sm"
                     aria-label={editingMessage ? "Save Edit" : "Send Message"}
                   >
-                    {editingMessage ? <Check className="w-5 h-5" /> : <Send className="w-5 h-5" />}
+                    {editingMessage ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" /> : <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />}
                   </button>
                 </form>
               </div>
