@@ -316,8 +316,8 @@ const Conversation = () => {
   ) : [];
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 overflow-y-auto page-transition pb-0 md:pb-0">
-      <div className="min-h-full flex max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden">
+    <div className="min-h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 page-transition pb-0 md:pb-0">
+      <div className="min-h-full flex flex-col md:flex-row max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden">
         
         {/* ================= SIDEBAR: Conversation List ================= */}
         <div className={`w-full md:w-[360px] lg:w-[400px] flex flex-col h-full border-r border-[#d1d7db] dark:border-[#222d34] shrink-0 bg-white dark:bg-[#111b21] ${
@@ -450,7 +450,7 @@ const Conversation = () => {
         </div>
 
         {/* ================= WORKSPACE: Message Feed ================= */}
-        <div className={`flex-1 flex flex-col h-full bg-[#efeae2] dark:bg-[#0b141a] pb-0 md:pb-0 ${
+        <div className={`flex-1 flex flex-col h-full bg-[#efeae2] dark:bg-[#0b141a] pb-0 md:pb-0 overflow-hidden ${
           !userId ? 'hidden md:flex items-center justify-center p-8 bg-[#efeae2] dark:bg-[#0b141a]' : 'flex'
         }`}>
           {userId ? (
@@ -645,12 +645,12 @@ const Conversation = () => {
               </div>
 
               {/* Input Area */}
-              <div className="p-2 sm:p-3 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#d1d7db] dark:border-[#222d34] shrink-0 relative z-30">
+              <div className="p-2 sm:p-3 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#d1d7db] dark:border-[#222d34] shrink-0 relative z-50">
                 {/* Emoji Picker dropdown */}
                 {showEmojiPicker && (
                   <div
                     ref={emojiPickerRef}
-                    className="absolute bottom-full left-2 sm:left-3 mb-2 w-72 max-w-[95%] bg-white dark:bg-[#111b21] border border-gray-200 dark:border-[#26353d] rounded-2xl shadow-2xl p-3 z-[100] animate-scale-in animate-in fade-in slide-in-from-bottom-2 duration-150"
+                    className="absolute bottom-full left-2 sm:left-3 mb-2 w-72 max-w-[95%] bg-white dark:bg-[#111b21] border border-gray-200 dark:border-[#26353d] rounded-2xl shadow-2xl p-3 z-[200] animate-scale-in animate-in fade-in slide-in-from-bottom-2 duration-150"
                   >
                     <div className="flex justify-between items-center pb-2 mb-2 border-b border-gray-100 dark:border-slate-800">
                       <span className="text-xs font-bold text-gray-500 uppercase">Popular Emojis</span>
