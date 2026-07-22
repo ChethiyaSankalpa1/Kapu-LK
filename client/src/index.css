@@ -25,6 +25,23 @@
     font-size: 16px;
   }
 
+  /* Handle mobile keyboard */
+  @supports (height: 100dvh) {
+    body {
+      height: 100dvh;
+    }
+  }
+
+  /* Fix mobile viewport issues */
+  @media (max-width: 768px) {
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+    }
+  }
+
   /* Remove tap highlight on touch devices */
   button, a, input, select, textarea {
     -webkit-tap-highlight-color: transparent;

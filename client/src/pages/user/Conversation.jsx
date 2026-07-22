@@ -133,7 +133,7 @@ const Conversation = () => {
       if (userId) {
         fetchChatMessages(true);
       }
-    }, 4000);
+    }, 2000);
     return () => clearInterval(interval);
   }, [userId, fetchConversationsList, fetchChatMessages]);
 
@@ -178,9 +178,8 @@ const Conversation = () => {
         content: textToSend,
         type: 'text'
       });
-      // Refresh list and chat
-      fetchChatMessages(true);
-      fetchConversationsList(true);
+      // Remove optimistic message - polling will handle refresh
+      setMessages(prev => prev.filter(msg => msg._id !== tempId));
     } catch (error) {
       toast.error(error.response?.data?.message || t('toast.messaging.sendFailed'));
       setMessages(prev => prev.filter(msg => msg._id !== tempId));
@@ -315,7 +314,7 @@ const Conversation = () => {
   );
 
   return (
-    <div className="h-[100dvh] md:h-[calc(100vh-4rem)] bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 overflow-hidden page-transition pb-0 md:pb-0">
+    <div className="h-[100dvh] md:h-[calc(100vh-4rem)] bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 overflow-hidden page-transition">
       <div className="h-full flex max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden">
         
         {/* ================= SIDEBAR: Conversation List ================= */}
@@ -449,7 +448,7 @@ const Conversation = () => {
         </div>
 
         {/* ================= WORKSPACE: Message Feed ================= */}
-        <div className={`flex-1 flex flex-col h-full bg-[#efeae2] dark:bg-[#0b141a] pb-0 md:pb-0 ${
+        <div className={`flex-1 flex flex-col h-full bg-[#efeae2] dark:bg-[#0b141a] overflow-hidden ${
           !userId ? 'hidden md:flex items-center justify-center p-8 bg-[#efeae2] dark:bg-[#0b141a]' : 'flex'
         }`}>
           {userId ? (
