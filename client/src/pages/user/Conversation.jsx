@@ -94,7 +94,6 @@ const Conversation = () => {
 
       const response = messagesRes.data;
       const newMsgs = response.messages || [];
-      const pagination = response.pagination || {};
       
       // Update cache
       chatCacheRef.current.set(cacheKey, {
