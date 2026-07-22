@@ -487,8 +487,8 @@ const Conversation = () => {
                       {/* Name & status */}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1 sm:gap-1.5">
-                          <Link to={`/users/${otherUser._id}`} className="text-xs sm:text-sm md:text-base font-bold text-slate-900 dark:text-white hover:text-[#128c7e] transition-colors leading-none truncate">
-                            {otherUser.name || 'Unknown User'}
+                          <Link to={`/users/${otherUser._id}`} className="text-xs sm:text-sm md:text-base font-bold text-slate-900 dark:text-white hover:text-[#128c7e] transition-colors leading-none truncate block">
+                            {otherUser.name || otherUser.profileName || 'Unknown User'}
                           </Link>
                           {otherUser.isPremium && <Crown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-500 shrink-0" />}
                           {otherUser.role === 'admin' && <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600 shrink-0" />}
