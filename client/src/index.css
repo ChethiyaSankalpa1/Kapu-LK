@@ -18,39 +18,13 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* Prevent iOS font zoom on inputs */
   input, select, textarea {
     font-size: 16px;
-  }
-
-  /* Handle mobile keyboard */
-  @supports (height: 100dvh) {
-    body {
-      height: 100dvh;
-    }
-  }
-
-  /* Fix mobile viewport issues */
-  @media (max-width: 768px) {
-    html, body {
-      height: 100%;
-      overflow: hidden;
-      position: fixed;
-      width: 100%;
-    }
-    
-    /* Ensure input stays visible when keyboard is open */
-    .safe-bottom {
-      padding-bottom: env(safe-area-inset-bottom, 20px);
-    }
-    
-    /* Prevent body scroll when keyboard is open */
-    input:focus, textarea:focus {
-      position: relative;
-      z-index: 10;
-    }
   }
 
   /* Remove tap highlight on touch devices */
