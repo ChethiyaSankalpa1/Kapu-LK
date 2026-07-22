@@ -8,7 +8,7 @@ import moment from 'moment';
 import {
   ArrowLeft, Send, User, MessageSquare, Crown,
   Check, CheckCheck, Shield, Smile, Paperclip,
-  Image, Search, X
+  Image, Search, X, Edit2, Trash2, MoreVertical
 } from 'lucide-react';
 
 const Conversation = () => {
@@ -33,6 +33,9 @@ const Conversation = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [editingMessage, setEditingMessage] = useState(null);
+  const [editText, setEditText] = useState('');
+  const [showMessageMenu, setShowMessageMenu] = useState(null);
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -230,6 +233,53 @@ const Conversation = () => {
     setMessageText(prev => prev + emoji);
   };
 
+  const handleEditMessage = (message) => {
+    setEditingMessage(message);
+    setEditText(message.content);
+    setMessageText(message.content);
+    setShowMessageMenu(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingMessage || !editText.trim()) return;
+
+    try {
+      await messageAPI.editMessage(editingMessage._id, { content: editText.trim() });
+      setMessages(prev => prev.map(msg => 
+        msg._id === editingMessage._id 
+          ? { ...msg, content: editText.trim(), edited: true }
+          : msg
+      ));
+      setEditingMessage(null);
+      setEditText('');
+      setMessageText('');
+      toast.success('Message edited successfully');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to edit message');
+    }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    try {
+      await messageAPI.deleteMessage(messageId);
+      setMessages(prev => prev.map(msg => 
+        msg._id === messageId 
+          ? { ...msg, deleted: true, content: 'This message was deleted.' }
+          : msg
+      ));
+      setShowMessageMenu(null);
+      toast.success('Message deleted');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete message');
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingMessage(null);
+    setEditText('');
+    setMessageText('');
+  };
+
   const getOnlineStatusText = (userObj) => {
     if (!userObj) return '';
     if (userObj.isOnline) return 'Online';
@@ -266,25 +316,25 @@ const Conversation = () => {
   );
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 transition-colors duration-500 overflow-hidden page-transition pb-16 md:pb-0">
-      <div className="h-full flex max-w-7xl mx-auto border-x border-slate-200/60 dark:border-slate-800/60 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl overflow-hidden">
+    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 overflow-hidden page-transition pb-16 md:pb-0">
+      <div className="h-full flex max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden">
         
         {/* ================= SIDEBAR: Conversation List ================= */}
-        <div className={`w-full md:w-[360px] lg:w-[400px] flex flex-col h-full border-r border-slate-200/60 dark:border-slate-800/60 shrink-0 ${
+        <div className={`w-full md:w-[360px] lg:w-[400px] flex flex-col h-full border-r border-[#d1d7db] dark:border-[#222d34] shrink-0 bg-white dark:bg-[#111b21] ${
           userId ? 'hidden md:flex' : 'flex'
         }`}>
           {/* Sidebar Header */}
-          <div className="p-4 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shrink-0">
+          <div className="p-4 border-b border-[#d1d7db] dark:border-[#222d34] bg-[#f0f2f5] dark:bg-[#202c33] shrink-0">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => navigate('/dashboard')}
-                className="p-2 -ml-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl transition-all"
+                className="p-2 -ml-2 bg-white dark:bg-[#111b21] hover:bg-slate-100 dark:hover:bg-[#0b141a] rounded-full transition-all"
                 aria-label="Back to dashboard"
               >
                 <ArrowLeft className="w-5 h-5 text-slate-700 dark:text-slate-300" />
               </button>
               <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-purple-600" />
+                <MessageSquare className="w-5 h-5 text-[#128c7e]" />
                 <span>Messages</span>
               </h1>
             </div>
@@ -293,16 +343,16 @@ const Conversation = () => {
             <div className="mt-3.5 relative">
               <input
                 type="text"
-                placeholder="Search or start new chat..."
+                placeholder="Search chats..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="form-input pl-10 text-sm"
+                className="w-full rounded-full border border-[#d1d7db] dark:border-[#2a3942] bg-white dark:bg-[#111b21] text-sm text-slate-900 dark:text-white pl-10 pr-10 py-3 outline-none focus:border-[#25d366] transition-all"
               />
-              <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-4" />
+              <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-3.5" />
               {searchQuery && (
                 <button 
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-3.5 p-0.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-400"
+                  className="absolute right-3 top-3 p-0.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-400"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -311,7 +361,7 @@ const Conversation = () => {
           </div>
 
           {/* Conversations List */}
-          <div className="flex-1 overflow-y-auto chat-scrollbar bg-slate-50/50 dark:bg-slate-900/40">
+          <div className="flex-1 overflow-y-auto chat-scrollbar bg-white dark:bg-[#111b21]">
             {listLoading ? (
               <div className="flex flex-col items-center justify-center h-48 gap-2">
                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500" />
@@ -328,7 +378,7 @@ const Conversation = () => {
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-200/60 dark:divide-slate-800/60">
+              <div className="divide-y divide-[#edf1f3] dark:divide-[#222d34]">
                 {filteredConversations.map((c) => {
                   const active = userId === c.user._id;
                   const online = isUserOnline(c.user);
@@ -338,13 +388,13 @@ const Conversation = () => {
                       onClick={() => navigate(`/conversation/${c.user._id}`)}
                       className={`w-full text-left px-4 py-3.5 flex gap-3.5 items-center transition-all ${
                         active 
-                          ? 'bg-purple-100/70 dark:bg-purple-950/20 border-l-4 border-purple-600'
-                          : 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                          ? 'bg-[#f0f2f5] dark:bg-[#202c33]'
+                          : 'bg-white dark:bg-[#111b21] hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]'
                       }`}
                     >
                       {/* Avatar */}
                       <div className="relative shrink-0">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-400 via-pink-500 to-violet-600 flex items-center justify-center overflow-hidden border-2 border-white dark:border-slate-700 shadow-lg">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#25d366] to-[#128c7e] flex items-center justify-center overflow-hidden border border-white dark:border-[#2a3942] shadow-sm">
                           {c.user.profileImageUrl ? (
                             <img
                               src={c.user.profileImageUrl}
@@ -356,7 +406,7 @@ const Conversation = () => {
                           )}
                         </div>
                         {online && (
-                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full" />
+                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#25d366] border-2 border-white dark:border-[#111b21] rounded-full" />
                         )}
                       </div>
 
@@ -367,7 +417,7 @@ const Conversation = () => {
                             {c.user.name}
                           </p>
                           {c.lastMessage && (
-                            <span className="text-[10px] text-gray-400 dark:text-gray-505 whitespace-nowrap ml-2">
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap ml-2">
                               {moment(c.lastMessage.createdAt).format('LT')}
                             </span>
                           )}
@@ -375,7 +425,7 @@ const Conversation = () => {
                         <div className="flex items-center justify-between mt-1">
                           <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[190px]">
                             {c.lastMessage?.type === 'image' ? (
-                              <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400 font-medium">
+                              <span className="flex items-center gap-1 text-[#128c7e] dark:text-[#25d366] font-medium">
                                 <Image className="w-3.5 h-3.5" /> Photo
                               </span>
                             ) : c.lastMessage?.type === 'like' ? (
@@ -385,7 +435,7 @@ const Conversation = () => {
                             )}
                           </p>
                           {c.unreadCount > 0 && (
-                            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold rounded-full bg-purple-600 text-white shadow-sm">
+                            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold rounded-full bg-[#25d366] text-[#103529] shadow-sm">
                               {c.unreadCount}
                             </span>
                           )}
@@ -400,17 +450,17 @@ const Conversation = () => {
         </div>
 
         {/* ================= WORKSPACE: Message Feed ================= */}
-        <div className={`flex-1 flex flex-col h-full bg-slate-50/50 dark:bg-slate-950 pb-16 md:pb-0 ${
-          !userId ? 'hidden md:flex items-center justify-center p-8 bg-slate-50/50 dark:bg-slate-950' : 'flex'
+        <div className={`flex-1 flex flex-col h-full bg-[#efeae2] dark:bg-[#0b141a] pb-16 md:pb-0 ${
+          !userId ? 'hidden md:flex items-center justify-center p-8 bg-[#efeae2] dark:bg-[#0b141a]' : 'flex'
         }`}>
           {userId ? (
             <>
               {/* Header */}
-              <div className="py-3 px-4 flex items-center justify-between bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/60 shrink-0 shadow-lg z-10">
+              <div className="py-3 px-4 flex items-center justify-between bg-[#f0f2f5] dark:bg-[#202c33] border-b border-[#d1d7db] dark:border-[#222d34] shrink-0 z-10">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => navigate('/conversation')}
-                    className="p-2 -ml-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl transition-all md:hidden"
+                    className="p-2 -ml-2 bg-white dark:bg-[#111b21] hover:bg-slate-100 dark:hover:bg-[#0b141a] rounded-full transition-all md:hidden"
                     aria-label="Back to conversations list"
                   >
                     <ArrowLeft className="w-5 h-5 text-slate-700 dark:text-slate-300" />
@@ -420,7 +470,7 @@ const Conversation = () => {
                     <div className="flex items-center gap-3">
                       {/* Avatar */}
                       <Link to={`/users/${otherUser._id}`} className="relative block group">
-                        <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-purple-400 via-pink-500 to-violet-600 flex items-center justify-center overflow-hidden border-2 border-white dark:border-slate-700 shadow-lg group-hover:scale-105 transition-transform">
+                        <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-tr from-[#25d366] to-[#128c7e] flex items-center justify-center overflow-hidden border-2 border-white dark:border-[#2a3942] shadow-sm group-hover:scale-105 transition-transform">
                           {otherUser.profileImageUrl ? (
                             <img
                               src={otherUser.profileImageUrl}
@@ -432,14 +482,14 @@ const Conversation = () => {
                           )}
                         </div>
                         {isUserOnline(otherUser) && (
-                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full" />
+                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#25d366] border-2 border-white dark:border-[#111b21] rounded-full" />
                         )}
                       </Link>
 
                       {/* Name & status */}
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <Link to={`/users/${otherUser._id}`} className="text-sm sm:text-base font-bold text-slate-900 dark:text-white hover:text-purple-600 transition-colors leading-none">
+                          <Link to={`/users/${otherUser._id}`} className="text-sm sm:text-base font-bold text-slate-900 dark:text-white hover:text-[#128c7e] transition-colors leading-none">
                             {otherUser.name}
                           </Link>
                           {otherUser.isPremium && <Crown className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
@@ -455,21 +505,21 @@ const Conversation = () => {
               </div>
 
               {/* Messages scroll area */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 chat-scrollbar bg-[#efeae2] dark:bg-slate-950 relative">
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 chat-scrollbar whatsapp-chat-bg relative">
                 {chatLoading && messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-500" />
                   </div>
                 ) : messages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-white/40 dark:bg-slate-900/10 rounded-3xl m-4 border border-dashed border-slate-200 dark:border-slate-800">
-                    <MessageSquare className="w-14 h-14 text-purple-300 dark:text-slate-700 mb-3 animate-pulse" />
+                  <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-white/70 dark:bg-[#111b21]/70 rounded-3xl m-4 border border-dashed border-slate-200 dark:border-[#222d34]">
+                    <MessageSquare className="w-14 h-14 text-[#7b8b95] dark:text-slate-700 mb-3 animate-pulse" />
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Say Hello!</h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs">
                       Start your matrimonial conversation. Keep it polite, respect privacy, and find your matches.
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3.5">
+                  <div className="space-y-2.5">
                     {messages.map((msg, index) => {
                       const isCurrentUser = msg.from._id === currentUser._id || msg.from === currentUser._id;
                       
@@ -481,7 +531,7 @@ const Conversation = () => {
                         <div key={msg._id || index} className="space-y-2 animate-slide-up">
                           {showDateHeader && (
                             <div className="flex justify-center my-3">
-                              <span className="bg-white/80 dark:bg-slate-800 text-[10px] font-bold text-gray-500 dark:text-gray-400 px-3 py-1 rounded-full shadow-sm uppercase tracking-wider">
+                              <span className="bg-white/90 dark:bg-[#1f2c34] text-[10px] font-bold text-gray-500 dark:text-gray-400 px-3 py-1 rounded-lg shadow-sm uppercase tracking-wider">
                                 {moment(msg.createdAt).calendar(null, {
                                   sameDay: '[Today]',
                                   lastDay: '[Yesterday]',
@@ -493,19 +543,21 @@ const Conversation = () => {
                           )}
 
                           <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[75%] rounded-lg p-2.5 px-3 shadow-sm relative ${
+                            <div className={`max-w-[78%] sm:max-w-[72%] rounded-lg px-3 py-2 shadow-sm relative group ${
                               isCurrentUser
-                                ? 'bg-[#dcf8c6] text-gray-900 rounded-tr-none'
-                                : 'bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-tl-none border border-gray-200 dark:border-slate-700'
+                                ? 'bg-[#d9fdd3] text-gray-900 rounded-tr-sm'
+                                : 'bg-white dark:bg-[#202c33] text-gray-900 dark:text-white rounded-tl-sm border border-[#e9edef] dark:border-[#26353d]'
                             }`}>
                               
                               {/* Message Content */}
-                              {msg.type === 'image' ? (
+                              {msg.deleted ? (
+                                <p className="text-[14px] italic text-gray-500 dark:text-gray-400">{msg.content}</p>
+                              ) : msg.type === 'image' ? (
                                 <div className="space-y-1.5">
                                   <img
                                     src={msg.content}
                                     alt="Shared in Chat"
-                                    className="rounded-lg max-w-full max-h-[300px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                                    className="rounded-lg max-w-full max-h-[320px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
                                     onClick={() => window.open(msg.content, '_blank')}
                                   />
                                 </div>
@@ -514,22 +566,63 @@ const Conversation = () => {
                                   ❤️ Sent you a profile like!
                                 </p>
                               ) : (
-                                <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
+                                <p className="text-[14px] leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
                               )}
 
                               {/* Message Footer Info */}
-                              <div className={`flex items-center justify-end gap-1 text-[9px] mt-1 ${
-                                isCurrentUser ? 'text-purple-200' : 'text-gray-400 dark:text-gray-500'
+                              <div className={`flex items-center justify-end gap-1 text-[11px] mt-1 ${
+                                isCurrentUser ? 'text-[#667781]' : 'text-gray-400 dark:text-[#8696a0]'
                               }`}>
                                 <span>{moment(msg.createdAt).format('LT')}</span>
+                                {msg.edited && <span className="text-[10px] italic">(Edited)</span>}
                                 {isCurrentUser && (
                                   msg.isRead ? (
-                                    <CheckCheck className="w-3.5 h-3.5 text-blue-300 shrink-0" />
+                                    <CheckCheck className="w-3.5 h-3.5 text-[#53bdeb] shrink-0" />
                                   ) : (
-                                    <Check className="w-3.5 h-3.5 text-purple-200 shrink-0" />
+                                    <Check className="w-3.5 h-3.5 text-[#667781] shrink-0" />
                                   )
                                 )}
                               </div>
+
+                              {/* Message Actions Menu - Only for sender and not deleted */}
+                              {isCurrentUser && !msg.deleted && (
+                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowMessageMenu(showMessageMenu === msg._id ? null : msg._id);
+                                    }}
+                                    className="p-1.5 rounded-full bg-white/80 dark:bg-slate-700/80 hover:bg-white dark:hover:bg-slate-600 shadow-sm"
+                                  >
+                                    <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                                  </button>
+                                  
+                                  {showMessageMenu === msg._id && (
+                                    <div className="absolute top-8 right-0 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-gray-200 dark:border-slate-700 py-1 min-w-[120px] z-10">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleEditMessage(msg);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                                      >
+                                        <Edit2 className="w-4 h-4" />
+                                        Edit
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteMessage(msg._id);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                        Delete
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -539,10 +632,10 @@ const Conversation = () => {
                     {/* Typing indicator bubble */}
                     {isTyping && (
                       <div className="flex justify-start animate-slide-up">
-                        <div className="bg-white dark:bg-slate-900 rounded-2xl rounded-tl-none p-3 px-4 border border-gray-150 dark:border-slate-800 shadow-sm flex items-center gap-1">
-                          <span className="w-2 h-2 bg-purple-500 dark:bg-purple-400 rounded-full animate-bounce-dots" style={{ animationDelay: '0ms' }} />
-                          <span className="w-2 h-2 bg-purple-500 dark:bg-purple-400 rounded-full animate-bounce-dots" style={{ animationDelay: '200ms' }} />
-                          <span className="w-2 h-2 bg-purple-500 dark:bg-purple-400 rounded-full animate-bounce-dots" style={{ animationDelay: '400ms' }} />
+                        <div className="bg-white dark:bg-[#202c33] rounded-2xl rounded-tl-sm p-3 px-4 border border-[#e9edef] dark:border-[#26353d] shadow-sm flex items-center gap-1">
+                          <span className="w-2 h-2 bg-[#8696a0] rounded-full animate-bounce-dots" style={{ animationDelay: '0ms' }} />
+                          <span className="w-2 h-2 bg-[#8696a0] rounded-full animate-bounce-dots" style={{ animationDelay: '200ms' }} />
+                          <span className="w-2 h-2 bg-[#8696a0] rounded-full animate-bounce-dots" style={{ animationDelay: '400ms' }} />
                         </div>
                       </div>
                     )}
@@ -552,12 +645,12 @@ const Conversation = () => {
               </div>
 
               {/* Input Area */}
-              <div className="p-3 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 shrink-0 relative z-20">
+              <div className="p-3 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#d1d7db] dark:border-[#222d34] shrink-0 relative z-20">
                 {/* Emoji Picker dropdown */}
                 {showEmojiPicker && (
                   <div
                     ref={emojiPickerRef}
-                    className="absolute bottom-16 left-3 w-72 max-w-[95%] bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3 z-[100] animate-scale-in animate-in fade-in slide-in-from-bottom-2 duration-150"
+                    className="absolute bottom-16 left-3 w-72 max-w-[95%] bg-white dark:bg-[#111b21] border border-gray-200 dark:border-[#26353d] rounded-2xl shadow-2xl p-3 z-[100] animate-scale-in animate-in fade-in slide-in-from-bottom-2 duration-150"
                   >
                     <div className="flex justify-between items-center pb-2 mb-2 border-b border-gray-100 dark:border-slate-800">
                       <span className="text-xs font-bold text-gray-500 uppercase">Popular Emojis</span>
@@ -571,7 +664,7 @@ const Conversation = () => {
                           key={index}
                           type="button"
                           onClick={() => insertEmoji(emoji)}
-                          className="text-xl p-1 hover:bg-purple-50 dark:hover:bg-slate-800 rounded-lg active:scale-90 transition-all"
+                          className="text-xl p-1 hover:bg-green-50 dark:hover:bg-[#202c33] rounded-lg active:scale-90 transition-all"
                         >
                           {emoji}
                         </button>
@@ -581,34 +674,49 @@ const Conversation = () => {
                 )}
 
                 {/* Input Controls */}
-                <form onSubmit={handleSendMessage} className="flex gap-2 items-center">
-                  <div className="flex items-center gap-1 shrink-0">
+                <form onSubmit={editingMessage ? handleSaveEdit : handleSendMessage} className="flex gap-2 items-end">
+                  {editingMessage && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-[#f0f2f5] dark:bg-[#2a3942] rounded-full text-xs text-gray-600 dark:text-gray-300">
+                      <span>Editing message</span>
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        className="hover:text-red-500 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-1 shrink-0 bg-white dark:bg-[#2a3942] rounded-full px-1 py-1">
                     {/* Emoji Trigger */}
                     <button
                       type="button"
                       onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                      className={`p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors ${
-                        showEmojiPicker ? 'text-purple-600 bg-purple-50 dark:bg-slate-800' : 'text-gray-500 dark:text-gray-400'
+                      className={`p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#374248] transition-colors ${
+                        showEmojiPicker ? 'text-[#128c7e] bg-green-50 dark:bg-[#374248]' : 'text-gray-500 dark:text-gray-400'
                       }`}
                       aria-label="Add Emoji"
                     >
                       <Smile className="w-5.5 h-5.5" />
                     </button>
 
-                    {/* Image sharing trigger */}
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingImage || sending}
-                      className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-500 dark:text-gray-400 disabled:opacity-40 transition-colors shrink-0"
-                      aria-label="Send Image"
-                    >
-                      {uploadingImage ? (
-                        <div className="w-5.5 h-5.5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <Paperclip className="w-5.5 h-5.5" />
-                      )}
-                    </button>
+                    {/* Image sharing trigger - hide when editing */}
+                    {!editingMessage && (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingImage || sending}
+                        className="p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#374248] text-gray-500 dark:text-gray-400 disabled:opacity-40 transition-colors shrink-0"
+                        aria-label="Send Image"
+                      >
+                        {uploadingImage ? (
+                          <div className="w-5.5 h-5.5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Paperclip className="w-5.5 h-5.5" />
+                        )}
+                      </button>
+                    )}
                     <input
                       type="file"
                       ref={fileInputRef}
@@ -619,28 +727,37 @@ const Conversation = () => {
                   </div>
 
                   {/* Message Input text field */}
-                  <textarea
-                    value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
-                    placeholder={t('messages.typeMessage', { defaultValue: 'Type a message...' })}
-                    className="flex-1 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-gray-400 dark:focus:border-slate-600 outline-none resize-none text-sm min-h-[44px] max-h-[120px] transition-all leading-normal"
-                    rows={1}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                  />
+                  <div className="flex-1 bg-white dark:bg-[#2a3942] border border-[#d1d7db] dark:border-[#2a3942] rounded-[28px] px-4 py-1.5">
+                    <textarea
+                      value={messageText}
+                      onChange={(e) => {
+                        setMessageText(e.target.value);
+                        setEditText(e.target.value);
+                      }}
+                      placeholder={editingMessage ? 'Edit your message...' : t('messages.typeMessage', { defaultValue: 'Type a message...' })}
+                      className="w-full bg-transparent text-slate-900 dark:text-white focus:outline-none outline-none resize-none text-sm min-h-[40px] max-h-[120px] transition-all leading-normal pt-2"
+                      rows={1}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          if (editingMessage) {
+                            handleSaveEdit();
+                          } else {
+                            handleSendMessage();
+                          }
+                        }
+                      }}
+                    />
+                  </div>
 
-                  {/* Send Button */}
+                  {/* Send/Save Button */}
                   <button
                     type="submit"
                     disabled={sending || uploadingImage || !messageText.trim()}
-                    className="bg-[#008069] hover:bg-[#00a884] disabled:opacity-40 text-white p-2.5 rounded-lg transition-all shrink-0 flex items-center justify-center min-h-[44px] w-11 h-11"
-                    aria-label="Send Message"
+                    className="bg-[#00a884] hover:bg-[#128c7e] disabled:opacity-40 text-white p-2.5 rounded-full transition-all shrink-0 flex items-center justify-center min-h-[48px] w-12 h-12 shadow-sm"
+                    aria-label={editingMessage ? "Save Edit" : "Send Message"}
                   >
-                    <Send className="w-5 h-5" />
+                    {editingMessage ? <Check className="w-5 h-5" /> : <Send className="w-5 h-5" />}
                   </button>
                 </form>
               </div>
@@ -648,15 +765,15 @@ const Conversation = () => {
           ) : (
             // Empty view on desktop when no conversation is selected
             <div className="flex flex-col items-center justify-center text-center p-8 max-w-sm">
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 mb-6 shadow-2xl shadow-purple-500/20">
+              <div className="w-20 h-20 rounded-3xl bg-white dark:bg-[#202c33] flex items-center justify-center text-[#128c7e] dark:text-[#25d366] mb-6 shadow-lg">
                 <MessageSquare className="w-10 h-10" />
               </div>
               <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mb-2">Kapu LK Messenger</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Redesigned chat interface inspired by professional messaging platforms. Select a match to start private, secure, and encrypted conversations.
+                Select a chat to start messaging in the new WhatsApp-style layout.
               </p>
               <div className="mt-6 flex flex-wrap gap-2 justify-center">
-                <Link to="/users" className="text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 font-bold px-4 py-2 rounded-full transition-colors">
+                <Link to="/users" className="text-xs bg-[#dcf8c6] hover:bg-[#cdebb8] text-[#103529] dark:bg-[#103529] dark:text-[#dcf8c6] font-bold px-4 py-2 rounded-full transition-colors">
                   Find matches
                 </Link>
                 <Link to="/dashboard" className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-bold px-4 py-2 rounded-full transition-colors">

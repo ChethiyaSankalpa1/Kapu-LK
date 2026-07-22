@@ -86,6 +86,8 @@ export const messageAPI = {
     uploadChatImage: (formData) => api.post('/messages/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
     }),
+    editMessage: (messageId, data) => api.put(`/messages/${messageId}`, data),
+    deleteMessage: (messageId) => api.delete(`/messages/${messageId}`),
 };
 
 export const notificationAPI = {

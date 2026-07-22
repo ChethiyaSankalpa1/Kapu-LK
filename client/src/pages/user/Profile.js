@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI, userAPI } from '../../services/api';
 import { toast } from 'react-toastify';
-import { User, Upload, Save, ArrowLeft, ArrowRight } from 'lucide-react';
+import { User, Upload, Save, ArrowLeft, ArrowRight, PencilLine } from 'lucide-react';
+import ProfileImageEditor from '../../components/ui/ProfileImageEditor';
 
 const Profile = () => {
     const { t } = useTranslation();
@@ -50,15 +51,22 @@ const Profile = () => {
     const [preview, setPreview] = useState(user?.profileImageUrl || '');
     const [loading, setLoading] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
+    const [editorOpen, setEditorOpen] = useState(false);
+    const [selectedImageSrc, setSelectedImageSrc] = useState('');
     const [tab, setTab] = useState('about');
     const steps = ['about', 'religion', 'family', 'lifestyle', 'partner'];
     const currentIndex = steps.indexOf(tab);
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         if (location.state && location.state.reason === 'complete_profile') {
             toast.info('Please complete your profile to access other profiles.');
         }
     }, [location.state]);
+
+    useEffect(() => {
+        setPreview(user?.profileImageUrl || '');
+    }, [user?.profileImageUrl]);
 
     const onChange = (e) => {
         const { name, value } = e.target;
@@ -79,6 +87,7 @@ const Profile = () => {
     };
 
     const missing = {
+        profileImage: !user?.profileImageUrl,
         age: !formData.age,
         gender: !formData.gender,
         locOrDistrict: !(formData.district || formData.location),
@@ -95,6 +104,39 @@ const Profile = () => {
         partnerMaritalStatus: !(formData.partnerPreferences?.maritalStatus || '').length,
     };
 
+    const uploadEditedImage = async ({ file, previewUrl }) => {
+        const previousPreview = preview;
+        const formDataImg = new FormData();
+        formDataImg.append('profileImage', file);
+        setPreview(previewUrl);
+        setUploadingImage(true);
+
+        try {
+            const response = await authAPI.uploadProfileImage(formDataImg);
+            updateUser({ ...user, profileImageUrl: response.data.profileImageUrl });
+            toast.success(t('toast.profile.photoUploadSuccess'));
+        } catch (error) {
+            console.error('Image upload error:', error);
+            URL.revokeObjectURL(previewUrl);
+
+            if (error.response?.status === 401) {
+                toast.error(t('toast.errors.unauthorized'));
+            } else if (error.response?.status === 413) {
+                toast.error(t('toast.profile.fileTooLarge'));
+            } else {
+                toast.error(error.response?.data?.message || t('toast.profile.photoUploadFailed'));
+            }
+
+            setPreview(previousPreview || user?.profileImageUrl || '');
+            throw error;
+        } finally {
+            setUploadingImage(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
+    };
+
     const onFileChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -102,40 +144,20 @@ const Profile = () => {
             const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
             if (!allowedTypes.includes(file.type)) {
                 toast.error(t('toast.profile.invalidFileType'));
+                e.target.value = '';
                 return;
             }
 
             // Validate file size (max 5MB)
             if (file.size > 5 * 1024 * 1024) {
                 toast.error(t('toast.profile.fileTooLarge'));
+                e.target.value = '';
                 return;
             }
 
-            setPreview(URL.createObjectURL(file));
-
-            // Auto-upload immediately
-            const formDataImg = new FormData();
-            formDataImg.append('profileImage', file);
-            setUploadingImage(true);
-
-            try {
-                const response = await authAPI.uploadProfileImage(formDataImg);
-                updateUser({ ...user, profileImageUrl: response.data.profileImageUrl });
-                toast.success(t('toast.profile.photoUploadSuccess'));
-            } catch (error) {
-                console.error('Image upload error:', error);
-                if (error.response?.status === 401) {
-                    toast.error(t('toast.errors.unauthorized'));
-                } else if (error.response?.status === 413) {
-                    toast.error(t('toast.profile.fileTooLarge'));
-                } else {
-                    toast.error(error.response?.data?.message || t('toast.profile.photoUploadFailed'));
-                }
-                // Reset preview on error
-                setPreview(user?.profileImageUrl || '');
-            } finally {
-                setUploadingImage(false);
-            }
+            const localImageSrc = URL.createObjectURL(file);
+            setSelectedImageSrc(localImageSrc);
+            setEditorOpen(true);
         }
     };
 
@@ -160,6 +182,11 @@ const Profile = () => {
     const onSubmit = async (e) => {
         e.preventDefault();
 
+        if (!user?.profileImageUrl) {
+            toast.error('Profile picture is required before saving your profile. Please upload a photo first.');
+            return;
+        }
+
         // Validate required fields
         const requiredFields = ['age', 'gender', 'education', 'occupation', 'maritalStatus', 'religion', 'bio'];
         const missingFields = requiredFields.filter(field => !formData[field] || String(formData[field]).trim() === '');
@@ -180,6 +207,17 @@ const Profile = () => {
         // Validate age
         if (formData.age < 18 || formData.age > 100) {
             toast.error(t('toast.errors.validationError') + ': Age must be between 18 and 100');
+            return;
+        }
+
+        // Validate partner age range
+        if (partner.minAge < 18 || partner.maxAge > 100) {
+            toast.error(t('toast.errors.validationError') + ': Partner age must be between 18 and 100');
+            return;
+        }
+
+        if (partner.minAge >= partner.maxAge) {
+            toast.error(t('toast.errors.validationError') + ': Minimum partner age must be less than maximum');
             return;
         }
 
@@ -250,18 +288,28 @@ const Profile = () => {
                         <div className="flex flex-col items-center sm:items-start gap-2 sm:gap-3 w-full sm:w-auto">
                             <label className="cursor-pointer bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white px-4 sm:px-8 py-3 sm:py-4 rounded-2xl font-semibold inline-flex items-center gap-2 transition-all transform hover:scale-105 shadow-xl shadow-purple-500/30 text-xs sm:text-sm sm:text-base whitespace-nowrap min-h-[52px]">
                                 <Upload className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                <span>{uploadingImage ? 'Uploading...' : 'Choose Image'}</span>
+                                        <span>{uploadingImage ? 'Uploading...' : preview ? 'Change & Edit Image' : 'Choose & Edit Image'}</span>
                                 <input
                                     type="file"
                                     accept="image/*"
                                     onChange={onFileChange}
+                                            ref={fileInputRef}
                                     className="hidden"
                                     disabled={uploadingImage}
                                 />
                             </label>
+                                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 text-center sm:text-left max-w-xs">
+                                        Profile picture is required. You can crop, zoom, rotate, and adjust brightness before uploading.
+                                    </p>
                             {uploadingImage && (
                                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">Uploading image...</p>
                             )}
+                                    {!user?.profileImageUrl && !uploadingImage && (
+                                        <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 inline-flex items-center gap-1.5">
+                                            <PencilLine className="w-3.5 h-3.5" />
+                                            Upload a profile picture to continue.
+                                        </p>
+                                    )}
                         </div>
                     </div>
                 </div>
@@ -595,17 +643,30 @@ const Profile = () => {
                             ) : (
                                 <button
                                     type="submit"
-                                    disabled={loading}
+                                    disabled={loading || uploadingImage || !user?.profileImageUrl}
                                     className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all font-semibold shadow-md disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm w-full sm:w-auto"
                                 >
                                     <Save className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                    <span>{loading ? 'Saving...' : 'Save'}</span>
+                                    <span>{loading ? 'Saving...' : !user?.profileImageUrl ? 'Upload Picture First' : 'Save'}</span>
                                 </button>
                             )}
                         </div>
                     </form>
                 </div>
             </div>
+            <ProfileImageEditor
+                imageSrc={selectedImageSrc}
+                open={editorOpen}
+                saving={uploadingImage}
+                onClose={() => {
+                    setEditorOpen(false);
+                    if (selectedImageSrc) {
+                        URL.revokeObjectURL(selectedImageSrc);
+                    }
+                    setSelectedImageSrc('');
+                }}
+                onSave={uploadEditedImage}
+            />
         </div>
     );
 };
