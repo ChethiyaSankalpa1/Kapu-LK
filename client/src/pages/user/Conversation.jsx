@@ -293,10 +293,9 @@ const Conversation = () => {
 
   const isUserOnline = (userObj) => {
     if (!userObj) return false;
-    if (userObj.isOnline) return true;
-    if (userObj.lastLogin) {
-      return moment().diff(moment(userObj.lastLogin), 'minutes') < 5;
-    }
+    // Only return true if explicitly marked as online
+    if (userObj.isOnline === true) return true;
+    // Don't assume online based on lastLogin - this was causing false positives
     return false;
   };
 
@@ -316,7 +315,7 @@ const Conversation = () => {
   );
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 overflow-hidden page-transition pb-16 md:pb-0">
+    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 overflow-hidden page-transition pb-0 md:pb-0">
       <div className="h-full flex max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden">
         
         {/* ================= SIDEBAR: Conversation List ================= */}
@@ -450,7 +449,7 @@ const Conversation = () => {
         </div>
 
         {/* ================= WORKSPACE: Message Feed ================= */}
-        <div className={`flex-1 flex flex-col h-full bg-[#efeae2] dark:bg-[#0b141a] pb-16 md:pb-0 ${
+        <div className={`flex-1 flex flex-col h-full bg-[#efeae2] dark:bg-[#0b141a] pb-0 md:pb-0 ${
           !userId ? 'hidden md:flex items-center justify-center p-8 bg-[#efeae2] dark:bg-[#0b141a]' : 'flex'
         }`}>
           {userId ? (

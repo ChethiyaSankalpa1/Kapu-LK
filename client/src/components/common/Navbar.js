@@ -20,10 +20,12 @@ const Navbar = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [notifOpen, setNotifOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
+    const [mobileNavVisible, setMobileNavVisible] = useState(true);
     const drawerRef = useRef(null);
     const searchRef = useRef(null);
     const notifRef = useRef(null);
     const profileRef = useRef(null);
+    const lastScrollYRef = useRef(0);
 
     // Auto-close on navigation
     useEffect(() => { setMobileOpen(false); }, [location.pathname]);
@@ -52,6 +54,38 @@ const Navbar = () => {
         window.addEventListener('keydown', handleKey);
         return () => window.removeEventListener('keydown', handleKey);
     }, []);
+
+    // Auto-hide mobile bottom navigation on scroll down and show on scroll up
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY || 0;
+            const scrollDelta = currentScrollY - lastScrollYRef.current;
+
+            if (Math.abs(scrollDelta) < 8) {
+                return;
+            }
+
+            if (currentScrollY <= 16) {
+                setMobileNavVisible(true);
+            } else if (scrollDelta > 0) {
+                setMobileNavVisible(false);
+            } else {
+                setMobileNavVisible(true);
+            }
+
+            lastScrollYRef.current = currentScrollY;
+        };
+
+        lastScrollYRef.current = window.scrollY || 0;
+        window.addEventListener('scroll', handleScroll, { passive: true });
+
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    useEffect(() => {
+        setMobileNavVisible(true);
+        lastScrollYRef.current = window.scrollY || 0;
+    }, [location.pathname]);
 
     // Close dropdowns on outside click
     useEffect(() => {
@@ -416,8 +450,8 @@ const Navbar = () => {
             </nav>
 
             {/* ===== MOBILE BOTTOM NAVIGATION ===== */}
-            {user && (
-                <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/60 dark:border-slate-800/60 shadow-2xl">
+            {user && !location.pathname.startsWith('/conversation') && (
+                <div className={`md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/60 dark:border-slate-800/60 shadow-2xl transition-transform duration-300 ease-out ${mobileNavVisible ? 'translate-y-0' : 'translate-y-full'}`}>
                     <div className="flex items-center justify-around py-2 px-2">
                         <Link
                             to="/dashboard"
