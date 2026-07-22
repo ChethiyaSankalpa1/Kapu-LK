@@ -504,7 +504,7 @@ const Conversation = () => {
               </div>
 
               {/* Messages scroll area */}
-              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 chat-scrollbar whatsapp-chat-bg relative">
+              <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-4 space-y-3 sm:space-y-4 chat-scrollbar whatsapp-chat-bg relative">
                 {chatLoading && messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-500" />
@@ -542,7 +542,7 @@ const Conversation = () => {
                           )}
 
                           <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[78%] sm:max-w-[72%] rounded-lg px-3 py-2 shadow-sm relative group ${
+                            <div className={`max-w-[85%] sm:max-w-[78%] md:max-w-[72%] rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 shadow-sm relative group ${
                               isCurrentUser
                                 ? 'bg-[#d9fdd3] text-gray-900 rounded-tr-sm'
                                 : 'bg-white dark:bg-[#202c33] text-gray-900 dark:text-white rounded-tl-sm border border-[#e9edef] dark:border-[#26353d]'
@@ -550,22 +550,22 @@ const Conversation = () => {
                               
                               {/* Message Content */}
                               {msg.deleted ? (
-                                <p className="text-[14px] italic text-gray-500 dark:text-gray-400">{msg.content}</p>
+                                <p className="text-[13px] sm:text-[14px] italic text-gray-500 dark:text-gray-400">{msg.content}</p>
                               ) : msg.type === 'image' ? (
                                 <div className="space-y-1.5">
                                   <img
                                     src={msg.content}
                                     alt="Shared in Chat"
-                                    className="rounded-lg max-w-full max-h-[320px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                                    className="rounded-lg max-w-full max-h-[280px] sm:max-h-[320px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
                                     onClick={() => window.open(msg.content, '_blank')}
                                   />
                                 </div>
                               ) : msg.type === 'like' ? (
-                                <p className="text-sm italic font-semibold flex items-center gap-1.5 py-1 text-pink-500">
+                                <p className="text-xs sm:text-sm italic font-semibold flex items-center gap-1.5 py-1 text-pink-500">
                                   ❤️ Sent you a profile like!
                                 </p>
                               ) : (
-                                <p className="text-[14px] leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
+                                <p className="text-[13px] sm:text-[14px] leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
                               )}
 
                               {/* Message Footer Info */}

@@ -5,7 +5,6 @@ import { useAuth } from '../../context/AuthContext';
 import { authAPI, userAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import { User, Upload, Save, ArrowLeft, ArrowRight, PencilLine } from 'lucide-react';
-import ProfileImageEditor from '../../components/ui/ProfileImageEditor';
 
 const Profile = () => {
     const { t } = useTranslation();
@@ -51,8 +50,6 @@ const Profile = () => {
     const [preview, setPreview] = useState(user?.profileImageUrl || '');
     const [loading, setLoading] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
-    const [editorOpen, setEditorOpen] = useState(false);
-    const [selectedImageSrc, setSelectedImageSrc] = useState('');
     const [tab, setTab] = useState('about');
     const steps = ['about', 'religion', 'family', 'lifestyle', 'partner'];
     const currentIndex = steps.indexOf(tab);
@@ -155,9 +152,11 @@ const Profile = () => {
                 return;
             }
 
-            const localImageSrc = URL.createObjectURL(file);
-            setSelectedImageSrc(localImageSrc);
-            setEditorOpen(true);
+            // Upload directly without editor
+            await uploadEditedImage({
+                file,
+                previewUrl: URL.createObjectURL(file)
+            });
         }
     };
 
@@ -288,18 +287,18 @@ const Profile = () => {
                         <div className="flex flex-col items-center sm:items-start gap-2 sm:gap-3 w-full sm:w-auto">
                             <label className="cursor-pointer bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white px-4 sm:px-8 py-3 sm:py-4 rounded-2xl font-semibold inline-flex items-center gap-2 transition-all transform hover:scale-105 shadow-xl shadow-purple-500/30 text-xs sm:text-sm sm:text-base whitespace-nowrap min-h-[52px]">
                                 <Upload className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                        <span>{uploadingImage ? 'Uploading...' : preview ? 'Change & Edit Image' : 'Choose & Edit Image'}</span>
+                                <span>{uploadingImage ? 'Uploading...' : preview ? 'Change Image' : 'Upload Image'}</span>
                                 <input
                                     type="file"
                                     accept="image/*"
                                     onChange={onFileChange}
-                                            ref={fileInputRef}
+                                    ref={fileInputRef}
                                     className="hidden"
                                     disabled={uploadingImage}
                                 />
                             </label>
                                     <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 text-center sm:text-left max-w-xs">
-                                        Profile picture is required. You can crop, zoom, rotate, and adjust brightness before uploading.
+                                        Profile picture is required.
                                     </p>
                             {uploadingImage && (
                                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">Uploading image...</p>
@@ -654,19 +653,6 @@ const Profile = () => {
                     </form>
                 </div>
             </div>
-            <ProfileImageEditor
-                imageSrc={selectedImageSrc}
-                open={editorOpen}
-                saving={uploadingImage}
-                onClose={() => {
-                    setEditorOpen(false);
-                    if (selectedImageSrc) {
-                        URL.revokeObjectURL(selectedImageSrc);
-                    }
-                    setSelectedImageSrc('');
-                }}
-                onSave={uploadEditedImage}
-            />
         </div>
     );
 };
