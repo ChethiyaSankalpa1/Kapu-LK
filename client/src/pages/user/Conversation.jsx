@@ -245,7 +245,7 @@ const Conversation = () => {
 
     try {
       await messageAPI.editMessage(editingMessage._id, { content: editText.trim() });
-      setMessages(prev => prev.map(msg => 
+      setMessages(prev => (prev || []).map(msg => 
         msg._id === editingMessage._id 
           ? { ...msg, content: editText.trim(), edited: true }
           : msg
@@ -262,7 +262,7 @@ const Conversation = () => {
   const handleDeleteMessage = async (messageId) => {
     try {
       await messageAPI.deleteMessage(messageId);
-      setMessages(prev => prev.map(msg => 
+      setMessages(prev => (prev || []).map(msg => 
         msg._id === messageId 
           ? { ...msg, deleted: true, content: 'This message was deleted.' }
           : msg
@@ -310,8 +310,8 @@ const Conversation = () => {
   ];
 
   // Filter conversations based on query
-  const filteredConversations = conversations.filter(c => 
-    c.user && c.user.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredConversations = (conversations || []).filter(c =>
+    c?.user && c.user.name && c.user.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -519,12 +519,12 @@ const Conversation = () => {
                   </div>
                 ) : (
                   <div className="space-y-2.5">
-                    {messages.map((msg, index) => {
+                    {(messages || []).map((msg, index) => {
                       const isCurrentUser = msg.from._id === currentUser._id || msg.from === currentUser._id;
                       
                       // Show date headers when day changes
                       const showDateHeader = index === 0 || 
-                        moment(msg.createdAt).format('LL') !== moment(messages[index - 1].createdAt).format('LL');
+                        moment(msg.createdAt).format('LL') !== moment((messages || [])[index - 1]?.createdAt).format('LL');
 
                       return (
                         <div key={msg._id || index} className="space-y-2 animate-slide-up">
@@ -658,7 +658,7 @@ const Conversation = () => {
                       </button>
                     </div>
                     <div className="grid grid-cols-8 gap-2 max-h-48 overflow-y-auto chat-scrollbar">
-                      {popularEmojis.map((emoji, index) => (
+                      {(popularEmojis || []).map((emoji, index) => (
                         <button
                           key={index}
                           type="button"
