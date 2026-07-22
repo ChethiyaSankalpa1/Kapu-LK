@@ -644,7 +644,7 @@ const Conversation = () => {
               </div>
 
               {/* Input Area */}
-              <div className="p-3 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#d1d7db] dark:border-[#222d34] shrink-0 relative z-20">
+              <div className="p-2 sm:p-3 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#d1d7db] dark:border-[#222d34] shrink-0 relative z-20">
                 {/* Emoji Picker dropdown */}
                 {showEmojiPicker && (
                   <div
@@ -726,7 +726,7 @@ const Conversation = () => {
                   </div>
 
                   {/* Message Input text field */}
-                  <div className="flex-1 bg-white dark:bg-[#2a3942] border border-[#d1d7db] dark:border-[#2a3942] rounded-[24px] sm:rounded-[28px] px-3 sm:px-4 py-1.5">
+                  <div className="flex-1 bg-white dark:bg-[#2a3942] border border-[#d1d7db] dark:border-[#2a3942] rounded-[20px] sm:rounded-[24px] md:rounded-[28px] px-2.5 sm:px-3 md:px-4 py-1.5">
                     <textarea
                       value={messageText}
                       onChange={(e) => {
@@ -734,7 +734,7 @@ const Conversation = () => {
                         setEditText(e.target.value);
                       }}
                       placeholder={editingMessage ? 'Edit your message...' : t('messages.typeMessage', { defaultValue: 'Type a message...' })}
-                      className="w-full bg-transparent text-slate-900 dark:text-white focus:outline-none outline-none resize-none text-sm min-h-[36px] sm:min-h-[40px] max-h-[120px] transition-all leading-normal pt-2"
+                      className="w-full bg-transparent text-slate-900 dark:text-white focus:outline-none outline-none resize-none text-[13px] sm:text-sm min-h-[32px] sm:min-h-[36px] md:min-h-[40px] max-h-[120px] transition-all leading-normal pt-2"
                       rows={1}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
@@ -753,10 +753,10 @@ const Conversation = () => {
                   <button
                     type="submit"
                     disabled={sending || uploadingImage || !messageText.trim()}
-                    className="bg-[#00a884] hover:bg-[#128c7e] disabled:opacity-40 text-white p-2 sm:p-2.5 rounded-full transition-all shrink-0 flex items-center justify-center min-h-[44px] sm:min-h-[48px] w-10 h-10 sm:w-12 sm:h-12 shadow-sm"
+                    className="bg-[#00a884] hover:bg-[#128c7e] disabled:opacity-40 text-white p-1.5 sm:p-2 md:p-2.5 rounded-full transition-all shrink-0 flex items-center justify-center min-h-[40px] sm:min-h-[44px] md:min-h-[48px] w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 shadow-sm"
                     aria-label={editingMessage ? "Save Edit" : "Send Message"}
                   >
-                    {editingMessage ? <Check className="w-4 h-4 sm:w-5 sm:h-5" /> : <Send className="w-4 h-4 sm:w-5 sm:h-5" />}
+                    {editingMessage ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" /> : <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />}
                   </button>
                 </form>
               </div>
