@@ -40,6 +40,17 @@
       position: fixed;
       width: 100%;
     }
+    
+    /* Ensure input stays visible when keyboard is open */
+    .safe-bottom {
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+    
+    /* Prevent body scroll when keyboard is open */
+    input:focus, textarea:focus {
+      position: relative;
+      z-index: 10;
+    }
   }
 
   /* Remove tap highlight on touch devices */

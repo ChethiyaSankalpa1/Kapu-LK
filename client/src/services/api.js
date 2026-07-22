@@ -82,7 +82,7 @@ export const adminAPI = {
 
 export const messageAPI = {
     getConversations: () => api.get('/messages'),
-    getConversationWithUser: (userId) => api.get(`/messages/${userId}`),
+    getConversationWithUser: (userId, page = 1) => api.get(`/messages/${userId}?page=${page}`),
     sendMessage: (data) => api.post('/messages', data),
     uploadChatImage: (formData) => api.post('/messages/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },

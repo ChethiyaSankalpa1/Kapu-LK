@@ -28,6 +28,9 @@ const Conversation = () => {
   const [chatLoading, setChatLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [messageText, setMessageText] = useState('');
+  
+  // Cache for chat data
+  const chatCacheRef = useRef(new Map());
 
   // UI Interactive States
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -43,8 +46,10 @@ const Conversation = () => {
 
   const scrollToBottom = useCallback((behavior = 'smooth') => {
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior });
-    }, 50);
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
+      }
+    }, 100);
   }, []);
 
   // Fetch all conversations for the sidebar
@@ -63,16 +68,51 @@ const Conversation = () => {
   const prevMsgCountRef = useRef(0);
 
   // Fetch messages for the active conversation
-  const fetchChatMessages = useCallback(async (silent = false) => {
+  const fetchChatMessages = useCallback(async (silent = false, page = 1) => {
     if (!userId) return;
     if (!silent) setChatLoading(true);
     try {
+      // Check cache first
+      const cacheKey = `${userId}_page_${page}`;
+      if (chatCacheRef.current.has(cacheKey) && page === 1) {
+        const cached = chatCacheRef.current.get(cacheKey);
+        const cacheAge = Date.now() - cached.timestamp;
+        // Use cache if less than 30 seconds old
+        if (cacheAge < 30000) {
+          setMessages(cached.messages);
+          setOtherUser(cached.otherUser);
+          prevMsgCountRef.current = cached.messages.length;
+          if (!silent) setChatLoading(false);
+          return;
+        }
+      }
+
       const [messagesRes, userRes] = await Promise.all([
-        messageAPI.getConversationWithUser(userId),
+        messageAPI.getConversationWithUser(userId, page),
         userAPI.getUserById(userId)
       ]);
 
-      const newMsgs = messagesRes.data || [];
+      const response = messagesRes.data;
+      const newMsgs = response.messages || [];
+      const pagination = response.pagination || {};
+      
+      // Update cache
+      chatCacheRef.current.set(cacheKey, {
+        messages: newMsgs,
+        otherUser: userRes.data,
+        timestamp: Date.now(),
+      });
+      
+      // Clean old cache entries (keep only last 5 per user)
+      const userCacheKeys = Array.from(chatCacheRef.current.keys())
+        .filter(key => key.startsWith(userId))
+        .sort((a, b) => {
+          const pageA = parseInt(a.split('_page_')[1]);
+          const pageB = parseInt(b.split('_page_')[1]);
+          return pageB - pageA;
+        });
+      
+      userCacheKeys.slice(5).forEach(key => chatCacheRef.current.delete(key));
       
       // Simulate typing indicator if there is a new message from the other user
       if (prevMsgCountRef.current > 0 && newMsgs.length > prevMsgCountRef.current) {
@@ -156,8 +196,10 @@ const Conversation = () => {
     setMessageText('');
     setShowEmojiPicker(false);
 
+    // Generate unique ID for this message
+    const tempId = `${currentUser._id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     // Optimistically add message
-    const tempId = Date.now().toString();
     const optimisticMsg = {
       _id: tempId,
       from: currentUser._id,
@@ -165,10 +207,21 @@ const Conversation = () => {
       content: textToSend,
       type: 'text',
       createdAt: new Date().toISOString(),
-      isRead: false
+      isRead: false,
+      isOptimistic: true
     };
 
-    setMessages(prev => [...prev, optimisticMsg]);
+    setMessages(prev => {
+      // Check for duplicates by content and recent timestamp
+      const isDuplicate = prev.some(msg => 
+        msg.content === textToSend && 
+        msg.from === currentUser._id &&
+        Date.now() - new Date(msg.createdAt).getTime() < 5000
+      );
+      
+      if (isDuplicate) return prev;
+      return [...prev, optimisticMsg];
+    });
     scrollToBottom('smooth');
     setSending(true);
 
@@ -178,8 +231,13 @@ const Conversation = () => {
         content: textToSend,
         type: 'text'
       });
+      
       // Remove optimistic message - polling will handle refresh
       setMessages(prev => prev.filter(msg => msg._id !== tempId));
+      
+      // Invalidate cache for this conversation
+      const cacheKey = `${userId}_page_1`;
+      chatCacheRef.current.delete(cacheKey);
     } catch (error) {
       toast.error(error.response?.data?.message || t('toast.messaging.sendFailed'));
       setMessages(prev => prev.filter(msg => msg._id !== tempId));
@@ -454,21 +512,21 @@ const Conversation = () => {
           {userId ? (
             <>
               {/* Header */}
-              <div className="py-2.5 px-2 sm:px-3 md:px-4 flex items-center justify-between bg-[#f0f2f5] dark:bg-[#202c33] border-b border-[#d1d7db] dark:border-[#222d34] shrink-0 z-10 min-h-[56px]">
-                <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-1 min-w-0">
+              <div className="py-3 px-3 sm:px-4 md:px-5 flex items-center justify-between bg-[#f0f2f5] dark:bg-[#202c33] border-b border-[#d1d7db] dark:border-[#222d34] shrink-0 z-10 min-h-[64px]">
+                <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-1 min-w-0">
                   <button
                     onClick={() => navigate('/conversation')}
-                    className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 bg-white dark:bg-[#111b21] hover:bg-slate-100 dark:hover:bg-[#0b141a] rounded-full transition-all md:hidden shrink-0"
+                    className="p-2 sm:p-2.5 -ml-1 sm:-ml-2 bg-white dark:bg-[#111b21] hover:bg-slate-200 dark:hover:bg-[#0b141a] rounded-full transition-all md:hidden shrink-0 shadow-sm border border-gray-200 dark:border-[#2a3942]"
                     aria-label="Back to conversations list"
                   >
-                    <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-300" />
+                    <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-slate-800 dark:text-slate-200" />
                   </button>
                   
                   {otherUser ? (
-                    <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 min-w-0">
+                    <div className="flex items-center gap-2 sm:gap-3 md:gap-4 min-w-0">
                       {/* Avatar */}
                       <Link to={`/users/${otherUser._id}`} className="relative block group shrink-0">
-                        <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-11 md:h-11 rounded-full bg-gradient-to-tr from-[#25d366] to-[#128c7e] flex items-center justify-center overflow-hidden border-2 border-white dark:border-[#2a3942] shadow-sm group-hover:scale-105 transition-transform">
+                        <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full bg-gradient-to-tr from-[#25d366] to-[#128c7e] flex items-center justify-center overflow-hidden border-2 border-white dark:border-[#2a3942] shadow-md group-hover:scale-105 transition-transform">
                           {otherUser.profileImageUrl ? (
                             <img
                               src={otherUser.profileImageUrl}
@@ -476,30 +534,30 @@ const Conversation = () => {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-white" />
+                            <User className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />
                           )}
                         </div>
                         {isUserOnline(otherUser) && (
-                          <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 bg-[#25d366] border-2 border-white dark:border-[#111b21] rounded-full" />
+                          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5 bg-[#25d366] border-2 border-white dark:border-[#111b21] rounded-full" />
                         )}
                       </Link>
 
                       {/* Name & status */}
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1 sm:gap-1.5">
-                          <Link to={`/users/${otherUser._id}`} className="text-xs sm:text-sm md:text-base font-bold text-slate-900 dark:text-white hover:text-[#128c7e] transition-colors leading-none truncate block">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <Link to={`/users/${otherUser._id}`} className="text-sm sm:text-base md:text-lg font-bold text-slate-900 dark:text-white hover:text-[#128c7e] transition-colors leading-tight truncate block">
                             {otherUser.name || otherUser.profileName || 'Unknown User'}
                           </Link>
-                          {otherUser.isPremium && <Crown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-500 shrink-0" />}
-                          {otherUser.role === 'admin' && <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600 shrink-0" />}
+                          {otherUser.isPremium && <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-500 shrink-0" />}
+                          {otherUser.role === 'admin' && <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 shrink-0" />}
                         </div>
-                        <span className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1 block font-medium">
+                        <span className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 mt-0.5 sm:mt-1 block font-medium">
                           {getOnlineStatusText(otherUser)}
                         </span>
                       </div>
                     </div>
                   ) : (
-                    <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Loading...</div>
+                    <div className="text-sm sm:text-base text-slate-600 dark:text-slate-400 font-medium">Loading...</div>
                   )}
                 </div>
               </div>

@@ -188,13 +188,16 @@ exports.getConversations = async (req, res) => {
   }
 };
 
-// @desc    Get messages with a specific user
+// @desc    Get messages with a specific user (with pagination)
 // @route   GET /api/messages/:userId
 // @access  Private
 exports.getConversationWithUser = async (req, res) => {
   try {
     const userId = req.user._id;
     const otherUserId = req.params.userId;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
 
     const messages = await Message.find({
       $or: [
@@ -202,8 +205,17 @@ exports.getConversationWithUser = async (req, res) => {
         { from: otherUserId, to: userId },
       ],
     })
-      .sort({ createdAt: 1 })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
       .populate('from to', 'name profileImageUrl isOnline lastLogin');
+
+    const total = await Message.countDocuments({
+      $or: [
+        { from: userId, to: otherUserId },
+        { from: otherUserId, to: userId },
+      ],
+    });
 
     await Message.updateMany(
       { from: otherUserId, to: userId, isRead: false },
@@ -220,12 +232,23 @@ exports.getConversationWithUser = async (req, res) => {
       { $set: { isRead: true } }
     );
 
-    const normalizedMessages = messages.map((message) => ({
-      ...message.toObject(),
-      content: decryptMessage(message.content, message.contentIv),
-    }));
+    const normalizedMessages = messages
+      .reverse()
+      .map((message) => ({
+        ...message.toObject(),
+        content: decryptMessage(message.content, message.contentIv),
+      }));
 
-    res.json(normalizedMessages);
+    res.json({
+      messages: normalizedMessages,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: skip + limit < total,
+      },
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
