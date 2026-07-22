@@ -334,7 +334,7 @@ const Conversation = () => {
   ) : [];
 
   return (
-    <div className="h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4rem)] bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 page-transition pb-0 sm:pb-0">
+    <div className="fixed top-14 sm:top-16 left-0 right-0 bottom-0 bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 page-transition pb-0 sm:pb-0">
       <div className="h-full flex w-full max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden">
         
         {/* ================= SIDEBAR: Conversation List ================= */}
