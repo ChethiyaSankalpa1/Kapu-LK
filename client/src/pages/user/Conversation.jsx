@@ -454,20 +454,20 @@ const Conversation = () => {
           {userId ? (
             <>
               {/* Header */}
-              <div className="py-2 px-2 sm:px-3 md:px-4 flex items-center justify-between bg-[#f0f2f5] dark:bg-[#202c33] border-b border-[#d1d7db] dark:border-[#222d34] shrink-0 z-10">
-                <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+              <div className="py-2.5 px-2 sm:px-3 md:px-4 flex items-center justify-between bg-[#f0f2f5] dark:bg-[#202c33] border-b border-[#d1d7db] dark:border-[#222d34] shrink-0 z-10 min-h-[56px]">
+                <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-1 min-w-0">
                   <button
                     onClick={() => navigate('/conversation')}
-                    className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 bg-white dark:bg-[#111b21] hover:bg-slate-100 dark:hover:bg-[#0b141a] rounded-full transition-all md:hidden"
+                    className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 bg-white dark:bg-[#111b21] hover:bg-slate-100 dark:hover:bg-[#0b141a] rounded-full transition-all md:hidden shrink-0"
                     aria-label="Back to conversations list"
                   >
                     <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700 dark:text-slate-300" />
                   </button>
                   
-                  {otherUser && (
-                    <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+                  {otherUser ? (
+                    <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 min-w-0">
                       {/* Avatar */}
-                      <Link to={`/users/${otherUser._id}`} className="relative block group">
+                      <Link to={`/users/${otherUser._id}`} className="relative block group shrink-0">
                         <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-11 md:h-11 rounded-full bg-gradient-to-tr from-[#25d366] to-[#128c7e] flex items-center justify-center overflow-hidden border-2 border-white dark:border-[#2a3942] shadow-sm group-hover:scale-105 transition-transform">
                           {otherUser.profileImageUrl ? (
                             <img
@@ -485,10 +485,10 @@ const Conversation = () => {
                       </Link>
 
                       {/* Name & status */}
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1 sm:gap-1.5">
                           <Link to={`/users/${otherUser._id}`} className="text-xs sm:text-sm md:text-base font-bold text-slate-900 dark:text-white hover:text-[#128c7e] transition-colors leading-none truncate">
-                            {otherUser.name}
+                            {otherUser.name || 'Unknown User'}
                           </Link>
                           {otherUser.isPremium && <Crown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-500 shrink-0" />}
                           {otherUser.role === 'admin' && <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600 shrink-0" />}
@@ -498,6 +498,8 @@ const Conversation = () => {
                         </span>
                       </div>
                     </div>
+                  ) : (
+                    <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Loading...</div>
                   )}
                 </div>
               </div>
@@ -643,7 +645,7 @@ const Conversation = () => {
               </div>
 
               {/* Input Area */}
-              <div className="p-1.5 sm:p-2 md:p-3 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#d1d7db] dark:border-[#222d34] shrink-0 relative z-20">
+              <div className="p-2 sm:p-2.5 md:p-3 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#d1d7db] dark:border-[#222d34] shrink-0 relative z-20 safe-bottom">
                 {/* Emoji Picker dropdown */}
                 {showEmojiPicker && (
                   <div
@@ -725,7 +727,7 @@ const Conversation = () => {
                   </div>
 
                   {/* Message Input text field */}
-                  <div className="flex-1 bg-white dark:bg-[#2a3942] border border-[#d1d7db] dark:border-[#2a3942] rounded-[18px] sm:rounded-[20px] md:rounded-[24px] px-2 sm:px-2.5 md:px-4 py-1">
+                  <div className="flex-1 bg-white dark:bg-[#2a3942] border border-[#d1d7db] dark:border-[#2a3942] rounded-[18px] sm:rounded-[20px] md:rounded-[24px] px-2 sm:px-2.5 md:px-4 py-1.5">
                     <textarea
                       value={messageText}
                       onChange={(e) => {
@@ -733,7 +735,7 @@ const Conversation = () => {
                         setEditText(e.target.value);
                       }}
                       placeholder={editingMessage ? 'Edit your message...' : t('messages.typeMessage', { defaultValue: 'Type a message...' })}
-                      className="w-full bg-transparent text-slate-900 dark:text-white focus:outline-none outline-none resize-none text-[12px] sm:text-[13px] md:text-sm min-h-[28px] sm:min-h-[32px] md:min-h-[40px] max-h-[120px] transition-all leading-normal pt-1.5"
+                      className="w-full bg-transparent text-slate-900 dark:text-white focus:outline-none outline-none resize-none text-[12px] sm:text-[13px] md:text-sm min-h-[30px] sm:min-h-[32px] md:min-h-[40px] max-h-[120px] transition-all leading-normal pt-2"
                       rows={1}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
@@ -752,7 +754,7 @@ const Conversation = () => {
                   <button
                     type="submit"
                     disabled={sending || uploadingImage || !messageText.trim()}
-                    className="bg-[#00a884] hover:bg-[#128c7e] disabled:opacity-40 text-white p-1 sm:p-1.5 md:p-2.5 rounded-full transition-all shrink-0 flex items-center justify-center min-h-[36px] sm:min-h-[40px] md:min-h-[48px] w-8 h-8 sm:w-9 sm:h-9 md:w-12 md:h-12 shadow-sm"
+                    className="bg-[#00a884] hover:bg-[#128c7e] disabled:opacity-40 text-white p-1.5 sm:p-1.5 md:p-2.5 rounded-full transition-all shrink-0 flex items-center justify-center min-h-[38px] sm:min-h-[40px] md:min-h-[48px] w-8 h-8 sm:w-9 sm:h-9 md:w-12 md:h-12 shadow-sm"
                     aria-label={editingMessage ? "Save Edit" : "Send Message"}
                   >
                     {editingMessage ? <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-5 md:h-5" /> : <Send className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-5 md:h-5" />}
