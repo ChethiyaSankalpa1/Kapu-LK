@@ -243,7 +243,7 @@ const Profile = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 py-4 sm:py-8 page-transition">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 pt-4 pb-24 md:py-8 page-transition">
             <div className="container mx-auto px-3 sm:px-4 max-w-5xl">
                 {/* Warning banner if profile image is missing */}
                 {!user?.profileImageUrl && (

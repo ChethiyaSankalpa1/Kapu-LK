@@ -211,7 +211,7 @@ const UserDetail = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-5 sm:py-8 transition-colors duration-300">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 pt-5 pb-24 md:py-8 transition-colors duration-300">
             <div className="container mx-auto px-4 max-w-6xl">
                 <button
                     onClick={() => navigate(-1)}

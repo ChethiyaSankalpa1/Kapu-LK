@@ -499,7 +499,7 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            <div className="relative container mx-auto px-3 sm:px-4 pb-8 sm:pb-12 -mt-8 sm:-mt-10 md:-mt-14 space-y-4 sm:space-y-6 z-10">
+            <div className="relative container mx-auto px-3 sm:px-4 pb-24 md:pb-12 -mt-8 sm:-mt-10 md:-mt-14 space-y-4 sm:space-y-6 z-10">
                 <div className="glass-card p-2 mobile-tab-list w-full">
                     <button
                         onClick={() => setActiveTab('overview')}

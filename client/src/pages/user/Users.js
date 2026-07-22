@@ -170,7 +170,7 @@ const Users = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-6 sm:py-8 transition-colors duration-300">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-6 pb-24 md:py-8 transition-colors duration-300">
             <div className="container mx-auto px-4 max-w-6xl">
                 <div className="mb-6 sm:mb-8">
                     <div className="flex items-center justify-between gap-3 mb-4">

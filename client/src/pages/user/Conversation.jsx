@@ -106,9 +106,25 @@ const Conversation = () => {
     }
   }, [userId, scrollToBottom]);
 
-  // Initial load
+  // Initial load & body scroll locking on mobile
   useEffect(() => {
     fetchConversationsList();
+    
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = 'unset';
+      }
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      document.body.style.overflow = 'unset';
+    };
   }, [fetchConversationsList]);
 
   // Load chat on userId change
@@ -756,7 +772,7 @@ const Conversation = () => {
                   <button
                     type="submit"
                     disabled={sending || uploadingImage || !messageText.trim()}
-                    className="bg-[#00a884] hover:bg-[#128c7e] disabled:opacity-40 text-white p-1.5 sm:p-2 md:p-2.5 rounded-full transition-all shrink-0 flex items-center justify-center min-h-[40px] sm:min-h-[44px] md:min-h-[48px] w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 shadow-sm"
+                    className="bg-[#00a884] hover:bg-[#128c7e] disabled:opacity-40 text-white rounded-full transition-all shrink-0 flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 shadow-sm"
                     aria-label={editingMessage ? "Save Edit" : "Send Message"}
                   >
                     {editingMessage ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" /> : <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />}
