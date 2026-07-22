@@ -52,9 +52,10 @@ const Conversation = () => {
     if (!silent) setListLoading(true);
     try {
       const response = await messageAPI.getConversations();
-      setConversations(response.data || []);
+      setConversations(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Failed to load conversations list', error);
+      setConversations([]);
     } finally {
       if (!silent) setListLoading(false);
     }
@@ -72,7 +73,7 @@ const Conversation = () => {
         userAPI.getUserById(userId)
       ]);
 
-      const newMsgs = messagesRes.data || [];
+      const newMsgs = Array.isArray(messagesRes.data) ? messagesRes.data : [];
       
       // Simulate typing indicator if there is a new message from the other user
       if (prevMsgCountRef.current > 0 && newMsgs.length > prevMsgCountRef.current) {
@@ -245,11 +246,11 @@ const Conversation = () => {
 
     try {
       await messageAPI.editMessage(editingMessage._id, { content: editText.trim() });
-      setMessages(prev => (prev || []).map(msg => 
+      setMessages(prev => Array.isArray(prev) ? prev.map(msg => 
         msg._id === editingMessage._id 
           ? { ...msg, content: editText.trim(), edited: true }
           : msg
-      ));
+      ) : []);
       setEditingMessage(null);
       setEditText('');
       setMessageText('');
@@ -262,11 +263,11 @@ const Conversation = () => {
   const handleDeleteMessage = async (messageId) => {
     try {
       await messageAPI.deleteMessage(messageId);
-      setMessages(prev => (prev || []).map(msg => 
+      setMessages(prev => Array.isArray(prev) ? prev.map(msg => 
         msg._id === messageId 
           ? { ...msg, deleted: true, content: 'This message was deleted.' }
           : msg
-      ));
+      ) : []);
       setShowMessageMenu(null);
       toast.success('Message deleted');
     } catch (error) {
@@ -310,13 +311,13 @@ const Conversation = () => {
   ];
 
   // Filter conversations based on query
-  const filteredConversations = (conversations || []).filter(c =>
+  const filteredConversations = Array.isArray(conversations) ? conversations.filter(c =>
     c?.user && c.user.name && c.user.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) : [];
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 overflow-hidden page-transition pb-0 md:pb-0">
-      <div className="h-full flex max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden">
+    <div className="h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 overflow-y-auto page-transition pb-0 md:pb-0">
+      <div className="min-h-full flex max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden">
         
         {/* ================= SIDEBAR: Conversation List ================= */}
         <div className={`w-full md:w-[360px] lg:w-[400px] flex flex-col h-full border-r border-[#d1d7db] dark:border-[#222d34] shrink-0 bg-white dark:bg-[#111b21] ${
@@ -519,7 +520,7 @@ const Conversation = () => {
                   </div>
                 ) : (
                   <div className="space-y-2.5">
-                    {(messages || []).map((msg, index) => {
+                    {Array.isArray(messages) && messages.map((msg, index) => {
                       const isCurrentUser = msg.from._id === currentUser._id || msg.from === currentUser._id;
                       
                       // Show date headers when day changes
@@ -658,7 +659,7 @@ const Conversation = () => {
                       </button>
                     </div>
                     <div className="grid grid-cols-8 gap-2 max-h-48 overflow-y-auto chat-scrollbar">
-                      {(popularEmojis || []).map((emoji, index) => (
+                      {Array.isArray(popularEmojis) && popularEmojis.map((emoji, index) => (
                         <button
                           key={index}
                           type="button"
