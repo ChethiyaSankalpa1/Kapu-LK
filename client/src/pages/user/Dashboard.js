@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { userAPI, messageAPI, notificationAPI, achievementAPI, referralAPI, walletAPI } from '../../services/api';
+import { userAPI, messageAPI, notificationAPI, achievementAPI, giftAPI, referralAPI, walletAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
     User, CheckCircle, Clock, MessageCircle, Bell, Search, Heart,
@@ -18,6 +18,8 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const [showPremiumModal, setShowPremiumModal] = useState(false);
     const [showPremiumPopup, setShowPremiumPopup] = useState(false);
+    const [gifts, setGifts] = useState([]);
+    const [giftsLoading, setGiftsLoading] = useState(false);
     const [referralCode, setReferralCode] = useState(null);
     const [referralStats, setReferralStats] = useState(null);
     const [referralLoading, setReferralLoading] = useState(false);
@@ -163,6 +165,18 @@ const Dashboard = () => {
         }
     }, []);
 
+    const fetchGifts = useCallback(async () => {
+        setGiftsLoading(true);
+        try {
+            const response = await giftAPI.getGifts();
+            setGifts(response.data || []);
+        } catch (error) {
+            console.error('Error fetching gifts:', error);
+        } finally {
+            setGiftsLoading(false);
+        }
+    }, []);
+
     const fetchReferralData = useCallback(async () => {
         setReferralLoading(true);
         try {
@@ -288,6 +302,7 @@ const Dashboard = () => {
         fetchNotifications();
         fetchConversations();
         fetchUserStats();
+        fetchGifts();
         fetchReferralData();
         fetchWallet();
 
@@ -296,7 +311,7 @@ const Dashboard = () => {
             fetchNotifications();
         }, 20000);
         return () => clearInterval(notifInterval);
-    }, [isProfileComplete, user?.isApproved, user?.role, fetchOverviewUsers, fetchNotifications, fetchConversations, fetchUserStats, fetchReferralData, fetchWallet]);
+    }, [isProfileComplete, user?.isApproved, user?.role, fetchOverviewUsers, fetchNotifications, fetchConversations, fetchUserStats, fetchGifts, fetchReferralData, fetchWallet]);
 
     useEffect(() => {
         if (activeTab === 'matches' && matches.length === 0 && (user?.isApproved || user?.role === 'admin')) {
