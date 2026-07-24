@@ -29,6 +29,21 @@ const AdminDashboard = () => {
   const [successStories, setSuccessStories] = useState([]);
   const [blogPosts, setBlogPosts] = useState([]);
   const [events, setEvents] = useState([]);
+  
+  // Gift management states
+  const [showGiftModal, setShowGiftModal] = useState(false);
+  const [editingGift, setEditingGift] = useState(null);
+  const [giftFormData, setGiftFormData] = useState({
+    name: '',
+    emoji: '',
+    category: 'gifts',
+    price: 0,
+    currency: 'LKR',
+    isPremium: false,
+    isRecommended: false,
+    isActive: true,
+    rarity: 'common'
+  });
 
   const fetchConversations = async () => {
     try {
@@ -100,7 +115,78 @@ const AdminDashboard = () => {
       toast.success(t('admin.userApprovalRevoked', { defaultValue: 'User approval revoked' }));
       fetchData();
     } catch (error) {
-      toast.error(t('admin.rejectUserFailed', { defaultValue: 'Failed to reject user' }));
+      toast.error(t('admin.rejectUserFailed', { defaultValue: 'Failed to revoke approval' }));
+    }
+  };
+
+  // Gift management handlers
+  const handleAddGift = () => {
+    setEditingGift(null);
+    setGiftFormData({
+      name: '',
+      emoji: '',
+      category: 'gifts',
+      price: 0,
+      currency: 'LKR',
+      isPremium: false,
+      isRecommended: false,
+      isActive: true,
+      rarity: 'common'
+    });
+    setShowGiftModal(true);
+  };
+
+  const handleEditGift = (gift) => {
+    setEditingGift(gift);
+    setGiftFormData({
+      name: gift.name,
+      emoji: gift.emoji,
+      category: gift.category,
+      price: gift.price,
+      currency: gift.currency || 'LKR',
+      isPremium: gift.isPremium,
+      isRecommended: gift.isRecommended,
+      isActive: gift.isActive,
+      rarity: gift.rarity
+    });
+    setShowGiftModal(true);
+  };
+
+  const handleSaveGift = async () => {
+    try {
+      if (editingGift) {
+        await giftAPI.updateGift(editingGift._id, giftFormData);
+        toast.success('Gift updated successfully');
+      } else {
+        await giftAPI.createGift(giftFormData);
+        toast.success('Gift created successfully');
+      }
+      setShowGiftModal(false);
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to save gift');
+    }
+  };
+
+  const handleDeleteGift = async (giftId) => {
+    if (window.confirm('Are you sure you want to delete this gift?')) {
+      try {
+        await giftAPI.deleteGift(giftId);
+        toast.success('Gift deleted successfully');
+        fetchData();
+      } catch (error) {
+        toast.error('Failed to delete gift');
+      }
+    }
+  };
+
+  const handleToggleGiftActive = async (gift) => {
+    try {
+      await giftAPI.updateGift(gift._id, { ...gift, isActive: !gift.isActive });
+      toast.success(`Gift ${gift.isActive ? 'disabled' : 'enabled'} successfully`);
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to toggle gift status');
     }
   };
 
@@ -758,16 +844,48 @@ const AdminDashboard = () => {
         {/* Gifts Management */}
         {activeTab === 'gifts' && (
           <div className="glass-card overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Gifts Management</h2>
+              <button
+                onClick={handleAddGift}
+                className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg text-sm font-semibold hover:from-pink-600 hover:to-purple-600 transition-all flex items-center gap-2"
+              >
+                <Gift className="w-4 h-4" />
+                Add Gift
+              </button>
             </div>
             <div className="p-6">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {gifts.map((gift) => (
-                  <div key={gift._id} className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 text-center">
-                    <div className="text-4xl mb-2">{gift.icon}</div>
+                  <div key={gift._id} className={`bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 text-center ${!gift.isActive ? 'opacity-50' : ''}`}>
+                    <div className="text-4xl mb-2">{gift.emoji}</div>
                     <p className="font-semibold text-gray-900 dark:text-white">{gift.name}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{gift.points} points</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Rs. {gift.price} {gift.currency}</p>
+                    <div className="flex items-center justify-center gap-2 mt-2">
+                      {gift.isPremium && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Premium</span>}
+                      {gift.isRecommended && <span className="text-xs bg-pink-100 text-pink-800 px-2 py-1 rounded">Popular</span>}
+                      {!gift.isActive && <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">Disabled</span>}
+                    </div>
+                    <div className="flex items-center justify-center gap-2 mt-3">
+                      <button
+                        onClick={() => handleEditGift(gift)}
+                        className="text-blue-600 hover:text-blue-700 text-sm"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleToggleGiftActive(gift)}
+                        className="text-green-600 hover:text-green-700 text-sm"
+                      >
+                        {gift.isActive ? 'Disable' : 'Enable'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteGift(gift._id)}
+                        className="text-red-600 hover:text-red-700 text-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1247,6 +1365,122 @@ const AdminDashboard = () => {
                   )}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Gift Modal */}
+      {showGiftModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                {editingGift ? 'Edit Gift' : 'Add New Gift'}
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gift Name</label>
+                  <input
+                    type="text"
+                    value={giftFormData.name}
+                    onChange={(e) => setGiftFormData({ ...giftFormData, name: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Emoji</label>
+                  <input
+                    type="text"
+                    value={giftFormData.emoji}
+                    onChange={(e) => setGiftFormData({ ...giftFormData, emoji: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="🎁"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                  <select
+                    value={giftFormData.category}
+                    onChange={(e) => setGiftFormData({ ...giftFormData, category: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="flowers">Flowers</option>
+                    <option value="hearts">Hearts</option>
+                    <option value="food">Food</option>
+                    <option value="drinks">Drinks</option>
+                    <option value="gifts">Gifts</option>
+                    <option value="special">Special</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price (LKR)</label>
+                    <input
+                      type="number"
+                      value={giftFormData.price}
+                      onChange={(e) => setGiftFormData({ ...giftFormData, price: parseInt(e.target.value) || 0 })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rarity</label>
+                    <select
+                      value={giftFormData.rarity}
+                      onChange={(e) => setGiftFormData({ ...giftFormData, rarity: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="common">Common</option>
+                      <option value="rare">Rare</option>
+                      <option value="epic">Epic</option>
+                      <option value="legendary">Legendary</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={giftFormData.isPremium}
+                      onChange={(e) => setGiftFormData({ ...giftFormData, isPremium: e.target.checked })}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Premium</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={giftFormData.isRecommended}
+                      onChange={(e) => setGiftFormData({ ...giftFormData, isRecommended: e.target.checked })}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Recommended</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={giftFormData.isActive}
+                      onChange={(e) => setGiftFormData({ ...giftFormData, isActive: e.target.checked })}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Active</span>
+                  </label>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleSaveGift}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg font-semibold hover:from-pink-600 hover:to-purple-600 transition-all"
+                >
+                  {editingGift ? 'Update' : 'Create'}
+                </button>
+                <button
+                  onClick={() => setShowGiftModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
