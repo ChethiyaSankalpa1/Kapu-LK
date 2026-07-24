@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 
 const Wallet = () => {
-    const { user } = useAuth();
+    // useAuth() was here but unused
     const navigate = useNavigate();
     const [wallet, setWallet] = useState(null);
     const [userStats, setUserStats] = useState(null);

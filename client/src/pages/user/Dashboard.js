@@ -6,7 +6,7 @@ import { userAPI, messageAPI, notificationAPI, achievementAPI, giftAPI, referral
 import { toast } from 'react-toastify';
 import {
     User, CheckCircle, Clock, MessageCircle, Bell, Search, Heart,
-    Crown, Zap, X, RefreshCw, Trophy, Flame, Star, Share2, FileText, Calendar, Gift, Plus
+    Crown, Zap, X, RefreshCw, Flame, Share2, FileText, Calendar, Gift
 } from 'lucide-react';
 import ProfileCard from '../../components/ui/ProfileCard';
 import CustomSelect from '../../components/ui/CustomSelect';
@@ -23,7 +23,7 @@ const Dashboard = () => {
     const [referralCode, setReferralCode] = useState(null);
     const [referralStats, setReferralStats] = useState(null);
     const [referralLoading, setReferralLoading] = useState(false);
-    const [wallet, setWallet] = useState(null);
+    const [, setWallet] = useState(null);
 
     const FREE_LIMIT = 5;
     const messagesLeft = premiumStatus?.isPremium
@@ -99,7 +99,7 @@ const Dashboard = () => {
 
     // Gamification state
     const [userStats, setUserStats] = useState(null);
-    const [achievements, setAchievements] = useState([]);
+    const [, setAchievements] = useState([]);
 
     // Premium popup logic - show every 10 minutes for non-premium users
     useEffect(() => {

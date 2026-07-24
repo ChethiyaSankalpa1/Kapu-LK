@@ -29,8 +29,8 @@ const AdminDashboard = () => {
   const [successStories, setSuccessStories] = useState([]);
   const [blogPosts, setBlogPosts] = useState([]);
   const [events, setEvents] = useState([]);
-  const [redemptionConfigs, setRedemptionConfigs] = useState([]);
-  const [redemptions, setRedemptions] = useState([]);
+  const [, setRedemptionConfigs] = useState([]);
+  const [, setRedemptions] = useState([]);
   
   // Gift management states
   const [showGiftModal, setShowGiftModal] = useState(false);
