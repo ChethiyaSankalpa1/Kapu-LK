@@ -150,15 +150,12 @@ const Dashboard = () => {
     }, []);
 
     const fetchUserStats = useCallback(async () => {
-        setStatsLoading(true);
         try {
             const response = await achievementAPI.getMyStats();
             setUserStats(response.data.stats);
             setAchievements(response.data.achievements || []);
         } catch (error) {
             console.error('Error fetching user stats:', error);
-        } finally {
-            setStatsLoading(false);
         }
     }, []);
 
