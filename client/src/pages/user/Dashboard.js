@@ -24,7 +24,6 @@ const Dashboard = () => {
     const [referralStats, setReferralStats] = useState(null);
     const [referralLoading, setReferralLoading] = useState(false);
     const [wallet, setWallet] = useState(null);
-    const [walletLoading, setWalletLoading] = useState(false);
 
     const FREE_LIMIT = 5;
     const messagesLeft = premiumStatus?.isPremium
@@ -166,18 +165,6 @@ const Dashboard = () => {
         }
     }, []);
 
-    const fetchGifts = useCallback(async () => {
-        setGiftsLoading(true);
-        try {
-            const response = await giftAPI.getGifts();
-            setGifts(response.data || []);
-        } catch (error) {
-            console.error('Error fetching gifts:', error);
-        } finally {
-            setGiftsLoading(false);
-        }
-    }, []);
-
     const fetchReferralData = useCallback(async () => {
         setReferralLoading(true);
         try {
@@ -195,14 +182,11 @@ const Dashboard = () => {
     }, []);
 
     const fetchWallet = useCallback(async () => {
-        setWalletLoading(true);
         try {
             const response = await walletAPI.getWallet();
             setWallet(response.data);
         } catch (error) {
             console.error('Error fetching wallet:', error);
-        } finally {
-            setWalletLoading(false);
         }
     }, []);
 
