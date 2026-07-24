@@ -24,7 +24,16 @@ const GiftSchema = new mongoose.Schema({
     required: true,
     default: 0
   },
+  currency: {
+    type: String,
+    enum: ['LKR', 'USD'],
+    default: 'LKR'
+  },
   isPremium: {
+    type: Boolean,
+    default: false
+  },
+  isRecommended: {
     type: Boolean,
     default: false
   },

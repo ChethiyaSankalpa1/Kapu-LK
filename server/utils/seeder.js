@@ -205,8 +205,9 @@ const seedGifts = async () => {
       {
         name: 'Rose',
         emoji: '🌹',
-        category: 'romantic',
-        price: 10,
+        category: 'flowers',
+        price: 100,
+        currency: 'LKR',
         isPremium: false,
         isRecommended: true,
         isActive: true
@@ -214,8 +215,9 @@ const seedGifts = async () => {
       {
         name: 'Heart',
         emoji: '❤️',
-        category: 'romantic',
-        price: 15,
+        category: 'hearts',
+        price: 150,
+        currency: 'LKR',
         isPremium: false,
         isRecommended: true,
         isActive: true
@@ -223,8 +225,9 @@ const seedGifts = async () => {
       {
         name: 'Teddy Bear',
         emoji: '🧸',
-        category: 'cute',
-        price: 25,
+        category: 'gifts',
+        price: 250,
+        currency: 'LKR',
         isPremium: false,
         isRecommended: false,
         isActive: true
@@ -233,7 +236,8 @@ const seedGifts = async () => {
         name: 'Chocolate',
         emoji: '🍫',
         category: 'food',
-        price: 20,
+        price: 200,
+        currency: 'LKR',
         isPremium: false,
         isRecommended: false,
         isActive: true
@@ -241,8 +245,9 @@ const seedGifts = async () => {
       {
         name: 'Diamond Ring',
         emoji: '💍',
-        category: 'premium',
-        price: 100,
+        category: 'special',
+        price: 1000,
+        currency: 'LKR',
         isPremium: true,
         isRecommended: true,
         isActive: true
@@ -250,8 +255,9 @@ const seedGifts = async () => {
       {
         name: 'Bouquet',
         emoji: '💐',
-        category: 'romantic',
-        price: 50,
+        category: 'flowers',
+        price: 500,
+        currency: 'LKR',
         isPremium: false,
         isRecommended: false,
         isActive: true
@@ -259,8 +265,9 @@ const seedGifts = async () => {
       {
         name: 'Love Letter',
         emoji: '💌',
-        category: 'romantic',
-        price: 30,
+        category: 'gifts',
+        price: 300,
+        currency: 'LKR',
         isPremium: false,
         isRecommended: false,
         isActive: true
@@ -268,8 +275,9 @@ const seedGifts = async () => {
       {
         name: 'Crown',
         emoji: '👑',
-        category: 'premium',
-        price: 200,
+        category: 'special',
+        price: 2000,
+        currency: 'LKR',
         isPremium: true,
         isRecommended: false,
         isActive: true
@@ -280,7 +288,7 @@ const seedGifts = async () => {
       const exists = await Gift.findOne({ name: gift.name });
       if (!exists) {
         await Gift.create(gift);
-        console.log(`✅ Gift Created: ${gift.name}`);
+        console.log(`✅ Gift Created: ${gift.name} - ${gift.price} ${gift.currency}`);
       }
     }
   } catch (error) {

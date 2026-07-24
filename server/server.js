@@ -115,6 +115,7 @@ app.use('/api/success-stories', require('./routes/successStoryRoutes'));
 app.use('/api/blog', require('./routes/blogRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/typing', require('./routes/typingRoutes'));
+app.use('/api/wallet', require('./routes/walletRoutes'));
 
 // Health check
 app.get('/', (req, res) => {
