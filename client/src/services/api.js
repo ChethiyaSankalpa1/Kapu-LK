@@ -167,4 +167,16 @@ export const typingAPI = {
     getTypingStatus: (userId) => api.get(`/typing/${userId}`),
 };
 
+// Wallet API
+export const walletAPI = {
+    getWallet: () => api.get('/wallet'),
+    getTransactions: (params = {}) => api.get('/wallet/transactions', { params }),
+    createPaymentRequest: (data) => api.post('/wallet/payment-request', data),
+    getPaymentRequests: () => api.get('/wallet/payment-requests'),
+    // Admin wallet routes
+    getAllPaymentRequests: (params = {}) => api.get('/wallet/admin/payment-requests', { params }),
+    approvePaymentRequest: (id) => api.put(`/wallet/admin/payment-requests/${id}/approve`),
+    rejectPaymentRequest: (id, reason) => api.put(`/wallet/admin/payment-requests/${id}/reject`, { rejectionReason: reason }),
+};
+
 export default api;

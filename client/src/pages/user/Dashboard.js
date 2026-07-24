@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { userAPI, messageAPI, notificationAPI, achievementAPI, giftAPI } from '../../services/api';
+import { userAPI, messageAPI, notificationAPI, achievementAPI, giftAPI, referralAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
     User, CheckCircle, Clock, MessageCircle, Bell, Search, Heart,
@@ -20,6 +20,9 @@ const Dashboard = () => {
     const [showPremiumPopup, setShowPremiumPopup] = useState(false);
     const [gifts, setGifts] = useState([]);
     const [giftsLoading, setGiftsLoading] = useState(false);
+    const [referralCode, setReferralCode] = useState(null);
+    const [referralStats, setReferralStats] = useState(null);
+    const [referralLoading, setReferralLoading] = useState(false);
 
     const FREE_LIMIT = 5;
     const messagesLeft = premiumStatus?.isPremium
@@ -173,6 +176,22 @@ const Dashboard = () => {
         }
     }, []);
 
+    const fetchReferralData = useCallback(async () => {
+        setReferralLoading(true);
+        try {
+            const [codeRes, statsRes] = await Promise.all([
+                referralAPI.getMyReferralCode(),
+                referralAPI.getReferralStats()
+            ]);
+            setReferralCode(codeRes.data);
+            setReferralStats(statsRes.data);
+        } catch (error) {
+            console.error('Error fetching referral data:', error);
+        } finally {
+            setReferralLoading(false);
+        }
+    }, []);
+
     const fetchOverviewUsers = useCallback(async () => {
         setOverviewLoading(true);
         try {
@@ -273,13 +292,14 @@ const Dashboard = () => {
         fetchNotifications();
         fetchConversations();
         fetchUserStats();
+        fetchReferralData();
 
         // periodic refresh for notifications every 20s
         const notifInterval = setInterval(() => {
             fetchNotifications();
         }, 20000);
         return () => clearInterval(notifInterval);
-    }, [isProfileComplete, user?.isApproved, user?.role, fetchOverviewUsers, fetchNotifications, fetchConversations, fetchUserStats]);
+    }, [isProfileComplete, user?.isApproved, user?.role, fetchOverviewUsers, fetchNotifications, fetchConversations, fetchUserStats, fetchReferralData]);
 
     useEffect(() => {
         if (activeTab === 'matches' && matches.length === 0 && (user?.isApproved || user?.role === 'admin')) {
@@ -1153,11 +1173,70 @@ const Dashboard = () => {
                             <Share2 className="w-6 h-6 text-purple-500" />
                             Referrals
                         </h2>
-                        <p className="text-gray-600 dark:text-gray-400 mb-4">Share your referral code and earn rewards!</p>
-                        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 text-center">
-                            <p className="text-sm text-purple-700 dark:text-purple-300 mb-2">Your Referral Code</p>
-                            <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{user?.referralCode || 'Loading...'}</p>
-                        </div>
+                        <p className="text-gray-600 dark:text-gray-400 mb-6">Share your referral code and earn rewards!</p>
+                        
+                        {referralLoading ? (
+                            <div className="text-center py-12">
+                                <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-purple-500 mx-auto"></div>
+                                <p className="text-gray-600 dark:text-gray-300 mt-4">Loading referral data...</p>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-6 text-center mb-6">
+                                    <p className="text-sm text-purple-700 dark:text-purple-300 mb-2">Your Referral Code</p>
+                                    <p className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-4">{referralCode?.code || 'N/A'}</p>
+                                    <div className="flex items-center justify-center gap-2 text-sm text-purple-700 dark:text-purple-300">
+                                        <span>Referral Link:</span>
+                                        <code className="bg-white dark:bg-slate-800 px-2 py-1 rounded">
+                                            {typeof window !== 'undefined' ? `${window.location.origin}/register?ref=${referralCode?.code || ''}` : ''}
+                                        </code>
+                                    </div>
+                                </div>
+
+                                {referralStats && (
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-center">
+                                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{referralStats.totalReferrals}</p>
+                                            <p className="text-xs text-blue-700 dark:text-blue-300">Total Referrals</p>
+                                        </div>
+                                        <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 text-center">
+                                            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{referralStats.successfulReferrals}</p>
+                                            <p className="text-xs text-green-700 dark:text-green-300">Successful</p>
+                                        </div>
+                                        <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 text-center">
+                                            <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{referralStats.pendingReferrals}</p>
+                                            <p className="text-xs text-yellow-700 dark:text-yellow-300">Pending</p>
+                                        </div>
+                                        <div className="bg-pink-50 dark:bg-pink-900/20 rounded-xl p-4 text-center">
+                                            <p className="text-2xl font-bold text-pink-600 dark:text-pink-400">{referralStats.totalCreditsEarned}</p>
+                                            <p className="text-xs text-pink-700 dark:text-pink-300">Credits Earned</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">How it works</h3>
+                                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-purple-500">1.</span>
+                                            <span>Share your unique referral code with friends</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-purple-500">2.</span>
+                                            <span>Friends register using your code</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-purple-500">3.</span>
+                                            <span>When they complete their profile, you earn rewards!</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-purple-500">4.</span>
+                                            <span>Earn 50 credits for each successful referral</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
 
