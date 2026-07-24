@@ -6,7 +6,7 @@ import { userAPI, messageAPI, notificationAPI, achievementAPI, giftAPI, referral
 import { toast } from 'react-toastify';
 import {
     User, CheckCircle, Clock, MessageCircle, Bell, Search, Heart,
-    Crown, Zap, X, RefreshCw, Trophy, Flame, Star, Share2, FileText, Calendar, Gift
+    Crown, Zap, X, RefreshCw, Trophy, Flame, Star, Share2, FileText, Calendar, Gift, Plus
 } from 'lucide-react';
 import ProfileCard from '../../components/ui/ProfileCard';
 import CustomSelect from '../../components/ui/CustomSelect';
@@ -24,6 +24,10 @@ const Dashboard = () => {
     const [referralStats, setReferralStats] = useState(null);
     const [referralLoading, setReferralLoading] = useState(false);
     const [wallet, setWallet] = useState(null);
+    const [showTopUpModal, setShowTopUpModal] = useState(false);
+    const [topUpAmount, setTopUpAmount] = useState('');
+    const [paymentSlip, setPaymentSlip] = useState(null);
+    const [submittingPayment, setSubmittingPayment] = useState(false);
 
     const FREE_LIMIT = 5;
     const messagesLeft = premiumStatus?.isPremium
@@ -383,6 +387,35 @@ const Dashboard = () => {
             interests: '',
         });
         setSearchResults([]);
+    };
+
+    const handlePaymentSubmit = async () => {
+        if (!topUpAmount || parseFloat(topUpAmount) < 100) {
+            toast.error('Minimum top-up amount is 100 LKR');
+            return;
+        }
+        if (!paymentSlip) {
+            toast.error('Please upload your payment slip');
+            return;
+        }
+
+        setSubmittingPayment(true);
+        try {
+            const formData = new FormData();
+            formData.append('amount', parseFloat(topUpAmount));
+            formData.append('paymentSlip', paymentSlip);
+
+            await walletAPI.createPaymentRequest(formData);
+            toast.success('Payment request submitted! Admin will approve within 24 hours.');
+            setShowTopUpModal(false);
+            setTopUpAmount('');
+            setPaymentSlip(null);
+            fetchWallet();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to submit payment request');
+        } finally {
+            setSubmittingPayment(false);
+        }
     };
 
     const PremiumModal = () => (
@@ -759,56 +792,57 @@ const Dashboard = () => {
                         {/* Gamification Section */}
                         {userStats && (
                             <div className="glass-card">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                        <Trophy className="w-5 h-5 text-yellow-500" />
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                        <Trophy className="w-6 h-6 text-yellow-500" />
                                         Achievements & Progress
                                     </h2>
                                     <button
                                         onClick={() => achievementAPI.dailyCheckIn().then(() => {
-                                            toast.success('Check-in successful! +10 points');
+                                            toast.success('Check-in successful! +10 LKR');
                                             fetchUserStats();
+                                            fetchWallet();
                                         })}
-                                        className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-pink-700 transition-all flex items-center gap-2"
+                                        className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-xl text-sm font-semibold hover:from-orange-600 hover:to-pink-600 transition-all flex items-center gap-2 shadow-lg shadow-orange-500/20"
                                     >
                                         <Flame className="w-4 h-4" />
-                                        Daily Check-in
+                                        Daily Check-in (+10 LKR)
                                     </button>
                                 </div>
 
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                                    <div className="bg-purple-50 dark:bg-purple-500/10 rounded-xl p-4 text-center">
-                                        <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{userStats.points}</div>
-                                        <div className="text-xs text-purple-700 dark:text-purple-300">Total Points</div>
+                                    <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-5 text-center shadow-lg shadow-purple-500/20">
+                                        <div className="text-3xl font-bold text-white mb-1">{userStats.points}</div>
+                                        <div className="text-xs text-purple-100 font-medium">Total Points</div>
                                     </div>
-                                    <div className="bg-orange-50 dark:bg-orange-500/10 rounded-xl p-4 text-center">
-                                        <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{userStats.loginStreak}</div>
-                                        <div className="text-xs text-orange-700 dark:text-orange-300">Day Streak</div>
+                                    <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-5 text-center shadow-lg shadow-orange-500/20">
+                                        <div className="text-3xl font-bold text-white mb-1">{userStats.loginStreak}</div>
+                                        <div className="text-xs text-orange-100 font-medium">Day Streak</div>
                                     </div>
-                                    <div className="bg-pink-50 dark:bg-pink-500/10 rounded-xl p-4 text-center">
-                                        <div className="text-2xl font-bold text-pink-600 dark:text-pink-400">{userStats.totalGiftsSent}</div>
-                                        <div className="text-xs text-pink-700 dark:text-pink-300">Gifts Sent</div>
+                                    <div className="bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl p-5 text-center shadow-lg shadow-pink-500/20">
+                                        <div className="text-3xl font-bold text-white mb-1">{userStats.totalGiftsSent}</div>
+                                        <div className="text-xs text-pink-100 font-medium">Gifts Sent</div>
                                     </div>
-                                    <div className="bg-blue-50 dark:bg-blue-500/10 rounded-xl p-4 text-center">
-                                        <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{userStats.totalReferrals}</div>
-                                        <div className="text-xs text-blue-700 dark:text-blue-300">Referrals</div>
+                                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-5 text-center shadow-lg shadow-blue-500/20">
+                                        <div className="text-3xl font-bold text-white mb-1">{userStats.totalReferrals}</div>
+                                        <div className="text-xs text-blue-100 font-medium">Referrals</div>
                                     </div>
                                 </div>
 
-                                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Recent Achievements</h3>
+                                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Recent Achievements</h3>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                                     {achievements.filter(a => a.earned).slice(0, 6).map((achievement) => (
                                         <div
                                             key={achievement._id}
-                                            className="bg-white dark:bg-slate-800 rounded-xl p-3 text-center border border-gray-200 dark:border-slate-700"
+                                            className="bg-white dark:bg-slate-800 rounded-xl p-4 text-center border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition"
                                             title={achievement.name}
                                         >
-                                            <div className="text-3xl mb-1">{achievement.icon}</div>
+                                            <div className="text-4xl mb-2">{achievement.icon}</div>
                                             <div className="text-xs font-medium text-slate-900 dark:text-white truncate">{achievement.name}</div>
                                         </div>
                                     ))}
                                     {achievements.filter(a => a.earned).length === 0 && (
-                                        <div className="col-span-full text-center py-4 text-slate-500 dark:text-slate-400 text-sm">
+                                        <div className="col-span-full text-center py-8 text-slate-500 dark:text-slate-400 text-sm bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                                             No achievements yet. Keep active to earn badges!
                                         </div>
                                     )}
@@ -819,44 +853,53 @@ const Dashboard = () => {
                         {/* Wallet Section */}
                         {wallet && (
                             <div className="glass-card">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                        <Crown className="w-5 h-5 text-yellow-500" />
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                        <Crown className="w-6 h-6 text-yellow-500" />
                                         Wallet Balance
                                     </h2>
+                                    <button
+                                        onClick={() => setShowTopUpModal(true)}
+                                        className="px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm font-semibold hover:from-green-600 hover:to-emerald-600 transition-all flex items-center gap-2 shadow-lg shadow-green-500/20"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        Top Up Wallet
+                                    </button>
                                 </div>
 
-                                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-xl p-6 text-center mb-4">
-                                    <div className="text-4xl font-bold text-yellow-600 dark:text-yellow-400 mb-1">
+                                <div className="bg-gradient-to-br from-yellow-400 via-orange-500 to-pink-500 rounded-2xl p-8 text-center mb-6 shadow-2xl shadow-orange-500/30">
+                                    <div className="flex items-center justify-center gap-2 mb-2">
+                                        <Crown className="w-8 h-8 text-white" />
+                                        <span className="text-white/90 text-sm font-medium">Available Balance</span>
+                                    </div>
+                                    <div className="text-5xl font-bold text-white mb-2">
                                         Rs. {wallet.balance.toLocaleString()}
                                     </div>
-                                    <div className="text-sm text-yellow-700 dark:text-yellow-300">
-                                        Available Balance
+                                    <div className="text-white/80 text-sm">
+                                        Sri Lankan Rupees (LKR)
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3 mb-4">
-                                    <div className="bg-green-50 dark:bg-green-500/10 rounded-xl p-3 text-center">
-                                        <div className="text-lg font-bold text-green-600 dark:text-green-400">
-                                            Rs. {wallet.totalDeposited.toLocaleString()}
-                                        </div>
-                                        <div className="text-xs text-green-700 dark:text-green-300">Total Deposited</div>
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="bg-green-50 dark:bg-green-500/10 rounded-xl p-4 text-center border border-green-200 dark:border-green-500/20">
+                                        <div className="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">{wallet.totalDeposits || 0}</div>
+                                        <div className="text-xs text-green-700 dark:text-green-300 font-medium">Total Deposits</div>
                                     </div>
-                                    <div className="bg-red-50 dark:bg-red-500/10 rounded-xl p-3 text-center">
-                                        <div className="text-lg font-bold text-red-600 dark:text-red-400">
-                                            Rs. {wallet.totalSpent.toLocaleString()}
-                                        </div>
-                                        <div className="text-xs text-red-700 dark:text-red-300">Total Spent</div>
+                                    <div className="bg-red-50 dark:bg-red-500/10 rounded-xl p-4 text-center border border-red-200 dark:border-red-500/20">
+                                        <div className="text-2xl font-bold text-red-600 dark:text-red-400 mb-1">{wallet.totalSpent || 0}</div>
+                                        <div className="text-xs text-red-700 dark:text-red-300 font-medium">Total Spent</div>
                                     </div>
                                 </div>
 
-                                <button
-                                    onClick={() => navigate('/wallet')}
-                                    className="w-full px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg text-sm font-semibold hover:from-yellow-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2"
-                                >
-                                    <Zap className="w-4 h-4" />
-                                    Top Up Wallet
-                                </button>
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Recent Transactions</h3>
+                                    <button
+                                        onClick={() => setActiveTab('wallet')}
+                                        className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium"
+                                    >
+                                        View All
+                                    </button>
+                                </div>
                             </div>
                         )}
 
@@ -1390,6 +1433,79 @@ const Dashboard = () => {
                     onClose={() => setShowPremiumPopup(false)} 
                     onUpgrade={() => navigate('/premium')} 
                 />
+            )}
+
+            {/* Top Up Modal */}
+            {showTopUpModal && (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Top Up Wallet</h3>
+                            <button
+                                onClick={() => setShowTopUpModal(false)}
+                                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+                            >
+                                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                            </button>
+                        </div>
+                        
+                        <p className="text-gray-600 dark:text-gray-400 mb-6">
+                            Add funds to your wallet to send gifts and unlock premium features. Upload your bank payment slip for approval.
+                        </p>
+
+                        <div className="space-y-4 mb-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount (LKR)</label>
+                                <input
+                                    type="number"
+                                    min="100"
+                                    step="100"
+                                    value={topUpAmount}
+                                    onChange={(e) => setTopUpAmount(e.target.value)}
+                                    placeholder="Enter amount"
+                                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Upload Payment Slip</label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => setPaymentSlip(e.target.files[0])}
+                                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
+                                />
+                            </div>
+
+                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Crown className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                    <span className="font-semibold text-blue-900 dark:text-blue-100">Bank Details</span>
+                                </div>
+                                <div className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                                    <p>Bank: Commercial Bank</p>
+                                    <p>Account: 1234567890</p>
+                                    <p>Name: Kapu-LK</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={handlePaymentSubmit}
+                            disabled={submittingPayment}
+                            className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {submittingPayment ? 'Submitting...' : 'Submit Payment Request'}
+                        </button>
+
+                        <button
+                            onClick={() => setShowTopUpModal(false)}
+                            className="w-full py-3 mt-3 border border-gray-300 dark:border-slate-600 rounded-xl font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
             )}
         </div>
     );
