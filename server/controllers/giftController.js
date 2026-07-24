@@ -1,6 +1,7 @@
 const { Gift, GiftTransaction } = require('../models/Gift');
 const User = require('../models/User');
 const { UserStats } = require('../models/Achievement');
+const { Wallet, WalletTransaction } = require('../models/Wallet');
 const Notification = require('../models/Notification');
 
 // Helper function to check achievements
@@ -45,19 +46,22 @@ exports.sendGift = async (req, res) => {
       return res.status(404).json({ message: 'Recipient not found' });
     }
 
-    // Check if user has enough credits (if gift has price)
+    // Check if user has enough wallet balance for paid gifts
     if (gift.price > 0) {
-      const userStats = await UserStats.findOne({ user: sender });
-      if (!userStats || userStats.points < gift.price) {
+      let wallet = await Wallet.findOne({ user: sender });
+      if (!wallet || wallet.balance < gift.price) {
         return res.status(400).json({ 
-          message: 'Insufficient credits',
+          message: 'Insufficient wallet balance',
           required: gift.price,
-          available: userStats?.points || 0
+          available: wallet?.balance || 0
         });
       }
-      // Deduct points
-      userStats.points -= gift.price;
-      await userStats.save();
+      
+      // Deduct from wallet
+      const balanceBefore = wallet.balance;
+      wallet.balance -= gift.price;
+      wallet.totalSpent += gift.price;
+      await wallet.save();
     }
 
     // Create gift transaction
@@ -68,6 +72,24 @@ exports.sendGift = async (req, res) => {
       message,
       isAnonymous
     });
+
+    // Create wallet transaction record after gift transaction is created
+    if (gift.price > 0) {
+      let wallet = await Wallet.findOne({ user: sender });
+      await WalletTransaction.create({
+        wallet: wallet._id,
+        user: sender,
+        type: 'purchase',
+        amount: gift.price,
+        currency: gift.currency || 'LKR',
+        description: `Gift sent: ${gift.name}`,
+        relatedId: transaction._id,
+        relatedType: 'gift',
+        balanceBefore: wallet.balance + gift.price,
+        balanceAfter: wallet.balance,
+        status: 'completed'
+      });
+    }
 
     // Update user stats
     let userStats = await UserStats.findOne({ user: sender });
