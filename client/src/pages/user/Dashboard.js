@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { userAPI, messageAPI, notificationAPI, achievementAPI, giftAPI, referralAPI, walletAPI } from '../../services/api';
+import { userAPI, messageAPI, notificationAPI, achievementAPI, referralAPI, walletAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
     User, CheckCircle, Clock, MessageCircle, Bell, Search, Heart,
@@ -18,8 +18,6 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const [showPremiumModal, setShowPremiumModal] = useState(false);
     const [showPremiumPopup, setShowPremiumPopup] = useState(false);
-    const [gifts, setGifts] = useState([]);
-    const [giftsLoading, setGiftsLoading] = useState(false);
     const [referralCode, setReferralCode] = useState(null);
     const [referralStats, setReferralStats] = useState(null);
     const [referralLoading, setReferralLoading] = useState(false);
