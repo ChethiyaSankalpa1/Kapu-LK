@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
+import { walletAPI, achievementAPI } from '../../services/api';
 import moment from 'moment';
 import {
     Heart, LogOut, User, Users, LayoutDashboard, Menu, X,
     Sun, Moon, Crown, Globe, ChevronRight, Sparkles, MessageSquare,
-    Shield, FileText, Search, Bell, Settings, ChevronDown, BellRing
+    Shield, FileText, Search, Bell, Settings, ChevronDown, BellRing, Wallet, Trophy
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -21,7 +22,31 @@ const Navbar = () => {
     const [notifOpen, setNotifOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
     const [mobileNavVisible, setMobileNavVisible] = useState(true);
+    const [walletBalance, setWalletBalance] = useState(0);
+    const [achievementPoints, setAchievementPoints] = useState(0);
     const drawerRef = useRef(null);
+
+    useEffect(() => {
+        if (user && !isAdmin) {
+            const fetchBalances = async () => {
+                try {
+                    const [walletRes, statsRes] = await Promise.all([
+                        walletAPI.getWallet(),
+                        achievementAPI.getMyStats()
+                    ]);
+                    setWalletBalance(walletRes.data.balance || 0);
+                    setAchievementPoints(statsRes.data.stats.points || 0);
+                } catch (error) {
+                    console.error('Failed to fetch header balances', error);
+                }
+            };
+            fetchBalances();
+            
+            // Poll every 15s to keep it updated
+            const interval = setInterval(fetchBalances, 15000);
+            return () => clearInterval(interval);
+        }
+    }, [user, isAdmin]);
     const searchRef = useRef(null);
     const notifRef = useRef(null);
     const profileRef = useRef(null);
@@ -407,9 +432,22 @@ const Navbar = () => {
                                             </Link>
                                             <Link to="/wallet" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/wallet') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
                                                 <Crown className="w-4 h-4" />
-                                                <span>Wallet</span>
+                                                <span>Wallet & Achievements</span>
                                             </Link>
                                         </>
+                                    )}
+                                    {user && !isAdmin && (
+                                        <div className="flex items-center gap-2.5 bg-gradient-to-r from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20 px-3 py-1.5 rounded-xl border border-purple-200/50 dark:border-purple-800/50 text-purple-700 dark:text-purple-300 font-semibold text-xs transition duration-150 mr-2 shrink-0">
+                                            <Link to="/wallet" className="flex items-center gap-1 hover:opacity-85 transition" title="Wallet Balance">
+                                                <Wallet className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400" />
+                                                <span>Rs. {walletBalance}</span>
+                                            </Link>
+                                            <span className="text-purple-300/70 dark:text-purple-700/70">|</span>
+                                            <Link to="/wallet" className="flex items-center gap-1 hover:opacity-85 transition" title="Achievement Points">
+                                                <Trophy className="w-3.5 h-3.5 text-yellow-500" />
+                                                <span>{achievementPoints} pts</span>
+                                            </Link>
+                                        </div>
                                     )}
                                     <SearchBar />
                                     <NotificationMenu />
@@ -438,6 +476,12 @@ const Navbar = () => {
 
                         {/* Mobile right controls */}
                         <div className="flex md:hidden items-center gap-2">
+                            {user && !isAdmin && (
+                                <Link to="/wallet" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20 border border-purple-200/50 dark:border-purple-800/50 text-purple-700 dark:text-purple-300 font-bold text-[11px] mr-1" title="Wallet Balance">
+                                    <Wallet className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400" />
+                                    <span>Rs. {walletBalance}</span>
+                                </Link>
+                            )}
                             <button onClick={() => setDarkMode(!darkMode)} className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
                                 {darkMode ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5" />}
                             </button>
@@ -499,7 +543,7 @@ const Navbar = () => {
                             }`}
                         >
                             <Crown className="w-6 h-6" />
-                            <span className="text-[10px] font-medium">Wallet</span>
+                            <span className="text-[10px] font-medium text-center line-clamp-1">Wallet & Rewards</span>
                         </Link>
                         <Link
                             to="/profile"
@@ -589,7 +633,7 @@ const Navbar = () => {
                                         <NavItem to="/dashboard" icon={LayoutDashboard} label={t('nav.dashboard')} />
                                         <NavItem to="/users" icon={Users} label={t('nav.browse')} />
                                         <NavItem to="/conversation" icon={MessageSquare} label={t('nav.messages')} />
-                                        <NavItem to="/wallet" icon={Crown} label="Wallet" />
+                                        <NavItem to="/wallet" icon={Crown} label="Wallet & Achievements" />
                                         <NavItem to="/profile" icon={User} label={t('nav.profile')} />
                                         <NavItem to="/settings" icon={Settings} label={t('nav.settings')} />
                                         <NavItem to="/contact-admin" icon={Shield} label={t('nav.contactAdmin')} />

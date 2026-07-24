@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { adminAPI, messageAPI, userAPI, giftAPI, achievementAPI, successStoryAPI, blogAPI, eventAPI } from '../../services/api';
+import { adminAPI, messageAPI, userAPI, giftAPI, achievementAPI, successStoryAPI, blogAPI, eventAPI, redemptionAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
   Users, User, UserCheck, Activity,
@@ -29,6 +29,8 @@ const AdminDashboard = () => {
   const [successStories, setSuccessStories] = useState([]);
   const [blogPosts, setBlogPosts] = useState([]);
   const [events, setEvents] = useState([]);
+  const [redemptionConfigs, setRedemptionConfigs] = useState([]);
+  const [redemptions, setRedemptions] = useState([]);
   
   // Gift management states
   const [showGiftModal, setShowGiftModal] = useState(false);
@@ -96,7 +98,9 @@ const AdminDashboard = () => {
         achievementAPI.getAchievements(),
         successStoryAPI.getSuccessStories(),
         blogAPI.getBlogPosts(),
-        eventAPI.getEvents()
+        eventAPI.getEvents(),
+        redemptionAPI.getConfigs(),
+        redemptionAPI.getAllRedemptions()
       ]);
       setStats(statsRes.data);
       setUsers(usersRes.data);
@@ -108,6 +112,8 @@ const AdminDashboard = () => {
       setSuccessStories(storiesRes.data);
       setBlogPosts(blogRes.data);
       setEvents(eventsRes.data);
+      setRedemptionConfigs(configsRes.data);
+      setRedemptions(redemptionsRes.data);
     } catch (error) {
       console.error('Failed to fetch admin data', error);
       toast.error(t('admin.fetchFailed', { defaultValue: 'Failed to fetch data' }));

@@ -6,6 +6,7 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
 const { seedUsers, seedAchievements, seedGifts } = require('./utils/seeder');
+const { seedRedemptionConfigs } = require('./utils/seedRedemptionConfigs');
 const { startMessageCleanup } = require('./utils/messageCleanup');
 const { startNotificationCleanup } = require('./utils/notificationCleanup');
 
@@ -37,6 +38,7 @@ let dbConnected = false;
       await seedUsers();
       await seedAchievements();
       await seedGifts();
+      await seedRedemptionConfigs();
     }
     if (allowCleanup) {
       startMessageCleanup();
@@ -116,6 +118,7 @@ app.use('/api/blog', require('./routes/blogRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/typing', require('./routes/typingRoutes'));
 app.use('/api/wallet', require('./routes/walletRoutes'));
+app.use('/api/redemption', require('./routes/redemptionRoutes'));
 
 // Health check
 app.get('/', (req, res) => {

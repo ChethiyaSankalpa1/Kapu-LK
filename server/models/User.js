@@ -179,6 +179,10 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  giftingOptIn: {
+    type: Boolean,
+    default: true,
+  },
   premiumRequested: {
     type: Boolean,
     default: false,

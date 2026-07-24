@@ -9,7 +9,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['message', 'profile_view', 'match', 'profile_reminder'],
+      enum: ['message', 'profile_view', 'match', 'profile_reminder', 'gift'],
       required: true,
     },
     message: {
@@ -20,6 +20,10 @@ const notificationSchema = new mongoose.Schema(
     relatedUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+    },
+    relatedGift: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'GiftTransaction',
     },
     isRead: {
       type: Boolean,

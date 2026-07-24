@@ -3,16 +3,20 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { userAPI } from '../../services/api';
 import {
     User, BellRing, Globe, Monitor, UserMinus, Trash2, HelpCircle,
     Info, Eye, EyeOff, ChevronRight, ArrowLeft, Save, AlertTriangle, Sun, Moon,
-    ShieldCheck, Key, Palette
+    ShieldCheck, Key, Palette, Gift
 } from 'lucide-react';
 
 const Settings = () => {
     const { t } = useTranslation();
-    const { logout, darkMode, setDarkMode, language, setLanguage } = useAuth();
+    const { user, updateUser, logout, darkMode, setDarkMode, language, setLanguage } = useAuth();
     const navigate = useNavigate();
+    
+    // Gifting opt-in state
+    const [giftingOptIn, setGiftingOptIn] = useState(user?.giftingOptIn !== false);
     
     // Theme state
     const [theme, setTheme] = useState(darkMode ? 'dark' : 'light');
@@ -23,6 +27,19 @@ const Settings = () => {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [changingPassword, setChangingPassword] = useState(false);
+    
+    const handleGiftingOptInChange = async (e) => {
+        const newVal = e.target.checked;
+        setGiftingOptIn(newVal);
+        try {
+            await userAPI.updateProfile({ giftingOptIn: newVal });
+            updateUser({ giftingOptIn: newVal });
+            toast.success(newVal ? 'Gifting enabled successfully' : 'Gifting disabled successfully');
+        } catch (err) {
+            setGiftingOptIn(!newVal); // rollback
+            toast.error('Failed to update gifting preferences');
+        }
+    };
     
     // Delete account state
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -317,6 +334,24 @@ const Settings = () => {
                                     <label className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-xl cursor-pointer">
                                         <span className="flex-1 text-sm sm:text-base text-gray-700 dark:text-gray-300 break-words">{t('settings.messageNotifications')}</span>
                                         <input type="checkbox" defaultChecked className="mt-0.5 w-5 h-5 text-purple-600 rounded shrink-0" />
+                                    </label>
+                                </div>
+                            </SettingCard>
+
+                            <SettingCard
+                                icon={Gift}
+                                title={t('settings.giftingPreferences', { defaultValue: 'Gifting Preferences' })}
+                                description={t('settings.giftingPreferencesDesc', { defaultValue: 'Manage whether other members can send you gifts' })}
+                            >
+                                <div className="space-y-3">
+                                    <label className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-xl cursor-pointer">
+                                        <span className="flex-1 text-sm sm:text-base text-gray-700 dark:text-gray-300 break-words">Allow other members to send me gifts</span>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={giftingOptIn} 
+                                            onChange={handleGiftingOptInChange}
+                                            className="mt-0.5 w-5 h-5 text-purple-600 rounded shrink-0" 
+                                        />
                                     </label>
                                 </div>
                             </SettingCard>

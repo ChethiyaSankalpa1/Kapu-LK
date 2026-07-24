@@ -216,9 +216,15 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
               </label>
 
               <button
-                onClick={handleSendGift}
-                disabled={sending || selectedGift.price > walletBalance}
-                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                onClick={() => {
+                  if (selectedGift.price > walletBalance) {
+                    setShowTopUp(true);
+                  } else {
+                    handleSendGift();
+                  }
+                }}
+                disabled={sending}
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {sending ? (
                   <>

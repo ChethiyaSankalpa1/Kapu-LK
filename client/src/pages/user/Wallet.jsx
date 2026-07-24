@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { walletAPI, achievementAPI, giftAPI } from '../../services/api';
+import { walletAPI, achievementAPI, giftAPI, redemptionAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
-    Crown, Wallet, Trophy, Flame, Gift, ArrowUpRight, History,
-    Plus, CreditCard, RefreshCw, Star, TrendingUp
+    Crown, Wallet as WalletIcon, Trophy, Flame, Gift, ArrowUpRight, History,
+    Plus, CreditCard, RefreshCw, Star, TrendingUp, Sparkles
 } from 'lucide-react';
 
 const Wallet = () => {
@@ -16,12 +16,15 @@ const Wallet = () => {
     const [achievements, setAchievements] = useState([]);
     const [gifts, setGifts] = useState([]);
     const [transactions, setTransactions] = useState([]);
+    const [redemptionConfigs, setRedemptionConfigs] = useState([]);
+    const [redemptionHistory, setRedemptionHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showTopUpModal, setShowTopUpModal] = useState(false);
     const [topUpAmount, setTopUpAmount] = useState('');
     const [selectedBank, setSelectedBank] = useState('HNB');
     const [paymentSlip, setPaymentSlip] = useState(null);
     const [submittingPayment, setSubmittingPayment] = useState(false);
+    const [redeeming, setRedeeming] = useState(false);
 
     useEffect(() => {
         fetchAllData();
@@ -30,18 +33,22 @@ const Wallet = () => {
     const fetchAllData = async () => {
         setLoading(true);
         try {
-            const [walletRes, statsRes, achievementsRes, giftsRes, transactionsRes] = await Promise.all([
+            const [walletRes, statsRes, achievementsRes, giftsRes, transactionsRes, configsRes, historyRes] = await Promise.all([
                 walletAPI.getWallet(),
                 achievementAPI.getMyStats(),
                 achievementAPI.getAchievements(),
                 giftAPI.getGifts(),
-                walletAPI.getTransactions()
+                walletAPI.getTransactions(),
+                redemptionAPI.getConfigs(),
+                redemptionAPI.getHistory()
             ]);
             setWallet(walletRes.data);
             setUserStats(statsRes.data);
             setAchievements(achievementsRes.data);
             setGifts(giftsRes.data);
             setTransactions(transactionsRes.data.transactions || []);
+            setRedemptionConfigs(configsRes.data);
+            setRedemptionHistory(historyRes.data);
         } catch (error) {
             toast.error('Failed to load wallet data');
         } finally {
@@ -90,6 +97,28 @@ const Wallet = () => {
         }
     };
 
+    const handleRedeem = async (config) => {
+        if (userStats?.points < config.pointsCost) {
+            toast.error(`You need ${config.pointsCost} points to redeem this reward`);
+            return;
+        }
+
+        setRedeeming(true);
+        try {
+            await redemptionAPI.redeemPoints({
+                rewardType: config.rewardType,
+                rewardName: config.rewardName,
+                pointsCost: config.pointsCost
+            });
+            toast.success(`Successfully redeemed ${config.rewardName}!`);
+            fetchAllData();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to redeem reward');
+        } finally {
+            setRedeeming(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
@@ -122,7 +151,7 @@ const Wallet = () => {
                     <div className="bg-gradient-to-br from-yellow-400 via-orange-500 to-pink-500 rounded-2xl p-8 shadow-2xl shadow-orange-500/30">
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">
-                                <Wallet className="w-8 h-8 text-white" />
+                                <WalletIcon className="w-8 h-8 text-white" />
                                 <span className="text-white/90 text-sm font-medium">Wallet Balance</span>
                             </div>
                             <button onClick={fetchAllData} className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition">
@@ -265,7 +294,7 @@ const Wallet = () => {
                 </div>
 
                 {/* Available Gifts */}
-                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm">
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm mb-8">
                     <div className="flex items-center gap-2 p-6 border-b border-gray-200 dark:border-slate-700">
                         <Gift className="w-6 h-6 text-pink-500" />
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white">Available Gifts</h2>
@@ -283,6 +312,73 @@ const Wallet = () => {
                                 </div>
                             ))}
                         </div>
+                    </div>
+                </div>
+
+                {/* Points Redemption */}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm">
+                    <div className="flex items-center gap-2 p-6 border-b border-gray-200 dark:border-slate-700">
+                        <Sparkles className="w-6 h-6 text-purple-500" />
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Redeem Points</h2>
+                    </div>
+                    <div className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {redemptionConfigs.map((config) => (
+                                <div
+                                    key={config._id}
+                                    className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-6 border border-purple-200 dark:border-purple-700"
+                                >
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Star className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                                        <span className="font-semibold text-gray-900 dark:text-white">{config.rewardName}</span>
+                                    </div>
+                                    <div className="text-2xl font-bold text-purple-600 dark:text-purple-400 mb-4">
+                                        {config.pointsCost} Points
+                                    </div>
+                                    <button
+                                        onClick={() => handleRedeem(config)}
+                                        disabled={redeeming || userStats?.points < config.pointsCost}
+                                        className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {redeeming ? 'Redeeming...' : 'Redeem'}
+                                    </button>
+                                </div>
+                            ))}
+                            {redemptionConfigs.length === 0 && (
+                                <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
+                                    No rewards available at the moment.
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Redemption History */}
+                        {redemptionHistory.length > 0 && (
+                            <div className="mt-8">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Redemptions</h3>
+                                <div className="space-y-3">
+                                    {redemptionHistory.slice(0, 5).map((redemption) => (
+                                        <div
+                                            key={redemption._id}
+                                            className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/50 rounded-xl"
+                                        >
+                                            <div>
+                                                <div className="font-medium text-gray-900 dark:text-white">{redemption.rewardName}</div>
+                                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                                    {new Date(redemption.createdAt).toLocaleDateString()} • {redemption.pointsCost} points
+                                                </div>
+                                            </div>
+                                            <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                                redemption.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                                redemption.status === 'pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                                'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                            }`}>
+                                                {redemption.status}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

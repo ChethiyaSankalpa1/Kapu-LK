@@ -79,6 +79,7 @@ exports.updateProfile = async (req, res) => {
       'personality',
       'firstDatePreference',
       'livingArrangements',
+      'giftingOptIn',
     ].forEach(assignIfDefined);
 
     if (
@@ -150,6 +151,7 @@ exports.updateProfile = async (req, res) => {
       workplace: updatedUser.workplace,
       partnerPreferences: updatedUser.partnerPreferences,
       profileImageUrl: updatedUser.profileImageUrl,
+      giftingOptIn: updatedUser.giftingOptIn,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

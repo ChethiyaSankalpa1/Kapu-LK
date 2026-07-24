@@ -530,19 +530,11 @@ const Dashboard = () => {
                                     </span>
                                 )}
                                 {/* Gamification stats */}
-                                {userStats && (
-                                    <>
-                                        <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-purple-50 dark:bg-purple-500/15 border border-purple-200 dark:border-purple-200/20 text-purple-700 dark:text-purple-50">
-                                            <Star className="w-3.5 h-3.5 mr-1.5" />
-                                            {userStats.points} pts
-                                        </span>
-                                        {userStats.loginStreak > 0 && (
-                                            <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-orange-50 dark:bg-orange-500/15 border border-orange-200 dark:border-orange-200/20 text-orange-700 dark:text-orange-50">
-                                                <Flame className="w-3.5 h-3.5 mr-1.5" />
-                                                {userStats.loginStreak} day streak
-                                            </span>
-                                        )}
-                                    </>
+                                {userStats && userStats.loginStreak > 0 && (
+                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-orange-50 dark:bg-orange-500/15 border border-orange-200 dark:border-orange-200/20 text-orange-700 dark:text-orange-50">
+                                        <Flame className="w-3.5 h-3.5 mr-1.5" />
+                                        {userStats.loginStreak} day streak
+                                    </span>
                                 )}
                             </div>
                         </div>
@@ -757,41 +749,7 @@ const Dashboard = () => {
                         )}
 
                         {/* Gamification Section - Simplified */}
-                        {userStats && (
-                            <div className="glass-card">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                        <Trophy className="w-5 h-5 text-yellow-500" />
-                                        Quick Stats
-                                    </h2>
-                                    <button
-                                        onClick={() => navigate('/wallet')}
-                                        className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium"
-                                    >
-                                        View All →
-                                    </button>
-                                </div>
 
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div className="bg-purple-50 dark:bg-purple-500/10 rounded-xl p-3 text-center">
-                                        <div className="text-xl font-bold text-purple-600 dark:text-purple-400">{userStats.points}</div>
-                                        <div className="text-xs text-purple-700 dark:text-purple-300">Points</div>
-                                    </div>
-                                    <div className="bg-orange-50 dark:bg-orange-500/10 rounded-xl p-3 text-center">
-                                        <div className="text-xl font-bold text-orange-600 dark:text-orange-400">{userStats.loginStreak}</div>
-                                        <div className="text-xs text-orange-700 dark:text-orange-300">Streak</div>
-                                    </div>
-                                    <div className="bg-pink-50 dark:bg-pink-500/10 rounded-xl p-3 text-center">
-                                        <div className="text-xl font-bold text-pink-600 dark:text-pink-400">{userStats.totalGiftsSent}</div>
-                                        <div className="text-xs text-pink-700 dark:text-pink-300">Gifts</div>
-                                    </div>
-                                    <div className="bg-blue-50 dark:bg-blue-500/10 rounded-xl p-3 text-center">
-                                        <div className="text-xl font-bold text-blue-600 dark:text-blue-400">{userStats.totalReferrals}</div>
-                                        <div className="text-xs text-blue-700 dark:text-blue-300">Referrals</div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
 
                         {!user?.isApproved && user?.role !== 'admin' && (
                             <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">

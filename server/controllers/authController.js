@@ -128,6 +128,7 @@ exports.register = async (req, res) => {
         role: user.role,
         isApproved: user.isApproved,
         language: user.language,
+        giftingOptIn: user.giftingOptIn,
         token: generateToken(user._id),
       });
     } else {
@@ -172,6 +173,7 @@ exports.login = async (req, res) => {
       isApproved: user.isApproved,
       profileImageUrl: user.profileImageUrl,
       language: user.language,
+      giftingOptIn: user.giftingOptIn,
       token: generateToken(user._id),
     });
   } catch (error) {

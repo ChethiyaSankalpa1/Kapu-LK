@@ -46,14 +46,22 @@ exports.sendGift = async (req, res) => {
       return res.status(404).json({ message: 'Recipient not found' });
     }
 
+    // Check if recipient has opted out of receiving gifts
+    if (recipient.giftingOptIn === false) {
+      return res.status(400).json({ message: `${recipient.name} has opted out of receiving gifts.` });
+    }
+
     // Check if user has enough wallet balance for paid gifts
     if (gift.price > 0) {
       let wallet = await Wallet.findOne({ user: sender });
-      if (!wallet || wallet.balance < gift.price) {
+      if (!wallet) {
+        wallet = await Wallet.create({ user: sender });
+      }
+      if (wallet.balance < gift.price) {
         return res.status(400).json({ 
           message: 'Insufficient wallet balance',
           required: gift.price,
-          available: wallet?.balance || 0
+          available: wallet.balance
         });
       }
       
@@ -117,21 +125,27 @@ exports.sendGift = async (req, res) => {
     // Check for gift-related achievements
     await checkAchievements(sender, userStats);
 
-    // Update recipient stats
+    // Update recipient stats and convert gift to points
     let recipientStats = await UserStats.findOne({ user: to });
     if (!recipientStats) {
       recipientStats = new UserStats({ user: to });
     }
     recipientStats.totalGiftsReceived += 1;
+    
+    // Convert received gift to reward points (10% of gift value or minimum 5 points)
+    const pointsEarned = Math.max(5, Math.floor(gift.price * 0.1));
+    recipientStats.points += pointsEarned;
     await recipientStats.save();
 
-    // Create notification
+    console.log(`Gift received: User ${to} earned ${pointsEarned} points from gift ${gift.name}`);
+
+    // Create notification with points earned info
     await Notification.create({
       user: to,
       type: 'gift',
       message: isAnonymous 
-        ? 'Someone sent you a gift!' 
-        : `${req.user.name} sent you a gift!`,
+        ? `Someone sent you a gift! You earned ${pointsEarned} points!` 
+        : `${req.user.name} sent you a gift! You earned ${pointsEarned} points!`,
       relatedUser: sender,
       relatedGift: transaction._id
     });

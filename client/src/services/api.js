@@ -172,12 +172,25 @@ export const typingAPI = {
 export const walletAPI = {
     getWallet: () => api.get('/wallet'),
     getTransactions: (params = {}) => api.get('/wallet/transactions', { params }),
-    createPaymentRequest: (data) => api.post('/wallet/payment-request', data),
+    createPaymentRequest: (formData) => api.post('/wallet/payment-request', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    }),
     getPaymentRequests: () => api.get('/wallet/payment-requests'),
     // Admin wallet routes
     getAllPaymentRequests: (params = {}) => api.get('/wallet/admin/payment-requests', { params }),
     approvePaymentRequest: (id) => api.put(`/wallet/admin/payment-requests/${id}/approve`),
     rejectPaymentRequest: (id, reason) => api.put(`/wallet/admin/payment-requests/${id}/reject`, { rejectionReason: reason }),
+};
+
+// Redemption API
+export const redemptionAPI = {
+    getConfigs: () => api.get('/redemption/configs'),
+    getHistory: () => api.get('/redemption/history'),
+    redeemPoints: (data) => api.post('/redemption/redeem', data),
+    // Admin redemption routes
+    getAllRedemptions: () => api.get('/redemption/admin/all'),
+    createConfig: (data) => api.post('/redemption/admin/config', data),
+    updateConfig: (id, data) => api.put(`/redemption/admin/config/${id}`, data),
 };
 
 export default api;

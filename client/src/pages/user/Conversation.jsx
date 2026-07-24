@@ -854,7 +854,13 @@ const Conversation = () => {
                         {/* Gift button */}
                         <button
                           type="button"
-                          onClick={() => setShowGiftModal(true)}
+                          onClick={() => {
+                            if (otherUser && otherUser.giftingOptIn === false) {
+                              toast.error(`${otherUser.name} has disabled receiving gifts.`);
+                            } else {
+                              setShowGiftModal(true);
+                            }
+                          }}
                           disabled={sending}
                           className="p-1.5 sm:p-2 md:p-2.5 rounded-full hover:bg-pink-100 dark:hover:bg-pink-900/30 text-pink-500 dark:text-pink-400 disabled:opacity-40 transition-colors shrink-0"
                           aria-label="Send Gift"
