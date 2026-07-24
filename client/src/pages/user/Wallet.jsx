@@ -53,12 +53,20 @@ const DEFAULT_REDEMPTION_OPTIONS = [
     }
 ];
 
+const DEFAULT_ACHIEVEMENTS_LIST = [
+    { _id: 'def_1', name: '🌅 Daily Check-in', description: 'Log in to Kapu LK daily', icon: '🌅', points: 5, target: 1, progress: 0, earned: false },
+    { _id: 'def_2', name: '💬 Social Butterfly', description: 'Send 10 messages in chat', icon: '💬', points: 15, target: 10, progress: 0, earned: false },
+    { _id: 'def_3', name: '🎁 Generous Heart', description: 'Send a gift to a match', icon: '🎁', points: 20, target: 1, progress: 0, earned: false },
+    { _id: 'def_4', name: '🔥 7-Day Streak', description: 'Log in 7 consecutive days', icon: '🔥', points: 50, target: 7, progress: 0, earned: false },
+    { _id: 'def_5', name: '👑 Royal Supporter', description: 'Send 5 gifts to matches', icon: '👑', points: 75, target: 5, progress: 0, earned: false }
+];
+
 const Wallet = () => {
     // useAuth() was here but unused
     const navigate = useNavigate();
     const [wallet, setWallet] = useState(null);
     const [userStats, setUserStats] = useState(null);
-    const [achievements, setAchievements] = useState([]);
+    const [achievements, setAchievements] = useState(DEFAULT_ACHIEVEMENTS_LIST);
     const [gifts, setGifts] = useState([]);
     const [transactions, setTransactions] = useState([]);
     const [redemptionConfigs, setRedemptionConfigs] = useState(DEFAULT_REDEMPTION_OPTIONS);
@@ -89,7 +97,7 @@ const Wallet = () => {
             ]);
             setWallet(walletRes.data);
             setUserStats(statsRes.data.stats || statsRes.data);
-            setAchievements(statsRes.data.achievements || achievementsRes.data || []);
+            setAchievements(statsRes.data.achievements && statsRes.data.achievements.length > 0 ? statsRes.data.achievements : (achievementsRes.data && achievementsRes.data.length > 0 ? achievementsRes.data : DEFAULT_ACHIEVEMENTS_LIST));
             setGifts(giftsRes.data || []);
             setTransactions(transactionsRes.data.transactions || []);
             setRedemptionConfigs(configsRes.data && configsRes.data.length > 0 ? configsRes.data : DEFAULT_REDEMPTION_OPTIONS);
@@ -311,29 +319,64 @@ const Wallet = () => {
                     </div>
                 </div>
 
-                {/* Achievements */}
+                {/* Daily Tasks & Achievements */}
                 <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm mb-8">
-                    <div className="flex items-center gap-2 p-6 border-b border-gray-200 dark:border-slate-700">
-                        <Trophy className="w-6 h-6 text-yellow-500" />
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Achievements</h2>
+                    <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
+                        <div className="flex items-center gap-2">
+                            <Trophy className="w-6 h-6 text-yellow-500" />
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Daily Tasks & Achievements</h2>
+                        </div>
+                        <span className="text-xs font-semibold px-3 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 rounded-full">
+                            Earn points every day
+                        </span>
                     </div>
                     <div className="p-6">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                            {achievements.filter(a => a.earned).map((achievement) => (
-                                <div
-                                    key={achievement._id}
-                                    className="bg-gray-50 dark:bg-slate-700/50 rounded-xl p-4 text-center"
-                                    title={achievement.name}
-                                >
-                                    <div className="text-4xl mb-2">{achievement.icon}</div>
-                                    <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{achievement.name}</div>
-                                </div>
-                            ))}
-                            {achievements.filter(a => a.earned).length === 0 && (
-                                <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
-                                    No achievements yet. Keep active to earn badges!
-                                </div>
-                            )}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                            {((achievements && achievements.length > 0) ? achievements : DEFAULT_ACHIEVEMENTS_LIST).map((achievement) => {
+                                const target = achievement.target || achievement.condition?.target || 1;
+                                const progress = achievement.progress || 0;
+                                const percent = Math.min(100, Math.round((progress / target) * 100));
+                                return (
+                                    <div
+                                        key={achievement._id || achievement.name}
+                                        className={`rounded-2xl p-4 border transition-all flex flex-col justify-between ${
+                                            achievement.earned 
+                                                ? 'bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20 border-yellow-300 dark:border-yellow-700 shadow-sm'
+                                                : 'bg-gray-50 dark:bg-slate-700/40 border-gray-200 dark:border-slate-700'
+                                        }`}
+                                    >
+                                        <div>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-3xl">{achievement.icon || '🏆'}</span>
+                                                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded-md">
+                                                    +{achievement.points || 10} pts
+                                                </span>
+                                            </div>
+                                            <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                                                {achievement.name}
+                                            </h3>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                                                {achievement.description}
+                                            </p>
+                                        </div>
+
+                                        <div className="mt-4">
+                                            <div className="flex justify-between items-center text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                                                <span>{achievement.earned ? 'Unlocked 🏆' : 'Progress'}</span>
+                                                <span>{achievement.earned ? 'Completed' : `${progress} / ${target}`}</span>
+                                            </div>
+                                            <div className="w-full bg-gray-200 dark:bg-slate-600 h-2 rounded-full overflow-hidden">
+                                                <div 
+                                                    className={`h-full transition-all duration-500 ${
+                                                        achievement.earned ? 'bg-gradient-to-r from-yellow-400 to-amber-500' : 'bg-purple-500'
+                                                    }`} 
+                                                    style={{ width: `${achievement.earned ? 100 : percent}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
