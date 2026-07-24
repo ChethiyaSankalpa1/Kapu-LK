@@ -8,6 +8,37 @@ import {
     Plus, CreditCard, RefreshCw, Star, TrendingUp, Sparkles
 } from 'lucide-react';
 
+const DEFAULT_REDEMPTION_OPTIONS = [
+    {
+        _id: 'default_premium',
+        rewardType: 'premium',
+        rewardName: '30 Days Premium Membership',
+        pointsCost: 100,
+        description: 'Unlock unlimited messaging & full profile access'
+    },
+    {
+        _id: 'default_wallet',
+        rewardType: 'wallet',
+        rewardName: 'Rs. 500 Wallet Cash',
+        pointsCost: 50,
+        description: 'Add 500 LKR directly to your wallet balance'
+    },
+    {
+        _id: 'default_boost',
+        rewardType: 'boost',
+        rewardName: '7-Day Profile Boost',
+        pointsCost: 30,
+        description: 'Boost profile visibility to 5x more matches'
+    },
+    {
+        _id: 'default_badge',
+        rewardType: 'badge',
+        rewardName: 'VIP Profile Badge',
+        pointsCost: 20,
+        description: 'Show a gold VIP badge on your profile card'
+    }
+];
+
 const Wallet = () => {
     // useAuth() was here but unused
     const navigate = useNavigate();
@@ -16,7 +47,7 @@ const Wallet = () => {
     const [achievements, setAchievements] = useState([]);
     const [gifts, setGifts] = useState([]);
     const [transactions, setTransactions] = useState([]);
-    const [redemptionConfigs, setRedemptionConfigs] = useState([]);
+    const [redemptionConfigs, setRedemptionConfigs] = useState(DEFAULT_REDEMPTION_OPTIONS);
     const [redemptionHistory, setRedemptionHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showTopUpModal, setShowTopUpModal] = useState(false);
@@ -47,7 +78,7 @@ const Wallet = () => {
             setAchievements(statsRes.data.achievements || achievementsRes.data || []);
             setGifts(giftsRes.data || []);
             setTransactions(transactionsRes.data.transactions || []);
-            setRedemptionConfigs(configsRes.data || []);
+            setRedemptionConfigs(configsRes.data && configsRes.data.length > 0 ? configsRes.data : DEFAULT_REDEMPTION_OPTIONS);
             setRedemptionHistory(historyRes.data || []);
         } catch (error) {
             toast.error('Failed to load wallet data');
