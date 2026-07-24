@@ -2,6 +2,8 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const { Referral, ReferralCode } = require('../models/Referral');
+const { UserStats } = require('../models/Achievement');
 const cloudinary = require('../config/cloudinary');
 const { sendPasswordResetEmail } = require('../utils/mailer');
 
@@ -35,6 +37,7 @@ exports.register = async (req, res) => {
       hobbies,
       agreedToTerms,
       language,
+      referralCode,
     } = req.body;
 
     if (!isValidPhoneNumber(phoneNumber)) {
@@ -75,6 +78,39 @@ exports.register = async (req, res) => {
       language: ['en', 'si', 'ta'].includes(language) ? language : undefined,
       agreedToTerms: !!agreedToTerms,
     });
+
+    // Handle referral code if provided
+    if (referralCode) {
+      const validReferralCode = await ReferralCode.findOne({ code: referralCode, isActive: true });
+      if (validReferralCode && validReferralCode.user.toString() !== user._id.toString()) {
+        // Create referral record
+        await Referral.create({
+          referrer: validReferralCode.user,
+          referred: user._id,
+          referralCode: referralCode,
+          status: 'pending'
+        });
+
+        // Update referrer stats
+        validReferralCode.totalReferrals += 1;
+        await validReferralCode.save();
+
+        let referrerStats = await UserStats.findOne({ user: validReferralCode.user });
+        if (!referrerStats) {
+          referrerStats = new UserStats({ user: validReferralCode.user });
+        }
+        referrerStats.totalReferrals += 1;
+        await referrerStats.save();
+
+        // Give referred user bonus
+        let userStats = await UserStats.findOne({ user: user._id });
+        if (!userStats) {
+          userStats = new UserStats({ user: user._id });
+        }
+        userStats.points += 25; // Bonus for using referral
+        await userStats.save();
+      }
+    }
 
     if (user) {
       // Create profile picture reminder notification
