@@ -127,7 +127,7 @@ exports.toggleUserStatus = async (req, res) => {
   }
 };
 
-// @desc    Toggle user premium status
+// @desc    Toggle or update user premium plan tier
 // @route   PUT /api/admin/users/:id/toggle-premium
 // @access  Private/Admin
 exports.togglePremiumStatus = async (req, res) => {
@@ -138,17 +138,41 @@ exports.togglePremiumStatus = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    user.isPremium = !user.isPremium;
-    if (user.isPremium) {
-      user.premiumSince = new Date();
+    const { plan, durationDays } = req.body || {};
+
+    if (plan) {
+      if (plan === 'none' || plan === 'free' || plan === 'remove') {
+        user.isPremium = false;
+        user.premiumPlan = null;
+        user.premiumExpiresAt = undefined;
+      } else {
+        user.isPremium = true;
+        user.premiumPlan = plan; // 'bronze', 'silver', 'gold'
+        user.premiumSince = new Date();
+        const days = durationDays ? parseInt(durationDays, 10) : (plan === 'gold' ? 28 : plan === 'silver' ? 14 : 7);
+        const expires = new Date();
+        expires.setDate(expires.getDate() + days);
+        user.premiumExpiresAt = expires;
+      }
     } else {
-      user.premiumSince = undefined;
+      user.isPremium = !user.isPremium;
+      if (user.isPremium) {
+        user.premiumPlan = user.premiumPlan || 'gold';
+        user.premiumSince = new Date();
+        const expires = new Date();
+        expires.setDate(expires.getDate() + 28);
+        user.premiumExpiresAt = expires;
+      } else {
+        user.premiumPlan = null;
+        user.premiumExpiresAt = undefined;
+      }
     }
+
     user.premiumRequested = false;
     await user.save();
 
     res.json({ 
-      message: `User premium status ${user.isPremium ? 'enabled' : 'disabled'} successfully`, 
+      message: `User premium status updated successfully`, 
       user 
     });
   } catch (error) {

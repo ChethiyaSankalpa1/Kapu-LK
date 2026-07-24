@@ -94,6 +94,14 @@ const AdminDashboard = () => {
     isFeatured: false
   });
 
+  // Premium grant modal states
+  const [showPremiumGrantModal, setShowPremiumGrantModal] = useState(false);
+  const [selectedUserForPremium, setSelectedUserForPremium] = useState(null);
+  const [premiumGrantData, setPremiumGrantData] = useState({
+    plan: 'gold',
+    durationDays: 28
+  });
+
   const fetchConversations = async () => {
     try {
       const response = await messageAPI.getConversations();
@@ -507,6 +515,28 @@ const AdminDashboard = () => {
       fetchData();
     } catch (error) {
       toast.error(t('admin.updatePremiumFailed', { defaultValue: 'Failed to update premium status' }));
+    }
+  };
+
+  const handleGrantPremium = (user) => {
+    setSelectedUserForPremium(user);
+    setPremiumGrantData({
+      plan: user.premiumPlan || 'gold',
+      durationDays: 28
+    });
+    setShowPremiumGrantModal(true);
+    setActiveDropdown(null);
+  };
+
+  const handleSavePremiumGrant = async () => {
+    try {
+      await adminAPI.togglePremium(selectedUserForPremium._id, premiumGrantData);
+      toast.success(`Premium ${premiumGrantData.plan.toUpperCase()} granted to ${selectedUserForPremium.name} for ${premiumGrantData.durationDays} days`);
+      setShowPremiumGrantModal(false);
+      setSelectedUserForPremium(null);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to grant premium');
     }
   };
 
@@ -930,14 +960,26 @@ const AdminDashboard = () => {
                                 )}
                                 <button
                                   onClick={() => {
-                                    handleTogglePremium(user._id);
+                                    handleGrantPremium(user);
                                     setActiveDropdown(null);
                                   }}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                  className="w-full px-4 py-2 text-left text-sm text-yellow-600 dark:text-yellow-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                                 >
                                   <Crown className="w-4 h-4" />
-                                  <span>{user.isPremium ? 'Remove Premium' : 'Add Premium'}</span>
+                                  <span>Grant Premium</span>
                                 </button>
+                                {user.isPremium && (
+                                  <button
+                                    onClick={() => {
+                                      handleTogglePremium(user._id);
+                                      setActiveDropdown(null);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                  >
+                                    <X className="w-4 h-4" />
+                                    <span>Remove Premium</span>
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => {
                                     handleToggleStatus(user._id);
@@ -2397,6 +2439,79 @@ const AdminDashboard = () => {
                   Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Premium Grant Modal */}
+      {showPremiumGrantModal && selectedUserForPremium && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                Grant Premium Access
+              </h3>
+              <button
+                onClick={() => setShowPremiumGrantModal(false)}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mb-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                <span className="font-semibold">User:</span> {selectedUserForPremium.name}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {selectedUserForPremium.email}
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Premium Plan</label>
+                <select
+                  value={premiumGrantData.plan}
+                  onChange={(e) => setPremiumGrantData({ ...premiumGrantData, plan: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl dark:bg-slate-700 dark:text-white text-sm"
+                >
+                  <option value="bronze">🥉 Bronze (7 days)</option>
+                  <option value="silver">🥈 Silver (14 days)</option>
+                  <option value="gold">🥇 Gold (28 days)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Duration (Days)</label>
+                <input
+                  type="number"
+                  value={premiumGrantData.durationDays}
+                  onChange={(e) => setPremiumGrantData({ ...premiumGrantData, durationDays: parseInt(e.target.value) || 1 })}
+                  min="1"
+                  max="365"
+                  className="w-full px-3 py-2 border rounded-xl dark:bg-slate-700 dark:text-white text-sm"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Custom duration in days (1-365)
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleSavePremiumGrant}
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-semibold hover:from-yellow-600 hover:to-orange-600 transition-all"
+              >
+                Grant Premium
+              </button>
+              <button
+                onClick={() => setShowPremiumGrantModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
