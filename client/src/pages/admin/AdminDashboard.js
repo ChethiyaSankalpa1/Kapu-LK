@@ -62,6 +62,18 @@ const AdminDashboard = () => {
     isFeatured: false
   });
 
+  // Success Story management states
+  const [showStoryModal, setShowStoryModal] = useState(false);
+  const [editingStory, setEditingStory] = useState(null);
+  const [storyFormData, setStoryFormData] = useState({
+    coupleName: '',
+    story: '',
+    imageUrl: '',
+    weddingDate: '',
+    isPublished: false,
+    isFeatured: false
+  });
+
   const fetchConversations = async () => {
     try {
       const response = await messageAPI.getConversations();
@@ -269,6 +281,71 @@ const AdminDashboard = () => {
       } catch (error) {
         toast.error('Failed to delete event');
       }
+    }
+  };
+
+  // Success Story management handlers
+  const handleAddStory = () => {
+    setEditingStory(null);
+    setStoryFormData({
+      coupleName: '',
+      story: '',
+      imageUrl: '',
+      weddingDate: '',
+      isPublished: false,
+      isFeatured: false
+    });
+    setShowStoryModal(true);
+  };
+
+  const handleEditStory = (story) => {
+    setEditingStory(story);
+    setStoryFormData({
+      coupleName: story.coupleName,
+      story: story.story,
+      imageUrl: story.imageUrl,
+      weddingDate: story.weddingDate,
+      isPublished: story.isPublished,
+      isFeatured: story.isFeatured
+    });
+    setShowStoryModal(true);
+  };
+
+  const handleSaveStory = async () => {
+    try {
+      if (editingStory) {
+        await successStoryAPI.updateStory(editingStory._id, storyFormData);
+        toast.success('Story updated successfully');
+      } else {
+        await successStoryAPI.createSuccessStory(storyFormData);
+        toast.success('Story created successfully');
+      }
+      setShowStoryModal(false);
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to save story');
+    }
+  };
+
+  const handleDeleteStory = async (storyId) => {
+    if (window.confirm('Are you sure you want to delete this story?')) {
+      try {
+        await successStoryAPI.deleteSuccessStory(storyId);
+        toast.success('Story deleted successfully');
+        fetchData();
+      } catch (error) {
+        toast.error('Failed to delete story');
+      }
+    }
+  };
+
+  const handleApproveStory = async (storyId) => {
+    try {
+      await successStoryAPI.approveSuccessStory(storyId);
+      toast.success('Story approved successfully');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to approve story');
     }
   };
 
@@ -1004,14 +1081,22 @@ const AdminDashboard = () => {
         {/* Success Stories Management */}
         {activeTab === 'stories' && (
           <div className="glass-card overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Success Stories Management</h2>
+              <button
+                onClick={handleAddStory}
+                className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg text-sm font-semibold hover:from-pink-600 hover:to-purple-600 transition-all flex items-center gap-2"
+              >
+                <Heart className="w-4 h-4" />
+                Add Story
+              </button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Couple</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Wedding Date</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Likes</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
@@ -1023,39 +1108,41 @@ const AdminDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <p className="font-medium text-gray-900 dark:text-white">{story.coupleName}</p>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                        {story.weddingDate ? new Date(story.weddingDate).toLocaleDateString() : 'N/A'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                           story.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                         }`}>
                           {story.status}
                         </span>
+                        {story.isFeatured && (
+                          <span className="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                            Featured
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                         {story.likeCount || 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
+                        {story.status !== 'approved' && (
+                          <button
+                            onClick={() => handleApproveStory(story._id)}
+                            className="text-green-600 hover:text-green-700 mr-3"
+                          >
+                            Approve
+                          </button>
+                        )}
                         <button
-                          onClick={() => {
-                            if (window.confirm('Approve this story?')) {
-                              successStoryAPI.approveSuccessStory(story._id).then(() => {
-                                toast.success('Story approved');
-                                fetchData();
-                              });
-                            }
-                          }}
-                          className="text-green-600 hover:text-green-700 mr-3"
+                          onClick={() => handleEditStory(story)}
+                          className="text-blue-600 hover:text-blue-700 mr-3"
                         >
-                          Approve
+                          Edit
                         </button>
                         <button
-                          onClick={() => {
-                            if (window.confirm('Delete this story?')) {
-                              successStoryAPI.deleteSuccessStory(story._id).then(() => {
-                                toast.success('Story deleted');
-                                fetchData();
-                              });
-                            }
-                          }}
+                          onClick={() => handleDeleteStory(story._id)}
                           className="text-red-600 hover:text-red-700"
                         >
                           Delete
@@ -1728,6 +1815,92 @@ const AdminDashboard = () => {
                 </button>
                 <button
                   onClick={() => setShowEventModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Story Modal */}
+      {showStoryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                {editingStory ? 'Edit Success Story' : 'Add New Success Story'}
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Couple Name</label>
+                  <input
+                    type="text"
+                    value={storyFormData.coupleName}
+                    onChange={(e) => setStoryFormData({ ...storyFormData, coupleName: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Story</label>
+                  <textarea
+                    value={storyFormData.story}
+                    onChange={(e) => setStoryFormData({ ...storyFormData, story: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    rows={5}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Wedding Date</label>
+                  <input
+                    type="date"
+                    value={storyFormData.weddingDate}
+                    onChange={(e) => setStoryFormData({ ...storyFormData, weddingDate: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Image URL</label>
+                  <input
+                    type="text"
+                    value={storyFormData.imageUrl}
+                    onChange={(e) => setStoryFormData({ ...storyFormData, imageUrl: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="https://..."
+                  />
+                </div>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={storyFormData.isPublished}
+                      onChange={(e) => setStoryFormData({ ...storyFormData, isPublished: e.target.checked })}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Published</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={storyFormData.isFeatured}
+                      onChange={(e) => setStoryFormData({ ...storyFormData, isFeatured: e.target.checked })}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Featured</span>
+                  </label>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleSaveStory}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg font-semibold hover:from-pink-600 hover:to-purple-600 transition-all"
+                >
+                  {editingStory ? 'Update' : 'Create'}
+                </button>
+                <button
+                  onClick={() => setShowStoryModal(false)}
                   className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
                 >
                   Cancel
