@@ -148,6 +148,17 @@ const Conversation = () => {
     }
   }, [messages.length, scrollToBottom]);
 
+  // Check typing status
+  const checkTypingStatus = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const response = await typingAPI.getTypingStatus(userId);
+      setIsTyping(response.data.isTyping);
+    } catch (error) {
+      // Silently fail
+    }
+  }, [userId]);
+
   // Set up polling interval for real-time update
   useEffect(() => {
     const interval = setInterval(() => {
@@ -159,17 +170,6 @@ const Conversation = () => {
     }, 4000);
     return () => clearInterval(interval);
   }, [userId, fetchConversationsList, fetchChatMessages, checkTypingStatus]);
-
-  // Check typing status
-  const checkTypingStatus = async () => {
-    if (!userId) return;
-    try {
-      const response = await typingAPI.getTypingStatus(userId);
-      setIsTyping(response.data.isTyping);
-    } catch (error) {
-      // Silently fail
-    }
-  };
 
   // Set typing status when user types
   useEffect(() => {
