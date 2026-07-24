@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
@@ -42,7 +42,7 @@ const GlobalRealtimeMonitor = () => {
   const { user, isAdmin } = useAuth();
   const [giftData, setGiftData] = useState(null);
   const [achievementData, setAchievementData] = useState(null);
-  const [seenNotifs, setSeenNotifs] = useState(() => new Set());
+  const seenNotifsRef = useRef(new Set());
 
   // Listen for local custom events
   useEffect(() => {
@@ -73,8 +73,8 @@ const GlobalRealtimeMonitor = () => {
         const notifs = res.data || [];
 
         for (const notif of notifs) {
-          if (!seenNotifs.has(notif._id)) {
-            setSeenNotifs(prev => new Set(prev).add(notif._id));
+          if (!seenNotifsRef.current.has(notif._id)) {
+            seenNotifsRef.current.add(notif._id);
 
             if (notif.type === 'gift_received' && !notif.isRead) {
               // Parse gift notification
