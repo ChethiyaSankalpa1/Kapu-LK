@@ -15,42 +15,42 @@ exports.getRedemptionConfigs = async (req, res) => {
           _id: 'default_premium_1d',
           rewardType: 'premium',
           rewardName: '1-Day Premium Membership',
-          pointsCost: 25,
+          pointsCost: 50,
           isActive: true
         },
         {
           _id: 'default_premium_7d',
           rewardType: 'premium',
           rewardName: '7 Days Premium Membership',
-          pointsCost: 100,
+          pointsCost: 150,
           isActive: true
         },
         {
           _id: 'default_premium_30d',
           rewardType: 'premium',
           rewardName: '30 Days Premium Membership',
-          pointsCost: 300,
+          pointsCost: 400,
           isActive: true
         },
         {
           _id: 'default_wallet',
           rewardType: 'wallet',
           rewardName: 'Rs. 500 Wallet Cash',
-          pointsCost: 150,
+          pointsCost: 200,
           isActive: true
         },
         {
           _id: 'default_boost',
           rewardType: 'boost',
           rewardName: '7-Day Profile Boost',
-          pointsCost: 80,
+          pointsCost: 100,
           isActive: true
         },
         {
           _id: 'default_badge',
           rewardType: 'badge',
           rewardName: 'VIP Profile Badge',
-          pointsCost: 50,
+          pointsCost: 75,
           isActive: true
         }
       ];
@@ -176,9 +176,9 @@ exports.redeemPoints = async (req, res) => {
           if (!userWallet) {
             userWallet = await Wallet.create({ user: userId });
           }
-          const cashAmount = pointsCost * 10; // 1 point = 10 LKR
+          const cashAmount = 500; // 500 LKR wallet cash
           userWallet.balance += cashAmount;
-          userWallet.totalDeposits += cashAmount;
+          userWallet.totalDeposited = (userWallet.totalDeposited || 0) + cashAmount;
           await userWallet.save();
           await WalletTransaction.create({
             wallet: userWallet._id,
