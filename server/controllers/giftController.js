@@ -185,11 +185,12 @@ exports.getGiftHistory = async (req, res) => {
 // @access  Private/Admin
 exports.createGift = async (req, res) => {
   try {
+    console.log('Creating gift with data:', req.body);
     const gift = await Gift.create(req.body);
     res.status(201).json(gift);
   } catch (error) {
     console.error('Error creating gift:', error);
-    res.status(500).json({ message: 'Failed to create gift' });
+    res.status(500).json({ message: 'Failed to create gift', error: error.message });
   }
 };
 
@@ -198,14 +199,15 @@ exports.createGift = async (req, res) => {
 // @access  Private/Admin
 exports.updateGift = async (req, res) => {
   try {
-    const gift = await Gift.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    console.log('Updating gift with id:', req.params.id, 'data:', req.body);
+    const gift = await Gift.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!gift) {
       return res.status(404).json({ message: 'Gift not found' });
     }
     res.json(gift);
   } catch (error) {
     console.error('Error updating gift:', error);
-    res.status(500).json({ message: 'Failed to update gift' });
+    res.status(500).json({ message: 'Failed to update gift', error: error.message });
   }
 };
 
