@@ -1,8 +1,7 @@
 const { Redemption, RedemptionConfig } = require('../models/Redemption');
 const User = require('../models/User');
-const UserStats = require('../models/UserStats');
-const Wallet = require('../models/Wallet');
-const WalletTransaction = require('../models/Wallet');
+const { UserStats } = require('../models/Achievement');
+const { Wallet, WalletTransaction } = require('../models/Wallet');
 
 // @desc    Get redemption configurations
 // @route   GET /api/redemption/configs
