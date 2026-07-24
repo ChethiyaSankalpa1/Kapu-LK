@@ -12,31 +12,45 @@ exports.getRedemptionConfigs = async (req, res) => {
     if (!configs || configs.length === 0) {
       configs = [
         {
-          _id: 'default_premium',
+          _id: 'default_premium_1d',
+          rewardType: 'premium',
+          rewardName: '1-Day Premium Membership',
+          pointsCost: 25,
+          isActive: true
+        },
+        {
+          _id: 'default_premium_7d',
+          rewardType: 'premium',
+          rewardName: '7 Days Premium Membership',
+          pointsCost: 100,
+          isActive: true
+        },
+        {
+          _id: 'default_premium_30d',
           rewardType: 'premium',
           rewardName: '30 Days Premium Membership',
-          pointsCost: 100,
+          pointsCost: 300,
           isActive: true
         },
         {
           _id: 'default_wallet',
           rewardType: 'wallet',
           rewardName: 'Rs. 500 Wallet Cash',
-          pointsCost: 50,
+          pointsCost: 150,
           isActive: true
         },
         {
           _id: 'default_boost',
           rewardType: 'boost',
           rewardName: '7-Day Profile Boost',
-          pointsCost: 30,
+          pointsCost: 80,
           isActive: true
         },
         {
           _id: 'default_badge',
           rewardType: 'badge',
           rewardName: 'VIP Profile Badge',
-          pointsCost: 20,
+          pointsCost: 50,
           isActive: true
         }
       ];
@@ -115,14 +129,27 @@ exports.redeemPoints = async (req, res) => {
     try {
       switch (rewardType) {
         case 'premium':
-          // Grant premium membership
+          // Grant premium membership (1 day, 7 days, or 30 days)
           const user = await User.findById(userId);
           if (user) {
             user.isPremium = true;
-            user.premiumExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+            let days = 30;
+            if (rewardName.toLowerCase().includes('1-day') || pointsCost <= 30) {
+              days = 1;
+            } else if (rewardName.toLowerCase().includes('7 day') || pointsCost <= 120) {
+              days = 7;
+            } else {
+              days = 30;
+            }
+
+            const currentExp = (user.premiumExpiresAt && user.premiumExpiresAt > new Date())
+              ? user.premiumExpiresAt
+              : new Date();
+            user.premiumExpiresAt = new Date(currentExp.getTime() + days * 24 * 60 * 60 * 1000);
             await user.save();
             completed = true;
             redemption.metadata.premiumExpiresAt = user.premiumExpiresAt;
+            redemption.metadata.daysGranted = days;
           }
           break;
 

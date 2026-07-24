@@ -2,12 +2,23 @@ const { Achievement, UserAchievement, UserStats } = require('../models/Achieveme
 const { addReward } = require('./walletController');
 const User = require('../models/User');
 
+const DEFAULT_ACHIEVEMENTS = [
+  { name: '🌅 Daily Check-in', description: 'Log in to Kapu LK daily', icon: '🌅', category: 'daily', points: 5, condition: { type: 'login_streak', target: 1 } },
+  { name: '💬 Social Butterfly', description: 'Send 10 messages in chat', icon: '💬', category: 'communication', points: 15, condition: { type: 'messages_sent', target: 10 } },
+  { name: '🎁 Generous Heart', description: 'Send a gift to a match', icon: '🎁', category: 'social', points: 20, condition: { type: 'gifts_sent', target: 1 } },
+  { name: '🔥 7-Day Streak', description: 'Log in 7 consecutive days', icon: '🔥', category: 'streak', points: 50, condition: { type: 'login_streak', target: 7 } },
+  { name: '👑 Royal Supporter', description: 'Send 5 gifts to matches', icon: '👑', category: 'social', points: 75, condition: { type: 'gifts_sent', target: 5 } }
+];
+
 // @desc    Get all achievements
 // @route   GET /api/achievements
 // @access  Private
 exports.getAchievements = async (req, res) => {
   try {
-    const achievements = await Achievement.find({ isActive: true }).sort({ category: 1, points: -1 });
+    let achievements = await Achievement.find({ isActive: true }).sort({ category: 1, points: -1 });
+    if (!achievements || achievements.length === 0) {
+      achievements = await Achievement.insertMany(DEFAULT_ACHIEVEMENTS);
+    }
     res.json(achievements);
   } catch (error) {
     console.error('Error fetching achievements:', error);
@@ -37,8 +48,11 @@ exports.getMyStats = async (req, res) => {
       await userStats.save();
     }
 
-    // Get all available achievements
-    const allAchievements = await Achievement.find({ isActive: true });
+    // Get all available achievements (seed if empty)
+    let allAchievements = await Achievement.find({ isActive: true });
+    if (!allAchievements || allAchievements.length === 0) {
+      allAchievements = await Achievement.insertMany(DEFAULT_ACHIEVEMENTS);
+    }
     
     // Calculate progress for each achievement
     const achievementsWithProgress = allAchievements.map(achievement => {
