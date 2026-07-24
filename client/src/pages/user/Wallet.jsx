@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+// useAuth import removed
 import { walletAPI, achievementAPI, giftAPI, redemptionAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
