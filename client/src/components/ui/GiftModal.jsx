@@ -12,6 +12,9 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
   const [sending, setSending] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
   const [showTopUp, setShowTopUp] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState('');
+  const [paymentSlip, setPaymentSlip] = useState(null);
+  const [submittingPayment, setSubmittingPayment] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -74,9 +77,33 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
     }
   };
 
-  const handleTopUp = (amount) => {
-    toast.info('Top-up feature coming soon! For now, earn points by completing daily achievements.');
-    setShowTopUp(false);
+  const handlePaymentSubmit = async () => {
+    if (!topUpAmount || parseFloat(topUpAmount) < 100) {
+      toast.error('Minimum top-up amount is 100 LKR');
+      return;
+    }
+    if (!paymentSlip) {
+      toast.error('Please upload your payment slip');
+      return;
+    }
+
+    setSubmittingPayment(true);
+    try {
+      const formData = new FormData();
+      formData.append('amount', parseFloat(topUpAmount));
+      formData.append('paymentSlip', paymentSlip);
+
+      await walletAPI.createPaymentRequest(formData);
+      toast.success('Payment request submitted! Admin will approve within 24 hours.');
+      setShowTopUp(false);
+      setTopUpAmount('');
+      setPaymentSlip(null);
+      fetchWallet(); // Refresh wallet balance
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to submit payment request');
+    } finally {
+      setSubmittingPayment(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -237,6 +264,8 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
                   type="number"
                   min="100"
                   step="100"
+                  value={topUpAmount}
+                  onChange={(e) => setTopUpAmount(e.target.value)}
                   placeholder="Enter amount"
                   className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
                 />
@@ -247,6 +276,7 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
                 <input
                   type="file"
                   accept="image/*"
+                  onChange={(e) => setPaymentSlip(e.target.files[0])}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
                 />
               </div>
@@ -265,13 +295,11 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
             </div>
 
             <button
-              onClick={() => {
-                toast.info('Payment request submitted! Admin will approve within 24 hours.');
-                setShowTopUp(false);
-              }}
-              className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition"
+              onClick={handlePaymentSubmit}
+              disabled={submittingPayment}
+              className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Submit Payment Request
+              {submittingPayment ? 'Submitting...' : 'Submit Payment Request'}
             </button>
 
             <button
