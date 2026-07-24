@@ -89,7 +89,7 @@ const AdminDashboard = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [statsRes, usersRes, premiumRes, conversationsRes, giftsRes, achievementsRes, storiesRes, blogRes, eventsRes] = await Promise.all([
+      const [statsRes, usersRes, premiumRes, conversationsRes, giftsRes, achievementsRes, storiesRes, blogRes, eventsRes, configsRes, redemptionsRes] = await Promise.all([
         adminAPI.getStats(),
         adminAPI.getAllUsers(),
         adminAPI.getPremiumRequests(),
