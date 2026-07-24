@@ -8,7 +8,39 @@ const { Wallet, WalletTransaction } = require('../models/Wallet');
 // @access  Public
 exports.getRedemptionConfigs = async (req, res) => {
   try {
-    const configs = await RedemptionConfig.find({ isActive: true });
+    let configs = await RedemptionConfig.find({ isActive: true });
+    if (!configs || configs.length === 0) {
+      configs = [
+        {
+          _id: 'default_premium',
+          rewardType: 'premium',
+          rewardName: '30 Days Premium Membership',
+          pointsCost: 100,
+          isActive: true
+        },
+        {
+          _id: 'default_wallet',
+          rewardType: 'wallet',
+          rewardName: 'Rs. 500 Wallet Cash',
+          pointsCost: 50,
+          isActive: true
+        },
+        {
+          _id: 'default_boost',
+          rewardType: 'boost',
+          rewardName: '7-Day Profile Boost',
+          pointsCost: 30,
+          isActive: true
+        },
+        {
+          _id: 'default_badge',
+          rewardType: 'badge',
+          rewardName: 'VIP Profile Badge',
+          pointsCost: 20,
+          isActive: true
+        }
+      ];
+    }
     res.json(configs);
   } catch (error) {
     console.error('Error fetching redemption configs:', error);
@@ -110,6 +142,30 @@ exports.redeemPoints = async (req, res) => {
           // Award badge
           completed = true;
           redemption.metadata.badgeAwarded = true;
+          break;
+
+        case 'wallet':
+          let userWallet = await Wallet.findOne({ user: userId });
+          if (!userWallet) {
+            userWallet = await Wallet.create({ user: userId });
+          }
+          const cashAmount = pointsCost * 10; // 1 point = 10 LKR
+          userWallet.balance += cashAmount;
+          userWallet.totalDeposits += cashAmount;
+          await userWallet.save();
+          await WalletTransaction.create({
+            wallet: userWallet._id,
+            user: userId,
+            type: 'reward',
+            amount: cashAmount,
+            currency: 'LKR',
+            description: `Redeemed ${pointsCost} points for Rs. ${cashAmount} wallet cash`,
+            balanceBefore: userWallet.balance - cashAmount,
+            balanceAfter: userWallet.balance,
+            status: 'completed'
+          });
+          completed = true;
+          redemption.metadata.walletAmountAdded = cashAmount;
           break;
 
         case 'custom':

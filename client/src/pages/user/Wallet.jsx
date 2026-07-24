@@ -43,12 +43,12 @@ const Wallet = () => {
                 redemptionAPI.getHistory()
             ]);
             setWallet(walletRes.data);
-            setUserStats(statsRes.data);
-            setAchievements(achievementsRes.data);
-            setGifts(giftsRes.data);
+            setUserStats(statsRes.data.stats || statsRes.data);
+            setAchievements(statsRes.data.achievements || achievementsRes.data || []);
+            setGifts(giftsRes.data || []);
             setTransactions(transactionsRes.data.transactions || []);
-            setRedemptionConfigs(configsRes.data);
-            setRedemptionHistory(historyRes.data);
+            setRedemptionConfigs(configsRes.data || []);
+            setRedemptionHistory(historyRes.data || []);
         } catch (error) {
             toast.error('Failed to load wallet data');
         } finally {

@@ -13,7 +13,19 @@ const { checkAchievements } = require('./achievementController');
 // @access  Private
 exports.getGifts = async (req, res) => {
   try {
-    const gifts = await Gift.find({ isActive: true }).sort({ category: 1, price: 1 });
+    let gifts = await Gift.find({ isActive: true }).sort({ category: 1, price: 1 });
+    if (!gifts || gifts.length === 0) {
+      // Seed default gifts if database is empty
+      const defaultGifts = [
+        { name: 'Red Rose', emoji: '🌹', category: 'flowers', price: 50, isRecommended: true },
+        { name: 'Love Heart', emoji: '❤️', category: 'hearts', price: 100, isRecommended: true },
+        { name: 'Coffee Cup', emoji: '☕', category: 'drinks', price: 150 },
+        { name: 'Box of Chocolates', emoji: '🍫', category: 'food', price: 200 },
+        { name: 'Special Gift Box', emoji: '🎁', category: 'gifts', price: 300 },
+        { name: '1-Month Premium Pass', emoji: '👑', category: 'special', price: 500, isPremium: true, description: 'Grants 30 days Premium membership to recipient!' }
+      ];
+      gifts = await Gift.insertMany(defaultGifts);
+    }
     res.json(gifts);
   } catch (error) {
     console.error('Error fetching gifts:', error);
@@ -45,6 +57,16 @@ exports.sendGift = async (req, res) => {
     const recipient = await User.findById(to);
     if (!recipient) {
       return res.status(404).json({ message: 'Recipient not found' });
+    }
+
+    // Grant 30 days of Premium Membership to recipient if gift is a Premium Pass!
+    if (gift.isPremium || gift.name.toLowerCase().includes('premium')) {
+      recipient.isPremium = true;
+      const currentExp = (recipient.premiumExpiresAt && recipient.premiumExpiresAt > new Date())
+        ? recipient.premiumExpiresAt
+        : new Date();
+      recipient.premiumExpiresAt = new Date(currentExp.getTime() + 30 * 24 * 60 * 60 * 1000);
+      await recipient.save();
     }
 
     // Check if recipient has opted out of receiving gifts
