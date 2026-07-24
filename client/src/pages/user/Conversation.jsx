@@ -856,7 +856,7 @@ const Conversation = () => {
                           type="button"
                           onClick={() => setShowGiftModal(true)}
                           disabled={sending}
-                          className="p-1.5 sm:p-2 md:p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#374248] text-gray-500 dark:text-gray-400 disabled:opacity-40 transition-colors shrink-0"
+                          className="p-1.5 sm:p-2 md:p-2.5 rounded-full hover:bg-pink-100 dark:hover:bg-pink-900/30 text-pink-500 dark:text-pink-400 disabled:opacity-40 transition-colors shrink-0"
                           aria-label="Send Gift"
                         >
                           <Gift className="w-4 h-4 sm:w-4.5 sm:h-4.5 md:w-5.5 md:h-5.5" />

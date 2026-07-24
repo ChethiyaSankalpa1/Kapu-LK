@@ -6,7 +6,7 @@ import { userAPI, messageAPI, notificationAPI, achievementAPI } from '../../serv
 import { toast } from 'react-toastify';
 import {
     User, CheckCircle, Clock, MessageCircle, Bell, Search, Heart,
-    Crown, Zap, X, RefreshCw, Trophy, Flame, Star
+    Crown, Zap, X, RefreshCw, Trophy, Flame, Star, Share2, FileText, Calendar
 } from 'lucide-react';
 import ProfileCard from '../../components/ui/ProfileCard';
 import CustomSelect from '../../components/ui/CustomSelect';
@@ -587,6 +587,46 @@ const Dashboard = () => {
                         <Search className="w-3.5 h-3.5" />
                         <span>{t('common.search')}</span>
                     </button>
+                    <button
+                        onClick={() => setActiveTab('referrals')}
+                        className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-200 ${activeTab === 'referrals'
+                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30'
+                            : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                    >
+                        <Share2 className="w-3.5 h-3.5" />
+                        <span>Referrals</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('stories')}
+                        className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-200 ${activeTab === 'stories'
+                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30'
+                            : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                    >
+                        <Heart className="w-3.5 h-3.5" />
+                        <span>Stories</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('blog')}
+                        className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-200 ${activeTab === 'blog'
+                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30'
+                            : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                    >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Blog</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('events')}
+                        className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-200 ${activeTab === 'events'
+                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30'
+                            : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                    >
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>Events</span>
+                    </button>
                 </div>
 
                 {activeTab === 'overview' && (
@@ -1079,6 +1119,62 @@ const Dashboard = () => {
                                     <p className="text-gray-500 dark:text-gray-400">Use the filters above and click Search to find matching profiles.</p>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'referrals' && (
+                    <div className="glass-card p-6">
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <Share2 className="w-6 h-6 text-purple-500" />
+                            Referrals
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">Share your referral code and earn rewards!</p>
+                        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 text-center">
+                            <p className="text-sm text-purple-700 dark:text-purple-300 mb-2">Your Referral Code</p>
+                            <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{user?.referralCode || 'Loading...'}</p>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'stories' && (
+                    <div className="glass-card p-6">
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <Heart className="w-6 h-6 text-pink-500" />
+                            Success Stories
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">Read inspiring stories from couples who found love on Kapu LK.</p>
+                        <div className="text-center py-8">
+                            <Heart className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                            <p className="text-gray-500 dark:text-gray-400">Coming soon! Share your success story.</p>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'blog' && (
+                    <div className="glass-card p-6">
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <FileText className="w-6 h-6 text-blue-500" />
+                            Blog
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">Read articles about dating, relationships, and more.</p>
+                        <div className="text-center py-8">
+                            <FileText className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                            <p className="text-gray-500 dark:text-gray-400">Coming soon! Check back for articles.</p>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'events' && (
+                    <div className="glass-card p-6">
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <Calendar className="w-6 h-6 text-green-500" />
+                            Events
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">Join events and meet other members in person.</p>
+                        <div className="text-center py-8">
+                            <Calendar className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                            <p className="text-gray-500 dark:text-gray-400">Coming soon! Check back for upcoming events.</p>
                         </div>
                     </div>
                 )}
