@@ -45,6 +45,23 @@ const AdminDashboard = () => {
     rarity: 'common'
   });
 
+  // Event management states
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [eventFormData, setEventFormData] = useState({
+    title: '',
+    description: '',
+    eventType: 'social',
+    startDate: '',
+    endDate: '',
+    location: { city: '', venue: '', address: '' },
+    maxAttendees: 100,
+    price: 0,
+    imageUrl: '',
+    isPublished: false,
+    isFeatured: false
+  });
+
   const fetchConversations = async () => {
     try {
       const response = await messageAPI.getConversations();
@@ -187,6 +204,71 @@ const AdminDashboard = () => {
       fetchData();
     } catch (error) {
       toast.error('Failed to toggle gift status');
+    }
+  };
+
+  // Event management handlers
+  const handleAddEvent = () => {
+    setEditingEvent(null);
+    setEventFormData({
+      title: '',
+      description: '',
+      eventType: 'social',
+      startDate: '',
+      endDate: '',
+      location: { city: '', venue: '', address: '' },
+      maxAttendees: 100,
+      price: 0,
+      imageUrl: '',
+      isPublished: false,
+      isFeatured: false
+    });
+    setShowEventModal(true);
+  };
+
+  const handleEditEvent = (event) => {
+    setEditingEvent(event);
+    setEventFormData({
+      title: event.title,
+      description: event.description,
+      eventType: event.eventType,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      location: event.location || { city: '', venue: '', address: '' },
+      maxAttendees: event.maxAttendees,
+      price: event.price,
+      imageUrl: event.imageUrl,
+      isPublished: event.isPublished,
+      isFeatured: event.isFeatured
+    });
+    setShowEventModal(true);
+  };
+
+  const handleSaveEvent = async () => {
+    try {
+      if (editingEvent) {
+        await eventAPI.updateEvent(editingEvent._id, eventFormData);
+        toast.success('Event updated successfully');
+      } else {
+        await eventAPI.createEvent(eventFormData);
+        toast.success('Event created successfully');
+      }
+      setShowEventModal(false);
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to save event');
+    }
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    if (window.confirm('Are you sure you want to delete this event?')) {
+      try {
+        await eventAPI.deleteEvent(eventId);
+        toast.success('Event deleted successfully');
+        fetchData();
+      } catch (error) {
+        toast.error('Failed to delete event');
+      }
     }
   };
 
@@ -1064,8 +1146,15 @@ const AdminDashboard = () => {
         {/* Events Management */}
         {activeTab === 'events' && (
           <div className="glass-card overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Events Management</h2>
+              <button
+                onClick={handleAddEvent}
+                className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg text-sm font-semibold hover:from-pink-600 hover:to-purple-600 transition-all flex items-center gap-2"
+              >
+                <Calendar className="w-4 h-4" />
+                Add Event
+              </button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -1075,6 +1164,7 @@ const AdminDashboard = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Location</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Attendees</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
                   </tr>
                 </thead>
@@ -1086,24 +1176,35 @@ const AdminDashboard = () => {
                         <p className="text-sm text-gray-600 dark:text-gray-300">{event.eventType}</p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                        {new Date(event.date).toLocaleDateString()}
+                        {new Date(event.startDate).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                        {event.city}
+                        {event.location?.city || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                        {event.attendees?.length || 0}
+                        {event.currentAttendees || 0} / {event.maxAttendees || '∞'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          event.isPublished ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {event.isPublished ? 'Published' : 'Draft'}
+                        </span>
+                        {event.isFeatured && (
+                          <span className="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                            Featured
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
-                          onClick={() => {
-                            if (window.confirm('Delete this event?')) {
-                              eventAPI.deleteEvent(event._id).then(() => {
-                                toast.success('Event deleted');
-                                fetchData();
-                              });
-                            }
-                          }}
+                          onClick={() => handleEditEvent(event)}
+                          className="text-blue-600 hover:text-blue-700 mr-3"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteEvent(event._id)}
                           className="text-red-600 hover:text-red-700"
                         >
                           Delete
@@ -1476,6 +1577,157 @@ const AdminDashboard = () => {
                 </button>
                 <button
                   onClick={() => setShowGiftModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Event Modal */}
+      {showEventModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                {editingEvent ? 'Edit Event' : 'Add New Event'}
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Event Title</label>
+                  <input
+                    type="text"
+                    value={eventFormData.title}
+                    onChange={(e) => setEventFormData({ ...eventFormData, title: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                  <textarea
+                    value={eventFormData.description}
+                    onChange={(e) => setEventFormData({ ...eventFormData, description: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    rows={3}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Event Type</label>
+                    <select
+                      value={eventFormData.eventType}
+                      onChange={(e) => setEventFormData({ ...eventFormData, eventType: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="social">Social</option>
+                      <option value="workshop">Workshop</option>
+                      <option value="meetup">Meetup</option>
+                      <option value="party">Party</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Attendees</label>
+                    <input
+                      type="number"
+                      value={eventFormData.maxAttendees}
+                      onChange={(e) => setEventFormData({ ...eventFormData, maxAttendees: parseInt(e.target.value) || 0 })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
+                    <input
+                      type="datetime-local"
+                      value={eventFormData.startDate}
+                      onChange={(e) => setEventFormData({ ...eventFormData, startDate: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
+                    <input
+                      type="datetime-local"
+                      value={eventFormData.endDate}
+                      onChange={(e) => setEventFormData({ ...eventFormData, endDate: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">City</label>
+                    <input
+                      type="text"
+                      value={eventFormData.location.city}
+                      onChange={(e) => setEventFormData({ ...eventFormData, location: { ...eventFormData.location, city: e.target.value } })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Venue</label>
+                    <input
+                      type="text"
+                      value={eventFormData.location.venue}
+                      onChange={(e) => setEventFormData({ ...eventFormData, location: { ...eventFormData.location, venue: e.target.value } })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
+                  <input
+                    type="text"
+                    value={eventFormData.location.address}
+                    onChange={(e) => setEventFormData({ ...eventFormData, location: { ...eventFormData.location, address: e.target.value } })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Image URL</label>
+                  <input
+                    type="text"
+                    value={eventFormData.imageUrl}
+                    onChange={(e) => setEventFormData({ ...eventFormData, imageUrl: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="https://..."
+                  />
+                </div>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={eventFormData.isPublished}
+                      onChange={(e) => setEventFormData({ ...eventFormData, isPublished: e.target.checked })}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Published</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={eventFormData.isFeatured}
+                      onChange={(e) => setEventFormData({ ...eventFormData, isFeatured: e.target.checked })}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Featured</span>
+                  </label>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleSaveEvent}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg font-semibold hover:from-pink-600 hover:to-purple-600 transition-all"
+                >
+                  {editingEvent ? 'Update' : 'Create'}
+                </button>
+                <button
+                  onClick={() => setShowEventModal(false)}
                   className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
                 >
                   Cancel
