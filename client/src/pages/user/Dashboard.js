@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { userAPI, messageAPI, notificationAPI, achievementAPI, giftAPI, referralAPI } from '../../services/api';
+import { userAPI, messageAPI, notificationAPI, achievementAPI, giftAPI, referralAPI, walletAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
     User, CheckCircle, Clock, MessageCircle, Bell, Search, Heart,
@@ -23,6 +23,8 @@ const Dashboard = () => {
     const [referralCode, setReferralCode] = useState(null);
     const [referralStats, setReferralStats] = useState(null);
     const [referralLoading, setReferralLoading] = useState(false);
+    const [wallet, setWallet] = useState(null);
+    const [walletLoading, setWalletLoading] = useState(false);
 
     const FREE_LIMIT = 5;
     const messagesLeft = premiumStatus?.isPremium
@@ -192,6 +194,18 @@ const Dashboard = () => {
         }
     }, []);
 
+    const fetchWallet = useCallback(async () => {
+        setWalletLoading(true);
+        try {
+            const response = await walletAPI.getWallet();
+            setWallet(response.data);
+        } catch (error) {
+            console.error('Error fetching wallet:', error);
+        } finally {
+            setWalletLoading(false);
+        }
+    }, []);
+
     const fetchOverviewUsers = useCallback(async () => {
         setOverviewLoading(true);
         try {
@@ -293,13 +307,14 @@ const Dashboard = () => {
         fetchConversations();
         fetchUserStats();
         fetchReferralData();
+        fetchWallet();
 
         // periodic refresh for notifications every 20s
         const notifInterval = setInterval(() => {
             fetchNotifications();
         }, 20000);
         return () => clearInterval(notifInterval);
-    }, [isProfileComplete, user?.isApproved, user?.role, fetchOverviewUsers, fetchNotifications, fetchConversations, fetchUserStats, fetchReferralData]);
+    }, [isProfileComplete, user?.isApproved, user?.role, fetchOverviewUsers, fetchNotifications, fetchConversations, fetchUserStats, fetchReferralData, fetchWallet]);
 
     useEffect(() => {
         if (activeTab === 'matches' && matches.length === 0 && (user?.isApproved || user?.role === 'admin')) {
@@ -801,6 +816,50 @@ const Dashboard = () => {
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                        )}
+
+                        {/* Wallet Section */}
+                        {wallet && (
+                            <div className="glass-card">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                        <Crown className="w-5 h-5 text-yellow-500" />
+                                        Wallet Balance
+                                    </h2>
+                                </div>
+
+                                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-xl p-6 text-center mb-4">
+                                    <div className="text-4xl font-bold text-yellow-600 dark:text-yellow-400 mb-1">
+                                        Rs. {wallet.balance.toLocaleString()}
+                                    </div>
+                                    <div className="text-sm text-yellow-700 dark:text-yellow-300">
+                                        Available Balance
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3 mb-4">
+                                    <div className="bg-green-50 dark:bg-green-500/10 rounded-xl p-3 text-center">
+                                        <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                                            Rs. {wallet.totalDeposited.toLocaleString()}
+                                        </div>
+                                        <div className="text-xs text-green-700 dark:text-green-300">Total Deposited</div>
+                                    </div>
+                                    <div className="bg-red-50 dark:bg-red-500/10 rounded-xl p-3 text-center">
+                                        <div className="text-lg font-bold text-red-600 dark:text-red-400">
+                                            Rs. {wallet.totalSpent.toLocaleString()}
+                                        </div>
+                                        <div className="text-xs text-red-700 dark:text-red-300">Total Spent</div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => navigate('/wallet')}
+                                    className="w-full px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg text-sm font-semibold hover:from-yellow-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Zap className="w-4 h-4" />
+                                    Top Up Wallet
+                                </button>
                             </div>
                         )}
 
