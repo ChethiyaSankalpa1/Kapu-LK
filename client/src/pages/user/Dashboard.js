@@ -26,6 +26,7 @@ const Dashboard = () => {
     const [wallet, setWallet] = useState(null);
     const [showTopUpModal, setShowTopUpModal] = useState(false);
     const [topUpAmount, setTopUpAmount] = useState('');
+    const [selectedBank, setSelectedBank] = useState('HNB');
     const [paymentSlip, setPaymentSlip] = useState(null);
     const [submittingPayment, setSubmittingPayment] = useState(false);
 
@@ -403,6 +404,7 @@ const Dashboard = () => {
         try {
             const formData = new FormData();
             formData.append('amount', parseFloat(topUpAmount));
+            formData.append('bankName', selectedBank);
             formData.append('paymentSlip', paymentSlip);
 
             await walletAPI.createPaymentRequest(formData);
@@ -410,6 +412,7 @@ const Dashboard = () => {
             setShowTopUpModal(false);
             setTopUpAmount('');
             setPaymentSlip(null);
+            setSelectedBank('HNB');
             fetchWallet();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to submit payment request');
@@ -1455,6 +1458,19 @@ const Dashboard = () => {
 
                         <div className="space-y-4 mb-6">
                             <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Bank</label>
+                                <select
+                                  value={selectedBank}
+                                  onChange={(e) => setSelectedBank(e.target.value)}
+                                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
+                                >
+                                  <option value="HNB">Hatton National Bank (HNB)</option>
+                                  <option value="Sampath">Sampath Bank</option>
+                                  <option value="BOC">Bank of Ceylon (BOC)</option>
+                                  <option value="RDB">Regional Development Bank (RDB)</option>
+                                </select>
+                            </div>
+                            <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount (LKR)</label>
                                 <input
                                     type="number"
@@ -1478,14 +1494,35 @@ const Dashboard = () => {
                             </div>
 
                             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
-                                <div className="flex items-center gap-2 mb-2">
+                                <div className="flex items-center gap-2 mb-3">
                                     <Crown className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                     <span className="font-semibold text-blue-900 dark:text-blue-100">Bank Details</span>
                                 </div>
-                                <div className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                                    <p>Bank: Commercial Bank</p>
-                                    <p>Account: 1234567890</p>
-                                    <p>Name: Kapu-LK</p>
+                                <div className="text-sm text-blue-700 dark:text-blue-300 space-y-3">
+                                    <div className="bg-white dark:bg-slate-700 rounded-lg p-3">
+                                        <p className="font-semibold text-slate-900 dark:text-white">Hatton National Bank (HNB)</p>
+                                        <p className="text-xs mt-1">Account: 018021102658</p>
+                                        <p className="text-xs">Branch: Kandy</p>
+                                        <p className="text-xs">Name: S. Kumarasinghe</p>
+                                    </div>
+                                    <div className="bg-white dark:bg-slate-700 rounded-lg p-3">
+                                        <p className="font-semibold text-slate-900 dark:text-white">Sampath Bank</p>
+                                        <p className="text-xs mt-1">Account: Contact for details</p>
+                                        <p className="text-xs">Branch: Wattegama</p>
+                                        <p className="text-xs">Name: S. Kumarasinghe</p>
+                                    </div>
+                                    <div className="bg-white dark:bg-slate-700 rounded-lg p-3">
+                                        <p className="font-semibold text-slate-900 dark:text-white">Bank of Ceylon (BOC)</p>
+                                        <p className="text-xs mt-1">Account: 00069058</p>
+                                        <p className="text-xs">Branch: Kandy</p>
+                                        <p className="text-xs">Name: R. Ratnayake</p>
+                                    </div>
+                                    <div className="bg-white dark:bg-slate-700 rounded-lg p-3">
+                                        <p className="font-semibold text-slate-900 dark:text-white">Regional Development Bank (RDB)</p>
+                                        <p className="text-xs mt-1">Account: 409010110698</p>
+                                        <p className="text-xs">Branch: Kandy</p>
+                                        <p className="text-xs">Name: T. Dharmapriya</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>

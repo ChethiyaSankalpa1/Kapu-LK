@@ -53,30 +53,67 @@ exports.getTransactions = async (req, res) => {
 exports.createPaymentRequest = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { amount, paymentMethod, bankName, accountNumber, transactionReference, slipImageUrl, notes } = req.body;
     
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ message: 'Invalid amount' });
+    // Handle FormData upload
+    if (req.file) {
+      const { amount, bankName } = req.body;
+      
+      if (!amount || parseFloat(amount) <= 0) {
+        return res.status(400).json({ message: 'Invalid amount' });
+      }
+      
+      // Get account details based on selected bank
+      const bankDetails = {
+        'HNB': { name: 'Hatton National Bank', account: '018021102658', branch: 'Kandy', accountHolder: 'S. Kumarasinghe' },
+        'Sampath': { name: 'Sampath Bank', account: 'Contact for details', branch: 'Wattegama', accountHolder: 'S. Kumarasinghe' },
+        'BOC': { name: 'Bank of Ceylon', account: '00069058', branch: 'Kandy', accountHolder: 'R. Ratnayake' },
+        'RDB': { name: 'Regional Development Bank', account: '409010110698', branch: 'Kandy', accountHolder: 'T. Dharmapriya' }
+      };
+      
+      const selectedBank = bankDetails[bankName] || bankDetails['HNB'];
+      
+      const paymentRequest = await PaymentRequest.create({
+        user: userId,
+        amount: parseFloat(amount),
+        currency: 'LKR',
+        paymentMethod: 'bank_transfer',
+        bankName: selectedBank.name,
+        accountNumber: selectedBank.account,
+        branch: selectedBank.branch,
+        accountHolder: selectedBank.accountHolder,
+        transactionReference: `TXN${Date.now()}`,
+        slipImageUrl: req.file.path,
+        status: 'pending'
+      });
+      
+      res.status(201).json(paymentRequest);
+    } else {
+      // Handle JSON body (legacy)
+      const { amount, paymentMethod, bankName, accountNumber, transactionReference, slipImageUrl, notes } = req.body;
+      
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ message: 'Invalid amount' });
+      }
+      
+      if (!paymentMethod || !bankName || !accountNumber || !transactionReference || !slipImageUrl) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+      
+      const paymentRequest = await PaymentRequest.create({
+        user: userId,
+        amount,
+        currency: 'LKR',
+        paymentMethod,
+        bankName,
+        accountNumber,
+        transactionReference,
+        slipImageUrl,
+        notes,
+        status: 'pending'
+      });
+      
+      res.status(201).json(paymentRequest);
     }
-    
-    if (!paymentMethod || !bankName || !accountNumber || !transactionReference || !slipImageUrl) {
-      return res.status(400).json({ message: 'Missing required fields' });
-    }
-    
-    const paymentRequest = await PaymentRequest.create({
-      user: userId,
-      amount,
-      currency: 'LKR',
-      paymentMethod,
-      bankName,
-      accountNumber,
-      transactionReference,
-      slipImageUrl,
-      notes,
-      status: 'pending'
-    });
-    
-    res.status(201).json(paymentRequest);
   } catch (error) {
     console.error('Error creating payment request:', error);
     res.status(500).json({ message: 'Failed to create payment request' });
