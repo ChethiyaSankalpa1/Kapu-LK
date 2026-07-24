@@ -8,8 +8,9 @@ import moment from 'moment';
 import {
   ArrowLeft, Send, User, MessageSquare, Crown,
   Check, CheckCheck, Shield, Smile, Paperclip,
-  Image, Search, X, Edit2, Trash2, MoreVertical
+  Image, Search, X, Edit2, Trash2, MoreVertical, Gift
 } from 'lucide-react';
+import GiftModal from '../../components/ui/GiftModal';
 
 const Conversation = () => {
   const { t } = useTranslation();
@@ -37,6 +38,7 @@ const Conversation = () => {
   const [editText, setEditText] = useState('');
   const [showMessageMenu, setShowMessageMenu] = useState(null);
   const [showReactionPicker, setShowReactionPicker] = useState(null);
+  const [showGiftModal, setShowGiftModal] = useState(false);
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -834,19 +836,32 @@ const Conversation = () => {
 
                     {/* Image sharing trigger - hide when editing */}
                     {!editingMessage && (
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploadingImage || sending}
-                        className="p-1.5 sm:p-2 md:p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#374248] text-gray-500 dark:text-gray-400 disabled:opacity-40 transition-colors shrink-0"
-                        aria-label="Send Image"
-                      >
-                        {uploadingImage ? (
-                          <div className="w-4 h-4 sm:w-4.5 sm:h-4.5 md:w-5.5 md:h-5.5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <Paperclip className="w-4 h-4 sm:w-4.5 sm:h-4.5 md:w-5.5 md:h-5.5" />
-                        )}
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadingImage || sending}
+                          className="p-1.5 sm:p-2 md:p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#374248] text-gray-500 dark:text-gray-400 disabled:opacity-40 transition-colors shrink-0"
+                          aria-label="Send Image"
+                        >
+                          {uploadingImage ? (
+                            <div className="w-4 h-4 sm:w-4.5 sm:h-4.5 md:w-5.5 md:h-5.5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Paperclip className="w-4 h-4 sm:w-4.5 sm:h-4.5 md:w-5.5 md:h-5.5" />
+                          )}
+                        </button>
+
+                        {/* Gift button */}
+                        <button
+                          type="button"
+                          onClick={() => setShowGiftModal(true)}
+                          disabled={sending}
+                          className="p-1.5 sm:p-2 md:p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#374248] text-gray-500 dark:text-gray-400 disabled:opacity-40 transition-colors shrink-0"
+                          aria-label="Send Gift"
+                        >
+                          <Gift className="w-4 h-4 sm:w-4.5 sm:h-4.5 md:w-5.5 md:h-5.5" />
+                        </button>
+                      </>
                     )}
                     <input
                       type="file"
@@ -919,6 +934,16 @@ const Conversation = () => {
         </div>
 
       </div>
+
+      {/* Gift Modal */}
+      {showGiftModal && otherUser && (
+        <GiftModal
+          isOpen={showGiftModal}
+          onClose={() => setShowGiftModal(false)}
+          recipientId={userId}
+          recipientName={otherUser.name}
+        />
+      )}
     </div>
   );
 };

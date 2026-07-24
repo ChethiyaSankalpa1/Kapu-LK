@@ -2,11 +2,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { userAPI, messageAPI, notificationAPI } from '../../services/api';
+import { userAPI, messageAPI, notificationAPI, achievementAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
     User, CheckCircle, Clock, MessageCircle, Bell, Search, Heart,
-    Crown, Zap, X, RefreshCw
+    Crown, Zap, X, RefreshCw, Trophy, Flame, Star
 } from 'lucide-react';
 import ProfileCard from '../../components/ui/ProfileCard';
 import CustomSelect from '../../components/ui/CustomSelect';
@@ -91,6 +91,11 @@ const Dashboard = () => {
     const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
     const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
+    // Gamification state
+    const [userStats, setUserStats] = useState(null);
+    const [achievements, setAchievements] = useState([]);
+    const [statsLoading, setStatsLoading] = useState(false);
+
     // Premium popup logic - show every 10 minutes for non-premium users
     useEffect(() => {
         if (user?.isPremium || user?.role === 'admin') return;
@@ -142,6 +147,19 @@ const Dashboard = () => {
             // Silent on initial load
         } finally {
             setNotificationsLoading(false);
+        }
+    }, []);
+
+    const fetchUserStats = useCallback(async () => {
+        setStatsLoading(true);
+        try {
+            const response = await achievementAPI.getMyStats();
+            setUserStats(response.data.stats);
+            setAchievements(response.data.achievements || []);
+        } catch (error) {
+            console.error('Error fetching user stats:', error);
+        } finally {
+            setStatsLoading(false);
         }
     }, []);
 
@@ -244,13 +262,14 @@ const Dashboard = () => {
         }
         fetchNotifications();
         fetchConversations();
+        fetchUserStats();
 
         // periodic refresh for notifications every 20s
         const notifInterval = setInterval(() => {
             fetchNotifications();
         }, 20000);
         return () => clearInterval(notifInterval);
-    }, [isProfileComplete, user?.isApproved, user?.role, fetchOverviewUsers, fetchNotifications, fetchConversations]);
+    }, [isProfileComplete, user?.isApproved, user?.role, fetchOverviewUsers, fetchNotifications, fetchConversations, fetchUserStats]);
 
     useEffect(() => {
         if (activeTab === 'matches' && matches.length === 0 && (user?.isApproved || user?.role === 'admin')) {
@@ -468,6 +487,21 @@ const Dashboard = () => {
                                         {t('dashboard.messagesLeft', { defaultValue: '{{count}} left', count: messagesLeft })}
                                     </span>
                                 )}
+                                {/* Gamification stats */}
+                                {userStats && (
+                                    <>
+                                        <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-purple-50 dark:bg-purple-500/15 border border-purple-200 dark:border-purple-200/20 text-purple-700 dark:text-purple-50">
+                                            <Star className="w-3.5 h-3.5 mr-1.5" />
+                                            {userStats.points} pts
+                                        </span>
+                                        {userStats.loginStreak > 0 && (
+                                            <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-orange-50 dark:bg-orange-500/15 border border-orange-200 dark:border-orange-200/20 text-orange-700 dark:text-orange-50">
+                                                <Flame className="w-3.5 h-3.5 mr-1.5" />
+                                                {userStats.loginStreak} day streak
+                                            </span>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -623,9 +657,69 @@ const Dashboard = () => {
                                     <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-2">Quick tips</h2>
                                     <ul className="text-sm text-slate-600 dark:text-slate-300 space-y-1 list-disc list-inside">
                                         <li>Add a clear profile photo.</li>
-                                        <li>Write a short, honest bio.</li>
-                                        <li>Mention your interests for better compatibility.</li>
+                                        <li>Be honest in your bio.</li>
+                                        <li>Check in daily for streaks!</li>
                                     </ul>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Gamification Section */}
+                        {userStats && (
+                            <div className="glass-card">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                        <Trophy className="w-5 h-5 text-yellow-500" />
+                                        Achievements & Progress
+                                    </h2>
+                                    <button
+                                        onClick={() => achievementAPI.dailyCheckIn().then(() => {
+                                            toast.success('Check-in successful! +10 points');
+                                            fetchUserStats();
+                                        })}
+                                        className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-pink-700 transition-all flex items-center gap-2"
+                                    >
+                                        <Flame className="w-4 h-4" />
+                                        Daily Check-in
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                    <div className="bg-purple-50 dark:bg-purple-500/10 rounded-xl p-4 text-center">
+                                        <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{userStats.points}</div>
+                                        <div className="text-xs text-purple-700 dark:text-purple-300">Total Points</div>
+                                    </div>
+                                    <div className="bg-orange-50 dark:bg-orange-500/10 rounded-xl p-4 text-center">
+                                        <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{userStats.loginStreak}</div>
+                                        <div className="text-xs text-orange-700 dark:text-orange-300">Day Streak</div>
+                                    </div>
+                                    <div className="bg-pink-50 dark:bg-pink-500/10 rounded-xl p-4 text-center">
+                                        <div className="text-2xl font-bold text-pink-600 dark:text-pink-400">{userStats.totalGiftsSent}</div>
+                                        <div className="text-xs text-pink-700 dark:text-pink-300">Gifts Sent</div>
+                                    </div>
+                                    <div className="bg-blue-50 dark:bg-blue-500/10 rounded-xl p-4 text-center">
+                                        <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{userStats.totalReferrals}</div>
+                                        <div className="text-xs text-blue-700 dark:text-blue-300">Referrals</div>
+                                    </div>
+                                </div>
+
+                                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Recent Achievements</h3>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                    {achievements.filter(a => a.earned).slice(0, 6).map((achievement) => (
+                                        <div
+                                            key={achievement._id}
+                                            className="bg-white dark:bg-slate-800 rounded-xl p-3 text-center border border-gray-200 dark:border-slate-700"
+                                            title={achievement.name}
+                                        >
+                                            <div className="text-3xl mb-1">{achievement.icon}</div>
+                                            <div className="text-xs font-medium text-slate-900 dark:text-white truncate">{achievement.name}</div>
+                                        </div>
+                                    ))}
+                                    {achievements.filter(a => a.earned).length === 0 && (
+                                        <div className="col-span-full text-center py-4 text-slate-500 dark:text-slate-400 text-sm">
+                                            No achievements yet. Keep active to earn badges!
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
