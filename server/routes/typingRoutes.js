@@ -4,7 +4,7 @@ const {
   setTyping,
   getTypingStatus
 } = require('../controllers/typingController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/auth');
 
 router.route('/').post(protect, setTyping);
 router.route('/:userId').get(protect, getTypingStatus);

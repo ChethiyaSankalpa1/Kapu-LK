@@ -7,7 +7,7 @@ const {
   getReferralHistory,
   getReferralStats
 } = require('../controllers/referralController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/auth');
 
 router.route('/my-code').get(protect, getMyReferralCode);
 router.route('/apply').post(protect, applyReferralCode);

@@ -8,7 +8,7 @@ const {
   updateAchievement,
   deleteAchievement
 } = require('../controllers/achievementController');
-const { protect, admin } = require('../middleware/authMiddleware');
+const { protect, admin } = require('../middleware/auth');
 
 router.route('/').get(protect, getAchievements);
 router.route('/my-stats').get(protect, getMyStats);

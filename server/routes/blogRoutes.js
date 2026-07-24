@@ -10,7 +10,7 @@ const {
   addComment,
   deleteBlogPost
 } = require('../controllers/blogController');
-const { protect, admin } = require('../middleware/authMiddleware');
+const { protect, admin } = require('../middleware/auth');
 
 router.route('/').get(getBlogPosts).post(protect, createBlogPost);
 router.route('/:slug').get(getBlogPost);

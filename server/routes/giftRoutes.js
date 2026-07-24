@@ -8,7 +8,7 @@ const {
   updateGift,
   deleteGift
 } = require('../controllers/giftController');
-const { protect, admin } = require('../middleware/authMiddleware');
+const { protect, admin } = require('../middleware/auth');
 
 // Public/Private routes
 router.route('/').get(protect, getGifts);

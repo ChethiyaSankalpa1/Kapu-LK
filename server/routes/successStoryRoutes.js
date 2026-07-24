@@ -9,7 +9,7 @@ const {
   featureSuccessStory,
   deleteSuccessStory
 } = require('../controllers/successStoryController');
-const { protect, admin } = require('../middleware/authMiddleware');
+const { protect, admin } = require('../middleware/auth');
 
 router.route('/').get(getSuccessStories).post(protect, createSuccessStory);
 router.route('/:id').get(getSuccessStory);

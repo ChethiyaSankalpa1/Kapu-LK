@@ -10,7 +10,7 @@ const {
   likeEvent,
   deleteEvent
 } = require('../controllers/eventController');
-const { protect, admin } = require('../middleware/authMiddleware');
+const { protect, admin } = require('../middleware/auth');
 
 router.route('/').get(getEvents).post(protect, createEvent);
 router.route('/:id').get(getEvent).put(protect, updateEvent).delete(protect, deleteEvent);
