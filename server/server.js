@@ -118,6 +118,7 @@ app.use('/api/typing', require('./routes/typingRoutes'));
 app.get('/', (req, res) => {
   res.json({ 
     message: 'Matrimonial API is running',
+    version: '2.0.0',
     database: dbConnected ? 'connected' : 'disconnected'
   });
 });
