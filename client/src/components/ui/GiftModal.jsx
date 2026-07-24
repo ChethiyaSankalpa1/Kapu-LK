@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { giftAPI, achievementAPI } from '../../services/api';
-import { X, Heart, Crown, Plus, Zap } from 'lucide-react';
+import { giftAPI, walletAPI } from '../../services/api';
+import { X, Heart, Crown, Plus, Wallet } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
@@ -10,13 +10,13 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
   const [message, setMessage] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [sending, setSending] = useState(false);
-  const [userPoints, setUserPoints] = useState(0);
+  const [walletBalance, setWalletBalance] = useState(0);
   const [showTopUp, setShowTopUp] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       fetchGifts();
-      fetchUserPoints();
+      fetchWallet();
     }
   }, [isOpen]);
 
@@ -32,12 +32,12 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
     }
   };
 
-  const fetchUserPoints = async () => {
+  const fetchWallet = async () => {
     try {
-      const response = await achievementAPI.getMyStats();
-      setUserPoints(response.data.stats.points);
+      const response = await walletAPI.getWallet();
+      setWalletBalance(response.data.balance || 0);
     } catch (error) {
-      console.error('Failed to fetch user points');
+      console.error('Failed to fetch wallet balance');
     }
   };
 
@@ -47,8 +47,8 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
       return;
     }
 
-    if (selectedGift.price > userPoints) {
-      toast.error('Not enough points! Please top up your balance.');
+    if (selectedGift.price > walletBalance) {
+      toast.error('Not enough balance! Please top up your wallet.');
       setShowTopUp(true);
       return;
     }
@@ -66,7 +66,7 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
       setSelectedGift(null);
       setMessage('');
       setIsAnonymous(false);
-      setUserPoints(prev => prev - selectedGift.price);
+      setWalletBalance(prev => prev - selectedGift.price);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to send gift');
     } finally {
@@ -91,14 +91,14 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
             <p className="text-sm text-gray-500 dark:text-gray-400">to {recipientName}</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900/30 px-3 py-1.5 rounded-full">
-              <Zap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">{userPoints} pts</span>
+            <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 px-3 py-1.5 rounded-full">
+              <Wallet className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <span className="text-sm font-semibold text-green-600 dark:text-green-400">{walletBalance} LKR</span>
             </div>
             <button
               onClick={() => setShowTopUp(true)}
-              className="p-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 transition"
-              title="Top up points"
+              className="p-2 rounded-full bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 transition"
+              title="Top up wallet"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -132,7 +132,7 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
                   <div className="text-4xl mb-2">{gift.emoji}</div>
                   <div className="text-sm font-medium text-gray-900 dark:text-white">{gift.name}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {gift.price > 0 ? `${gift.price} pts` : 'Free'}
+                    {gift.price > 0 ? `${gift.price} LKR` : 'Free'}
                   </div>
                   {gift.isRecommended && (
                     <div className="flex items-center gap-1 mt-1 text-xs text-pink-600 dark:text-pink-400">
@@ -146,9 +146,9 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
                       Premium
                     </div>
                   )}
-                  {gift.price > userPoints && (
+                  {gift.price > walletBalance && (
                     <div className="mt-1 text-xs text-red-500 dark:text-red-400">
-                      Need {gift.price - userPoints} more pts
+                      Need {gift.price - walletBalance} more LKR
                     </div>
                   )}
                 </button>
@@ -187,23 +187,23 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
 
               <button
                 onClick={handleSendGift}
-                disabled={sending || selectedGift.price > userPoints}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                disabled={sending || selectedGift.price > walletBalance}
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {sending ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white" />
                     Sending...
                   </>
-                ) : selectedGift.price > userPoints ? (
+                ) : selectedGift.price > walletBalance ? (
                   <>
-                    <Zap className="w-4 h-4" />
+                    <Wallet className="w-4 h-4" />
                     Top Up to Send
                   </>
                 ) : (
                   <>
                     <Heart className="w-4 h-4" />
-                    Send Gift ({selectedGift.price} pts)
+                    Send Gift ({selectedGift.price} LKR)
                   </>
                 )}
               </button>
@@ -217,7 +217,7 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
         <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Top Up Points</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Top Up Wallet</h3>
               <button
                 onClick={() => setShowTopUp(false)}
                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition"
@@ -227,61 +227,58 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
             </div>
             
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Purchase points to send gifts and unlock premium features. Or earn points by completing daily achievements!
+              Add funds to your wallet to send gifts and unlock premium features. Upload your bank payment slip for approval.
             </p>
 
-            <div className="space-y-3 mb-6">
-              <button
-                onClick={() => handleTopUp(100)}
-                className="w-full p-4 border-2 border-purple-200 dark:border-purple-700 rounded-xl hover:border-purple-500 dark:hover:border-purple-500 transition flex items-center justify-between"
-              >
-                <div className="text-left">
-                  <div className="font-semibold text-gray-900 dark:text-white">100 Points</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Basic Pack</div>
-                </div>
-                <div className="text-lg font-bold text-purple-600 dark:text-purple-400">$1.99</div>
-              </button>
-              
-              <button
-                onClick={() => handleTopUp(500)}
-                className="w-full p-4 border-2 border-purple-200 dark:border-purple-700 rounded-xl hover:border-purple-500 dark:hover:border-purple-500 transition flex items-center justify-between relative"
-              >
-                <div className="absolute -top-2 -right-2 bg-pink-500 text-white text-xs px-2 py-1 rounded-full">Popular</div>
-                <div className="text-left">
-                  <div className="font-semibold text-gray-900 dark:text-white">500 Points</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Value Pack</div>
-                </div>
-                <div className="text-lg font-bold text-purple-600 dark:text-purple-400">$7.99</div>
-              </button>
-              
-              <button
-                onClick={() => handleTopUp(1000)}
-                className="w-full p-4 border-2 border-purple-200 dark:border-purple-700 rounded-xl hover:border-purple-500 dark:hover:border-purple-500 transition flex items-center justify-between relative"
-              >
-                <div className="absolute -top-2 -right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">Best Value</div>
-                <div className="text-left">
-                  <div className="font-semibold text-gray-900 dark:text-white">1000 Points</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Premium Pack</div>
-                </div>
-                <div className="text-lg font-bold text-purple-600 dark:text-purple-400">$14.99</div>
-              </button>
-            </div>
-
-            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                <span className="font-semibold text-purple-900 dark:text-purple-100">Earn Free Points!</span>
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount (LKR)</label>
+                <input
+                  type="number"
+                  min="100"
+                  step="100"
+                  placeholder="Enter amount"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
+                />
               </div>
-              <p className="text-sm text-purple-700 dark:text-purple-300">
-                Complete daily achievements like check-ins, sending messages, and referring friends to earn points without spending!
-              </p>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Upload Payment Slip</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
+                />
+              </div>
+
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Wallet className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <span className="font-semibold text-blue-900 dark:text-blue-100">Bank Details</span>
+                </div>
+                <div className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                  <p>Bank: Commercial Bank</p>
+                  <p>Account: 1234567890</p>
+                  <p>Name: Kapu-LK</p>
+                </div>
+              </div>
             </div>
 
             <button
-              onClick={() => setShowTopUp(false)}
-              className="w-full py-3 border border-gray-300 dark:border-slate-600 rounded-xl font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+              onClick={() => {
+                toast.info('Payment request submitted! Admin will approve within 24 hours.');
+                setShowTopUp(false);
+              }}
+              className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition"
             >
-              Maybe Later
+              Submit Payment Request
+            </button>
+
+            <button
+              onClick={() => setShowTopUp(false)}
+              className="w-full py-3 mt-3 border border-gray-300 dark:border-slate-600 rounded-xl font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+            >
+              Cancel
             </button>
           </div>
         </div>
