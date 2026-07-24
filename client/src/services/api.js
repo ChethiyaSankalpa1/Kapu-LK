@@ -88,12 +88,83 @@ export const messageAPI = {
     }),
     editMessage: (messageId, data) => api.put(`/messages/${messageId}`, data),
     deleteMessage: (messageId) => api.delete(`/messages/${messageId}`),
+    addReaction: (messageId, emoji) => api.post(`/messages/${messageId}/reaction`, { emoji }),
 };
 
 export const notificationAPI = {
     getNotifications: () => api.get('/notifications'),
     markAllRead: () => api.put('/notifications/mark-all-read'),
     markAsRead: (id) => api.put(`/notifications/${id}/read`),
+};
+
+// Gift API
+export const giftAPI = {
+    getGifts: () => api.get('/gifts'),
+    sendGift: (data) => api.post('/gifts/send', data),
+    getGiftHistory: (type = 'all') => api.get('/gifts/history', { params: { type } }),
+    createGift: (data) => api.post('/gifts/admin', data),
+    updateGift: (id, data) => api.put(`/gifts/admin/${id}`, data),
+    deleteGift: (id) => api.delete(`/gifts/admin/${id}`),
+};
+
+// Achievement API
+export const achievementAPI = {
+    getAchievements: () => api.get('/achievements'),
+    getMyStats: () => api.get('/achievements/my-stats'),
+    dailyCheckIn: () => api.post('/achievements/check-in'),
+    createAchievement: (data) => api.post('/achievements/admin', data),
+    updateAchievement: (id, data) => api.put(`/achievements/admin/${id}`, data),
+    deleteAchievement: (id) => api.delete(`/achievements/admin/${id}`),
+};
+
+// Referral API
+export const referralAPI = {
+    getMyReferralCode: () => api.get('/referrals/my-code'),
+    applyReferralCode: (code) => api.post('/referrals/apply', { code }),
+    completeReferral: (id) => api.post(`/referrals/${id}/complete`),
+    getReferralHistory: () => api.get('/referrals/history'),
+    getReferralStats: () => api.get('/referrals/stats'),
+};
+
+// Success Story API
+export const successStoryAPI = {
+    getSuccessStories: (params = {}) => api.get('/success-stories', { params }),
+    getSuccessStory: (id) => api.get(`/success-stories/${id}`),
+    createSuccessStory: (data) => api.post('/success-stories', data),
+    likeSuccessStory: (id) => api.post(`/success-stories/${id}/like`),
+    approveSuccessStory: (id) => api.put(`/success-stories/${id}/approve`),
+    featureSuccessStory: (id, isFeatured) => api.put(`/success-stories/${id}/feature`, { isFeatured }),
+    deleteSuccessStory: (id) => api.delete(`/success-stories/${id}`),
+};
+
+// Blog API
+export const blogAPI = {
+    getBlogPosts: (params = {}) => api.get('/blog', { params }),
+    getBlogPost: (slug) => api.get(`/blog/${slug}`),
+    createBlogPost: (data) => api.post('/blog', data),
+    updateBlogPost: (id, data) => api.put(`/blog/${id}`, data),
+    publishBlogPost: (id) => api.put(`/blog/${id}/publish`),
+    likeBlogPost: (id) => api.post(`/blog/${id}/like`),
+    addComment: (id, content) => api.post(`/blog/${id}/comments`, { content }),
+    deleteBlogPost: (id) => api.delete(`/blog/${id}`),
+};
+
+// Event API
+export const eventAPI = {
+    getEvents: (params = {}) => api.get('/events', { params }),
+    getEvent: (id) => api.get(`/events/${id}`),
+    createEvent: (data) => api.post('/events', data),
+    updateEvent: (id, data) => api.put(`/events/${id}`, data),
+    rsvpEvent: (id) => api.post(`/events/${id}/rsvp`),
+    markAttended: (id) => api.post(`/events/${id}/attend`),
+    likeEvent: (id) => api.post(`/events/${id}/like`),
+    deleteEvent: (id) => api.delete(`/events/${id}`),
+};
+
+// Typing API
+export const typingAPI = {
+    setTyping: (conversationWith, isTyping) => api.post('/typing', { conversationWith, isTyping }),
+    getTypingStatus: (userId) => api.get(`/typing/${userId}`),
 };
 
 export default api;

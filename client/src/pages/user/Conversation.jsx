@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { messageAPI, userAPI } from '../../services/api';
+import { messageAPI, userAPI, typingAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import moment from 'moment';
@@ -36,6 +36,7 @@ const Conversation = () => {
   const [editingMessage, setEditingMessage] = useState(null);
   const [editText, setEditText] = useState('');
   const [showMessageMenu, setShowMessageMenu] = useState(null);
+  const [showReactionPicker, setShowReactionPicker] = useState(null);
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -151,10 +152,53 @@ const Conversation = () => {
       fetchConversationsList(true);
       if (userId) {
         fetchChatMessages(true);
+        checkTypingStatus();
       }
     }, 4000);
     return () => clearInterval(interval);
   }, [userId, fetchConversationsList, fetchChatMessages]);
+
+  // Check typing status
+  const checkTypingStatus = async () => {
+    if (!userId) return;
+    try {
+      const response = await typingAPI.getTypingStatus(userId);
+      setIsTyping(response.data.isTyping);
+    } catch (error) {
+      // Silently fail
+    }
+  };
+
+  // Set typing status when user types
+  useEffect(() => {
+    if (!userId) return;
+    
+    let typingTimeout;
+    
+    const setTypingStatus = async (isTyping) => {
+      try {
+        await typingAPI.setTyping(userId, isTyping);
+      } catch (error) {
+        // Silently fail
+      }
+    };
+
+    if (messageText.trim()) {
+      setTypingStatus(true);
+      // Clear previous timeout
+      if (typingTimeout) clearTimeout(typingTimeout);
+      // Set new timeout to stop typing after 3 seconds of inactivity
+      typingTimeout = setTimeout(() => {
+        setTypingStatus(false);
+      }, 3000);
+    } else {
+      setTypingStatus(false);
+    }
+
+    return () => {
+      if (typingTimeout) clearTimeout(typingTimeout);
+    };
+  }, [messageText, userId]);
 
   // Close emoji picker when clicking outside
   useEffect(() => {
@@ -290,6 +334,20 @@ const Conversation = () => {
       toast.success('Message deleted');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete message');
+    }
+  };
+
+  const handleAddReaction = async (messageId, emoji) => {
+    try {
+      const response = await messageAPI.addReaction(messageId, emoji);
+      setMessages(prev => Array.isArray(prev) ? prev.map(msg => 
+        msg._id === messageId 
+          ? response.data
+          : msg
+      ) : []);
+      setShowReactionPicker(null);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to add reaction');
     }
   };
 
@@ -594,11 +652,20 @@ const Conversation = () => {
                                 <span>{moment(msg.createdAt).format('LT')}</span>
                                 {msg.edited && <span className="text-[10px] italic">(Edited)</span>}
                                 {isCurrentUser && (
-                                  msg.isRead ? (
-                                    <CheckCheck className="w-3.5 h-3.5 text-[#53bdeb] shrink-0" />
-                                  ) : (
-                                    <Check className="w-3.5 h-3.5 text-[#667781] shrink-0" />
-                                  )
+                                  <div className="flex items-center gap-1">
+                                    {msg.isRead ? (
+                                      <div className="flex items-center gap-1 group relative">
+                                        <CheckCheck className="w-3.5 h-3.5 text-[#53bdeb] shrink-0" />
+                                        {msg.readAt && (
+                                          <span className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-gray-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                            Read {moment(msg.readAt).format('LT')}
+                                          </span>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <Check className="w-3.5 h-3.5 text-[#667781] shrink-0" />
+                                    )}
+                                  </div>
                                 )}
                               </div>
 
@@ -639,6 +706,52 @@ const Conversation = () => {
                                       </button>
                                     </div>
                                   )}
+
+                                  {/* Reaction Button */}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowReactionPicker(showReactionPicker === msg._id ? null : msg._id);
+                                    }}
+                                    className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <Smile className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                                  </button>
+
+                                  {showReactionPicker === msg._id && (
+                                    <div className="absolute bottom-8 right-0 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-gray-200 dark:border-slate-700 p-2 z-20">
+                                      <div className="flex gap-1">
+                                        {['❤️', '😂', '😮', '😢', '👍', '👎', '🎉', '🔥'].map((emoji) => (
+                                          <button
+                                            key={emoji}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleAddReaction(msg._id, emoji);
+                                              setShowReactionPicker(null);
+                                            }}
+                                            className="w-8 h-8 text-xl hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                          >
+                                            {emoji}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Message Reactions Display */}
+                              {msg.reactions && msg.reactions.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                  {msg.reactions.map((reaction, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="flex items-center gap-1 bg-gray-100 dark:bg-slate-700 rounded-full px-2 py-0.5 text-xs"
+                                      title={reaction.user?.name || 'Anonymous'}
+                                    >
+                                      <span>{reaction.emoji}</span>
+                                    </div>
+                                  ))}
                                 </div>
                               )}
                             </div>

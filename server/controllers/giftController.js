@@ -1,0 +1,184 @@
+const { Gift, GiftTransaction } = require('../models/Gift');
+const User = require('../models/User');
+const { UserStats } = require('../models/Achievement');
+const Notification = require('../models/Notification');
+
+// @desc    Get all available gifts
+// @route   GET /api/gifts
+// @access  Private
+exports.getGifts = async (req, res) => {
+  try {
+    const gifts = await Gift.find({ isActive: true }).sort({ category: 1, price: 1 });
+    res.json(gifts);
+  } catch (error) {
+    console.error('Error fetching gifts:', error);
+    res.status(500).json({ message: 'Failed to fetch gifts' });
+  }
+};
+
+// @desc    Send a gift to a user
+// @route   POST /api/gifts/send
+// @access  Private
+exports.sendGift = async (req, res) => {
+  try {
+    const { to, giftId, message, isAnonymous } = req.body;
+    const sender = req.user._id;
+
+    if (!to || !giftId) {
+      return res.status(400).json({ message: 'Recipient and gift are required' });
+    }
+
+    if (to === sender.toString()) {
+      return res.status(400).json({ message: 'Cannot send gift to yourself' });
+    }
+
+    const gift = await Gift.findById(giftId);
+    if (!gift || !gift.isActive) {
+      return res.status(404).json({ message: 'Gift not found' });
+    }
+
+    const recipient = await User.findById(to);
+    if (!recipient) {
+      return res.status(404).json({ message: 'Recipient not found' });
+    }
+
+    // Check if user has enough credits (if gift has price)
+    if (gift.price > 0) {
+      const userStats = await UserStats.findOne({ user: sender });
+      if (!userStats || userStats.points < gift.price) {
+        return res.status(400).json({ 
+          message: 'Insufficient credits',
+          required: gift.price,
+          available: userStats?.points || 0
+        });
+      }
+      // Deduct points
+      userStats.points -= gift.price;
+      await userStats.save();
+    }
+
+    // Create gift transaction
+    const transaction = await GiftTransaction.create({
+      from: sender,
+      to,
+      gift: giftId,
+      message,
+      isAnonymous
+    });
+
+    // Update user stats
+    let userStats = await UserStats.findOne({ user: sender });
+    if (!userStats) {
+      userStats = new UserStats({ user: sender });
+    }
+    userStats.totalGiftsSent += 1;
+    userStats.points += 5; // Bonus points for sending gift
+    await userStats.save();
+
+    // Update recipient stats
+    let recipientStats = await UserStats.findOne({ user: to });
+    if (!recipientStats) {
+      recipientStats = new UserStats({ user: to });
+    }
+    recipientStats.totalGiftsReceived += 1;
+    await recipientStats.save();
+
+    // Create notification
+    await Notification.create({
+      user: to,
+      type: 'gift',
+      message: isAnonymous 
+        ? 'Someone sent you a gift!' 
+        : `${req.user.name} sent you a gift!`,
+      relatedUser: sender,
+      relatedGift: transaction._id
+    });
+
+    // Populate and return
+    const populatedTransaction = await GiftTransaction.findById(transaction._id)
+      .populate('gift')
+      .populate('from', 'name profileImageUrl')
+      .populate('to', 'name profileImageUrl');
+
+    res.status(201).json(populatedTransaction);
+  } catch (error) {
+    console.error('Error sending gift:', error);
+    res.status(500).json({ message: 'Failed to send gift' });
+  }
+};
+
+// @desc    Get gift history for current user
+// @route   GET /api/gifts/history
+// @access  Private
+exports.getGiftHistory = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { type = 'all' } = req.query;
+
+    let query = {};
+    if (type === 'sent') {
+      query.from = userId;
+    } else if (type === 'received') {
+      query.to = userId;
+    } else {
+      query.$or = [{ from: userId }, { to: userId }];
+    }
+
+    const transactions = await GiftTransaction.find(query)
+      .populate('gift')
+      .populate('from', 'name profileImageUrl')
+      .populate('to', 'name profileImageUrl')
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    res.json(transactions);
+  } catch (error) {
+    console.error('Error fetching gift history:', error);
+    res.status(500).json({ message: 'Failed to fetch gift history' });
+  }
+};
+
+// @desc    Create a new gift (admin only)
+// @route   POST /api/gifts/admin
+// @access  Private/Admin
+exports.createGift = async (req, res) => {
+  try {
+    const gift = await Gift.create(req.body);
+    res.status(201).json(gift);
+  } catch (error) {
+    console.error('Error creating gift:', error);
+    res.status(500).json({ message: 'Failed to create gift' });
+  }
+};
+
+// @desc    Update a gift (admin only)
+// @route   PUT /api/gifts/admin/:id
+// @access  Private/Admin
+exports.updateGift = async (req, res) => {
+  try {
+    const gift = await Gift.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!gift) {
+      return res.status(404).json({ message: 'Gift not found' });
+    }
+    res.json(gift);
+  } catch (error) {
+    console.error('Error updating gift:', error);
+    res.status(500).json({ message: 'Failed to update gift' });
+  }
+};
+
+// @desc    Delete a gift (admin only)
+// @route   DELETE /api/gifts/admin/:id
+// @access  Private/Admin
+exports.deleteGift = async (req, res) => {
+  try {
+    const gift = await Gift.findByIdAndDelete(req.params.id);
+    if (!gift) {
+      return res.status(404).json({ message: 'Gift not found' });
+    }
+    res.json({ message: 'Gift deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting gift:', error);
+    res.status(500).json({ message: 'Failed to delete gift' });
+  }
+};

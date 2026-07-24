@@ -211,7 +211,7 @@ exports.getConversationWithUser = async (req, res) => {
 
     await Message.updateMany(
       { from: otherUserId, to: userId, isRead: false },
-      { $set: { isRead: true } }
+      { $set: { isRead: true, readAt: new Date() } }
     );
 
     await Notification.updateMany(
@@ -361,5 +361,53 @@ exports.deleteMessage = async (req, res) => {
   } catch (error) {
     console.error('Delete message error:', error);
     res.status(500).json({ message: error.message || 'Failed to delete message' });
+  }
+};
+
+// @desc    Add reaction to a message
+// @route   POST /api/messages/:messageId/reaction
+// @access  Private
+exports.addReaction = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+    const userId = req.user._id;
+
+    if (!emoji) {
+      return res.status(400).json({ message: 'Emoji is required' });
+    }
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // Check if user already reacted with this emoji
+    const existingReactionIndex = message.reactions.findIndex(
+      r => r.user.toString() === userId.toString() && r.emoji === emoji
+    );
+
+    if (existingReactionIndex !== -1) {
+      // Remove the reaction (toggle off)
+      message.reactions.splice(existingReactionIndex, 1);
+    } else {
+      // Remove any existing reaction by this user (only one reaction per user)
+      message.reactions = message.reactions.filter(
+        r => r.user.toString() !== userId.toString()
+      );
+      // Add new reaction
+      message.reactions.push({ user: userId, emoji });
+    }
+
+    await message.save();
+
+    // Populate reactions for response
+    const updatedMessage = await Message.findById(messageId)
+      .populate('reactions.user', 'name profileImageUrl');
+
+    res.json(updatedMessage);
+  } catch (error) {
+    console.error('Add reaction error:', error);
+    res.status(500).json({ message: error.message || 'Failed to add reaction' });
   }
 };

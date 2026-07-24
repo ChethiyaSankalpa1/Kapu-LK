@@ -7,6 +7,7 @@ const {
   uploadChatImage,
   editMessage,
   deleteMessage,
+  addReaction,
 } = require('../controllers/messageController');
 const { protect } = require('../middleware/auth');
 const upload = require('../middleware/upload');
@@ -17,5 +18,6 @@ router.get('/:userId', protect, getConversationWithUser);
 router.post('/', protect, sendMessage);
 router.put('/:messageId', protect, editMessage);
 router.delete('/:messageId', protect, deleteMessage);
+router.post('/:messageId/reaction', protect, addReaction);
 
 module.exports = router;

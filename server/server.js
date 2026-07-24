@@ -106,6 +106,13 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/premium', require('./routes/premiumRoutes'));
+app.use('/api/gifts', require('./routes/giftRoutes'));
+app.use('/api/achievements', require('./routes/achievementRoutes'));
+app.use('/api/referrals', require('./routes/referralRoutes'));
+app.use('/api/success-stories', require('./routes/successStoryRoutes'));
+app.use('/api/blog', require('./routes/blogRoutes'));
+app.use('/api/events', require('./routes/eventRoutes'));
+app.use('/api/typing', require('./routes/typingRoutes'));
 
 // Health check
 app.get('/', (req, res) => {
