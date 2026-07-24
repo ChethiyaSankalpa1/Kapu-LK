@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { giftAPI } from '../../services/api';
-import { X, Heart, Sparkles, Crown } from 'lucide-react';
+import { X, Heart, Crown } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {

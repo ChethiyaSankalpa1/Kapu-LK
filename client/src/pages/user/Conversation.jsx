@@ -158,7 +158,7 @@ const Conversation = () => {
       }
     }, 4000);
     return () => clearInterval(interval);
-  }, [userId, fetchConversationsList, fetchChatMessages]);
+  }, [userId, fetchConversationsList, fetchChatMessages, checkTypingStatus]);
 
   // Check typing status
   const checkTypingStatus = async () => {

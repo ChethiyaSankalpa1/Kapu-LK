@@ -94,7 +94,6 @@ const Dashboard = () => {
     // Gamification state
     const [userStats, setUserStats] = useState(null);
     const [achievements, setAchievements] = useState([]);
-    const [statsLoading, setStatsLoading] = useState(false);
 
     // Premium popup logic - show every 10 minutes for non-premium users
     useEffect(() => {
