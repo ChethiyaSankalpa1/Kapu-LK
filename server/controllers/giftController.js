@@ -3,6 +3,9 @@ const User = require('../models/User');
 const { UserStats } = require('../models/Achievement');
 const Notification = require('../models/Notification');
 
+// Helper function to check achievements
+const { checkAchievements } = require('./achievementController');
+
 // @desc    Get all available gifts
 // @route   GET /api/gifts
 // @access  Private
@@ -71,9 +74,26 @@ exports.sendGift = async (req, res) => {
     if (!userStats) {
       userStats = new UserStats({ user: sender });
     }
+    
+    // Track daily gifts
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (userStats.lastGiftDate) {
+      const lastGift = new Date(userStats.lastGiftDate);
+      lastGift.setHours(0, 0, 0, 0);
+      if (lastGift.getTime() !== today.getTime()) {
+        userStats.dailyGiftsSent = 0; // Reset daily counter
+      }
+    }
+    userStats.dailyGiftsSent = (userStats.dailyGiftsSent || 0) + 1;
+    userStats.lastGiftDate = today;
+    
     userStats.totalGiftsSent += 1;
     userStats.points += 5; // Bonus points for sending gift
     await userStats.save();
+
+    // Check for gift-related achievements
+    await checkAchievements(sender, userStats);
 
     // Update recipient stats
     let recipientStats = await UserStats.findOne({ user: to });

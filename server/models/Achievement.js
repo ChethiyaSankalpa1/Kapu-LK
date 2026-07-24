@@ -31,12 +31,22 @@ const AchievementSchema = new mongoose.Schema({
   condition: {
     type: {
       type: String,
-      enum: ['profile_complete', 'messages_sent', 'login_streak', 'referrals', 'gifts_sent', 'events_attended', 'blog_posts', 'success_story'],
+      enum: ['profile_complete', 'messages_sent', 'login_streak', 'referrals', 'gifts_sent', 'gifts_received', 'daily_gift_sender', 'events_attended', 'blog_posts', 'success_story'],
       required: true
     },
     target: {
       type: Number,
       required: true
+    }
+  },
+  reward: {
+    freePremiumDays: {
+      type: Number,
+      default: 0
+    },
+    bonusPoints: {
+      type: Number,
+      default: 0
     }
   },
   isActive: {
@@ -105,6 +115,13 @@ const UserStatsSchema = new mongoose.Schema({
   totalGiftsReceived: {
     type: Number,
     default: 0
+  },
+  dailyGiftsSent: {
+    type: Number,
+    default: 0
+  },
+  lastGiftDate: {
+    type: Date
   },
   totalReferrals: {
     type: Number,

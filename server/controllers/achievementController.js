@@ -198,6 +198,19 @@ async function checkAchievements(userId, userStats) {
         }
         progress = userStats.totalGiftsSent;
         break;
+      case 'gifts_received':
+        if (userStats.totalGiftsReceived >= achievement.condition.target) {
+          earned = true;
+        }
+        progress = userStats.totalGiftsReceived;
+        break;
+      case 'daily_gift_sender':
+        // Check if sent gifts today (need to track daily gifts)
+        progress = userStats.dailyGiftsSent || 0;
+        if (progress >= achievement.condition.target) {
+          earned = true;
+        }
+        break;
       case 'events_attended':
         if (userStats.totalEventsAttended >= achievement.condition.target) {
           earned = true;
@@ -215,10 +228,28 @@ async function checkAchievements(userId, userStats) {
 
       userStats.achievements.push(userAchievement._id);
       userStats.points += achievement.points;
+      
+      // Award free premium if achievement has premium reward
+      if (achievement.reward && achievement.reward.freePremiumDays) {
+        const user = await User.findById(userId);
+        if (user) {
+          const premiumExpiry = user.premiumExpiry ? new Date(user.premiumExpiry) : new Date();
+          const now = new Date();
+          const expiryDate = premiumExpiry > now ? premiumExpiry : now;
+          expiryDate.setDate(expiryDate.getDate() + achievement.reward.freePremiumDays);
+          user.premiumExpiry = expiryDate;
+          user.isPremium = true;
+          await user.save();
+        }
+      }
+      
       await userStats.save();
     }
   }
 }
+
+// Export helper function for use in other controllers
+exports.checkAchievements = checkAchievements;
 
 // @desc    Create achievement (admin only)
 // @route   POST /api/achievements/admin
