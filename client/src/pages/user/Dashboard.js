@@ -2,11 +2,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { userAPI, messageAPI, notificationAPI, achievementAPI } from '../../services/api';
+import { userAPI, messageAPI, notificationAPI, achievementAPI, giftAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
     User, CheckCircle, Clock, MessageCircle, Bell, Search, Heart,
-    Crown, Zap, X, RefreshCw, Trophy, Flame, Star, Share2, FileText, Calendar
+    Crown, Zap, X, RefreshCw, Trophy, Flame, Star, Share2, FileText, Calendar, Gift
 } from 'lucide-react';
 import ProfileCard from '../../components/ui/ProfileCard';
 import CustomSelect from '../../components/ui/CustomSelect';
@@ -18,6 +18,8 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const [showPremiumModal, setShowPremiumModal] = useState(false);
     const [showPremiumPopup, setShowPremiumPopup] = useState(false);
+    const [gifts, setGifts] = useState([]);
+    const [giftsLoading, setGiftsLoading] = useState(false);
 
     const FREE_LIMIT = 5;
     const messagesLeft = premiumStatus?.isPremium
@@ -156,6 +158,18 @@ const Dashboard = () => {
             setAchievements(response.data.achievements || []);
         } catch (error) {
             console.error('Error fetching user stats:', error);
+        }
+    }, []);
+
+    const fetchGifts = useCallback(async () => {
+        setGiftsLoading(true);
+        try {
+            const response = await giftAPI.getGifts();
+            setGifts(response.data || []);
+        } catch (error) {
+            console.error('Error fetching gifts:', error);
+        } finally {
+            setGiftsLoading(false);
         }
     }, []);
 
@@ -626,6 +640,16 @@ const Dashboard = () => {
                     >
                         <Calendar className="w-3.5 h-3.5" />
                         <span>Events</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('gifts')}
+                        className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-200 ${activeTab === 'gifts'
+                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30'
+                            : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                    >
+                        <Gift className="w-3.5 h-3.5" />
+                        <span>Gifts</span>
                     </button>
                 </div>
 
@@ -1176,6 +1200,51 @@ const Dashboard = () => {
                             <Calendar className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
                             <p className="text-gray-500 dark:text-gray-400">Coming soon! Check back for upcoming events.</p>
                         </div>
+                    </div>
+                )}
+
+                {activeTab === 'gifts' && (
+                    <div className="glass-card p-6">
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <Gift className="w-6 h-6 text-pink-500" />
+                            Gift Shop
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">Send gifts to show your appreciation!</p>
+                        {giftsLoading ? (
+                            <div className="text-center py-12">
+                                <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-purple-500 mx-auto"></div>
+                                <p className="text-gray-600 dark:text-gray-300 mt-4">Loading gifts...</p>
+                            </div>
+                        ) : gifts.length > 0 ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                {gifts.map((gift) => (
+                                    <div key={gift._id} className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 text-center">
+                                        <div className="text-4xl mb-2">{gift.emoji}</div>
+                                        <div className="text-sm font-medium text-gray-900 dark:text-white">{gift.name}</div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            {gift.price > 0 ? `${gift.price} pts` : 'Free'}
+                                        </div>
+                                        {gift.isRecommended && (
+                                            <div className="flex items-center justify-center gap-1 mt-2 text-xs text-pink-600 dark:text-pink-400">
+                                                <Heart className="w-3 h-3" />
+                                                Popular
+                                            </div>
+                                        )}
+                                        {gift.isPremium && (
+                                            <div className="flex items-center justify-center gap-1 mt-1 text-xs text-yellow-600 dark:text-yellow-400">
+                                                <Crown className="w-3 h-3" />
+                                                Premium
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8">
+                                <Gift className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                                <p className="text-gray-500 dark:text-gray-400">No gifts available right now.</p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
