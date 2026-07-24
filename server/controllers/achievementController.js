@@ -62,19 +62,26 @@ exports.getMyStats = async (req, res) => {
     }
 
     // Only run checkAchievements if userStats was just created or if it's been more than 1 hour since last check
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    if (!userStats.updatedAt || userStats.updatedAt < oneHourAgo) {
-      await checkAchievements(userId, userStats, userDoc);
-      // Refresh userStats after check
-      userStats = await UserStats.findOne({ user: userId })
-        .populate('achievements')
-        .populate({
-          path: 'achievements',
-          populate: {
-            path: 'achievement',
-            model: 'Achievement'
-          }
-        });
+    try {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const shouldCheck = !userStats.updatedAt || new Date(userStats.updatedAt) < oneHourAgo;
+      
+      if (shouldCheck) {
+        await checkAchievements(userId, userStats, userDoc);
+        // Refresh userStats after check
+        userStats = await UserStats.findOne({ user: userId })
+          .populate('achievements')
+          .populate({
+            path: 'achievements',
+            populate: {
+              path: 'achievement',
+              model: 'Achievement'
+            }
+          });
+      }
+    } catch (error) {
+      console.error('Error during achievement check:', error);
+      // Continue without achievement check if it fails
     }
 
     let allAchievements = await Achievement.find({ isActive: true }).lean();
@@ -85,53 +92,63 @@ exports.getMyStats = async (req, res) => {
     const profileStatus = checkProfileComplete(userDoc);
     
     const achievementsWithProgress = allAchievements.map(achievement => {
-      const userAchievement = userStats.achievements.find(
-        ua => ua.achievement && (ua.achievement._id ? ua.achievement._id.toString() : ua.achievement.toString()) === achievement._id.toString()
-      );
-      
-      let progress = 0;
-      let earned = false;
+      try {
+        const userAchievement = userStats.achievements && userStats.achievements.find(
+          ua => ua.achievement && (ua.achievement._id ? ua.achievement._id.toString() : ua.achievement.toString()) === achievement._id.toString()
+        );
+        
+        let progress = 0;
+        let earned = false;
 
-      if (userAchievement) {
-        progress = userAchievement.progress || achievement.condition.target;
-        earned = true;
-      } else {
-        switch (achievement.condition.type) {
-          case 'profile_complete':
-            progress = profileStatus;
-            break;
-          case 'messages_sent':
-            progress = userStats.totalMessagesSent || 0;
-            break;
-          case 'login_streak':
-            progress = userStats.loginStreak || 0;
-            break;
-          case 'referrals':
-            progress = userStats.totalReferrals || 0;
-            break;
-          case 'gifts_sent':
-            progress = userStats.totalGiftsSent || 0;
-            break;
-          case 'gifts_received':
-            progress = userStats.totalGiftsReceived || 0;
-            break;
-          case 'daily_gift_sender':
-            progress = userStats.dailyGiftsSent || 0;
-            break;
-          case 'events_attended':
-            progress = userStats.totalEventsAttended || 0;
-            break;
-          default:
-            progress = 0;
+        if (userAchievement) {
+          progress = userAchievement.progress || achievement.condition.target;
+          earned = true;
+        } else {
+          switch (achievement.condition.type) {
+            case 'profile_complete':
+              progress = profileStatus;
+              break;
+            case 'messages_sent':
+              progress = userStats.totalMessagesSent || 0;
+              break;
+            case 'login_streak':
+              progress = userStats.loginStreak || 0;
+              break;
+            case 'referrals':
+              progress = userStats.totalReferrals || 0;
+              break;
+            case 'gifts_sent':
+              progress = userStats.totalGiftsSent || 0;
+              break;
+            case 'gifts_received':
+              progress = userStats.totalGiftsReceived || 0;
+              break;
+            case 'daily_gift_sender':
+              progress = userStats.dailyGiftsSent || 0;
+              break;
+            case 'events_attended':
+              progress = userStats.totalEventsAttended || 0;
+              break;
+            default:
+              progress = 0;
+          }
         }
-      }
 
-      return {
-        ...achievement.toObject(),
-        progress: Math.min(progress, achievement.condition.target),
-        earned,
-        target: achievement.condition.target
-      };
+        return {
+          ...achievement,
+          progress: Math.min(progress, achievement.condition.target),
+          earned,
+          target: achievement.condition.target
+        };
+      } catch (error) {
+        console.error('Error processing achievement:', achievement.name, error);
+        return {
+          ...achievement,
+          progress: 0,
+          earned: false,
+          target: achievement.condition.target
+        };
+      }
     });
 
     res.json({
