@@ -405,6 +405,10 @@ const Navbar = () => {
                                                 <MessageSquare className="w-4 h-4" />
                                                 <span>{t('nav.messages')}</span>
                                             </Link>
+                                            <Link to="/wallet" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/wallet') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                                                <Crown className="w-4 h-4" />
+                                                <span>Wallet</span>
+                                            </Link>
                                         </>
                                     )}
                                     <SearchBar />
@@ -485,6 +489,17 @@ const Navbar = () => {
                         >
                             <MessageSquare className="w-6 h-6" />
                             <span className="text-[10px] font-medium">{t('nav.messages')}</span>
+                        </Link>
+                        <Link
+                            to="/wallet"
+                            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all ${
+                                isActive('/wallet')
+                                    ? 'text-purple-600 dark:text-purple-400'
+                                    : 'text-slate-500 dark:text-slate-400'
+                            }`}
+                        >
+                            <Crown className="w-6 h-6" />
+                            <span className="text-[10px] font-medium">Wallet</span>
                         </Link>
                         <Link
                             to="/profile"
@@ -574,6 +589,7 @@ const Navbar = () => {
                                         <NavItem to="/dashboard" icon={LayoutDashboard} label={t('nav.dashboard')} />
                                         <NavItem to="/users" icon={Users} label={t('nav.browse')} />
                                         <NavItem to="/conversation" icon={MessageSquare} label={t('nav.messages')} />
+                                        <NavItem to="/wallet" icon={Crown} label="Wallet" />
                                         <NavItem to="/profile" icon={User} label={t('nav.profile')} />
                                         <NavItem to="/settings" icon={Settings} label={t('nav.settings')} />
                                         <NavItem to="/contact-admin" icon={Shield} label={t('nav.contactAdmin')} />

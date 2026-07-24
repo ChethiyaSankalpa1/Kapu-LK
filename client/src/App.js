@@ -29,6 +29,7 @@ const PremiumPayment = lazy(() => import('./pages/user/PremiumPayment'));
 const Conversation = lazy(() => import('./pages/user/Conversation'));
 const ContactAdmin = lazy(() => import('./pages/user/ContactAdmin'));
 const Settings = lazy(() => import('./pages/user/Settings'));
+const Wallet = lazy(() => import('./pages/user/Wallet'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 
@@ -129,6 +130,14 @@ function App() {
                 element={
                   <UserRoute>
                     <Settings />
+                  </UserRoute>
+                }
+              />
+              <Route
+                path="/wallet"
+                element={
+                  <UserRoute>
+                    <Wallet />
                   </UserRoute>
                 }
               />
