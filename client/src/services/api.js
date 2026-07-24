@@ -60,6 +60,7 @@ export const premiumAPI = {
         headers: { 'Content-Type': 'multipart/form-data' },
     }),
     getStatus: () => api.get('/premium/status'),
+    purchaseWithWallet: () => api.post('/premium/purchase-with-wallet'),
 };
 
 // Admin API

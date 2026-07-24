@@ -1,8 +1,70 @@
 const User = require('../models/User');
 const PremiumPaymentRequest = require('../models/PremiumPaymentRequest');
+const { Wallet, WalletTransaction } = require('../models/Wallet');
 const cloudinary = require('../config/cloudinary');
 
 const isValidPhoneNumber = (value) => !value || /^[0-9]+$/.test(value);
+
+// @desc    Purchase premium using wallet balance
+// @route   POST /api/premium/purchase-with-wallet
+// @access  Private
+exports.purchaseWithWallet = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.isPremium) {
+      return res.status(400).json({ message: 'You are already a premium member' });
+    }
+
+    const PREMIUM_PRICE = 1000; // LKR
+
+    let wallet = await Wallet.findOne({ user: req.user._id });
+    if (!wallet || wallet.balance < PREMIUM_PRICE) {
+      return res.status(400).json({ 
+        message: 'Insufficient wallet balance',
+        required: PREMIUM_PRICE,
+        available: wallet?.balance || 0
+      });
+    }
+
+    // Deduct from wallet
+    const balanceBefore = wallet.balance;
+    wallet.balance -= PREMIUM_PRICE;
+    wallet.totalSpent += PREMIUM_PRICE;
+    await wallet.save();
+
+    // Create wallet transaction
+    await WalletTransaction.create({
+      wallet: wallet._id,
+      user: req.user._id,
+      type: 'purchase',
+      amount: PREMIUM_PRICE,
+      currency: 'LKR',
+      description: 'Premium membership purchase',
+      relatedType: 'premium',
+      balanceBefore,
+      balanceAfter: wallet.balance,
+      status: 'completed'
+    });
+
+    // Grant premium
+    user.isPremium = true;
+    user.premiumSince = new Date();
+    user.premiumExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    await user.save();
+
+    res.json({ 
+      message: 'Premium purchased successfully',
+      premiumExpiry: user.premiumExpiry
+    });
+  } catch (error) {
+    console.error('Error purchasing premium with wallet:', error);
+    res.status(500).json({ message: 'Failed to purchase premium' });
+  }
+};
 
 // @desc    Create a premium payment request
 // @route   POST /api/premium/request
