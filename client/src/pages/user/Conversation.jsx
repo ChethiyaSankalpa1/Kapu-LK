@@ -643,6 +643,10 @@ const Conversation = () => {
                                 <p className="text-xs sm:text-sm italic font-semibold flex items-center gap-1.5 py-1 text-pink-500">
                                   ❤️ Sent you a profile like!
                                 </p>
+                              ) : msg.type === 'gift' ? (
+                                <div className="text-sm font-semibold flex items-center gap-1.5 py-1 text-pink-600 bg-pink-50 p-2 rounded border border-pink-100">
+                                  {msg.content}
+                                </div>
                               ) : (
                                 <p className="text-[13px] sm:text-[14px] leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
                               )}
@@ -945,7 +949,10 @@ const Conversation = () => {
       {showGiftModal && otherUser && (
         <GiftModal
           isOpen={showGiftModal}
-          onClose={() => setShowGiftModal(false)}
+          onClose={() => {
+            setShowGiftModal(false);
+            fetchChatMessages(true);
+          }}
           recipientId={userId}
           recipientName={otherUser.name}
         />

@@ -3,6 +3,7 @@ const User = require('../models/User');
 const { UserStats } = require('../models/Achievement');
 const { Wallet, WalletTransaction } = require('../models/Wallet');
 const Notification = require('../models/Notification');
+const Message = require('../models/Message');
 
 // Helper function to check achievements
 const { checkAchievements } = require('./achievementController');
@@ -149,6 +150,16 @@ exports.sendGift = async (req, res) => {
       relatedUser: sender,
       relatedGift: transaction._id
     });
+
+    // Create a message in chat
+    if (!isAnonymous) {
+      await Message.create({
+        from: sender,
+        to: to,
+        content: `Sent a gift: ${gift.name} ${gift.emoji}`,
+        type: 'gift'
+      });
+    }
 
     // Populate and return
     const populatedTransaction = await GiftTransaction.findById(transaction._id)

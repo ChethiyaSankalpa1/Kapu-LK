@@ -23,7 +23,7 @@ const messageSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['text', 'like', 'image'],
+      enum: ['text', 'like', 'image', 'gift'],
       default: 'text',
     },
     isRead: {
