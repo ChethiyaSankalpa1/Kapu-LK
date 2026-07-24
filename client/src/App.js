@@ -92,6 +92,7 @@ const GlobalRealtimeMonitor = () => {
                 message: notif.message,
                 pointsEarned: 10,
                 isAnonymous: notif.message?.includes('Someone'),
+                notificationId: notif._id,
               });
             } else if (notif.type === 'achievement' && !notif.isRead) {
               const nameMatch = notif.message?.match(/"(.*?)"/);
@@ -104,6 +105,7 @@ const GlobalRealtimeMonitor = () => {
                 icon: '🏆',
                 description: 'Awesome job! You just unlocked a new milestone.',
                 points,
+                notificationId: notif._id,
               });
             }
           }
@@ -116,19 +118,29 @@ const GlobalRealtimeMonitor = () => {
     checkNotifications();
     const interval = setInterval(checkNotifications, 7000);
     return () => clearInterval(interval);
-  }, [user, isAdmin, seenNotifs]);
+  }, [user, isAdmin]);
 
   return (
     <>
       <GiftReceiveModal
         isOpen={Boolean(giftData)}
         giftData={giftData}
-        onClose={() => setGiftData(null)}
+        onClose={() => {
+          setGiftData(null);
+          if (giftData?.notificationId) {
+            notificationAPI.markAsRead(giftData.notificationId).catch(() => {});
+          }
+        }}
       />
       <AchievementUnlockModal
         isOpen={Boolean(achievementData)}
         achievement={achievementData}
-        onClose={() => setAchievementData(null)}
+        onClose={() => {
+          setAchievementData(null);
+          if (achievementData?.notificationId) {
+            notificationAPI.markAsRead(achievementData.notificationId).catch(() => {});
+          }
+        }}
       />
     </>
   );
