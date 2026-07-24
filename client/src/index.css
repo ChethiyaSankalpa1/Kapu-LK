@@ -162,13 +162,26 @@
 
   /* ===== TAB LISTS ===== */
   .mobile-tab-list {
-    @apply flex gap-2 overflow-x-auto whitespace-nowrap;
+    @apply flex gap-2 overflow-x-auto whitespace-nowrap pb-2;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x proximity;
-    scrollbar-width: none;
+    scrollbar-width: thin;
     -ms-overflow-style: none;
   }
-  .mobile-tab-list::-webkit-scrollbar { display: none; }
+  .mobile-tab-list::-webkit-scrollbar { 
+    height: 4px;
+  }
+  .mobile-tab-list::-webkit-scrollbar-track {
+    background: rgba(156, 163, 175, 0.1);
+    border-radius: 9999px;
+  }
+  .mobile-tab-list::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.3);
+    border-radius: 9999px;
+  }
+  .mobile-tab-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.5);
+  }
   .mobile-tab-list > * { scroll-snap-align: start; }
 
   /* ===== SECTION HEADERS ===== */
