@@ -1,4 +1,5 @@
 const { Achievement, UserAchievement, UserStats } = require('../models/Achievement');
+const { addReward } = require('./walletController');
 const User = require('../models/User');
 
 // @desc    Get all achievements
@@ -142,6 +143,13 @@ exports.dailyCheckIn = async (req, res) => {
 
     await userStats.save();
 
+    // Add wallet reward for daily check-in
+    try {
+      await addReward(userId, 10, 'Daily check-in bonus', 'daily_checkin', null);
+    } catch (error) {
+      console.error('Error adding check-in reward:', error);
+    }
+
     // Check for streak achievements
     await checkAchievements(userId, userStats);
 
@@ -228,6 +236,15 @@ async function checkAchievements(userId, userStats) {
 
       userStats.achievements.push(userAchievement._id);
       userStats.points += achievement.points;
+      
+      // Add wallet reward for achievement
+      if (achievement.points > 0) {
+        try {
+          await addReward(userId, achievement.points, `Achievement reward: ${achievement.name}`, 'achievement', achievement._id);
+        } catch (error) {
+          console.error('Error adding wallet reward:', error);
+        }
+      }
       
       // Award free premium if achievement has premium reward
       if (achievement.reward && achievement.reward.freePremiumDays) {

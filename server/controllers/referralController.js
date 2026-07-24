@@ -1,6 +1,7 @@
 const { Referral, ReferralCode } = require('../models/Referral');
 const User = require('../models/User');
 const { UserStats } = require('../models/Achievement');
+const { addReward } = require('./walletController');
 const crypto = require('crypto');
 
 // Generate unique referral code
@@ -80,6 +81,13 @@ exports.applyReferralCode = async (req, res) => {
     referrerStats.points += 50; // Bonus for referral
     await referrerStats.save();
 
+    // Add wallet reward for referrer
+    try {
+      await addReward(referralCode.user, 50, 'Referral bonus', 'referral', referral._id);
+    } catch (error) {
+      console.error('Error adding referral reward:', error);
+    }
+
     // Give referred user bonus
     let userStats = await UserStats.findOne({ user: userId });
     if (!userStats) {
@@ -87,6 +95,13 @@ exports.applyReferralCode = async (req, res) => {
     }
     userStats.points += 25; // Bonus for using referral
     await userStats.save();
+
+    // Add wallet reward for referred user
+    try {
+      await addReward(userId, 25, 'Referral signup bonus', 'referral', referral._id);
+    } catch (error) {
+      console.error('Error adding signup bonus:', error);
+    }
 
     res.status(201).json({
       message: 'Referral code applied successfully',
