@@ -56,11 +56,17 @@ export const userAPI = {
 
 // Premium API
 export const premiumAPI = {
+    getPlans: () => api.get('/premium/plans'),
+    getAllPlansAdmin: () => api.get('/premium/admin/plans'),
+    createPlan: (data) => api.post('/premium/admin/plans', data),
+    updatePlan: (id, data) => api.put(`/premium/admin/plans/${id}`, data),
+    deletePlan: (id) => api.delete(`/premium/admin/plans/${id}`),
+    togglePlan: (id) => api.put(`/premium/admin/plans/${id}/toggle`),
     createPaymentRequest: (formData) => api.post('/premium/request', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
     }),
     getStatus: () => api.get('/premium/status'),
-    purchaseWithWallet: () => api.post('/premium/purchase-with-wallet'),
+    purchaseWithWallet: (data) => api.post('/premium/purchase-with-wallet', data),
 };
 
 // Admin API

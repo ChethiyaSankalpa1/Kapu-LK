@@ -296,4 +296,56 @@ const seedGifts = async () => {
   }
 };
 
-module.exports = { seedUsers, seedAchievements, seedGifts };
+const seedPremiumPlans = async () => {
+  try {
+    const PremiumPlan = require('../models/PremiumPlan');
+    const plans = [
+      {
+        name: 'Bronze Plan',
+        badge: 'bronze',
+        price: 500,
+        currency: 'LKR',
+        durationDays: 7,
+        description: 'Essential 7-day premium pass for quick matching',
+        features: ['7 Days Full Access', 'Unlimited Messages', 'Profile Boost', 'Bronze Badge', 'Ad-Free Experience'],
+        isPopular: false,
+        isActive: true,
+      },
+      {
+        name: 'Silver Plan',
+        badge: 'silver',
+        price: 800,
+        currency: 'LKR',
+        durationDays: 14,
+        description: 'Popular 14-day plan with priority matching',
+        features: ['14 Days Full Access', 'Unlimited Messages', 'Priority Matching', 'Direct Contact Info', 'Silver Badge', 'Profile Visitors List'],
+        isPopular: true,
+        isActive: true,
+      },
+      {
+        name: 'Gold Plan',
+        badge: 'gold',
+        price: 1000,
+        currency: 'LKR',
+        durationDays: 28,
+        description: 'Ultimate 28-day VIP pass for serious matchmaking',
+        features: ['28 Days Full Access', 'VIP Spotlighting', 'Unlimited Messaging', 'Direct Contact Info', 'Gold Badge', '24/7 Priority Support'],
+        isPopular: false,
+        isActive: true,
+      },
+    ];
+
+    for (const plan of plans) {
+      const exists = await PremiumPlan.findOne({ badge: plan.badge });
+      if (!exists) {
+        await PremiumPlan.create(plan);
+        console.log(`✅ Premium Plan Created: ${plan.name} - ${plan.price} ${plan.currency} (${plan.durationDays} Days)`);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Premium Plan seeding error:', error.message);
+  }
+};
+
+module.exports = { seedUsers, seedAchievements, seedGifts, seedPremiumPlans };
+

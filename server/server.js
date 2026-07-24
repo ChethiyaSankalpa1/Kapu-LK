@@ -38,6 +38,7 @@ let dbConnected = false;
       await seedUsers();
       await seedAchievements();
       await seedGifts();
+      await seedPremiumPlans();
       await seedRedemptionConfigs();
     }
     if (allowCleanup) {

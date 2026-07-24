@@ -11,6 +11,7 @@ import {
 import ProfileCard from '../../components/ui/ProfileCard';
 import CustomSelect from '../../components/ui/CustomSelect';
 import PremiumPopup from '../../components/ui/PremiumPopup';
+import PremiumBadge from '../../components/ui/PremiumBadge';
 
 const Dashboard = () => {
     const { t } = useTranslation();
@@ -306,12 +307,28 @@ const Dashboard = () => {
         fetchReferralData();
         fetchWallet();
 
+        // Register real-time synchronization listeners
+        const handleSync = () => {
+            fetchUserStats();
+            fetchNotifications();
+            fetchWallet();
+            refreshPremiumStatus();
+        };
+
+        window.addEventListener('achievement_unlocked_event', handleSync);
+        window.addEventListener('gift_received_event', handleSync);
+
         // periodic refresh for notifications every 20s
         const notifInterval = setInterval(() => {
             fetchNotifications();
         }, 20000);
-        return () => clearInterval(notifInterval);
-    }, [isProfileComplete, user?.isApproved, user?.role, fetchOverviewUsers, fetchNotifications, fetchConversations, fetchUserStats, fetchGifts, fetchReferralData, fetchWallet]);
+        
+        return () => {
+            clearInterval(notifInterval);
+            window.removeEventListener('achievement_unlocked_event', handleSync);
+            window.removeEventListener('gift_received_event', handleSync);
+        };
+    }, [isProfileComplete, user?.isApproved, user?.role, fetchOverviewUsers, fetchNotifications, fetchConversations, fetchUserStats, fetchGifts, fetchReferralData, fetchWallet, refreshPremiumStatus]);
 
     useEffect(() => {
         if (activeTab === 'matches' && matches.length === 0 && (user?.isApproved || user?.role === 'admin')) {
@@ -508,10 +525,7 @@ const Dashboard = () => {
                                     </span>
                                 )}
                                 {premiumStatus?.isPremium && (
-                                    <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-yellow-50 dark:bg-yellow-400/20 border border-yellow-200 dark:border-yellow-200/30 text-yellow-700 dark:text-yellow-50 text-[11px] sm:text-xs font-semibold">
-                                        <Crown className="w-3.5 h-3.5 mr-1.5" />
-                                        {t('profile.premiumMember')}
-                                    </span>
+                                    <PremiumBadge plan={premiumStatus?.premiumPlan} size="sm" />
                                 )}
                             </div>
                             <div className="mt-3 flex flex-wrap gap-2 text-[11px] sm:text-xs">

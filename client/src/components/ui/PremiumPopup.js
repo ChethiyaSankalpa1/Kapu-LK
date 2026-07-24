@@ -61,11 +61,16 @@ const PremiumPopup = ({ onClose, onUpgrade }) => {
         <div className="p-6">
           {/* Price */}
           <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 px-6 py-3 rounded-2xl">
-              <span className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 px-5 py-2.5 rounded-2xl border border-amber-200 dark:border-amber-800">
+              <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Plans starting at</span>
+              <span className="text-2xl font-extrabold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
                 LKR 500
               </span>
-              <span className="text-gray-600 dark:text-gray-400">/month</span>
+            </div>
+            <div className="flex justify-center gap-2 mt-3">
+              <span className="px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300 text-xs font-bold border border-amber-300">🥉 Bronze (7D)</span>
+              <span className="px-2.5 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-200 text-xs font-bold border border-slate-400">🥈 Silver (14D)</span>
+              <span className="px-2.5 py-1 rounded-full bg-yellow-200 dark:bg-yellow-900 text-yellow-950 dark:text-yellow-200 text-xs font-bold border border-yellow-400">🥇 Gold (28D)</span>
             </div>
           </div>
 

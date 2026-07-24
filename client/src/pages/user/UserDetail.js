@@ -9,6 +9,7 @@ import {
     Phone, Mail, Calendar, Users as UsersIcon, ArrowLeft, Send, Crown,
     MessageSquare, Shield, Paperclip, X, Image as ImageIcon
 } from 'lucide-react';
+import PremiumBadge from '../../components/ui/PremiumBadge';
 
 const UserDetail = () => {
     const { t } = useTranslation();
@@ -247,10 +248,7 @@ const UserDetail = () => {
                                     <div className="flex flex-wrap items-center gap-2 mb-3">
                                         <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">{user.name}</h1>
                                         {user.isPremium && (
-                                            <div className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/30 px-2.5 py-0.5 rounded-full shrink-0">
-                                                <Crown className="w-3.5 h-3.5 text-yellow-500" />
-                                                <span className="text-[10px] font-bold text-yellow-700 dark:text-yellow-300 uppercase tracking-wider">{t('profile.premiumMember')}</span>
-                                            </div>
+                                            <PremiumBadge plan={user.premiumPlan} size="sm" />
                                         )}
                                     </div>
                                     <p className="text-sm text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">{user.bio || t('profile.noBio', { defaultValue: 'No bio available yet' })}</p>

@@ -11,6 +11,7 @@ import {
   Image, Search, X, Edit2, Trash2, MoreVertical, Gift
 } from 'lucide-react';
 import GiftModal from '../../components/ui/GiftModal';
+import PremiumBadge from '../../components/ui/PremiumBadge';
 
 const Conversation = () => {
   const { t } = useTranslation();
@@ -570,8 +571,9 @@ const Conversation = () => {
                           <Link to={`/users/${otherUser._id}`} className="text-sm sm:text-base font-bold text-slate-900 dark:text-white hover:text-[#128c7e] transition-colors leading-none truncate">
                             {otherUser.name}
                           </Link>
-                          {otherUser.isPremium && <Crown className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
-                          {otherUser.role === 'admin' && <Shield className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                          {(otherUser.isPremium || otherUser.role === 'admin') && (
+                            <PremiumBadge plan={otherUser.premiumPlan} isAdmin={otherUser.role === 'admin'} size="sm" />
+                          )}
                         </div>
                         <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 block font-medium">
                           {getOnlineStatusText(otherUser)}

@@ -165,10 +165,10 @@ exports.sendGift = async (req, res) => {
     // Create notification with points earned info
     await Notification.create({
       user: to,
-      type: 'gift',
+      type: 'gift_received',
       message: isAnonymous 
-        ? `Someone sent you a gift! You earned ${pointsEarned} points!` 
-        : `${req.user.name} sent you a gift! You earned ${pointsEarned} points!`,
+        ? `Someone sent you a gift (${gift.name} ${gift.emoji})! You earned ${pointsEarned} points!` 
+        : `${req.user.name} sent you a gift (${gift.name} ${gift.emoji})! You earned ${pointsEarned} points!`,
       relatedUser: sender,
       relatedGift: transaction._id
     });

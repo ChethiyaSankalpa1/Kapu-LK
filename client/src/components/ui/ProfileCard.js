@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Calendar, Crown, MessageCircle } from 'lucide-react';
+import { MapPin, Calendar, MessageCircle } from 'lucide-react';
 import moment from 'moment';
+import PremiumBadge from './PremiumBadge';
 
 const ProfileCard = ({ user, onLike, onView, onMessage, isOwnProfile = false }) => {
     const { t } = useTranslation();
@@ -58,15 +59,10 @@ const ProfileCard = ({ user, onLike, onView, onMessage, isOwnProfile = false }) 
                     {/* Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
                     
-                    {/* Premium Sparkles Effect */}
-                    {user?.isPremium && (
-                        <div className="absolute top-4 right-4">
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 blur-lg opacity-60 animate-pulse" />
-                                <div className="relative bg-gradient-to-r from-yellow-400 to-orange-500 p-2 rounded-full border-2 border-white/50 backdrop-blur-sm shadow-xl">
-                                    <Crown className="w-5 h-5 text-white" />
-                                </div>
-                            </div>
+                    {/* Premium Badge Effect */}
+                    {(user?.isPremium || user?.role === 'admin') && (
+                        <div className="absolute top-4 right-4 z-10">
+                            <PremiumBadge plan={user?.premiumPlan} isAdmin={user?.role === 'admin'} size="sm" />
                         </div>
                     )}
                     

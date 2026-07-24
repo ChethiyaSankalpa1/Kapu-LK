@@ -39,6 +39,19 @@ const premiumPaymentRequestSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  plan: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'PremiumPlan',
+  },
+  planBadge: {
+    type: String,
+    enum: ['bronze', 'silver', 'gold'],
+    default: 'bronze',
+  },
+  durationDays: {
+    type: Number,
+    default: 7,
+  },
   status: {
     type: String,
     enum: ['pending', 'approved', 'rejected'],

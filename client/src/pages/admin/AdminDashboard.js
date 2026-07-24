@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { adminAPI, messageAPI, userAPI, giftAPI, achievementAPI, successStoryAPI, blogAPI, eventAPI, redemptionAPI, walletAPI } from '../../services/api';
+import { adminAPI, messageAPI, userAPI, giftAPI, achievementAPI, successStoryAPI, blogAPI, eventAPI, redemptionAPI, walletAPI, premiumAPI } from '../../services/api';
+import PremiumBadge from '../../components/ui/PremiumBadge';
 import { toast } from 'react-toastify';
 import {
   Users, User, UserCheck, Activity,
   CheckCircle, XCircle, Trash2, Shield, Crown, AlertTriangle, DollarSign, MessageSquare, MoreVertical,
-  Eye, X, Heart, Phone, Star, Clock, Gift, Trophy, Heart as HeartIcon, FileText, Calendar
+  Eye, X, Heart, Phone, Star, Clock, Gift, Trophy, Heart as HeartIcon, FileText, Calendar, Plus, Edit
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -32,6 +33,22 @@ const AdminDashboard = () => {
   const [, setRedemptionConfigs] = useState([]);
   const [, setRedemptions] = useState([]);
   const [walletPaymentRequests, setWalletPaymentRequests] = useState([]);
+  
+  // Premium Plan management states
+  const [premiumPlans, setPremiumPlans] = useState([]);
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [editingPlan, setEditingPlan] = useState(null);
+  const [planFormData, setPlanFormData] = useState({
+    name: '',
+    badge: 'bronze',
+    price: 500,
+    currency: 'LKR',
+    durationDays: 7,
+    description: '',
+    features: '',
+    isPopular: false,
+    isActive: true,
+  });
   
   // Gift management states
   const [showGiftModal, setShowGiftModal] = useState(false);
@@ -90,10 +107,11 @@ const AdminDashboard = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [statsRes, usersRes, premiumRes, conversationsRes, giftsRes, achievementsRes, storiesRes, blogRes, eventsRes, configsRes, redemptionsRes, walletReqsRes] = await Promise.all([
+      const [statsRes, usersRes, premiumRes, plansRes, conversationsRes, giftsRes, achievementsRes, storiesRes, blogRes, eventsRes, configsRes, redemptionsRes, walletReqsRes] = await Promise.all([
         adminAPI.getStats(),
         adminAPI.getAllUsers(),
         adminAPI.getPremiumRequests(),
+        premiumAPI.getAllPlansAdmin(),
         messageAPI.getConversations(),
         giftAPI.getGifts(),
         achievementAPI.getAchievements(),
@@ -107,6 +125,7 @@ const AdminDashboard = () => {
       setStats(statsRes.data);
       setUsers(usersRes.data);
       setPremiumRequests(premiumRes.data);
+      setPremiumPlans(plansRes.data || []);
       setConversations(conversationsRes.data);
       setUnreadMessagesCount(conversationsRes.data.reduce((sum, convo) => sum + (convo.unreadCount || 0), 0));
       setGifts(giftsRes.data);
@@ -124,6 +143,84 @@ const AdminDashboard = () => {
       setLoading(false);
     }
   }, [t]);
+
+  // Premium Plan handlers
+  const handleAddPlan = () => {
+    setEditingPlan(null);
+    setPlanFormData({
+      name: '',
+      badge: 'bronze',
+      price: 500,
+      currency: 'LKR',
+      durationDays: 7,
+      description: '',
+      features: '',
+      isPopular: false,
+      isActive: true,
+    });
+    setShowPlanModal(true);
+  };
+
+  const handleEditPlan = (plan) => {
+    setEditingPlan(plan);
+    setPlanFormData({
+      name: plan.name,
+      badge: plan.badge,
+      price: plan.price,
+      currency: plan.currency || 'LKR',
+      durationDays: plan.durationDays,
+      description: plan.description || '',
+      features: Array.isArray(plan.features) ? plan.features.join(', ') : '',
+      isPopular: plan.isPopular || false,
+      isActive: plan.isActive !== false,
+    });
+    setShowPlanModal(true);
+  };
+
+  const handleSavePlan = async () => {
+    try {
+      const payload = {
+        ...planFormData,
+        price: parseFloat(planFormData.price),
+        durationDays: parseInt(planFormData.durationDays, 10),
+        features: planFormData.features ? planFormData.features.split(',').map(s => s.trim()).filter(Boolean) : [],
+      };
+
+      if (editingPlan) {
+        await premiumAPI.updatePlan(editingPlan._id, payload);
+        toast.success('Plan updated successfully');
+      } else {
+        await premiumAPI.createPlan(payload);
+        toast.success('Plan created successfully');
+      }
+      setShowPlanModal(false);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to save plan');
+    }
+  };
+
+  const handleDeletePlan = async (id) => {
+    if (window.confirm('Are you sure you want to delete this plan?')) {
+      try {
+        await premiumAPI.deletePlan(id);
+        toast.success('Plan deleted');
+        fetchData();
+      } catch (error) {
+        toast.error('Failed to delete plan');
+      }
+    }
+  };
+
+  const handleTogglePlan = async (id) => {
+    try {
+      await premiumAPI.togglePlan(id);
+      toast.success('Plan status updated');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to update plan status');
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -602,6 +699,16 @@ const AdminDashboard = () => {
             )}
           </button>
           <button
+            onClick={() => setActiveTab('plans')}
+            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'plans'
+              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+          >
+            <Crown className="w-4 h-4 text-yellow-500" />
+            <span>Premium Plans</span>
+          </button>
+          <button
             onClick={() => setActiveTab('wallet-requests')}
             className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'wallet-requests'
               ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
@@ -974,6 +1081,105 @@ const AdminDashboard = () => {
                 </div>
               ))
             )}
+          </div>
+        )}
+
+        {/* Premium Plans tab */}
+        {activeTab === 'plans' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Crown className="w-6 h-6 text-yellow-500" />
+                  <span>Premium Membership Plans</span>
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                  Manage pricing, durations, features, and active status for subscription plans.
+                </p>
+              </div>
+              <button
+                onClick={handleAddPlan}
+                className="btn-primary flex items-center justify-center space-x-2 self-start sm:self-auto"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create New Plan</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {premiumPlans.map((plan) => (
+                <div
+                  key={plan._id}
+                  className={`glass-card p-6 rounded-2xl relative border-2 flex flex-col justify-between ${
+                    plan.isActive ? 'border-purple-200 dark:border-purple-900/50' : 'border-gray-200 dark:border-slate-800 opacity-70'
+                  }`}
+                >
+                  {plan.isPopular && (
+                    <span className="absolute -top-3 right-6 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full">
+                      POPULAR
+                    </span>
+                  )}
+
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <PremiumBadge plan={plan.badge} size="md" />
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${plan.isActive ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-gray-400'}`}>
+                        {plan.isActive ? 'Active' : 'Disabled'}
+                      </span>
+                    </div>
+
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{plan.name}</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{plan.description}</p>
+
+                    <div className="mb-4">
+                      <span className="text-3xl font-extrabold text-gray-900 dark:text-white">
+                        LKR {plan.price}
+                      </span>
+                      <span className="text-xs text-purple-600 dark:text-purple-400 font-bold block mt-0.5">
+                        Duration: {plan.durationDays} Days
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5 mb-6">
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Features:</p>
+                      {plan.features?.map((feat, i) => (
+                        <div key={i} className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          <span>{feat}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
+                    <button
+                      onClick={() => handleEditPlan(plan)}
+                      className="flex-1 py-2 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 rounded-lg text-xs font-bold hover:bg-purple-100 transition flex items-center justify-center gap-1"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      onClick={() => handleTogglePlan(plan._id)}
+                      className={`flex-1 py-2 rounded-lg text-xs font-bold transition ${
+                        plan.isActive
+                          ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-300 hover:bg-amber-100'
+                          : 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-300 hover:bg-green-100'
+                      }`}
+                    >
+                      {plan.isActive ? 'Disable' : 'Enable'}
+                    </button>
+                    <button
+                      onClick={() => handleDeletePlan(plan._id)}
+                      className="p-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 transition"
+                      title="Delete plan"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -2061,6 +2267,132 @@ const AdminDashboard = () => {
                 <button
                   onClick={() => setShowStoryModal(false)}
                   className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Premium Plan Modal */}
+      {showPlanModal && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                {editingPlan ? 'Edit Premium Plan' : 'Create Premium Plan'}
+              </h3>
+              <button
+                onClick={() => setShowPlanModal(false)}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Plan Name</label>
+                <input
+                  type="text"
+                  value={planFormData.name}
+                  onChange={(e) => setPlanFormData({ ...planFormData, name: e.target.value })}
+                  placeholder="e.g. Bronze Plan"
+                  className="w-full px-3.5 py-2 border rounded-xl dark:bg-slate-700 dark:text-white text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Badge Tier</label>
+                  <select
+                    value={planFormData.badge}
+                    onChange={(e) => setPlanFormData({ ...planFormData, badge: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl dark:bg-slate-700 dark:text-white text-sm"
+                  >
+                    <option value="bronze">🥉 Bronze</option>
+                    <option value="silver">🥈 Silver</option>
+                    <option value="gold">🥇 Gold</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Price (LKR)</label>
+                  <input
+                    type="number"
+                    value={planFormData.price}
+                    onChange={(e) => setPlanFormData({ ...planFormData, price: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl dark:bg-slate-700 dark:text-white text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Duration (Days)</label>
+                <input
+                  type="number"
+                  value={planFormData.durationDays}
+                  onChange={(e) => setPlanFormData({ ...planFormData, durationDays: e.target.value })}
+                  placeholder="e.g. 7, 14, 28"
+                  className="w-full px-3 py-2 border rounded-xl dark:bg-slate-700 dark:text-white text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                <textarea
+                  value={planFormData.description}
+                  onChange={(e) => setPlanFormData({ ...planFormData, description: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 border rounded-xl dark:bg-slate-700 dark:text-white text-sm resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Features (comma separated)
+                </label>
+                <textarea
+                  value={planFormData.features}
+                  onChange={(e) => setPlanFormData({ ...planFormData, features: e.target.value })}
+                  rows={3}
+                  placeholder="Unlimited Messages, Priority Matching, Gold Badge"
+                  className="w-full px-3 py-2 border rounded-xl dark:bg-slate-700 dark:text-white text-sm resize-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-6 pt-2">
+                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <input
+                    type="checkbox"
+                    checked={planFormData.isPopular}
+                    onChange={(e) => setPlanFormData({ ...planFormData, isPopular: e.target.checked })}
+                    className="w-4 h-4 text-purple-600 rounded"
+                  />
+                  <span>Popular Badge</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <input
+                    type="checkbox"
+                    checked={planFormData.isActive}
+                    onChange={(e) => setPlanFormData({ ...planFormData, isActive: e.target.checked })}
+                    className="w-4 h-4 text-purple-600 rounded"
+                  />
+                  <span>Active Plan</span>
+                </label>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handleSavePlan}
+                  className="flex-1 btn-primary py-2.5"
+                >
+                  Save Plan
+                </button>
+                <button
+                  onClick={() => setShowPlanModal(false)}
+                  className="px-4 py-2.5 border rounded-xl text-gray-600 dark:text-gray-300 text-sm font-semibold"
                 >
                   Cancel
                 </button>

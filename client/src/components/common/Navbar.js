@@ -9,6 +9,7 @@ import {
     Sun, Moon, Crown, Globe, ChevronRight, Sparkles, MessageSquare,
     Shield, FileText, Search, Bell, Settings, ChevronDown, BellRing, Wallet, Trophy
 } from 'lucide-react';
+import PremiumBadge from '../ui/PremiumBadge';
 
 const Navbar = () => {
     const { t } = useTranslation();
@@ -404,7 +405,7 @@ const Navbar = () => {
                             <span className="bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
                                 LoveLK
                             </span>
-                            {premiumStatus?.isPremium && <Crown className="w-4 h-4 text-yellow-500" />}
+                            {premiumStatus?.isPremium && <PremiumBadge plan={user?.premiumPlan || premiumStatus?.premiumPlan} size="sm" />}
                         </Link>
 
                         {/* Desktop nav */}

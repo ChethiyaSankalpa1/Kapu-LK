@@ -1,14 +1,26 @@
 const { Achievement, UserAchievement, UserStats } = require('../models/Achievement');
 const { addReward } = require('./walletController');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 const DEFAULT_ACHIEVEMENTS = [
   { name: '🌅 Daily Check-in', description: 'Log in to Kapu LK daily', icon: '🌅', category: 'daily', points: 5, condition: { type: 'login_streak', target: 1 } },
+  { name: '👤 First Steps', description: 'Complete your profile for the first time', icon: '👤', category: 'profile', points: 50, condition: { type: 'profile_complete', target: 1 } },
   { name: '💬 Social Butterfly', description: 'Send 10 messages in chat', icon: '💬', category: 'communication', points: 15, condition: { type: 'messages_sent', target: 10 } },
   { name: '🎁 Generous Heart', description: 'Send a gift to a match', icon: '🎁', category: 'social', points: 20, condition: { type: 'gifts_sent', target: 1 } },
   { name: '🔥 7-Day Streak', description: 'Log in 7 consecutive days', icon: '🔥', category: 'streak', points: 50, condition: { type: 'login_streak', target: 7 } },
   { name: '👑 Royal Supporter', description: 'Send 5 gifts to matches', icon: '👑', category: 'social', points: 75, condition: { type: 'gifts_sent', target: 5 } }
 ];
+
+const checkProfileComplete = (user) => {
+  if (!user) return 0;
+  const fields = ['name', 'profileImageUrl', 'age', 'gender', 'location', 'bio', 'education', 'occupation'];
+  let filled = 0;
+  fields.forEach(f => {
+    if (user[f] && String(user[f]).trim() !== '') filled++;
+  });
+  return filled >= 5 ? 1 : 0;
+};
 
 // @desc    Get all achievements
 // @route   GET /api/achievements
@@ -32,6 +44,7 @@ exports.getAchievements = async (req, res) => {
 exports.getMyStats = async (req, res) => {
   try {
     const userId = req.user._id;
+    const userDoc = await User.findById(userId);
     
     let userStats = await UserStats.findOne({ user: userId })
       .populate('achievements')
@@ -48,45 +61,63 @@ exports.getMyStats = async (req, res) => {
       await userStats.save();
     }
 
-    // Get all available achievements (seed if empty)
+    // Run checkAchievements to unlock any newly completed ones
+    await checkAchievements(userId, userStats, userDoc);
+
+    // Refresh userStats after check
+    userStats = await UserStats.findOne({ user: userId })
+      .populate('achievements')
+      .populate({
+        path: 'achievements',
+        populate: {
+          path: 'achievement',
+          model: 'Achievement'
+        }
+      });
+
     let allAchievements = await Achievement.find({ isActive: true });
     if (!allAchievements || allAchievements.length === 0) {
       allAchievements = await Achievement.insertMany(DEFAULT_ACHIEVEMENTS);
     }
+
+    const profileStatus = checkProfileComplete(userDoc);
     
-    // Calculate progress for each achievement
     const achievementsWithProgress = allAchievements.map(achievement => {
       const userAchievement = userStats.achievements.find(
-        ua => ua.achievement && ua.achievement.toString() === achievement._id.toString()
+        ua => ua.achievement && (ua.achievement._id ? ua.achievement._id.toString() : ua.achievement.toString()) === achievement._id.toString()
       );
       
       let progress = 0;
       let earned = false;
 
       if (userAchievement) {
-        progress = userAchievement.progress;
+        progress = userAchievement.progress || achievement.condition.target;
         earned = true;
       } else {
-        // Calculate current progress based on user stats
         switch (achievement.condition.type) {
           case 'profile_complete':
-            const user = User.findById(userId);
-            progress = 0; // Would need to calculate based on profile completion
+            progress = profileStatus;
             break;
           case 'messages_sent':
-            progress = userStats.totalMessagesSent;
+            progress = userStats.totalMessagesSent || 0;
             break;
           case 'login_streak':
-            progress = userStats.loginStreak;
+            progress = userStats.loginStreak || 0;
             break;
           case 'referrals':
-            progress = userStats.totalReferrals;
+            progress = userStats.totalReferrals || 0;
             break;
           case 'gifts_sent':
-            progress = userStats.totalGiftsSent;
+            progress = userStats.totalGiftsSent || 0;
+            break;
+          case 'gifts_received':
+            progress = userStats.totalGiftsReceived || 0;
+            break;
+          case 'daily_gift_sender':
+            progress = userStats.dailyGiftsSent || 0;
             break;
           case 'events_attended':
-            progress = userStats.totalEventsAttended;
+            progress = userStats.totalEventsAttended || 0;
             break;
           default:
             progress = 0;
@@ -95,7 +126,7 @@ exports.getMyStats = async (req, res) => {
 
       return {
         ...achievement.toObject(),
-        progress,
+        progress: Math.min(progress, achievement.condition.target),
         earned,
         target: achievement.condition.target
       };
@@ -126,52 +157,46 @@ exports.dailyCheckIn = async (req, res) => {
       userStats = new UserStats({ user: userId });
     }
 
-    // Check if already checked in today
+    let alreadyCheckedIn = false;
     if (userStats.lastLoginDate) {
       const lastLogin = new Date(userStats.lastLoginDate);
       lastLogin.setHours(0, 0, 0, 0);
       
       if (lastLogin.getTime() === today.getTime()) {
-        return res.json({ 
-          message: 'Already checked in today',
-          streak: userStats.loginStreak,
-          points: userStats.points
-        });
-      }
+        alreadyCheckedIn = true;
+      } else {
+        const diffTime = today - lastLogin;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-      // Check if consecutive day
-      const diffTime = today - lastLogin;
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays === 1) {
-        userStats.loginStreak += 1;
-      } else if (diffDays > 1) {
-        userStats.loginStreak = 1; // Reset streak
+        if (diffDays === 1) {
+          userStats.loginStreak += 1;
+        } else if (diffDays > 1) {
+          userStats.loginStreak = 1;
+        }
       }
     } else {
       userStats.loginStreak = 1;
     }
 
-    userStats.lastLoginDate = today;
-    userStats.points += 10; // Daily check-in bonus
+    if (!alreadyCheckedIn) {
+      userStats.lastLoginDate = today;
+      userStats.points += 10;
+      await userStats.save();
 
-    await userStats.save();
-
-    // Add wallet reward for daily check-in
-    try {
-      await addReward(userId, 10, 'Daily check-in bonus', 'daily_checkin', null);
-    } catch (error) {
-      console.error('Error adding check-in reward:', error);
+      try {
+        await addReward(userId, 10, 'Daily check-in bonus', 'daily_checkin', null);
+      } catch (error) {
+        console.error('Error adding check-in reward:', error);
+      }
     }
 
-    // Check for streak achievements
     await checkAchievements(userId, userStats);
 
     res.json({
-      message: 'Check-in successful',
+      message: alreadyCheckedIn ? 'Already checked in today' : 'Check-in successful',
       streak: userStats.loginStreak,
       points: userStats.points,
-      bonusEarned: 10
+      bonusEarned: alreadyCheckedIn ? 0 : 10
     });
   } catch (error) {
     console.error('Error during check-in:', error);
@@ -180,106 +205,113 @@ exports.dailyCheckIn = async (req, res) => {
 };
 
 // Helper function to check and award achievements
-async function checkAchievements(userId, userStats) {
-  const achievements = await Achievement.find({ isActive: true });
-  
-  for (const achievement of achievements) {
-    // Check if already earned
-    const existing = await UserAchievement.findOne({
-      user: userId,
-      achievement: achievement._id
-    });
+async function checkAchievements(userId, userStats, userDoc = null) {
+  try {
+    if (!userStats) {
+      userStats = await UserStats.findOne({ user: userId });
+      if (!userStats) {
+        userStats = new UserStats({ user: userId });
+      }
+    }
+
+    if (!userDoc) {
+      userDoc = await User.findById(userId);
+    }
+
+    const achievements = await Achievement.find({ isActive: true });
+    const profileComplete = checkProfileComplete(userDoc);
     
-    if (existing) continue;
-
-    let progress = 0;
-    let earned = false;
-
-    switch (achievement.condition.type) {
-      case 'login_streak':
-        if (userStats.loginStreak >= achievement.condition.target) {
-          earned = true;
-        }
-        progress = userStats.loginStreak;
-        break;
-      case 'messages_sent':
-        if (userStats.totalMessagesSent >= achievement.condition.target) {
-          earned = true;
-        }
-        progress = userStats.totalMessagesSent;
-        break;
-      case 'referrals':
-        if (userStats.totalReferrals >= achievement.condition.target) {
-          earned = true;
-        }
-        progress = userStats.totalReferrals;
-        break;
-      case 'gifts_sent':
-        if (userStats.totalGiftsSent >= achievement.condition.target) {
-          earned = true;
-        }
-        progress = userStats.totalGiftsSent;
-        break;
-      case 'gifts_received':
-        if (userStats.totalGiftsReceived >= achievement.condition.target) {
-          earned = true;
-        }
-        progress = userStats.totalGiftsReceived;
-        break;
-      case 'daily_gift_sender':
-        // Check if sent gifts today (need to track daily gifts)
-        progress = userStats.dailyGiftsSent || 0;
-        if (progress >= achievement.condition.target) {
-          earned = true;
-        }
-        break;
-      case 'events_attended':
-        if (userStats.totalEventsAttended >= achievement.condition.target) {
-          earned = true;
-        }
-        progress = userStats.totalEventsAttended;
-        break;
-    }
-
-    if (earned) {
-      const userAchievement = await UserAchievement.create({
+    for (const achievement of achievements) {
+      const existing = await UserAchievement.findOne({
         user: userId,
-        achievement: achievement._id,
-        progress: achievement.condition.target
+        achievement: achievement._id
       });
+      
+      if (existing) continue;
 
-      userStats.achievements.push(userAchievement._id);
-      userStats.points += achievement.points;
-      
-      // Add wallet reward for achievement
-      if (achievement.points > 0) {
-        try {
-          await addReward(userId, achievement.points, `Achievement reward: ${achievement.name}`, 'achievement', achievement._id);
-        } catch (error) {
-          console.error('Error adding wallet reward:', error);
-        }
+      let progress = 0;
+      let earned = false;
+
+      switch (achievement.condition.type) {
+        case 'profile_complete':
+          progress = profileComplete;
+          if (progress >= achievement.condition.target) earned = true;
+          break;
+        case 'login_streak':
+          progress = userStats.loginStreak || 0;
+          if (progress >= achievement.condition.target) earned = true;
+          break;
+        case 'messages_sent':
+          progress = userStats.totalMessagesSent || 0;
+          if (progress >= achievement.condition.target) earned = true;
+          break;
+        case 'referrals':
+          progress = userStats.totalReferrals || 0;
+          if (progress >= achievement.condition.target) earned = true;
+          break;
+        case 'gifts_sent':
+          progress = userStats.totalGiftsSent || 0;
+          if (progress >= achievement.condition.target) earned = true;
+          break;
+        case 'gifts_received':
+          progress = userStats.totalGiftsReceived || 0;
+          if (progress >= achievement.condition.target) earned = true;
+          break;
+        case 'daily_gift_sender':
+          progress = userStats.dailyGiftsSent || 0;
+          if (progress >= achievement.condition.target) earned = true;
+          break;
+        case 'events_attended':
+          progress = userStats.totalEventsAttended || 0;
+          if (progress >= achievement.condition.target) earned = true;
+          break;
       }
-      
-      // Award free premium if achievement has premium reward
-      if (achievement.reward && achievement.reward.freePremiumDays) {
-        const user = await User.findById(userId);
-        if (user) {
-          const premiumExpiry = user.premiumExpiry ? new Date(user.premiumExpiry) : new Date();
-          const now = new Date();
-          const expiryDate = premiumExpiry > now ? premiumExpiry : now;
-          expiryDate.setDate(expiryDate.getDate() + achievement.reward.freePremiumDays);
-          user.premiumExpiry = expiryDate;
-          user.isPremium = true;
-          await user.save();
+
+      if (earned) {
+        const userAchievement = await UserAchievement.create({
+          user: userId,
+          achievement: achievement._id,
+          progress: achievement.condition.target
+        });
+
+        userStats.achievements.push(userAchievement._id);
+        userStats.points += achievement.points;
+        
+        if (achievement.points > 0) {
+          try {
+            await addReward(userId, achievement.points, `Achievement: ${achievement.name}`, 'achievement', achievement._id);
+          } catch (error) {
+            console.error('Error adding wallet reward:', error);
+          }
         }
+        
+        if (achievement.reward && achievement.reward.freePremiumDays > 0) {
+          if (userDoc) {
+            const currentExpiry = (userDoc.premiumExpiresAt && new Date(userDoc.premiumExpiresAt) > new Date()) 
+              ? new Date(userDoc.premiumExpiresAt) 
+              : new Date();
+            userDoc.premiumExpiresAt = new Date(currentExpiry.getTime() + achievement.reward.freePremiumDays * 24 * 60 * 60 * 1000);
+            userDoc.isPremium = true;
+            userDoc.premiumPlan = userDoc.premiumPlan || 'bronze';
+            await userDoc.save();
+          }
+        }
+
+        // Create achievement notification
+        await Notification.create({
+          user: userId,
+          type: 'achievement',
+          message: `🏆 Achievement Unlocked: "${achievement.name}"! You earned ${achievement.points} points!`
+        });
+
+        await userStats.save();
       }
-      
-      await userStats.save();
     }
+  } catch (error) {
+    console.error('Error checking achievements:', error);
   }
 }
 
-// Export helper function for use in other controllers
 exports.checkAchievements = checkAchievements;
 
 // @desc    Create achievement (admin only)
@@ -300,7 +332,7 @@ exports.createAchievement = async (req, res) => {
 // @access  Private/Admin
 exports.updateAchievement = async (req, res) => {
   try {
-    const achievement = await Achievement.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const achievement = await Achievement.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!achievement) {
       return res.status(404).json({ message: 'Achievement not found' });
     }

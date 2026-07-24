@@ -1,8 +1,12 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+import GiftReceiveModal from './components/ui/GiftReceiveModal';
+import AchievementUnlockModal from './components/ui/AchievementUnlockModal';
+import { notificationAPI } from './services/api';
 
 // Route Guards
 import AdminRoute from './routes/AdminRoute';
@@ -12,7 +16,7 @@ import PrivateRoute from './routes/PrivateRoute';
 // Layout
 import Navbar from './components/common/Navbar';
 
-// Lazy-loaded pages (reduces initial bundle size)
+// Lazy-loaded pages
 const Home = lazy(() => import('./pages/public/Home'));
 const PrivacyPolicy = lazy(() => import('./pages/public/PrivacyPolicy'));
 
@@ -33,6 +37,103 @@ const Wallet = lazy(() => import('./pages/user/Wallet'));
 
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 
+// Global component to monitor real-time gifts and achievements
+const GlobalRealtimeMonitor = () => {
+  const { user, isAdmin } = useAuth();
+  const [giftData, setGiftData] = useState(null);
+  const [achievementData, setAchievementData] = useState(null);
+  const [seenNotifs, setSeenNotifs] = useState(() => new Set());
+
+  // Listen for local custom events
+  useEffect(() => {
+    const handleGiftEvent = (e) => {
+      if (e.detail) setGiftData(e.detail);
+    };
+
+    const handleAchievementEvent = (e) => {
+      if (e.detail) setAchievementData(e.detail);
+    };
+
+    window.addEventListener('gift_received_event', handleGiftEvent);
+    window.addEventListener('achievement_unlocked_event', handleAchievementEvent);
+
+    return () => {
+      window.removeEventListener('gift_received_event', handleGiftEvent);
+      window.removeEventListener('achievement_unlocked_event', handleAchievementEvent);
+    };
+  }, []);
+
+  // Poll notifications for real-time gift & achievement alerts
+  useEffect(() => {
+    if (!user || isAdmin) return;
+
+    const checkNotifications = async () => {
+      try {
+        const res = await notificationAPI.getNotifications();
+        const notifs = res.data || [];
+
+        for (const notif of notifs) {
+          if (!seenNotifs.has(notif._id)) {
+            setSeenNotifs(prev => new Set(prev).add(notif._id));
+
+            if (notif.type === 'gift_received' && !notif.isRead) {
+              // Parse gift notification
+              const sender = notif.relatedUser?.name || 'A Match';
+              const match = notif.message?.match(/\((.*?)\)/);
+              const giftStr = match ? match[1] : 'Gift 🎁';
+              const parts = giftStr.split(' ');
+              const emoji = parts[parts.length - 1] || '🎁';
+              const name = parts.slice(0, parts.length - 1).join(' ') || giftStr;
+
+              setGiftData({
+                giftEmoji: emoji,
+                giftName: name,
+                senderName: sender,
+                message: notif.message,
+                pointsEarned: 10,
+                isAnonymous: notif.message?.includes('Someone'),
+              });
+            } else if (notif.type === 'achievement' && !notif.isRead) {
+              const nameMatch = notif.message?.match(/"(.*?)"/);
+              const title = nameMatch ? nameMatch[1] : 'New Achievement';
+              const ptsMatch = notif.message?.match(/(\d+)\s*points/);
+              const points = ptsMatch ? parseInt(ptsMatch[1], 10) : 50;
+
+              setAchievementData({
+                name: title,
+                icon: '🏆',
+                description: 'Awesome job! You just unlocked a new milestone.',
+                points,
+              });
+            }
+          }
+        }
+      } catch (err) {
+        // Silent catch
+      }
+    };
+
+    checkNotifications();
+    const interval = setInterval(checkNotifications, 7000);
+    return () => clearInterval(interval);
+  }, [user, isAdmin, seenNotifs]);
+
+  return (
+    <>
+      <GiftReceiveModal
+        isOpen={Boolean(giftData)}
+        giftData={giftData}
+        onClose={() => setGiftData(null)}
+      />
+      <AchievementUnlockModal
+        isOpen={Boolean(achievementData)}
+        achievement={achievementData}
+        onClose={() => setAchievementData(null)}
+      />
+    </>
+  );
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -44,6 +145,7 @@ function App() {
       >
         <div className="min-h-screen">
           <Navbar />
+          <GlobalRealtimeMonitor />
           <Suspense
             fallback={
               <div className="flex items-center justify-center py-16">
@@ -155,7 +257,7 @@ function App() {
           </Suspense>
           <ToastContainer
             position="top-right"
-            autoClose={1500}
+            autoClose={1800}
             hideProgressBar={false}
             newestOnTop
             closeOnClick

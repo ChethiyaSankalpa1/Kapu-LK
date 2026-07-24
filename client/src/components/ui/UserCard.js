@@ -1,6 +1,7 @@
 import React from 'react';
 import { User, MapPin, Briefcase, GraduationCap, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import PremiumBadge from './PremiumBadge';
 
 const UserCard = ({ user }) => {
     const navigate = useNavigate();
@@ -8,6 +9,11 @@ const UserCard = ({ user }) => {
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 w-full max-w-xs mx-auto">
             <div className="relative h-40 sm:h-48 bg-gradient-to-r from-purple-400 to-pink-500 flex items-center justify-center">
+                {(user.isPremium || user.role === 'admin') && (
+                    <div className="absolute top-2 right-2 z-10">
+                        <PremiumBadge plan={user.premiumPlan} isAdmin={user.role === 'admin'} size="sm" />
+                    </div>
+                )}
                 {user.profileImageUrl ? (
                     <img
                         src={user.profileImageUrl}

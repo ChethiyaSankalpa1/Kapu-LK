@@ -172,8 +172,20 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  premiumPlan: {
+    type: String,
+    enum: ['bronze', 'silver', 'gold', null],
+    default: null,
+  },
   premiumSince: {
     type: Date,
+  },
+  premiumExpiresAt: {
+    type: Date,
+  },
+  premiumExpirySentNotification: {
+    type: Boolean,
+    default: false,
   },
   messagesSent: {
     type: Number,

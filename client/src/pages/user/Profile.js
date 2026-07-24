@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { authAPI, userAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import { User, Upload, Save, ArrowLeft, ArrowRight, PencilLine } from 'lucide-react';
+import PremiumBadge from '../../components/ui/PremiumBadge';
 
 const Profile = () => {
     const { t } = useTranslation();
@@ -261,6 +262,7 @@ const Profile = () => {
                 <h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4 sm:mb-8 text-center flex items-center justify-center gap-2 sm:gap-3">
                     <User className="w-6 h-6 sm:w-10 sm:h-10 text-purple-600 flex-shrink-0" />
                     <span>My Profile</span>
+                    {user?.isPremium && <PremiumBadge plan={user?.premiumPlan} size="md" />}
                 </h1>
 
                 {/* Profile Image Section */}
