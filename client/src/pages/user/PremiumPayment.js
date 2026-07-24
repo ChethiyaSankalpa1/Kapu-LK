@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { premiumAPI, walletAPI } from '../../services/api';
 import { toast } from 'react-toastify';
-import { Crown, CreditCard, CheckCircle, ArrowLeft, Upload, Building, Banknote, Sparkles, Wallet, Shield } from 'lucide-react';
+import { CheckCircle, ArrowLeft, Upload, Building, Sparkles, Wallet } from 'lucide-react';
 import PremiumBadge from '../../components/ui/PremiumBadge';
 
 const PremiumPayment = () => {

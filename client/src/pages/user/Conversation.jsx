@@ -6,8 +6,8 @@ import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 import {
-  ArrowLeft, Send, User, MessageSquare, Crown,
-  Check, CheckCheck, Shield, Smile, Paperclip,
+  ArrowLeft, Send, User, MessageSquare,
+  Check, CheckCheck, Smile, Paperclip,
   Image, Search, X, Edit2, Trash2, MoreVertical, Gift
 } from 'lucide-react';
 import GiftModal from '../../components/ui/GiftModal';

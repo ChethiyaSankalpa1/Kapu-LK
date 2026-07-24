@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Sparkles, X, Wallet, Gift as GiftIcon } from 'lucide-react';
+import { Sparkles, X, Wallet, Gift as GiftIcon } from 'lucide-react';
 
 const GiftReceiveModal = ({ isOpen, giftData, onClose }) => {
   const navigate = useNavigate();
