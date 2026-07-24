@@ -251,7 +251,7 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
       {/* Top Up Modal */}
       {showTopUp && (
         <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Top Up Wallet</h3>
               <button
@@ -262,7 +262,7 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
               </button>
             </div>
             
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">
               Add funds to your wallet to send gifts and unlock premium features. Upload your bank payment slip for approval.
             </p>
 
@@ -299,40 +299,48 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
                   type="file"
                   accept="image/*"
                   onChange={(e) => setPaymentSlip(e.target.files[0])}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm"
                 />
               </div>
 
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-2">
                   <Wallet className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  <span className="font-semibold text-blue-900 dark:text-blue-100">Bank Details</span>
+                  <span className="font-semibold text-blue-900 dark:text-blue-100 text-sm">Transfer Details</span>
                 </div>
-                <div className="text-sm text-blue-700 dark:text-blue-300 space-y-3">
-                  <div className="bg-white dark:bg-slate-700 rounded-lg p-3">
-                    <p className="font-semibold text-slate-900 dark:text-white">Hatton National Bank (HNB)</p>
-                    <p className="text-xs mt-1">Account: 018021102658</p>
-                    <p className="text-xs">Branch: Kandy</p>
-                    <p className="text-xs">Name: S. Kumarasinghe</p>
-                  </div>
-                  <div className="bg-white dark:bg-slate-700 rounded-lg p-3">
-                    <p className="font-semibold text-slate-900 dark:text-white">Sampath Bank</p>
-                    <p className="text-xs mt-1">Account: Contact for details</p>
-                    <p className="text-xs">Branch: Wattegama</p>
-                    <p className="text-xs">Name: S. Kumarasinghe</p>
-                  </div>
-                  <div className="bg-white dark:bg-slate-700 rounded-lg p-3">
-                    <p className="font-semibold text-slate-900 dark:text-white">Bank of Ceylon (BOC)</p>
-                    <p className="text-xs mt-1">Account: 00069058</p>
-                    <p className="text-xs">Branch: Kandy</p>
-                    <p className="text-xs">Name: R. Ratnayake</p>
-                  </div>
-                  <div className="bg-white dark:bg-slate-700 rounded-lg p-3">
-                    <p className="font-semibold text-slate-900 dark:text-white">Regional Development Bank (RDB)</p>
-                    <p className="text-xs mt-1">Account: 409010110698</p>
-                    <p className="text-xs">Branch: Kandy</p>
-                    <p className="text-xs">Name: T. Dharmapriya</p>
-                  </div>
+                <div className="text-sm text-blue-700 dark:text-blue-300">
+                  {selectedBank === 'HNB' && (
+                    <div className="bg-white dark:bg-slate-700 rounded-lg p-3">
+                      <p className="font-semibold text-slate-900 dark:text-white">Hatton National Bank (HNB)</p>
+                      <p className="text-xs mt-1">Account: <span className="font-mono font-bold">018021102658</span></p>
+                      <p className="text-xs">Branch: Kandy</p>
+                      <p className="text-xs">Name: S. Kumarasinghe</p>
+                    </div>
+                  )}
+                  {selectedBank === 'Sampath' && (
+                    <div className="bg-white dark:bg-slate-700 rounded-lg p-3">
+                      <p className="font-semibold text-slate-900 dark:text-white">Sampath Bank</p>
+                      <p className="text-xs mt-1">Account: Contact for details</p>
+                      <p className="text-xs">Branch: Wattegama</p>
+                      <p className="text-xs">Name: S. Kumarasinghe</p>
+                    </div>
+                  )}
+                  {selectedBank === 'BOC' && (
+                    <div className="bg-white dark:bg-slate-700 rounded-lg p-3">
+                      <p className="font-semibold text-slate-900 dark:text-white">Bank of Ceylon (BOC)</p>
+                      <p className="text-xs mt-1">Account: <span className="font-mono font-bold">00069058</span></p>
+                      <p className="text-xs">Branch: Kandy</p>
+                      <p className="text-xs">Name: R. Ratnayake</p>
+                    </div>
+                  )}
+                  {selectedBank === 'RDB' && (
+                    <div className="bg-white dark:bg-slate-700 rounded-lg p-3">
+                      <p className="font-semibold text-slate-900 dark:text-white">Regional Development Bank (RDB)</p>
+                      <p className="text-xs mt-1">Account: <span className="font-mono font-bold">409010110698</span></p>
+                      <p className="text-xs">Branch: Kandy</p>
+                      <p className="text-xs">Name: T. Dharmapriya</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
