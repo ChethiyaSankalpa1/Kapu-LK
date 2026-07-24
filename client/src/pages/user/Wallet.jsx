@@ -86,22 +86,25 @@ const Wallet = () => {
     const fetchAllData = async () => {
         setLoading(true);
         try {
-            const [walletRes, statsRes, achievementsRes, giftsRes, transactionsRes, configsRes, historyRes] = await Promise.all([
+            // Load critical data first
+            const [walletRes, statsRes, giftsRes, configsRes] = await Promise.all([
                 walletAPI.getWallet(),
                 achievementAPI.getMyStats(),
-                achievementAPI.getAchievements(),
                 giftAPI.getGifts(),
-                walletAPI.getTransactions(),
-                redemptionAPI.getConfigs(),
-                redemptionAPI.getHistory()
+                redemptionAPI.getConfigs()
             ]);
+            
             setWallet(walletRes.data);
             setUserStats(statsRes.data.stats || statsRes.data);
-            setAchievements(statsRes.data.achievements && statsRes.data.achievements.length > 0 ? statsRes.data.achievements : (achievementsRes.data && achievementsRes.data.length > 0 ? achievementsRes.data : DEFAULT_ACHIEVEMENTS_LIST));
+            setAchievements(statsRes.data.achievements && statsRes.data.achievements.length > 0 ? statsRes.data.achievements : DEFAULT_ACHIEVEMENTS_LIST);
             setGifts(giftsRes.data || []);
-            setTransactions(transactionsRes.data.transactions || []);
             setRedemptionConfigs(configsRes.data && configsRes.data.length > 0 ? configsRes.data : DEFAULT_REDEMPTION_OPTIONS);
-            setRedemptionHistory(historyRes.data || []);
+            
+            // Load secondary data in background
+            Promise.all([
+                walletAPI.getTransactions({ limit: 10 }).then(res => setTransactions(res.data.transactions || [])),
+                redemptionAPI.getHistory().then(res => setRedemptionHistory(res.data || []))
+            ]).catch(err => console.error('Error loading secondary data:', err));
         } catch (error) {
             toast.error('Failed to load wallet data');
         } finally {

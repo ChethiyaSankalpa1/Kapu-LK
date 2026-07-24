@@ -61,21 +61,23 @@ exports.getMyStats = async (req, res) => {
       await userStats.save();
     }
 
-    // Run checkAchievements to unlock any newly completed ones
-    await checkAchievements(userId, userStats, userDoc);
+    // Only run checkAchievements if userStats was just created or if it's been more than 1 hour since last check
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    if (!userStats.updatedAt || userStats.updatedAt < oneHourAgo) {
+      await checkAchievements(userId, userStats, userDoc);
+      // Refresh userStats after check
+      userStats = await UserStats.findOne({ user: userId })
+        .populate('achievements')
+        .populate({
+          path: 'achievements',
+          populate: {
+            path: 'achievement',
+            model: 'Achievement'
+          }
+        });
+    }
 
-    // Refresh userStats after check
-    userStats = await UserStats.findOne({ user: userId })
-      .populate('achievements')
-      .populate({
-        path: 'achievements',
-        populate: {
-          path: 'achievement',
-          model: 'Achievement'
-        }
-      });
-
-    let allAchievements = await Achievement.find({ isActive: true });
+    let allAchievements = await Achievement.find({ isActive: true }).lean();
     if (!allAchievements || allAchievements.length === 0) {
       allAchievements = await Achievement.insertMany(DEFAULT_ACHIEVEMENTS);
     }
