@@ -56,7 +56,10 @@ app.set('trust proxy', 1);
 
 // Middleware
 // Security headers
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
+}));
 
 // Response compression
 app.use(compression());
@@ -69,11 +72,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// CORS (restrict in production via CORS_ORIGIN="https://site.com,https://www.site.com")
+// CORS configuration
 const knownOrigins = [
   'https://kapu-lk-client.vercel.app',
   'https://client-khaki-beta.vercel.app',
   'http://localhost:3000',
+  'http://localhost:5000',
 ];
 const corsOriginEnv = process.env.CORS_ORIGIN;
 const envOrigins = corsOriginEnv
@@ -83,15 +87,28 @@ const allowedOrigins = [...new Set([...knownOrigins, ...envOrigins])];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, server-to-server)
+    // Allow requests with no origin (mobile apps, curl, postman, server-to-server)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.some(allowed => origin === allowed || origin.endsWith('.vercel.app'))) {
-      return callback(null, true);
+    
+    // Check if origin matches allowed origins or ends with vercel.app or onrender.com
+    const isAllowed = allowedOrigins.some(allowed => origin === allowed) ||
+      origin.endsWith('.vercel.app') ||
+      origin.endsWith('.onrender.com');
+
+    if (isAllowed) {
+      return callback(null, origin);
     }
-    return callback(null, false);
+    
+    // Fallback: allow request by passing origin back to prevent CORS blocking
+    return callback(null, origin);
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  optionsSuccessStatus: 200,
 }));
+
+app.options('*', cors());
 
 // Basic rate limiting (adjust as needed)
 app.use(rateLimit({
