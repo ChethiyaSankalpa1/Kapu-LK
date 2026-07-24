@@ -5,7 +5,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
-const seedUsers = require('./utils/seeder');
+const { seedUsers, seedAchievements, seedGifts } = require('./utils/seeder');
 const { startMessageCleanup } = require('./utils/messageCleanup');
 const { startNotificationCleanup } = require('./utils/notificationCleanup');
 
@@ -35,6 +35,8 @@ let dbConnected = false;
 
     if (allowSeed) {
       await seedUsers();
+      await seedAchievements();
+      await seedGifts();
     }
     if (allowCleanup) {
       startMessageCleanup();

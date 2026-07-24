@@ -1,4 +1,6 @@
 const User = require('../models/User');
+const { Achievement } = require('../models/Achievement');
+const { Gift } = require('../models/Gift');
 
 const seedUsers = async () => {
   try {
@@ -40,4 +42,250 @@ const seedUsers = async () => {
   }
 };
 
-module.exports = seedUsers;
+const seedAchievements = async () => {
+  try {
+    const achievements = [
+      {
+        name: 'First Steps',
+        description: 'Complete your profile for the first time',
+        icon: '👤',
+        category: 'profile',
+        points: 50,
+        rarity: 'bronze',
+        condition: { type: 'profile_complete', target: 1 },
+        reward: { freePremiumDays: 0, bonusPoints: 0 }
+      },
+      {
+        name: 'Conversation Starter',
+        description: 'Send 50 messages to other users',
+        icon: '💬',
+        category: 'messaging',
+        points: 100,
+        rarity: 'bronze',
+        condition: { type: 'messages_sent', target: 50 },
+        reward: { freePremiumDays: 0, bonusPoints: 0 }
+      },
+      {
+        name: 'Social Butterfly',
+        description: 'Send 200 messages to other users',
+        icon: '🦋',
+        category: 'messaging',
+        points: 300,
+        rarity: 'silver',
+        condition: { type: 'messages_sent', target: 200 },
+        reward: { freePremiumDays: 0, bonusPoints: 0 }
+      },
+      {
+        name: 'Chat Master',
+        description: 'Send 500 messages to other users',
+        icon: '🎯',
+        category: 'messaging',
+        points: 500,
+        rarity: 'gold',
+        condition: { type: 'messages_sent', target: 500 },
+        reward: { freePremiumDays: 7, bonusPoints: 0 }
+      },
+      {
+        name: 'Week Warrior',
+        description: 'Maintain a 7-day login streak',
+        icon: '🔥',
+        category: 'engagement',
+        points: 100,
+        rarity: 'bronze',
+        condition: { type: 'login_streak', target: 7 },
+        reward: { freePremiumDays: 0, bonusPoints: 0 }
+      },
+      {
+        name: 'Month Champion',
+        description: 'Maintain a 30-day login streak',
+        icon: '🏆',
+        category: 'engagement',
+        points: 500,
+        rarity: 'gold',
+        condition: { type: 'login_streak', target: 30 },
+        reward: { freePremiumDays: 14, bonusPoints: 0 }
+      },
+      {
+        name: 'First Referral',
+        description: 'Refer your first friend to the platform',
+        icon: '👥',
+        category: 'social',
+        points: 200,
+        rarity: 'bronze',
+        condition: { type: 'referrals', target: 1 },
+        reward: { freePremiumDays: 3, bonusPoints: 0 }
+      },
+      {
+        name: 'Network Builder',
+        description: 'Refer 5 friends to the platform',
+        icon: '🌟',
+        category: 'social',
+        points: 1000,
+        rarity: 'platinum',
+        condition: { type: 'referrals', target: 5 },
+        reward: { freePremiumDays: 30, bonusPoints: 0 }
+      },
+      {
+        name: 'Generous Gifter',
+        description: 'Send 10 gifts to other users',
+        icon: '🎁',
+        category: 'engagement',
+        points: 150,
+        rarity: 'bronze',
+        condition: { type: 'gifts_sent', target: 10 },
+        reward: { freePremiumDays: 0, bonusPoints: 0 }
+      },
+      {
+        name: 'Gift Master',
+        description: 'Send 50 gifts to other users',
+        icon: '💎',
+        category: 'engagement',
+        points: 500,
+        rarity: 'gold',
+        condition: { type: 'gifts_sent', target: 50 },
+        reward: { freePremiumDays: 7, bonusPoints: 0 }
+      },
+      {
+        name: 'Popular',
+        description: 'Receive 20 gifts from other users',
+        icon: '❤️',
+        category: 'social',
+        points: 200,
+        rarity: 'silver',
+        condition: { type: 'gifts_received', target: 20 },
+        reward: { freePremiumDays: 0, bonusPoints: 0 }
+      },
+      {
+        name: 'Daily Gifter',
+        description: 'Send 5 gifts in a single day',
+        icon: '🎊',
+        category: 'engagement',
+        points: 100,
+        rarity: 'bronze',
+        condition: { type: 'daily_gift_sender', target: 5 },
+        reward: { freePremiumDays: 0, bonusPoints: 0 }
+      },
+      {
+        name: 'Event Goer',
+        description: 'Attend 3 events',
+        icon: '🎉',
+        category: 'engagement',
+        points: 150,
+        rarity: 'bronze',
+        condition: { type: 'events_attended', target: 3 },
+        reward: { freePremiumDays: 0, bonusPoints: 0 }
+      },
+      {
+        name: 'Social Star',
+        description: 'Attend 10 events',
+        icon: '⭐',
+        category: 'engagement',
+        points: 500,
+        rarity: 'gold',
+        condition: { type: 'events_attended', target: 10 },
+        reward: { freePremiumDays: 14, bonusPoints: 0 }
+      }
+    ];
+
+    for (const achievement of achievements) {
+      const exists = await Achievement.findOne({ name: achievement.name });
+      if (!exists) {
+        await Achievement.create(achievement);
+        console.log(`✅ Achievement Created: ${achievement.name}`);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Achievement seeding error:', error.message);
+  }
+};
+
+const seedGifts = async () => {
+  try {
+    const gifts = [
+      {
+        name: 'Rose',
+        emoji: '🌹',
+        category: 'romantic',
+        price: 10,
+        isPremium: false,
+        isRecommended: true,
+        isActive: true
+      },
+      {
+        name: 'Heart',
+        emoji: '❤️',
+        category: 'romantic',
+        price: 15,
+        isPremium: false,
+        isRecommended: true,
+        isActive: true
+      },
+      {
+        name: 'Teddy Bear',
+        emoji: '🧸',
+        category: 'cute',
+        price: 25,
+        isPremium: false,
+        isRecommended: false,
+        isActive: true
+      },
+      {
+        name: 'Chocolate',
+        emoji: '🍫',
+        category: 'food',
+        price: 20,
+        isPremium: false,
+        isRecommended: false,
+        isActive: true
+      },
+      {
+        name: 'Diamond Ring',
+        emoji: '💍',
+        category: 'premium',
+        price: 100,
+        isPremium: true,
+        isRecommended: true,
+        isActive: true
+      },
+      {
+        name: 'Bouquet',
+        emoji: '💐',
+        category: 'romantic',
+        price: 50,
+        isPremium: false,
+        isRecommended: false,
+        isActive: true
+      },
+      {
+        name: 'Love Letter',
+        emoji: '💌',
+        category: 'romantic',
+        price: 30,
+        isPremium: false,
+        isRecommended: false,
+        isActive: true
+      },
+      {
+        name: 'Crown',
+        emoji: '👑',
+        category: 'premium',
+        price: 200,
+        isPremium: true,
+        isRecommended: false,
+        isActive: true
+      }
+    ];
+
+    for (const gift of gifts) {
+      const exists = await Gift.findOne({ name: gift.name });
+      if (!exists) {
+        await Gift.create(gift);
+        console.log(`✅ Gift Created: ${gift.name}`);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Gift seeding error:', error.message);
+  }
+};
+
+module.exports = { seedUsers, seedAchievements, seedGifts };
