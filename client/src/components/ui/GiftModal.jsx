@@ -3,7 +3,7 @@ import { giftAPI, walletAPI } from '../../services/api';
 import { X, Heart, Crown, Plus, Wallet } from 'lucide-react';
 import { toast } from 'react-toastify';
 
-const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
+const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) => {
   const [gifts, setGifts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedGift, setSelectedGift] = useState(null);
@@ -66,11 +66,12 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
         isAnonymous
       });
       toast.success('Gift sent successfully!');
-      onClose();
       setSelectedGift(null);
       setMessage('');
       setIsAnonymous(false);
       setWalletBalance(prev => prev - selectedGift.price);
+      if (onGiftSent) onGiftSent();
+      onClose();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to send gift');
     } finally {
@@ -112,72 +113,72 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] sm:max-h-[85vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Send a Gift</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">to {recipientName}</p>
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 dark:border-slate-700 flex-shrink-0">
+          <div className="min-w-0 flex-1 mr-2">
+            <h2 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white truncate">Send a Gift</h2>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">to {recipientName}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 px-3 py-1.5 rounded-full">
-              <Wallet className="w-4 h-4 text-green-600 dark:text-green-400" />
-              <span className="text-sm font-semibold text-green-600 dark:text-green-400">{walletBalance} LKR</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 px-2.5 py-1 rounded-full">
+              <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-600 dark:text-green-400" />
+              <span className="text-xs sm:text-sm font-semibold text-green-600 dark:text-green-400">{walletBalance} LKR</span>
             </div>
             <button
               onClick={() => setShowTopUp(true)}
-              className="p-2 rounded-full bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 transition"
+              className="p-1.5 sm:p-2 rounded-full bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 transition"
               title="Top up wallet"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+              className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition"
             >
-              <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 dark:text-gray-400" />
             </button>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-4 overflow-y-auto max-h-[60vh]">
+        <div className="p-3 sm:p-4 overflow-y-auto flex-1 min-h-0">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 sm:gap-3">
               {gifts.map((gift) => (
                 <button
                   key={gift._id}
                   onClick={() => setSelectedGift(gift)}
-                  className={`p-4 rounded-xl border-2 transition-all ${
+                  className={`p-2.5 sm:p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center text-center ${
                     selectedGift?._id === gift._id
                       ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
                       : 'border-gray-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-700'
                   }`}
                 >
-                  <div className="text-4xl mb-2">{gift.emoji}</div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">{gift.name}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <div className="text-3xl sm:text-4xl mb-1 sm:mb-2">{gift.emoji}</div>
+                  <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate w-full">{gift.name}</div>
+                  <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     {gift.price > 0 ? `${gift.price} LKR` : 'Free'}
                   </div>
                   {gift.isRecommended && (
-                    <div className="flex items-center gap-1 mt-1 text-xs text-pink-600 dark:text-pink-400">
+                    <div className="flex items-center gap-1 mt-1 text-[10px] sm:text-xs text-pink-600 dark:text-pink-400">
                       <Heart className="w-3 h-3" />
                       Popular
                     </div>
                   )}
                   {gift.isPremium && (
-                    <div className="flex items-center gap-1 mt-1 text-xs text-yellow-600 dark:text-yellow-400">
+                    <div className="flex items-center gap-1 mt-1 text-[10px] sm:text-xs text-yellow-600 dark:text-yellow-400">
                       <Crown className="w-3 h-3" />
                       Premium
                     </div>
                   )}
                   {gift.price > walletBalance && (
-                    <div className="mt-1 text-xs text-red-500 dark:text-red-400">
+                    <div className="mt-1 text-[10px] sm:text-xs text-red-500 dark:text-red-400">
                       Need {gift.price - walletBalance} more LKR
                     </div>
                   )}
@@ -188,61 +189,63 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 dark:border-slate-700 space-y-4">
+        <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-slate-700 space-y-2.5 sm:space-y-4 flex-shrink-0 bg-white dark:bg-slate-800">
           {selectedGift && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Message (optional)
                 </label>
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Add a personal message..."
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm resize-none"
+                  className="w-full px-3 py-1.5 sm:py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-xs sm:text-sm resize-none"
                   rows={2}
                   maxLength={200}
                 />
               </div>
 
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isAnonymous}
-                  onChange={(e) => setIsAnonymous(e.target.checked)}
-                  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Send anonymously</span>
-              </label>
+              <div className="flex items-center justify-between gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isAnonymous}
+                    onChange={(e) => setIsAnonymous(e.target.checked)}
+                    className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                  />
+                  <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Send anonymously</span>
+                </label>
 
-              <button
-                onClick={() => {
-                  if (selectedGift.price > walletBalance) {
-                    setShowTopUp(true);
-                  } else {
-                    handleSendGift();
-                  }
-                }}
-                disabled={sending}
-                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {sending ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white" />
-                    Sending...
-                  </>
-                ) : selectedGift.price > walletBalance ? (
-                  <>
-                    <Wallet className="w-4 h-4" />
-                    Top Up to Send
-                  </>
-                ) : (
-                  <>
-                    <Heart className="w-4 h-4" />
-                    Send Gift ({selectedGift.price} LKR)
-                  </>
-                )}
-              </button>
+                <button
+                  onClick={() => {
+                    if (selectedGift.price > walletBalance) {
+                      setShowTopUp(true);
+                    } else {
+                      handleSendGift();
+                    }
+                  }}
+                  disabled={sending}
+                  className="flex-1 max-w-[240px] sm:max-w-none bg-gradient-to-r from-green-600 to-emerald-600 text-white py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold hover:from-green-700 hover:to-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-1.5 sm:gap-2"
+                >
+                  {sending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-b-2 border-white" />
+                      Sending...
+                    </>
+                  ) : selectedGift.price > walletBalance ? (
+                    <>
+                      <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      Top Up to Send
+                    </>
+                  ) : (
+                    <>
+                      <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      Send Gift ({selectedGift.price} LKR)
+                    </>
+                  )}
+                </button>
+              </div>
             </>
           )}
         </div>

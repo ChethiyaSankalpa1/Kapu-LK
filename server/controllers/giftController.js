@@ -151,15 +151,17 @@ exports.sendGift = async (req, res) => {
       relatedGift: transaction._id
     });
 
-    // Create a message in chat
-    if (!isAnonymous) {
-      await Message.create({
-        from: sender,
-        to: to,
-        content: `Sent a gift: ${gift.name} ${gift.emoji}`,
-        type: 'gift'
-      });
-    }
+    // Create a message in chat so it appears in the conversation feed immediately
+    const giftMsgContent = isAnonymous
+      ? (message ? `🎁 Received an anonymous gift: ${gift.name} ${gift.emoji}\n"${message}"` : `🎁 Received an anonymous gift: ${gift.name} ${gift.emoji}`)
+      : (message ? `🎁 Sent a gift: ${gift.name} ${gift.emoji}\n"${message}"` : `🎁 Sent a gift: ${gift.name} ${gift.emoji}`);
+
+    await Message.create({
+      from: sender,
+      to: to,
+      content: giftMsgContent,
+      type: 'gift'
+    });
 
     // Populate and return
     const populatedTransaction = await GiftTransaction.findById(transaction._id)

@@ -644,8 +644,9 @@ const Conversation = () => {
                                   ❤️ Sent you a profile like!
                                 </p>
                               ) : msg.type === 'gift' ? (
-                                <div className="text-sm font-semibold flex items-center gap-1.5 py-1 text-pink-600 bg-pink-50 p-2 rounded border border-pink-100">
-                                  {msg.content}
+                                <div className="text-xs sm:text-sm font-semibold flex items-start gap-2 py-2 px-3 text-pink-700 dark:text-pink-200 bg-pink-50/90 dark:bg-pink-950/70 rounded-xl border border-pink-200 dark:border-pink-800 shadow-sm my-0.5">
+                                  <Gift className="w-4 h-4 text-pink-500 shrink-0 mt-0.5" />
+                                  <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
                                 </div>
                               ) : (
                                 <p className="text-[13px] sm:text-[14px] leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
@@ -862,7 +863,9 @@ const Conversation = () => {
                             if (otherUser && otherUser.giftingOptIn === false) {
                               toast.error(`${otherUser.name} has disabled receiving gifts.`);
                             } else {
-                              setShowGiftModal(true);
+                              // Open Gift Modal
+      setShowGiftModal(true);
+      // Optionally could prefetch gifts here
                             }
                           }}
                           disabled={sending}
@@ -949,9 +952,10 @@ const Conversation = () => {
       {showGiftModal && otherUser && (
         <GiftModal
           isOpen={showGiftModal}
-          onClose={() => {
-            setShowGiftModal(false);
+          onClose={() => setShowGiftModal(false)}
+          onGiftSent={() => {
             fetchChatMessages(true);
+            fetchConversationsList(true);
           }}
           recipientId={userId}
           recipientName={otherUser.name}
