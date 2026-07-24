@@ -100,6 +100,11 @@ app.use(rateLimit({
   legacyHeaders: false,
 }));
 
+const path = require('path');
+
+// Serve uploads static directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 

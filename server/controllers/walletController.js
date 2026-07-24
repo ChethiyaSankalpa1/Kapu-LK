@@ -82,7 +82,7 @@ exports.createPaymentRequest = async (req, res) => {
         branch: selectedBank.branch,
         accountHolder: selectedBank.accountHolder,
         transactionReference: `TXN${Date.now()}`,
-        slipImageUrl: req.file.path,
+        slipImageUrl: `/uploads/payment-slips/${req.file.filename}`,
         status: 'pending'
       });
       

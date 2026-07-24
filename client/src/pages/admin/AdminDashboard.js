@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { adminAPI, messageAPI, userAPI, giftAPI, achievementAPI, successStoryAPI, blogAPI, eventAPI, redemptionAPI } from '../../services/api';
+import { adminAPI, messageAPI, userAPI, giftAPI, achievementAPI, successStoryAPI, blogAPI, eventAPI, redemptionAPI, walletAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
   Users, User, UserCheck, Activity,
@@ -31,6 +31,7 @@ const AdminDashboard = () => {
   const [events, setEvents] = useState([]);
   const [, setRedemptionConfigs] = useState([]);
   const [, setRedemptions] = useState([]);
+  const [walletPaymentRequests, setWalletPaymentRequests] = useState([]);
   
   // Gift management states
   const [showGiftModal, setShowGiftModal] = useState(false);
@@ -89,7 +90,7 @@ const AdminDashboard = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [statsRes, usersRes, premiumRes, conversationsRes, giftsRes, achievementsRes, storiesRes, blogRes, eventsRes, configsRes, redemptionsRes] = await Promise.all([
+      const [statsRes, usersRes, premiumRes, conversationsRes, giftsRes, achievementsRes, storiesRes, blogRes, eventsRes, configsRes, redemptionsRes, walletReqsRes] = await Promise.all([
         adminAPI.getStats(),
         adminAPI.getAllUsers(),
         adminAPI.getPremiumRequests(),
@@ -100,7 +101,8 @@ const AdminDashboard = () => {
         blogAPI.getBlogPosts(),
         eventAPI.getEvents(),
         redemptionAPI.getConfigs(),
-        redemptionAPI.getAllRedemptions()
+        redemptionAPI.getAllRedemptions(),
+        walletAPI.getAllPaymentRequests()
       ]);
       setStats(statsRes.data);
       setUsers(usersRes.data);
@@ -114,6 +116,7 @@ const AdminDashboard = () => {
       setEvents(eventsRes.data);
       setRedemptionConfigs(configsRes.data);
       setRedemptions(redemptionsRes.data);
+      setWalletPaymentRequests(walletReqsRes.data || []);
     } catch (error) {
       console.error('Failed to fetch admin data', error);
       toast.error(t('admin.fetchFailed', { defaultValue: 'Failed to fetch data' }));
@@ -133,6 +136,29 @@ const AdminDashboard = () => {
 
     return () => clearInterval(intervalId);
   }, []);
+
+  const handleApproveWalletPayment = async (id) => {
+    try {
+      await walletAPI.approvePaymentRequest(id);
+      toast.success('Wallet top-up approved & points added to user!');
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to approve payment request');
+    }
+  };
+
+  const handleRejectWalletPayment = async (id) => {
+    const reason = window.prompt('Enter rejection reason (optional):', '');
+    if (reason !== null) {
+      try {
+        await walletAPI.rejectPaymentRequest(id, reason);
+        toast.success('Wallet payment request rejected');
+        fetchData();
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Failed to reject payment request');
+      }
+    }
+  };
 
   const handleApproveUser = async (userId) => {
     try {
@@ -576,6 +602,21 @@ const AdminDashboard = () => {
             )}
           </button>
           <button
+            onClick={() => setActiveTab('wallet-requests')}
+            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'wallet-requests'
+              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+          >
+            <DollarSign className="w-4 h-4" />
+            <span>Wallet Topups</span>
+            {walletPaymentRequests.filter(r => r.status === 'pending').length > 0 && (
+              <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
+                {walletPaymentRequests.filter(r => r.status === 'pending').length}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setActiveTab('messages')}
             className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'messages'
               ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
@@ -932,6 +973,118 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               ))
+            )}
+          </div>
+        )}
+
+        {activeTab === 'wallet-requests' && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Wallet Top-up Payment Requests</h2>
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Review payment slips & approve user points/balance
+              </span>
+            </div>
+
+            {walletPaymentRequests.length === 0 ? (
+              <div className="glass-card p-8 text-center">
+                <DollarSign className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-600 dark:text-gray-300">No wallet payment requests yet</p>
+              </div>
+            ) : (
+              walletPaymentRequests.map((request) => {
+                const userObj = request.user || {};
+                const slipUrl = request.slipImageUrl?.startsWith('http')
+                  ? request.slipImageUrl
+                  : `${(process.env.REACT_APP_API_URL || 'https://kapu-lk-2.onrender.com').replace('/api', '')}${request.slipImageUrl?.startsWith('/') ? '' : '/'}${request.slipImageUrl?.replace(/\\/g, '/')}`;
+
+                return (
+                  <div key={request._id} className="glass-card p-6">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                          {userObj.profileImageUrl ? (
+                            <img
+                              src={userObj.profileImageUrl}
+                              alt={userObj.name}
+                              className="w-full h-full rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-green-600 dark:text-green-400 font-semibold">
+                              {(userObj.name || 'U').charAt(0)}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="space-y-1">
+                          <h3 className="font-bold text-gray-900 dark:text-white">{userObj.name || 'User'}</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">{userObj.email}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            <strong>Bank:</strong> {request.bankName}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            <strong>Account Holder:</strong> {request.accountHolder || 'N/A'}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            <strong>Amount:</strong> <span className="text-green-600 dark:text-green-400 font-bold">Rs. {request.amount} LKR</span>
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            <strong>Transaction Ref:</strong> {request.transactionReference}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            <strong>Date:</strong> {new Date(request.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col space-y-3 min-w-[200px]">
+                        {request.slipImageUrl && (
+                          <a
+                            href={slipUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-secondary text-center flex items-center justify-center space-x-1"
+                          >
+                            <Eye className="w-4 h-4" />
+                            <span>View Payment Slip</span>
+                          </a>
+                        )}
+
+                        {request.status === 'pending' && (
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleApproveWalletPayment(request._id)}
+                              className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg font-semibold flex items-center justify-center space-x-1 transition"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              <span>Approve Points</span>
+                            </button>
+                            <button
+                              onClick={() => handleRejectWalletPayment(request._id)}
+                              className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-lg font-semibold flex items-center justify-center space-x-1 transition text-sm"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              <span>Reject</span>
+                            </button>
+                          </div>
+                        )}
+
+                        {request.status === 'approved' && (
+                          <span className="text-center text-green-600 font-semibold bg-green-50 dark:bg-green-900/20 py-2 rounded-lg">
+                            ✓ Approved & Points Credited
+                          </span>
+                        )}
+
+                        {request.status === 'rejected' && (
+                          <span className="text-center text-red-600 font-semibold bg-red-50 dark:bg-red-900/20 py-2 rounded-lg">
+                            ✗ Rejected
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
         )}
