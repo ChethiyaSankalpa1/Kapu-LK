@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { adminAPI, messageAPI, userAPI } from '../../services/api';
+import { adminAPI, messageAPI, userAPI, giftAPI, achievementAPI, successStoryAPI, blogAPI, eventAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
   Users, User, UserCheck, Activity,
   CheckCircle, XCircle, Trash2, Shield, Crown, AlertTriangle, DollarSign, MessageSquare, MoreVertical,
-  Eye, X, Heart, Phone, Star, Clock
+  Eye, X, Heart, Phone, Star, Clock, Gift, Trophy, Heart as HeartIcon, FileText, Calendar
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -23,6 +23,13 @@ const AdminDashboard = () => {
   const [inspectedUser, setInspectedUser] = useState(null);
   const [inspectorLoading, setInspectorLoading] = useState(false);
 
+  // New feature states
+  const [gifts, setGifts] = useState([]);
+  const [achievements, setAchievements] = useState([]);
+  const [successStories, setSuccessStories] = useState([]);
+  const [blogPosts, setBlogPosts] = useState([]);
+  const [events, setEvents] = useState([]);
+
   const fetchConversations = async () => {
     try {
       const response = await messageAPI.getConversations();
@@ -36,17 +43,27 @@ const AdminDashboard = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [statsRes, usersRes, premiumRes, conversationsRes] = await Promise.all([
+      const [statsRes, usersRes, premiumRes, conversationsRes, giftsRes, achievementsRes, storiesRes, blogRes, eventsRes] = await Promise.all([
         adminAPI.getStats(),
         adminAPI.getAllUsers(),
         adminAPI.getPremiumRequests(),
         messageAPI.getConversations(),
+        giftAPI.getGifts(),
+        achievementAPI.getAchievements(),
+        successStoryAPI.getSuccessStories(),
+        blogAPI.getBlogPosts(),
+        eventAPI.getEvents()
       ]);
       setStats(statsRes.data);
       setUsers(usersRes.data);
       setPremiumRequests(premiumRes.data);
       setConversations(conversationsRes.data);
       setUnreadMessagesCount(conversationsRes.data.reduce((sum, convo) => sum + (convo.unreadCount || 0), 0));
+      setGifts(giftsRes.data);
+      setAchievements(achievementsRes.data);
+      setSuccessStories(storiesRes.data);
+      setBlogPosts(blogRes.data);
+      setEvents(eventsRes.data);
     } catch (error) {
       console.error('Failed to fetch admin data', error);
       toast.error(t('admin.fetchFailed', { defaultValue: 'Failed to fetch data' }));
@@ -321,6 +338,56 @@ const AdminDashboard = () => {
                 {unreadMessagesCount}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => setActiveTab('gifts')}
+            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'gifts'
+              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+          >
+            <Gift className="w-4 h-4" />
+            <span>Gifts</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('achievements')}
+            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'achievements'
+              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+          >
+            <Trophy className="w-4 h-4" />
+            <span>Achievements</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('stories')}
+            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'stories'
+              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+          >
+            <HeartIcon className="w-4 h-4" />
+            <span>Success Stories</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('blog')}
+            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'blog'
+              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span>Blog</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('events')}
+            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'events'
+              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+          >
+            <Calendar className="w-4 h-4" />
+            <span>Events</span>
           </button>
         </div>
 
@@ -683,6 +750,253 @@ const AdminDashboard = () => {
                     </div>
                   </button>
                 ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Gifts Management */}
+        {activeTab === 'gifts' && (
+          <div className="glass-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Gifts Management</h2>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {gifts.map((gift) => (
+                  <div key={gift._id} className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 text-center">
+                    <div className="text-4xl mb-2">{gift.icon}</div>
+                    <p className="font-semibold text-gray-900 dark:text-white">{gift.name}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{gift.points} points</p>
+                  </div>
+                ))}
+              </div>
+              {gifts.length === 0 && (
+                <p className="text-center text-gray-500 dark:text-gray-400 py-8">No gifts configured</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Achievements Management */}
+        {activeTab === 'achievements' && (
+          <div className="glass-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Achievements Management</h2>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {achievements.map((achievement) => (
+                  <div key={achievement._id} className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 text-center">
+                    <div className="text-4xl mb-2">{achievement.icon}</div>
+                    <p className="font-semibold text-gray-900 dark:text-white">{achievement.name}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{achievement.points} points</p>
+                  </div>
+                ))}
+              </div>
+              {achievements.length === 0 && (
+                <p className="text-center text-gray-500 dark:text-gray-400 py-8">No achievements configured</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Success Stories Management */}
+        {activeTab === 'stories' && (
+          <div className="glass-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Success Stories Management</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Couple</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Likes</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {successStories.map((story) => (
+                    <tr key={story._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <p className="font-medium text-gray-900 dark:text-white">{story.coupleName}</p>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          story.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {story.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                        {story.likeCount || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Approve this story?')) {
+                              successStoryAPI.approveSuccessStory(story._id).then(() => {
+                                toast.success('Story approved');
+                                fetchData();
+                              });
+                            }
+                          }}
+                          className="text-green-600 hover:text-green-700 mr-3"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Delete this story?')) {
+                              successStoryAPI.deleteSuccessStory(story._id).then(() => {
+                                toast.success('Story deleted');
+                                fetchData();
+                              });
+                            }
+                          }}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {successStories.length === 0 && (
+                <p className="text-center text-gray-500 dark:text-gray-400 py-8">No success stories</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Blog Management */}
+        {activeTab === 'blog' && (
+          <div className="glass-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Blog Management</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Title</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Author</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {blogPosts.map((post) => (
+                    <tr key={post._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <p className="font-medium text-gray-900 dark:text-white">{post.title}</p>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                        {post.author?.name || 'Admin'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          post.published ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {post.published ? 'Published' : 'Draft'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => {
+                            if (window.confirm(post.published ? 'Unpublish this post?' : 'Publish this post?')) {
+                              blogAPI.publishBlogPost(post._id).then(() => {
+                                toast.success('Post status updated');
+                                fetchData();
+                              });
+                            }
+                          }}
+                          className="text-purple-600 hover:text-purple-700 mr-3"
+                        >
+                          {post.published ? 'Unpublish' : 'Publish'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Delete this post?')) {
+                              blogAPI.deleteBlogPost(post._id).then(() => {
+                                toast.success('Post deleted');
+                                fetchData();
+                              });
+                            }
+                          }}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {blogPosts.length === 0 && (
+                <p className="text-center text-gray-500 dark:text-gray-400 py-8">No blog posts</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Events Management */}
+        {activeTab === 'events' && (
+          <div className="glass-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Events Management</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Event</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Location</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Attendees</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {events.map((event) => (
+                    <tr key={event._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <p className="font-medium text-gray-900 dark:text-white">{event.title}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">{event.eventType}</p>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                        {new Date(event.date).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                        {event.city}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                        {event.attendees?.length || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Delete this event?')) {
+                              eventAPI.deleteEvent(event._id).then(() => {
+                                toast.success('Event deleted');
+                                fetchData();
+                              });
+                            }
+                          }}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {events.length === 0 && (
+                <p className="text-center text-gray-500 dark:text-gray-400 py-8">No events</p>
               )}
             </div>
           </div>
