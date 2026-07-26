@@ -195,8 +195,9 @@ export const redemptionAPI = {
     redeemPoints: (data) => api.post('/redemption/redeem', data),
     // Admin redemption routes
     getAllRedemptions: () => api.get('/redemption/admin/all'),
-    createConfig: (data) => api.post('/redemption/admin/config', data),
-    updateConfig: (id, data) => api.put(`/redemption/admin/config/${id}`, data),
+    createRedemptionConfig: (data) => api.post('/redemption/admin/config', data),
+    updateRedemptionConfig: (id, data) => api.put(`/redemption/admin/config/${id}`, data),
+    deleteRedemptionConfig: (id) => api.delete(`/redemption/admin/config/${id}`),
 };
 
 export default api;

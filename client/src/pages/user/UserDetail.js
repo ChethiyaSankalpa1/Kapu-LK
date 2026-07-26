@@ -6,8 +6,9 @@ import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import {
     User, MapPin, Briefcase, GraduationCap, Heart,
-    Phone, Mail, Calendar, Users as UsersIcon, ArrowLeft, Send, Crown,
-    MessageSquare, Shield, Paperclip, X, Image as ImageIcon
+    Calendar, Users as UsersIcon, ArrowLeft, Send, Crown,
+    MessageSquare, Shield, Paperclip, X, Image as ImageIcon,
+    Clock, CheckCircle, Award, Star, Activity
 } from 'lucide-react';
 import PremiumBadge from '../../components/ui/PremiumBadge';
 
@@ -429,45 +430,64 @@ const UserDetail = () => {
                             </div>
                         </div>
 
-                        {/* Contact Info Section */}
+                        {/* Account Status Section */}
                         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-5 sm:p-8 border border-gray-100 dark:border-gray-700">
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-5 flex items-center gap-2.5">
-                                <Phone className="w-5.5 h-5.5 text-purple-600" />
-                                {t('users.contactInformation', { defaultValue: 'Contact Information' })}
+                                <Activity className="w-5.5 h-5.5 text-purple-600" />
+                                Account Status
                             </h2>
-
-                            {!isOwnProfile && !isPremium ? (
-                                <div className="text-center py-10 px-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10 rounded-2xl border border-yellow-150 dark:border-yellow-800/20">
-                                    <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-                                    <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mb-2">{t('users.unlockContact', { defaultValue: 'Unlock Contact Details' })}</h3>
-                                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-5 max-w-sm mx-auto">{t('users.unlockContactDesc', { defaultValue: 'Upgrade to Premium to view full contact information and connect with matches!' })}</p>
-                                    <Link to="/premium" className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-650 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition">
-                                        <Crown className="w-4 h-4" />
-                                        <span>{t('dashboard.upgradeNow', { defaultValue: 'Get Premium' })}</span>
-                                    </Link>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {user.phoneNumber && (
-                                        <div className="flex items-center gap-3.5 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10 rounded-xl border border-green-100/60 dark:border-green-800/20">
-                                            <Phone className="w-5.5 h-5.5 text-green-600 flex-shrink-0" />
-                                            <div>
-                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Phone Number</p>
-                                                <p className="text-base font-semibold text-gray-950 dark:text-white mt-0.5">{user.phoneNumber}</p>
-                                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {user.createdAt && (
+                                    <div className="flex items-start gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
+                                        <Clock className="w-5.5 h-5.5 text-purple-600 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Member Since</p>
+                                            <p className="text-base font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{new Date(user.createdAt).toLocaleDateString()}</p>
                                         </div>
-                                    )}
-                                    {user.email && (
-                                        <div className="flex items-center gap-3.5 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/10 dark:to-cyan-900/10 rounded-xl border border-blue-100/60 dark:border-blue-800/20">
-                                            <Mail className="w-5.5 h-5.5 text-blue-600 flex-shrink-0" />
-                                            <div>
-                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Email Address</p>
-                                                <p className="text-base font-semibold text-gray-950 dark:text-white mt-0.5 truncate max-w-[180px] sm:max-w-none">{user.email}</p>
-                                            </div>
+                                    </div>
+                                )}
+                                {user.lastActive && (
+                                    <div className="flex items-start gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
+                                        <Activity className="w-5.5 h-5.5 text-purple-600 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Last Active</p>
+                                            <p className="text-base font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{new Date(user.lastActive).toLocaleDateString()}</p>
                                         </div>
-                                    )}
+                                    </div>
+                                )}
+                                <div className="flex items-start gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
+                                    <Crown className="w-5.5 h-5.5 text-purple-600 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Premium Status</p>
+                                        <p className="text-base font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{user.isPremium ? 'Premium Member' : 'Free Member'}</p>
+                                    </div>
                                 </div>
-                            )}
+                                <div className="flex items-start gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
+                                    <CheckCircle className="w-5.5 h-5.5 text-purple-600 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Verification Status</p>
+                                        <p className="text-base font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{user.isVerified ? 'Verified' : 'Not Verified'}</p>
+                                    </div>
+                                </div>
+                                {user.profileCompletion !== undefined && (
+                                    <div className="flex items-start gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
+                                        <Award className="w-5.5 h-5.5 text-purple-600 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Profile Completion</p>
+                                            <p className="text-base font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{user.profileCompletion}%</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {user.interests && user.interests.length > 0 && (
+                                    <div className="flex items-start gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
+                                        <Star className="w-5.5 h-5.5 text-purple-600 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Interests</p>
+                                            <p className="text-base font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{user.interests.join(', ')}</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Send Message Section */}

@@ -15,42 +15,42 @@ exports.getRedemptionConfigs = async (req, res) => {
           _id: 'default_premium_1d',
           rewardType: 'premium',
           rewardName: '1-Day Premium Membership',
-          pointsCost: 50,
+          pointsCost: 150,
           isActive: true
         },
         {
           _id: 'default_premium_7d',
           rewardType: 'premium',
           rewardName: '7 Days Premium Membership',
-          pointsCost: 150,
+          pointsCost: 450,
           isActive: true
         },
         {
           _id: 'default_premium_30d',
           rewardType: 'premium',
           rewardName: '30 Days Premium Membership',
-          pointsCost: 400,
+          pointsCost: 1200,
           isActive: true
         },
         {
           _id: 'default_wallet',
           rewardType: 'wallet',
           rewardName: 'Rs. 500 Wallet Cash',
-          pointsCost: 200,
+          pointsCost: 500,
           isActive: true
         },
         {
           _id: 'default_boost',
           rewardType: 'boost',
           rewardName: '7-Day Profile Boost',
-          pointsCost: 100,
+          pointsCost: 300,
           isActive: true
         },
         {
           _id: 'default_badge',
           rewardType: 'badge',
           rewardName: 'VIP Profile Badge',
-          pointsCost: 75,
+          pointsCost: 200,
           isActive: true
         }
       ];
@@ -87,40 +87,71 @@ exports.redeemPoints = async (req, res) => {
     const { rewardType, rewardName, pointsCost } = req.body;
 
     if (!rewardType || !rewardName || !pointsCost) {
-      return res.status(400).json({ message: 'Missing required fields' });
+      return res.status(400).json({ message: 'Missing required fields: rewardType, rewardName, and pointsCost are required' });
+    }
+
+    if (typeof pointsCost !== 'number' || pointsCost <= 0) {
+      return res.status(400).json({ message: 'Invalid points cost. Must be a positive number.' });
     }
 
     // Check if user has enough points
-    const userStats = await UserStats.findOne({ user: userId });
-    if (!userStats || userStats.points < pointsCost) {
-      return res.status(400).json({ message: 'Insufficient points' });
+    let userStats;
+    try {
+      userStats = await UserStats.findOne({ user: userId });
+    } catch (statsError) {
+      console.error('Error fetching user stats:', statsError);
+      return res.status(500).json({ message: 'Failed to fetch user stats. Please try again.' });
+    }
+
+    if (!userStats) {
+      return res.status(404).json({ message: 'User stats not found. Please complete your profile first.' });
+    }
+
+    if (userStats.points < pointsCost) {
+      return res.status(400).json({ message: `Insufficient points. You have ${userStats.points} points but need ${pointsCost} points.` });
     }
 
     // Check for duplicate redemption (prevent spam)
-    const recentRedemption = await Redemption.findOne({
-      user: userId,
-      rewardType,
-      status: { $in: ['pending', 'completed'] },
-      createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // Last 24 hours
-    });
+    try {
+      const recentRedemption = await Redemption.findOne({
+        user: userId,
+        rewardType,
+        status: { $in: ['pending', 'completed'] },
+        createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // Last 24 hours
+      });
 
-    if (recentRedemption) {
-      return res.status(400).json({ message: 'You have already redeemed this reward in the last 24 hours' });
+      if (recentRedemption) {
+        return res.status(400).json({ message: 'You have already redeemed this reward in the last 24 hours. Please try again later.' });
+      }
+    } catch (recentError) {
+      console.error('Error checking recent redemptions:', recentError);
+      // Continue anyway, don't block on this error
     }
 
     // Create redemption record
-    const redemption = await Redemption.create({
-      user: userId,
-      rewardType,
-      rewardName,
-      pointsCost,
-      status: 'pending',
-      metadata: {}
-    });
+    let redemption;
+    try {
+      redemption = await Redemption.create({
+        user: userId,
+        rewardType,
+        rewardName,
+        pointsCost,
+        status: 'pending',
+        metadata: {}
+      });
+    } catch (createError) {
+      console.error('Error creating redemption record:', createError);
+      return res.status(500).json({ message: 'Failed to create redemption record. Please try again.' });
+    }
 
     // Deduct points
-    userStats.points -= pointsCost;
-    await userStats.save();
+    try {
+      userStats.points -= pointsCost;
+      await userStats.save();
+    } catch (deductError) {
+      console.error('Error deducting points:', deductError);
+      return res.status(500).json({ message: 'Failed to deduct points. Please try again.' });
+    }
 
     // Process the redemption based on type
     let completed = false;
@@ -134,9 +165,9 @@ exports.redeemPoints = async (req, res) => {
           if (user) {
             user.isPremium = true;
             let days = 30;
-            if (rewardName.toLowerCase().includes('1-day') || pointsCost <= 30) {
+            if (rewardName.toLowerCase().includes('1-day') || pointsCost <= 150) {
               days = 1;
-            } else if (rewardName.toLowerCase().includes('7 day') || pointsCost <= 120) {
+            } else if (rewardName.toLowerCase().includes('7 day') || pointsCost <= 450) {
               days = 7;
             } else {
               days = 30;
@@ -150,6 +181,8 @@ exports.redeemPoints = async (req, res) => {
             completed = true;
             redemption.metadata.premiumExpiresAt = user.premiumExpiresAt;
             redemption.metadata.daysGranted = days;
+          } else {
+            errorMessage = 'User not found';
           }
           break;
 
@@ -180,17 +213,24 @@ exports.redeemPoints = async (req, res) => {
           userWallet.balance += cashAmount;
           userWallet.totalDeposited = (userWallet.totalDeposited || 0) + cashAmount;
           await userWallet.save();
-          await WalletTransaction.create({
-            wallet: userWallet._id,
-            user: userId,
-            type: 'reward',
-            amount: cashAmount,
-            currency: 'LKR',
-            description: `Redeemed ${pointsCost} points for Rs. ${cashAmount} wallet cash`,
-            balanceBefore: userWallet.balance - cashAmount,
-            balanceAfter: userWallet.balance,
-            status: 'completed'
-          });
+          
+          try {
+            await WalletTransaction.create({
+              wallet: userWallet._id,
+              user: userId,
+              type: 'reward',
+              amount: cashAmount,
+              currency: 'LKR',
+              description: `Redeemed ${pointsCost} points for Rs. ${cashAmount} wallet cash`,
+              balanceBefore: userWallet.balance - cashAmount,
+              balanceAfter: userWallet.balance,
+              status: 'completed'
+            });
+          } catch (txError) {
+            console.error('Error creating wallet transaction:', txError);
+            // Continue anyway, wallet balance is updated
+          }
+          
           completed = true;
           redemption.metadata.walletAmountAdded = cashAmount;
           break;
@@ -202,11 +242,11 @@ exports.redeemPoints = async (req, res) => {
           break;
 
         default:
-          errorMessage = 'Unknown reward type';
+          errorMessage = `Unknown reward type: ${rewardType}`;
       }
     } catch (processError) {
       console.error('Error processing redemption:', processError);
-      errorMessage = 'Failed to process reward';
+      errorMessage = 'Failed to process reward. Please try again.';
     }
 
     // Update redemption status
@@ -217,11 +257,20 @@ exports.redeemPoints = async (req, res) => {
       redemption.status = 'failed';
       redemption.metadata.error = errorMessage;
       // Refund points on failure
-      userStats.points += pointsCost;
-      await userStats.save();
+      try {
+        userStats.points += pointsCost;
+        await userStats.save();
+      } catch (refundError) {
+        console.error('Error refunding points:', refundError);
+      }
     }
 
-    await redemption.save();
+    try {
+      await redemption.save();
+    } catch (saveError) {
+      console.error('Error saving redemption:', saveError);
+      return res.status(500).json({ message: 'Failed to save redemption record. Please contact support.' });
+    }
 
     res.status(201).json({
       redemption,
@@ -229,7 +278,7 @@ exports.redeemPoints = async (req, res) => {
     });
   } catch (error) {
     console.error('Error redeeming points:', error);
-    res.status(500).json({ message: 'Failed to redeem points' });
+    res.status(500).json({ message: 'An unexpected error occurred. Please try again later.' });
   }
 };
 
@@ -291,5 +340,23 @@ exports.createRedemptionConfig = async (req, res) => {
   } catch (error) {
     console.error('Error creating redemption config:', error);
     res.status(500).json({ message: 'Failed to create config' });
+  }
+};
+
+// @desc    Delete redemption config (admin)
+// @route   DELETE /api/redemption/admin/config/:id
+// @access  Private/Admin
+exports.deleteRedemptionConfig = async (req, res) => {
+  try {
+    const config = await RedemptionConfig.findByIdAndDelete(req.params.id);
+
+    if (!config) {
+      return res.status(404).json({ message: 'Config not found' });
+    }
+
+    res.json({ message: 'Config deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting redemption config:', error);
+    res.status(500).json({ message: 'Failed to delete config' });
   }
 };

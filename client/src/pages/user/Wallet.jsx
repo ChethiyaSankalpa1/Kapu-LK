@@ -13,42 +13,42 @@ const DEFAULT_REDEMPTION_OPTIONS = [
         _id: 'default_premium_1d',
         rewardType: 'premium',
         rewardName: '1-Day Premium Membership',
-        pointsCost: 50,
+        pointsCost: 150,
         description: 'Unlock 24 hours of full Premium access & messaging'
     },
     {
         _id: 'default_premium_7d',
         rewardType: 'premium',
         rewardName: '7 Days Premium Membership',
-        pointsCost: 150,
+        pointsCost: 450,
         description: 'Unlock 7 full days of Premium membership'
     },
     {
         _id: 'default_premium_30d',
         rewardType: 'premium',
         rewardName: '30 Days Premium Membership',
-        pointsCost: 400,
+        pointsCost: 1200,
         description: 'Unlock a full month of Premium membership'
     },
     {
         _id: 'default_wallet',
         rewardType: 'wallet',
         rewardName: 'Rs. 500 Wallet Cash',
-        pointsCost: 200,
+        pointsCost: 500,
         description: 'Add 500 LKR directly to your wallet balance'
     },
     {
         _id: 'default_boost',
         rewardType: 'boost',
         rewardName: '7-Day Profile Boost',
-        pointsCost: 100,
+        pointsCost: 300,
         description: 'Boost profile visibility to 5x more matches'
     },
     {
         _id: 'default_badge',
         rewardType: 'badge',
         rewardName: 'VIP Profile Badge',
-        pointsCost: 75,
+        pointsCost: 200,
         description: 'Show a gold VIP badge on your profile card'
     }
 ];
