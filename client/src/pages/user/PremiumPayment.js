@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { premiumAPI, walletAPI } from '../../services/api';
 import { toast } from 'react-toastify';
-import { CheckCircle, ArrowLeft, Upload, Building, Sparkles, Wallet } from 'lucide-react';
+import { CheckCircle, ArrowLeft, Upload, Building, Sparkles, Wallet, Calendar, Clock } from 'lucide-react';
 import PremiumBadge from '../../components/ui/PremiumBadge';
 
 const PremiumPayment = () => {
@@ -130,6 +130,10 @@ const PremiumPayment = () => {
   };
 
   if (premiumStatus?.isPremium) {
+    const daysRemaining = premiumStatus?.premiumExpiresAt
+      ? Math.ceil((new Date(premiumStatus.premiumExpiresAt) - new Date()) / (1000 * 60 * 60 * 24))
+      : 0;
+
     return (
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-2xl mx-auto glass-card text-center p-8 rounded-3xl border border-yellow-400/40">
@@ -142,6 +146,32 @@ const PremiumPayment = () => {
           <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-3">
             You're an Active Premium Member!
           </h2>
+          
+          {/* Premium Expiry Header */}
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl p-6 mb-6 border border-purple-200 dark:border-purple-800">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+                Premium Valid Until
+              </p>
+            </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              {premiumStatus?.premiumExpiresAt
+                ? new Date(premiumStatus.premiumExpiresAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })
+                : 'N/A'}
+            </p>
+            <div className="flex items-center justify-center gap-2">
+              <Clock className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+              <p className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">
+                {daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Expires today'}
+              </p>
+            </div>
+          </div>
+          
           <p className="text-gray-600 dark:text-gray-300 mb-8 max-w-md mx-auto">
             Enjoy unlimited messaging, boosted visibility, priority matching, and exclusive badges across LoveLK.
           </p>
