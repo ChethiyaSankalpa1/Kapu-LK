@@ -477,7 +477,7 @@ const UserDetail = () => {
                                         </div>
                                     </div>
                                 )}
-                                {user.interests && user.interests.length > 0 && (
+                                {user.interests && Array.isArray(user.interests) && user.interests.length > 0 && (
                                     <div className="flex items-start gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
                                         <Star className="w-5.5 h-5.5 text-purple-600 flex-shrink-0 mt-0.5" />
                                         <div>
