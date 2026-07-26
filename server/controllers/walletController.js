@@ -1,5 +1,6 @@
 const { Wallet, WalletTransaction, PaymentRequest } = require('../models/Wallet');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 // @desc    Get user wallet
 // @route   GET /api/wallet
@@ -205,6 +206,15 @@ exports.approvePaymentRequest = async (req, res) => {
     paymentRequest.reviewedBy = req.user._id;
     paymentRequest.reviewedAt = new Date();
     await paymentRequest.save();
+    
+    // Create notification for user
+    await Notification.create({
+      user: paymentRequest.user,
+      type: 'wallet_topup',
+      message: `🎉 Congratulations! Your wallet has been topped up with Rs. ${paymentRequest.amount} LKR`,
+      relatedId: paymentRequest._id,
+      relatedType: 'payment'
+    });
     
     res.json({ message: 'Payment approved successfully', wallet });
   } catch (error) {

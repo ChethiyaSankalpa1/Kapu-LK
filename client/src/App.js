@@ -6,6 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import GiftReceiveModal from './components/ui/GiftReceiveModal';
 import AchievementUnlockModal from './components/ui/AchievementUnlockModal';
+import WalletTopupModal from './components/ui/WalletTopupModal';
 import { notificationAPI } from './services/api';
 
 // Route Guards
@@ -42,6 +43,7 @@ const GlobalRealtimeMonitor = () => {
   const { user, isAdmin } = useAuth();
   const [giftData, setGiftData] = useState(null);
   const [achievementData, setAchievementData] = useState(null);
+  const [walletTopupData, setWalletTopupData] = useState(null);
   const seenNotifsRef = useRef(new Set());
 
   // Listen for local custom events
@@ -108,6 +110,15 @@ const GlobalRealtimeMonitor = () => {
                 points,
                 notificationId: notif._id,
               });
+            } else if (notif.type === 'wallet_topup') {
+              const amountMatch = notif.message?.match(/Rs\. (\d+(?:,\d+)*)/);
+              const amount = amountMatch ? amountMatch[1] : '0';
+
+              setWalletTopupData({
+                amount: amount,
+                message: notif.message,
+                notificationId: notif._id,
+              });
             }
           }
         }
@@ -140,6 +151,16 @@ const GlobalRealtimeMonitor = () => {
           setAchievementData(null);
           if (achievementData?.notificationId) {
             notificationAPI.markAsRead(achievementData.notificationId).catch(() => {});
+          }
+        }}
+      />
+      <WalletTopupModal
+        isOpen={Boolean(walletTopupData)}
+        topupData={walletTopupData}
+        onClose={() => {
+          setWalletTopupData(null);
+          if (walletTopupData?.notificationId) {
+            notificationAPI.markAsRead(walletTopupData.notificationId).catch(() => {});
           }
         }}
       />
