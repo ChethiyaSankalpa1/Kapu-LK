@@ -273,6 +273,16 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDeleteWalletPayment = async (id) => {
+    try {
+      await walletAPI.deletePaymentRequest(id);
+      toast.success('Wallet payment request deleted');
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete payment request');
+    }
+  };
+
   const handleApproveUser = async (userId) => {
     try {
       await adminAPI.approveUser(userId);
@@ -1362,6 +1372,18 @@ const AdminDashboard = () => {
                             </button>
                           </div>
                         )}
+
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Are you sure you want to delete this payment request?')) {
+                              handleDeleteWalletPayment(request._id);
+                            }
+                          }}
+                          className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-3 rounded-lg font-semibold flex items-center justify-center space-x-1 transition text-sm"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Delete</span>
+                        </button>
 
                         {request.status === 'approved' && (
                           <span className="text-center text-green-600 font-semibold bg-green-50 dark:bg-green-900/20 py-2 rounded-lg">

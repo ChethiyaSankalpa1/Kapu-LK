@@ -186,6 +186,7 @@ export const walletAPI = {
     getAllPaymentRequests: (params = {}) => api.get('/wallet/admin/payment-requests', { params }),
     approvePaymentRequest: (id) => api.put(`/wallet/admin/payment-requests/${id}/approve`),
     rejectPaymentRequest: (id, reason) => api.put(`/wallet/admin/payment-requests/${id}/reject`, { rejectionReason: reason }),
+    deletePaymentRequest: (id) => api.delete(`/wallet/admin/payment-requests/${id}`),
 };
 
 // Redemption API

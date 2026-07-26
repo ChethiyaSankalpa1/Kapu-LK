@@ -9,7 +9,8 @@ const {
   getPaymentRequests,
   getAllPaymentRequests,
   approvePaymentRequest,
-  rejectPaymentRequest
+  rejectPaymentRequest,
+  deletePaymentRequest
 } = require('../controllers/walletController');
 const { protect, admin } = require('../middleware/auth');
 
@@ -60,5 +61,6 @@ router.get('/payment-requests', protect, getPaymentRequests);
 router.get('/admin/payment-requests', protect, admin, getAllPaymentRequests);
 router.put('/admin/payment-requests/:id/approve', protect, admin, approvePaymentRequest);
 router.put('/admin/payment-requests/:id/reject', protect, admin, rejectPaymentRequest);
+router.delete('/admin/payment-requests/:id', protect, admin, deletePaymentRequest);
 
 module.exports = router;

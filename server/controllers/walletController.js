@@ -242,6 +242,36 @@ exports.rejectPaymentRequest = async (req, res) => {
   }
 };
 
+// @desc    Delete payment request (admin)
+// @route   DELETE /api/wallet/admin/payment-requests/:id
+// @access  Private/Admin
+exports.deletePaymentRequest = async (req, res) => {
+  try {
+    const paymentRequest = await PaymentRequest.findById(req.params.id);
+    
+    if (!paymentRequest) {
+      return res.status(404).json({ message: 'Payment request not found' });
+    }
+    
+    // Delete the payment slip file if it exists
+    if (paymentRequest.slipImageUrl) {
+      const fs = require('fs');
+      const path = require('path');
+      const filePath = path.join(__dirname, '..', paymentRequest.slipImageUrl);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+    
+    await PaymentRequest.findByIdAndDelete(req.params.id);
+    
+    res.json({ message: 'Payment request deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting payment request:', error);
+    res.status(500).json({ message: 'Failed to delete payment request' });
+  }
+};
+
 // @desc    Add reward points to wallet
 // @route   POST /api/wallet/reward
 // @access  Private (internal use)

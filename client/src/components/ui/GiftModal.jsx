@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { giftAPI, walletAPI } from '../../services/api';
-import { X, Heart, Crown, Plus, Wallet } from 'lucide-react';
+import { giftAPI, walletAPI, premiumAPI, redemptionAPI } from '../../services/api';
+import { X, Heart, Crown, Plus, Wallet, Star } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) => {
@@ -16,11 +16,18 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
   const [selectedBank, setSelectedBank] = useState('HNB');
   const [paymentSlip, setPaymentSlip] = useState(null);
   const [submittingPayment, setSubmittingPayment] = useState(false);
+  const [showRedeemPremium, setShowRedeemPremium] = useState(false);
+  const [userPoints, setUserPoints] = useState(0);
+  const [selectedPremiumPlan, setSelectedPremiumPlan] = useState(null);
+  const [premiumPlans, setPremiumPlans] = useState([]);
+  const [redeemingPremium, setRedeemingPremium] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       fetchGifts();
       fetchWallet();
+      fetchUserPoints();
+      fetchPremiumPlans();
     }
   }, [isOpen]);
 
@@ -42,6 +49,24 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
       setWalletBalance(response.data.balance || 0);
     } catch (error) {
       console.error('Failed to fetch wallet balance');
+    }
+  };
+
+  const fetchUserPoints = async () => {
+    try {
+      const response = await walletAPI.getWallet();
+      setUserPoints(response.data.points || 0);
+    } catch (error) {
+      console.error('Failed to fetch user points');
+    }
+  };
+
+  const fetchPremiumPlans = async () => {
+    try {
+      const response = await premiumAPI.getPlans();
+      setPremiumPlans(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch premium plans');
     }
   };
 
@@ -110,6 +135,47 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
     }
   };
 
+  const handleRedeemPremium = async () => {
+    if (!selectedPremiumPlan) {
+      toast.error('Please select a premium plan');
+      return;
+    }
+
+    // Find the redemption config for this plan
+    const redemptionConfigs = await redemptionAPI.getConfigs();
+    const premiumConfig = redemptionConfigs.data.find(
+      config => config.rewardType === 'premium' && config.isActive
+    );
+
+    if (!premiumConfig) {
+      toast.error('Premium redemption is not available at this time');
+      return;
+    }
+
+    if (userPoints < premiumConfig.pointsCost) {
+      toast.error(`You need ${premiumConfig.pointsCost} points to redeem premium. You have ${userPoints} points.`);
+      return;
+    }
+
+    setRedeemingPremium(true);
+    try {
+      await redemptionAPI.redeemPoints({
+        rewardType: 'premium',
+        rewardId: selectedPremiumPlan._id,
+        pointsCost: premiumConfig.pointsCost
+      });
+      toast.success('Premium redeemed successfully!');
+      setShowRedeemPremium(false);
+      setSelectedPremiumPlan(null);
+      setUserPoints(prev => prev - premiumConfig.pointsCost);
+      fetchWallet(); // Refresh wallet
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to redeem premium');
+    } finally {
+      setRedeemingPremium(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -126,12 +192,23 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
               <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-600 dark:text-green-400" />
               <span className="text-xs sm:text-sm font-semibold text-green-600 dark:text-green-400">{walletBalance} LKR</span>
             </div>
+            <div className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900/30 px-2.5 py-1 rounded-full">
+              <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600 dark:text-purple-400" />
+              <span className="text-xs sm:text-sm font-semibold text-purple-600 dark:text-purple-400">{userPoints} pts</span>
+            </div>
             <button
               onClick={() => setShowTopUp(true)}
               className="p-1.5 sm:p-2 rounded-full bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 transition"
               title="Top up wallet"
             >
               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </button>
+            <button
+              onClick={() => setShowRedeemPremium(true)}
+              className="p-1.5 sm:p-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 transition"
+              title="Redeem premium"
+            >
+              <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={onClose}
@@ -358,6 +435,85 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
 
             <button
               onClick={() => setShowTopUp(false)}
+              className="w-full py-3 mt-3 border border-gray-300 dark:border-slate-600 rounded-xl font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Redeem Premium Modal */}
+      {showRedeemPremium && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Redeem Premium</h3>
+              <button
+                onClick={() => setShowRedeemPremium(false)}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition"
+              >
+                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+            
+            <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">
+              Use your reward points to unlock premium membership. Select a plan below.
+            </p>
+
+            <div className="space-y-3 mb-6">
+              {premiumPlans.filter(plan => plan.isActive).map((plan) => (
+                <button
+                  key={plan._id}
+                  onClick={() => setSelectedPremiumPlan(plan)}
+                  className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                    selectedPremiumPlan?._id === plan._id
+                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                      : 'border-gray-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Crown className={`w-5 h-5 ${
+                        plan.badge === 'gold' ? 'text-yellow-500' : 
+                        plan.badge === 'silver' ? 'text-gray-400' : 'text-orange-400'
+                      }`} />
+                      <span className="font-bold text-gray-900 dark:text-white">{plan.name}</span>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-300">{plan.durationDays} days</span>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {plan.price} LKR or {plan.durationDays} days
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {selectedPremiumPlan && (
+              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">Your Points</p>
+                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{userPoints}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">Points Required</p>
+                    <p className="text-2xl font-bold text-gray-600 dark:text-gray-300">150</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={handleRedeemPremium}
+              disabled={!selectedPremiumPlan || redeemingPremium || userPoints < 150}
+              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {redeemingPremium ? 'Redeeming...' : 'Redeem Premium'}
+            </button>
+
+            <button
+              onClick={() => setShowRedeemPremium(false)}
               className="w-full py-3 mt-3 border border-gray-300 dark:border-slate-600 rounded-xl font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
             >
               Cancel
