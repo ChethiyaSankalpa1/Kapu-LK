@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { userAPI, messageAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -8,7 +8,7 @@ import {
     User, MapPin, Briefcase, GraduationCap, Heart,
     Calendar, Users as UsersIcon, ArrowLeft, Send, Crown,
     MessageSquare, Shield, Paperclip, X, Image as ImageIcon,
-    Clock, CheckCircle, Award, Star, Activity
+    Clock, CheckCircle, Award, Star, Activity, Phone, Mail
 } from 'lucide-react';
 import PremiumBadge from '../../components/ui/PremiumBadge';
 
@@ -380,53 +380,107 @@ const UserDetail = () => {
                                 <User className="w-5.5 h-5.5 text-purple-600" />
                                 Personal Information
                             </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {user.location && (
-                                    <div className="flex items-start gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
-                                        <MapPin className="w-5.5 h-5.5 text-purple-600 flex-shrink-0 mt-0.5" />
-                                        <div>
-                                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Location</p>
-                                            <p className="text-base font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{user.location}</p>
+                            
+                            {!isOwnProfile && !currentUser?.isPremium ? (
+                                <div className="text-center py-10 px-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10 rounded-2xl border border-yellow-150 dark:border-yellow-800/20">
+                                    <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+                                    <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mb-2">Premium Required</h3>
+                                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-5 max-w-sm mx-auto">Upgrade to Premium to view personal information like location, occupation, education, and more!</p>
+                                    <Link to="/premium" className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-650 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition">
+                                        <Crown className="w-4 h-4" />
+                                        <span>Get Premium</span>
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {user.location && (
+                                        <div className="flex items-start gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
+                                            <MapPin className="w-5.5 h-5.5 text-purple-600 flex-shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Location</p>
+                                                <p className="text-base font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{user.location}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                                {user.occupation && (
-                                    <div className="flex items-start gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
-                                        <Briefcase className="w-5.5 h-5.5 text-purple-600 flex-shrink-0 mt-0.5" />
-                                        <div>
-                                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Occupation</p>
-                                            <p className="text-base font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{user.occupation}</p>
+                                    )}
+                                    {user.occupation && (
+                                        <div className="flex items-start gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
+                                            <Briefcase className="w-5.5 h-5.5 text-purple-600 flex-shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Occupation</p>
+                                                <p className="text-base font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{user.occupation}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                                {user.education && (
-                                    <div className="flex items-start gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
-                                        <GraduationCap className="w-5.5 h-5.5 text-purple-600 flex-shrink-0 mt-0.5" />
-                                        <div>
-                                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Education</p>
-                                            <p className="text-base font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{user.education}</p>
+                                    )}
+                                    {user.education && (
+                                        <div className="flex items-start gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
+                                            <GraduationCap className="w-5.5 h-5.5 text-purple-600 flex-shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Education</p>
+                                                <p className="text-base font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{user.education}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                                {user.religion && (
-                                    <div className="flex items-start gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
-                                        <Heart className="w-5.5 h-5.5 text-purple-600 flex-shrink-0 mt-0.5" />
-                                        <div>
-                                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Religion</p>
-                                            <p className="text-base font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{user.religion}</p>
+                                    )}
+                                    {user.religion && (
+                                        <div className="flex items-start gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
+                                            <Heart className="w-5.5 h-5.5 text-purple-600 flex-shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Religion</p>
+                                                <p className="text-base font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{user.religion}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                                {user.maritalStatus && (
-                                    <div className="flex items-start gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
-                                        <Heart className="w-5.5 h-5.5 text-purple-600 flex-shrink-0 mt-0.5" />
-                                        <div>
-                                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Marital Status</p>
-                                            <p className="text-base font-semibold text-gray-800 dark:text-gray-200 mt-0.5 capitalize">{user.maritalStatus}</p>
+                                    )}
+                                    {user.maritalStatus && (
+                                        <div className="flex items-start gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
+                                            <Heart className="w-5.5 h-5.5 text-purple-600 flex-shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Marital Status</p>
+                                                <p className="text-base font-semibold text-gray-800 dark:text-gray-200 mt-0.5 capitalize">{user.maritalStatus}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                            </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Contact Info Section */}
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-5 sm:p-8 border border-gray-100 dark:border-gray-700">
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-5 flex items-center gap-2.5">
+                                <Phone className="w-5.5 h-5.5 text-purple-600" />
+                                Contact Information
+                            </h2>
+
+                            {!isOwnProfile && currentUser?.premiumPlan !== 'gold' ? (
+                                <div className="text-center py-10 px-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10 rounded-2xl border border-yellow-150 dark:border-yellow-800/20">
+                                    <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+                                    <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mb-2">Gold Membership Required</h3>
+                                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-5 max-w-sm mx-auto">Upgrade to Gold membership to view contact information and connect with matches!</p>
+                                    <Link to="/premium" className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-650 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition">
+                                        <Crown className="w-4 h-4" />
+                                        <span>Get Gold</span>
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {user.phoneNumber && (
+                                        <div className="flex items-center gap-3.5 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10 rounded-xl border border-green-100/60 dark:border-green-800/20">
+                                            <Phone className="w-5.5 h-5.5 text-green-600 flex-shrink-0" />
+                                            <div>
+                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Phone Number</p>
+                                                <p className="text-base font-semibold text-gray-950 dark:text-white mt-0.5">{user.phoneNumber}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {user.email && (
+                                        <div className="flex items-center gap-3.5 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/10 dark:to-cyan-900/10 rounded-xl border border-blue-100/60 dark:border-blue-800/20">
+                                            <Mail className="w-5.5 h-5.5 text-blue-600 flex-shrink-0" />
+                                            <div>
+                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Email Address</p>
+                                                <p className="text-base font-semibold text-gray-950 dark:text-white mt-0.5 truncate max-w-[180px] sm:max-w-none">{user.email}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Account Status Section */}
