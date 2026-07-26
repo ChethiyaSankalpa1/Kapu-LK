@@ -31,7 +31,6 @@ const AdminDashboard = () => {
   const [blogPosts, setBlogPosts] = useState([]);
   const [events, setEvents] = useState([]);
   const [redemptionConfigs, setRedemptionConfigs] = useState([]);
-  const [redemptions, setRedemptions] = useState([]);
   const [walletPaymentRequests, setWalletPaymentRequests] = useState([]);
   
   // Redemption config management states
@@ -126,7 +125,7 @@ const AdminDashboard = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [statsRes, usersRes, premiumRes, plansRes, conversationsRes, giftsRes, achievementsRes, storiesRes, blogRes, eventsRes, configsRes, redemptionsRes, walletReqsRes] = await Promise.all([
+      const [statsRes, usersRes, premiumRes, plansRes, conversationsRes, giftsRes, achievementsRes, storiesRes, blogRes, eventsRes, configsRes, walletReqsRes] = await Promise.all([
         adminAPI.getStats(),
         adminAPI.getAllUsers(),
         adminAPI.getPremiumRequests(),
@@ -138,7 +137,6 @@ const AdminDashboard = () => {
         blogAPI.getBlogPosts(),
         eventAPI.getEvents(),
         redemptionAPI.getConfigs(),
-        redemptionAPI.getAllRedemptions(),
         walletAPI.getAllPaymentRequests()
       ]);
       setStats(statsRes.data);
@@ -153,7 +151,6 @@ const AdminDashboard = () => {
       setBlogPosts(blogRes.data);
       setEvents(eventsRes.data);
       setRedemptionConfigs(configsRes.data);
-      setRedemptions(redemptionsRes.data);
       setWalletPaymentRequests(walletReqsRes.data || []);
     } catch (error) {
       console.error('Failed to fetch admin data', error);

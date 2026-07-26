@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { userAPI, messageAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -58,7 +58,6 @@ const UserDetail = () => {
     }, [fetchUser, fetchAdmin]);
 
     const isOwnProfile = currentUser && user && currentUser._id === user._id;
-    const isPremium = premiumStatus?.isPremium;
 
     const handleExpressInterest = async () => {
         if (!user) return;
