@@ -381,6 +381,25 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
                   onChange={(e) => setPaymentSlip(e.target.files[0])}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm"
                 />
+                {paymentSlip && (
+                  <div className="mt-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Preview:</p>
+                    <div className="relative w-full h-32 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                      <img
+                        src={URL.createObjectURL(paymentSlip)}
+                        alt="Payment slip preview"
+                        className="w-full h-full object-contain"
+                      />
+                      <button
+                        onClick={() => setPaymentSlip(null)}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{paymentSlip.name}</p>
+                  </div>
+                )}
               </div>
 
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
