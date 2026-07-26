@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Wallet, Sparkles } from 'lucide-react';
+import { Wallet, Sparkles } from 'lucide-react';
 
 const WalletTopupModal = ({ isOpen, topupData, onClose }) => {
   if (!isOpen || !topupData) return null;
