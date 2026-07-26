@@ -6,7 +6,7 @@ import { userAPI, messageAPI, notificationAPI, achievementAPI, giftAPI, referral
 import { toast } from 'react-toastify';
 import {
     User, CheckCircle, Clock, MessageCircle, Bell, Search, Heart,
-    Crown, Zap, X, RefreshCw, Flame, Share2, FileText, Calendar, Gift
+    Crown, Zap, X, RefreshCw, Flame, Share2, FileText, Calendar, Gift, Copy
 } from 'lucide-react';
 import ProfileCard from '../../components/ui/ProfileCard';
 import CustomSelect from '../../components/ui/CustomSelect';
@@ -69,6 +69,21 @@ const Dashboard = () => {
     };
 
     const [activeTab, setActiveTab] = useState('overview');
+
+    const handleCopyReferralCode = () => {
+        if (referralCode?.code) {
+            navigator.clipboard.writeText(referralCode.code);
+            toast.success('Referral code copied to clipboard!');
+        }
+    };
+
+    const handleCopyReferralLink = () => {
+        if (referralCode?.code && typeof window !== 'undefined') {
+            const link = `${window.location.origin}/register?ref=${referralCode.code}`;
+            navigator.clipboard.writeText(link);
+            toast.success('Referral link copied to clipboard!');
+        }
+    };
 
     const [featuredUsers, setFeaturedUsers] = useState([]);
     const [allUsers, setAllUsers] = useState([]);
@@ -1145,12 +1160,28 @@ const Dashboard = () => {
                             <>
                                 <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-6 text-center mb-6">
                                     <p className="text-sm text-purple-700 dark:text-purple-300 mb-2">Your Referral Code</p>
-                                    <p className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-4">{referralCode?.code || 'N/A'}</p>
+                                    <div className="flex items-center justify-center gap-3 mb-4">
+                                        <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{referralCode?.code || 'N/A'}</p>
+                                        <button
+                                            onClick={handleCopyReferralCode}
+                                            className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition"
+                                            title="Copy referral code"
+                                        >
+                                            <Copy className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                     <div className="flex items-center justify-center gap-2 text-sm text-purple-700 dark:text-purple-300">
                                         <span>Referral Link:</span>
-                                        <code className="bg-white dark:bg-slate-800 px-2 py-1 rounded">
+                                        <code className="bg-white dark:bg-slate-800 px-2 py-1 rounded flex-1 max-w-xs truncate">
                                             {typeof window !== 'undefined' ? `${window.location.origin}/register?ref=${referralCode?.code || ''}` : ''}
                                         </code>
+                                        <button
+                                            onClick={handleCopyReferralLink}
+                                            className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition"
+                                            title="Copy referral link"
+                                        >
+                                            <Copy className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </div>
 
