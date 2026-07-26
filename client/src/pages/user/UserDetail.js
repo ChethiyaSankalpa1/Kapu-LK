@@ -16,7 +16,7 @@ const UserDetail = () => {
     const { t } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
-    const { user: currentUser, premiumStatus, isAdmin } = useAuth();
+    const { user: currentUser, isAdmin } = useAuth();
     const [user, setUser] = useState(null);
     const [admin, setAdmin] = useState(null);
     const [loading, setLoading] = useState(true);
