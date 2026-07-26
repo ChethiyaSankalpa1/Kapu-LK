@@ -73,10 +73,11 @@ const GlobalRealtimeMonitor = () => {
         const notifs = res.data || [];
 
         for (const notif of notifs) {
-          if (!seenNotifsRef.current.has(notif._id)) {
+          // Only show if not seen AND not already read
+          if (!seenNotifsRef.current.has(notif._id) && !notif.isRead) {
             seenNotifsRef.current.add(notif._id);
 
-            if (notif.type === 'gift_received' && !notif.isRead) {
+            if (notif.type === 'gift_received') {
               // Parse gift notification
               const sender = notif.relatedUser?.name || 'A Match';
               const match = notif.message?.match(/\((.*?)\)/);
@@ -94,7 +95,7 @@ const GlobalRealtimeMonitor = () => {
                 isAnonymous: notif.message?.includes('Someone'),
                 notificationId: notif._id,
               });
-            } else if (notif.type === 'achievement' && !notif.isRead) {
+            } else if (notif.type === 'achievement') {
               const nameMatch = notif.message?.match(/"(.*?)"/);
               const title = nameMatch ? nameMatch[1] : 'New Achievement';
               const ptsMatch = notif.message?.match(/(\d+)\s*points/);
