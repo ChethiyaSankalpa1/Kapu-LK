@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 import GiftReceiveModal from './components/ui/GiftReceiveModal';
 import AchievementUnlockModal from './components/ui/AchievementUnlockModal';
@@ -282,6 +283,7 @@ function App() {
             progressClassName="kapu-toast-progress"
             closeButton={false}
           />
+          <SpeedInsights />
         </div>
       </Router>
     </AuthProvider>
