@@ -209,14 +209,6 @@ const Dashboard = () => {
         }
     }, []);
 
-    const fetchWallet = useCallback(async () => {
-        try {
-            const response = await walletAPI.getWallet();
-            setWallet(response.data);
-        } catch (error) {
-            console.error('Error fetching wallet:', error);
-        }
-    }, []);
 
     const fetchOverviewUsers = useCallback(async () => {
         setOverviewLoading(true);
