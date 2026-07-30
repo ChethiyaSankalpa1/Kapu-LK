@@ -6,7 +6,7 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
 const { seedUsers, seedAchievements, seedGifts } = require('./utils/seeder');
-const { seedRedemptionConfigs } = require('./utils/seedRedemptionConfigs');
+
 const { startMessageCleanup } = require('./utils/messageCleanup');
 const { startNotificationCleanup } = require('./utils/notificationCleanup');
 
@@ -38,8 +38,6 @@ let dbConnected = false;
       await seedUsers();
       await seedAchievements();
       await seedGifts();
-      await seedPremiumPlans();
-      await seedRedemptionConfigs();
     }
     if (allowCleanup) {
       startMessageCleanup();
