@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { userAPI, messageAPI, notificationAPI, achievementAPI, giftAPI, referralAPI, walletAPI } from '../../services/api';
+import { userAPI, messageAPI, notificationAPI, achievementAPI, giftAPI, referralAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
     User, CheckCircle, Clock, MessageCircle, Bell, Search, Heart,
@@ -24,7 +24,7 @@ const Dashboard = () => {
     const [referralCode, setReferralCode] = useState(null);
     const [referralStats, setReferralStats] = useState(null);
     const [referralLoading, setReferralLoading] = useState(false);
-    const [, setWallet] = useState(null);
+
 
     const FREE_LIMIT = 5;
     const messagesLeft = premiumStatus?.isPremium
