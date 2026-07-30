@@ -1,6 +1,36 @@
 const { Wallet, WalletTransaction, PaymentRequest } = require('../models/Wallet');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const { UserStats } = require('../models/Achievement');
+
+// @desc    Get user wallet summary (wallet + stats + recent transactions in 1 request)
+// @route   GET /api/wallet/summary
+// @access  Private
+exports.getWalletSummary = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    let [wallet, userStats, transactions] = await Promise.all([
+      Wallet.findOne({ user: userId }).lean(),
+      UserStats.findOne({ user: userId }).lean(),
+      WalletTransaction.find({ user: userId }).sort({ createdAt: -1 }).limit(10).lean(),
+    ]);
+
+    if (!wallet) {
+      wallet = await Wallet.create({ user: userId });
+      wallet = wallet.toObject();
+    }
+
+    res.json({
+      wallet,
+      userStats: userStats || { points: 0, loginStreak: 0, totalGiftsSent: 0 },
+      transactions: transactions || [],
+    });
+  } catch (error) {
+    console.error('Error fetching wallet summary:', error);
+    res.status(500).json({ message: 'Failed to fetch wallet summary' });
+  }
+};
 
 // @desc    Get user wallet
 // @route   GET /api/wallet
@@ -9,7 +39,7 @@ exports.getWallet = async (req, res) => {
   try {
     const userId = req.user._id;
     
-    let wallet = await Wallet.findOne({ user: userId });
+    let wallet = await Wallet.findOne({ user: userId }).lean();
     if (!wallet) {
       wallet = await Wallet.create({ user: userId });
     }
@@ -34,12 +64,14 @@ exports.getTransactions = async (req, res) => {
       query.type = type;
     }
     
-    const transactions = await WalletTransaction.find(query)
-      .sort({ createdAt: -1 })
-      .limit(parseInt(limit))
-      .skip(parseInt(skip));
-    
-    const total = await WalletTransaction.countDocuments(query);
+    const [transactions, total] = await Promise.all([
+      WalletTransaction.find(query)
+        .sort({ createdAt: -1 })
+        .limit(parseInt(limit))
+        .skip(parseInt(skip))
+        .lean(),
+      WalletTransaction.countDocuments(query),
+    ]);
     
     res.json({ transactions, total });
   } catch (error) {

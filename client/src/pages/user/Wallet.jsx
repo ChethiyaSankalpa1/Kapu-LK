@@ -7,6 +7,7 @@ import {
     Crown, Wallet as WalletIcon, Trophy, Flame, Gift, ArrowUpRight, History,
     Plus, CreditCard, RefreshCw, Star, TrendingUp, Sparkles
 } from 'lucide-react';
+import { WalletSkeleton } from '../../components/ui/SkeletonLoader';
 
 const DEFAULT_REDEMPTION_OPTIONS = [
     {
@@ -86,29 +87,45 @@ const Wallet = () => {
     const fetchAllData = async () => {
         setLoading(true);
         try {
-            // Load critical data first
-            const [walletRes, statsRes, giftsRes, configsRes] = await Promise.all([
-                walletAPI.getWallet(),
-                achievementAPI.getMyStats(),
-                giftAPI.getGifts(),
-                redemptionAPI.getConfigs()
-            ]);
+            // Load wallet summary (wallet, stats, transactions in 1 request)
+            const summaryRes = await walletAPI.getWalletSummary();
+            const summary = summaryRes.data || {};
             
-            setWallet(walletRes.data);
-            setUserStats(statsRes.data.stats || statsRes.data);
-            setAchievements(statsRes.data.achievements && statsRes.data.achievements.length > 0 ? statsRes.data.achievements : DEFAULT_ACHIEVEMENTS_LIST);
-            setGifts(giftsRes.data || []);
-            setRedemptionConfigs(configsRes.data && configsRes.data.length > 0 ? configsRes.data : DEFAULT_REDEMPTION_OPTIONS);
-            
-            // Load secondary data in background
+            setWallet(summary.wallet);
+            setUserStats(summary.userStats);
+            setTransactions(summary.transactions || []);
+            setLoading(false);
+
+            // Load secondary data in background without blocking UI
             Promise.all([
-                walletAPI.getTransactions({ limit: 10 }).then(res => setTransactions(res.data.transactions || [])),
+                achievementAPI.getMyStats().then(res => {
+                    if (res.data?.achievements && res.data.achievements.length > 0) {
+                        setAchievements(res.data.achievements);
+                    }
+                }),
+                giftAPI.getGifts().then(res => setGifts(res.data || [])),
+                redemptionAPI.getConfigs().then(res => {
+                    if (res.data && res.data.length > 0) {
+                        setRedemptionConfigs(res.data);
+                    }
+                }),
                 redemptionAPI.getHistory().then(res => setRedemptionHistory(res.data || []))
-            ]).catch(err => console.error('Error loading secondary data:', err));
+            ]).catch(err => console.error('Error loading background data:', err));
         } catch (error) {
             toast.error('Failed to load wallet data');
-        } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchSummaryOnly = async () => {
+        try {
+            const summaryRes = await walletAPI.getWalletSummary();
+            const summary = summaryRes.data || {};
+            setWallet(summary.wallet);
+            setUserStats(summary.userStats);
+            setTransactions(summary.transactions || []);
+        } catch (error) {
+            // Silent catch
         }
     };
 
@@ -135,7 +152,7 @@ const Wallet = () => {
             setTopUpAmount('');
             setPaymentSlip(null);
             setSelectedBank('HNB');
-            fetchAllData();
+            fetchSummaryOnly();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to submit payment request');
         } finally {
@@ -147,7 +164,7 @@ const Wallet = () => {
         try {
             await achievementAPI.dailyCheckIn();
             toast.success('Check-in successful! +10 LKR');
-            fetchAllData();
+            fetchSummaryOnly();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Check-in failed');
         }
@@ -167,7 +184,8 @@ const Wallet = () => {
                 pointsCost: config.pointsCost
             });
             toast.success(`Successfully redeemed ${config.rewardName}!`);
-            fetchAllData();
+            fetchSummaryOnly();
+            redemptionAPI.getHistory().then(res => setRedemptionHistory(res.data || [])).catch(() => {});
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to redeem reward');
         } finally {
@@ -176,11 +194,7 @@ const Wallet = () => {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-            </div>
-        );
+        return <WalletSkeleton />;
     }
 
     return (

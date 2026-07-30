@@ -9,7 +9,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['message', 'profile_view', 'match', 'profile_reminder', 'gift', 'gift_received', 'achievement', 'premium_activated', 'premium_expiring', 'premium_expired'],
+      enum: ['message', 'profile_view', 'match', 'profile_reminder', 'gift', 'gift_received', 'achievement', 'premium_activated', 'premium_expiring', 'premium_expired', 'wallet_topup'],
       required: true,
     },
     message: {
@@ -34,5 +34,7 @@ const notificationSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+notificationSchema.index({ user: 1, isRead: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Notification', notificationSchema);

@@ -9,9 +9,10 @@ const {
   deleteGift
 } = require('../controllers/giftController');
 const { protect, admin } = require('../middleware/auth');
+const { cacheMiddleware } = require('../middleware/cache');
 
 // Public/Private routes
-router.route('/').get(protect, getGifts);
+router.route('/').get(protect, cacheMiddleware(300), getGifts);
 router.route('/send').post(protect, sendGift);
 router.route('/history').get(protect, getGiftHistory);
 

@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const {
+  getWalletSummary,
   getWallet,
   getTransactions,
   createPaymentRequest,
@@ -52,6 +53,7 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
+router.get('/summary', protect, getWalletSummary);
 router.get('/', protect, getWallet);
 router.get('/transactions', protect, getTransactions);
 router.post('/payment-request', protect, upload.single('paymentSlip'), createPaymentRequest);

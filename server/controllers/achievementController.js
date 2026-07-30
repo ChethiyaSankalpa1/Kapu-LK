@@ -234,19 +234,19 @@ async function checkAchievements(userId, userStats, userDoc = null) {
     }
 
     if (!userDoc) {
-      userDoc = await User.findById(userId);
+      userDoc = await User.findById(userId).lean();
     }
 
-    const achievements = await Achievement.find({ isActive: true });
+    const [achievements, existingUserAchievements] = await Promise.all([
+      Achievement.find({ isActive: true }).lean(),
+      UserAchievement.find({ user: userId }).select('achievement').lean()
+    ]);
+
+    const earnedSet = new Set(existingUserAchievements.map(ua => ua.achievement.toString()));
     const profileComplete = checkProfileComplete(userDoc);
     
     for (const achievement of achievements) {
-      const existing = await UserAchievement.findOne({
-        user: userId,
-        achievement: achievement._id
-      });
-      
-      if (existing) continue;
+      if (earnedSet.has(achievement._id.toString())) continue;
 
       let progress = 0;
       let earned = false;
@@ -309,10 +309,11 @@ async function checkAchievements(userId, userStats, userDoc = null) {
             const currentExpiry = (userDoc.premiumExpiresAt && new Date(userDoc.premiumExpiresAt) > new Date()) 
               ? new Date(userDoc.premiumExpiresAt) 
               : new Date();
-            userDoc.premiumExpiresAt = new Date(currentExpiry.getTime() + achievement.reward.freePremiumDays * 24 * 60 * 60 * 1000);
-            userDoc.isPremium = true;
-            userDoc.premiumPlan = userDoc.premiumPlan || 'bronze';
-            await userDoc.save();
+            await User.findByIdAndUpdate(userId, {
+              premiumExpiresAt: new Date(currentExpiry.getTime() + achievement.reward.freePremiumDays * 24 * 60 * 60 * 1000),
+              isPremium: true,
+              premiumPlan: userDoc.premiumPlan || 'bronze'
+            });
           }
         }
 

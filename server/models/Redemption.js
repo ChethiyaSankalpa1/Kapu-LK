@@ -70,6 +70,9 @@ const RedemptionConfigSchema = new mongoose.Schema({
   }
 });
 
+redemptionSchema.index({ user: 1, createdAt: -1 });
+RedemptionConfigSchema.index({ isActive: 1 });
+
 const Redemption = mongoose.model('Redemption', redemptionSchema);
 const RedemptionConfig = mongoose.model('RedemptionConfig', RedemptionConfigSchema);
 

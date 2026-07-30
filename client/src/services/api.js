@@ -176,6 +176,7 @@ export const typingAPI = {
 
 // Wallet API
 export const walletAPI = {
+    getWalletSummary: () => api.get('/wallet/summary'),
     getWallet: () => api.get('/wallet'),
     getTransactions: (params = {}) => api.get('/wallet/transactions', { params }),
     createPaymentRequest: (formData) => api.post('/wallet/payment-request', formData, {

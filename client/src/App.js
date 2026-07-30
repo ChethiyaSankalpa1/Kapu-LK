@@ -128,7 +128,7 @@ const GlobalRealtimeMonitor = () => {
     };
 
     checkNotifications();
-    const interval = setInterval(checkNotifications, 7000);
+    const interval = setInterval(checkNotifications, 15000);
     return () => clearInterval(interval);
   }, [user, isAdmin]);
 

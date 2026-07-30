@@ -320,30 +320,28 @@ const Dashboard = () => {
         fetchUserStats();
         fetchGifts();
         fetchReferralData();
-        fetchWallet();
 
         // Register real-time synchronization listeners
         const handleSync = () => {
             fetchUserStats();
             fetchNotifications();
-            fetchWallet();
             refreshPremiumStatus();
         };
 
         window.addEventListener('achievement_unlocked_event', handleSync);
         window.addEventListener('gift_received_event', handleSync);
 
-        // periodic refresh for notifications every 20s
+        // periodic refresh for notifications every 45s
         const notifInterval = setInterval(() => {
             fetchNotifications();
-        }, 20000);
+        }, 45000);
         
         return () => {
             clearInterval(notifInterval);
             window.removeEventListener('achievement_unlocked_event', handleSync);
             window.removeEventListener('gift_received_event', handleSync);
         };
-    }, [isProfileComplete, user?.isApproved, user?.role, fetchOverviewUsers, fetchNotifications, fetchConversations, fetchUserStats, fetchGifts, fetchReferralData, fetchWallet, refreshPremiumStatus]);
+    }, [isProfileComplete, user?.isApproved, user?.role, fetchOverviewUsers, fetchNotifications, fetchConversations, fetchUserStats, fetchGifts, fetchReferralData, refreshPremiumStatus]);
 
     useEffect(() => {
         if (activeTab === 'matches' && matches.length === 0 && (user?.isApproved || user?.role === 'admin')) {

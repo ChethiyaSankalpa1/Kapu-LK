@@ -145,6 +145,9 @@ const PaymentRequestSchema = new mongoose.Schema({
   timestamps: true
 });
 
+WalletTransactionSchema.index({ user: 1, createdAt: -1 });
+PaymentRequestSchema.index({ user: 1, status: 1, createdAt: -1 });
+
 const Wallet = mongoose.model('Wallet', WalletSchema);
 const WalletTransaction = mongoose.model('WalletTransaction', WalletTransactionSchema);
 const PaymentRequest = mongoose.model('PaymentRequest', PaymentRequestSchema);

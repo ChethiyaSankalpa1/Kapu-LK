@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { authAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
-import { Eye, EyeOff, Heart } from 'lucide-react';
+import { Eye, EyeOff, Heart, Gift } from 'lucide-react';
 
 const Register = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { login, user, loading: authLoading, language } = useAuth();
+    const [searchParams] = useSearchParams();
     const [formData, setFormData] = useState({
         name: '',
         username: '',
@@ -21,9 +22,18 @@ const Register = () => {
         interests: '',
         hobbies: '',
         agreedToTerms: false,
+        referralCode: '',
     });
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+
+    // Check for referral code in URL
+    useEffect(() => {
+        const ref = searchParams.get('ref');
+        if (ref) {
+            setFormData(prev => ({ ...prev, referralCode: ref }));
+        }
+    }, [searchParams]);
 
     // Redirect if already logged in
     React.useEffect(() => {
@@ -161,6 +171,21 @@ const Register = () => {
                             pattern="[0-9]*"
                             className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
                             placeholder={t('auth.phonePlaceholder', { defaultValue: 'Enter your phone number' })}
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                            <Gift className="w-4 h-4 text-purple-500" />
+                            {t('auth.referralCode', { defaultValue: 'Referral Code (Optional)' })}
+                        </label>
+                        <input
+                            type="text"
+                            name="referralCode"
+                            value={formData.referralCode}
+                            onChange={onChange}
+                            className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
+                            placeholder={t('auth.referralCodePlaceholder', { defaultValue: 'Enter referral code for bonus rewards' })}
                         />
                     </div>
 

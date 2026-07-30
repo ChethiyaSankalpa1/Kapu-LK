@@ -139,6 +139,9 @@ const UserStatsSchema = new mongoose.Schema({
   timestamps: true
 });
 
+AchievementSchema.index({ isActive: 1 });
+UserAchievementSchema.index({ user: 1, achievement: 1 });
+
 const Achievement = mongoose.model('Achievement', AchievementSchema);
 const UserAchievement = mongoose.model('UserAchievement', UserAchievementSchema);
 const UserStats = mongoose.model('UserStats', UserStatsSchema);
