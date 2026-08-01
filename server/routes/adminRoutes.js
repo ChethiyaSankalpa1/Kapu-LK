@@ -10,7 +10,8 @@ const {
   togglePremiumStatus,
   getDashboardStats,
   createAdmin,
-  deletePremiumRequest
+  deletePremiumRequest,
+  seedSriLankanContent
 } = require('../controllers/adminController');
 const { 
   getAllRequests, 
@@ -35,5 +36,6 @@ router.get('/premium-requests', protect, admin, getAllRequests);
 router.put('/premium-requests/:id/approve', protect, admin, approveRequest);
 router.put('/premium-requests/:id/reject', protect, admin, rejectRequest);
 router.delete('/premium-requests/:id', protect, admin, deletePremiumRequest);
+router.post('/seed-sri-lankan-content', protect, admin, seedSriLankanContent);
 
 module.exports = router;
