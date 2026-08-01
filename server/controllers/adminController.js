@@ -480,8 +480,7 @@ exports.seedSriLankanContent = async (req, res) => {
         weddingDate: '2025-08-15',
         advice: 'Be patient and take time to really get to know each other. The right person is worth the wait!',
         photos: ['https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=600&fit=crop'],
-        isFeatured: true,
-        isPublished: true
+        isFeatured: true
       },
       {
         coupleName: 'Raj & Priya',
@@ -490,8 +489,7 @@ exports.seedSriLankanContent = async (req, res) => {
         weddingDate: '2024-12-20',
         advice: 'Don\'t let distance or cultural differences stop you. Love transcends all boundaries.',
         photos: ['https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=800&h=600&fit=crop'],
-        isFeatured: true,
-        isPublished: true
+        isFeatured: true
       },
       {
         coupleName: 'Kasun & Nadee',
@@ -500,8 +498,7 @@ exports.seedSriLankanContent = async (req, res) => {
         weddingDate: '2024-11-10',
         advice: 'Be open to new experiences. You never know where you might find love!',
         photos: ['https://images.unsplash.com/photo-1606800052052-a08af7148866?w=800&h=600&fit=crop'],
-        isFeatured: true,
-        isPublished: true
+        isFeatured: true
       },
       {
         coupleName: 'Suresh & Fathima',
@@ -510,8 +507,7 @@ exports.seedSriLankanContent = async (req, res) => {
         weddingDate: '2025-01-25',
         advice: 'Respect and understanding are key to any relationship, especially across different backgrounds.',
         photos: ['https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800&h=600&fit=crop'],
-        isFeatured: true,
-        isPublished: true
+        isFeatured: true
       },
       {
         coupleName: 'Tharindu & Dilini',
@@ -520,8 +516,7 @@ exports.seedSriLankanContent = async (req, res) => {
         weddingDate: '2024-10-05',
         advice: 'Make time for what matters. Even busy schedules can\'t stop true love.',
         photos: ['https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=800&h=600&fit=crop'],
-        isFeatured: true,
-        isPublished: true
+        isFeatured: true
       }
     ];
 
