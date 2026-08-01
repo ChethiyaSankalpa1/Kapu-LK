@@ -126,7 +126,7 @@ const AdminDashboard = () => {
   const fetchData = useCallback(async () => {
     try {
       const [statsRes, usersRes, premiumRes, plansRes, conversationsRes, giftsRes, achievementsRes, storiesRes, blogRes, eventsRes, configsRes, walletReqsRes] = await Promise.all([
-        adminAPI.getStats(),
+        adminAPI.getDashboardStats(),
         adminAPI.getAllUsers(),
         adminAPI.getPremiumRequests(),
         premiumAPI.getAllPlansAdmin(),
