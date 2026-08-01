@@ -71,19 +71,19 @@ export const premiumAPI = {
 
 // Admin API
 export const adminAPI = {
-    getAllUsers: () => api.get('/admin/users'),
-    getStats: () => api.get('/admin/stats'),
+    getAllUsers: (params = {}) => api.get('/admin/users', { params }),
+    getDashboardStats: () => api.get('/admin/stats'),
     approveUser: (id) => api.put(`/admin/users/${id}/approve`),
     rejectUser: (id) => api.put(`/admin/users/${id}/reject`),
+    updateUserRole: (id, role) => api.put(`/admin/users/${id}/role`, { role }),
+    toggleUserStatus: (id) => api.put(`/admin/users/${id}/toggle-active`),
+    togglePremiumStatus: (id, data) => api.put(`/admin/users/${id}/toggle-premium`, data),
     deleteUser: (id) => api.delete(`/admin/users/${id}`),
-    updateRole: (id, role) => api.put(`/admin/users/${id}/role`, { role }),
-    toggleStatus: (id) => api.put(`/admin/users/${id}/toggle-active`),
-    togglePremium: (id, data) => api.put(`/admin/users/${id}/toggle-premium`, data),
-    createAdmin: () => api.post('/admin/create-admin'),
-    getPremiumRequests: () => api.get('/admin/premium-requests'),
-    approvePremium: (id) => api.put(`/admin/premium-requests/${id}/approve`),
-    rejectPremium: (id, reason) => api.put(`/admin/premium-requests/${id}/reject`, { rejectionReason: reason }),
+    getAllRequests: () => api.get('/admin/premium-requests'),
+    approveRequest: (id) => api.put(`/admin/premium-requests/${id}/approve`),
+    rejectRequest: (id, reason) => api.put(`/admin/premium-requests/${id}/reject`, { rejectionReason: reason }),
     deletePremiumRequest: (id) => api.delete(`/admin/premium-requests/${id}`),
+    seedSriLankanContent: () => api.post('/admin/seed-sri-lankan-content'),
 };
 
 export const messageAPI = {

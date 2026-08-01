@@ -647,6 +647,19 @@ const AdminDashboard = () => {
     setInspectedUser(null);
   };
 
+  const handleSeedSriLankanContent = async () => {
+    if (!window.confirm('This will clear existing events, blogs, and success stories and add Sri Lankan content. Continue?')) {
+      return;
+    }
+    try {
+      const response = await adminAPI.seedSriLankanContent();
+      toast.success(`✅ ${response.data.message}: ${response.data.events} events, ${response.data.blogs} blogs, ${response.data.successStories} stories`);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to seed content');
+    }
+  };
+
   const calculateProfileCompletion = (user) => {
     if (!user) return 0;
     const fields = [
@@ -669,9 +682,18 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen py-5 sm:py-8">
       <div className="container mx-auto px-4 sm:px-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-5 sm:mb-8 flex items-center space-x-2">
-          <Shield className="w-7 h-7 sm:w-8 sm:h-8 text-purple-600" />
-          <span>{t('admin.title')}</span>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-5 sm:mb-8 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Shield className="w-7 h-7 sm:w-8 sm:h-8 text-purple-600" />
+            <span>{t('admin.title')}</span>
+          </div>
+          <button
+            onClick={handleSeedSriLankanContent}
+            className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg text-sm font-semibold hover:from-green-600 hover:to-emerald-700 transition-all flex items-center gap-2"
+          >
+            <FileText className="w-4 h-4" />
+            Seed Sri Lankan Content
+          </button>
         </h1>
 
         {/* Stats Cards */}
