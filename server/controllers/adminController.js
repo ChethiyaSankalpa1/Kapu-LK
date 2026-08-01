@@ -303,10 +303,7 @@ exports.seedSriLankanContent = async (req, res) => {
 
     // Get some regular users for success stories
     const users = await User.find({ role: { $ne: 'admin' } }).limit(10);
-    if (users.length < 2) {
-      return res.status(400).json({ message: 'Not enough users found for success stories' });
-    }
-
+    
     // Clear existing content
     await Event.deleteMany({});
     await Blog.deleteMany({});
@@ -534,24 +531,34 @@ exports.seedSriLankanContent = async (req, res) => {
     // Seed Blogs
     const createdBlogs = await Blog.insertMany(blogs);
 
-    // Seed Success Stories with actual users
+    // Seed Success Stories with actual users or admin as fallback
+    let createdStories = 0;
     for (let i = 0; i < successStories.length; i++) {
       const storyData = successStories[i];
-      const user1 = users[i * 2];
-      const user2 = users[i * 2 + 1] || users[0];
       
-      storyData.user1 = user1._id;
-      storyData.user2 = user2._id;
+      // Use available users or admin as fallback
+      if (users.length >= 2) {
+        const user1 = users[i * 2];
+        const user2 = users[i * 2 + 1] || users[0];
+        storyData.user1 = user1._id;
+        storyData.user2 = user2._id;
+      } else {
+        // Use admin as both users if not enough regular users
+        storyData.user1 = adminUser;
+        storyData.user2 = adminUser;
+      }
+      
       storyData.submittedBy = adminUser;
       
       await SuccessStory.create(storyData);
+      createdStories++;
     }
 
     res.json({
       message: '✅ Sri Lankan content seeded successfully!',
       events: createdEvents.length,
       blogs: createdBlogs.length,
-      successStories: successStories.length
+      successStories: createdStories
     });
   } catch (error) {
     console.error('Error seeding Sri Lankan content:', error);

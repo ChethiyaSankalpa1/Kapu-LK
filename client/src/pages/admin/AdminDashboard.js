@@ -128,7 +128,7 @@ const AdminDashboard = () => {
       const [statsRes, usersRes, premiumRes, plansRes, conversationsRes, giftsRes, achievementsRes, storiesRes, blogRes, eventsRes, configsRes, walletReqsRes] = await Promise.all([
         adminAPI.getDashboardStats(),
         adminAPI.getAllUsers(),
-        adminAPI.getPremiumRequests(),
+        adminAPI.getAllRequests(),
         premiumAPI.getAllPlansAdmin(),
         messageAPI.getConversations(),
         giftAPI.getGifts(),
