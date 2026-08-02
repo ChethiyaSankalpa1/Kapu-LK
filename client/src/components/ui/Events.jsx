@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { eventAPI } from '../../services/api';
-import { Calendar, Users, Heart, Share2, Plus, Check, X } from 'lucide-react';
+import { Calendar, MapPin, Users, Heart, Share2, Plus, Check, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 
