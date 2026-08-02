@@ -96,19 +96,7 @@ const Blog = ({ isAdmin = false }) => {
     }
   };
 
-// Removed unused handlePublish function
 
-  const handleDelete = async (postId) => {
-    if (!window.confirm('Are you sure you want to delete this post?')) return;
-    try {
-      await blogAPI.deleteBlogPost(postId);
-      toast.success('Post deleted!');
-      fetchPosts();
-      if (selectedPost?._id === postId) setSelectedPost(null);
-    } catch (error) {
-      toast.error('Failed to delete post');
-    }
-  };
 
   const openEditor = (post = null) => {
     if (post) {
