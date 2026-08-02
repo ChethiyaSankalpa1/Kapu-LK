@@ -63,9 +63,23 @@ const Events = ({ isAdmin = false }) => {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
+      const start = formData.date ? new Date(`${formData.date}T${formData.time || '10:00'}:00`) : new Date();
+      const end = new Date(start.getTime() + 3 * 60 * 60 * 1000);
       await eventAPI.createEvent({
-        ...formData,
-        maxAttendees: formData.maxAttendees ? parseInt(formData.maxAttendees) : null
+        title: formData.title,
+        description: formData.description,
+        eventType: formData.eventType,
+        startDate: start,
+        endDate: end,
+        location: {
+          type: formData.eventType === 'webinar' ? 'online' : 'physical',
+          address: formData.location,
+          city: formData.city,
+          country: 'Sri Lanka'
+        },
+        coverImage: formData.coverImage,
+        maxAttendees: formData.maxAttendees ? parseInt(formData.maxAttendees) : null,
+        isPublished: true
       });
       toast.success('Event created!');
       setShowCreateForm(false);
@@ -99,11 +113,28 @@ const Events = ({ isAdmin = false }) => {
   };
 
   const isEventPast = (event) => {
-    return moment(event.date).isBefore(moment(), 'day');
+    const d = event.startDate || event.date;
+    return d ? moment(d).isBefore(moment(), 'day') : false;
   };
 
   const isEventFull = (event) => {
     return event.maxAttendees && event.attendees?.length >= event.maxAttendees;
+  };
+
+  const getEventLocation = (event) => {
+    if (!event) return '';
+    if (typeof event.location === 'object' && event.location !== null) {
+      return event.location.address || event.location.meetingLink || event.location.type || '';
+    }
+    return event.location || '';
+  };
+
+  const getEventCity = (event) => {
+    if (!event) return '';
+    if (typeof event.location === 'object' && event.location !== null) {
+      return event.location.city || '';
+    }
+    return event.city || '';
   };
 
   if (loading) {
@@ -115,6 +146,8 @@ const Events = ({ isAdmin = false }) => {
   }
 
   if (selectedEvent) {
+    const eventDateStr = selectedEvent.startDate || selectedEvent.date;
+    const eventTimeStr = selectedEvent.startDate ? moment(selectedEvent.startDate).format('h:mm A') : (selectedEvent.time || 'Time TBD');
     return (
       <div className="space-y-6">
         <button
@@ -152,15 +185,15 @@ const Events = ({ isAdmin = false }) => {
               <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
                 <Calendar className="w-5 h-5 text-purple-500" />
                 <div>
-                  <p className="font-medium">{moment(selectedEvent.date).format('MMMM D, YYYY')}</p>
-                  <p className="text-sm">{selectedEvent.time || 'Time TBD'}</p>
+                  <p className="font-medium">{moment(eventDateStr).format('MMMM D, YYYY')}</p>
+                  <p className="text-sm">{eventTimeStr}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
                 <MapPin className="w-5 h-5 text-purple-500" />
                 <div>
-                  <p className="font-medium">{selectedEvent.location}</p>
-                  <p className="text-sm">{selectedEvent.city}</p>
+                  <p className="font-medium">{getEventLocation(selectedEvent)}</p>
+                  <p className="text-sm">{getEventCity(selectedEvent)}</p>
                 </div>
               </div>
             </div>
@@ -240,20 +273,20 @@ const Events = ({ isAdmin = false }) => {
               {selectedEvent.attendees.map((attendee, idx) => (
                 <div key={idx} className="flex flex-col items-center text-center">
                   <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-500/20 flex items-center justify-center mb-2">
-                    {attendee.profileImageUrl ? (
+                    {attendee.user?.profileImageUrl || attendee.profileImageUrl ? (
                       <img
-                        src={attendee.profileImageUrl}
-                        alt={attendee.name}
+                        src={attendee.user?.profileImageUrl || attendee.profileImageUrl}
+                        alt={attendee.user?.name || attendee.name}
                         className="w-full h-full rounded-full object-cover"
                       />
                     ) : (
                       <span className="text-purple-600 dark:text-purple-400 font-semibold">
-                        {attendee.name?.charAt(0) || 'U'}
+                        {(attendee.user?.name || attendee.name)?.charAt(0) || 'U'}
                       </span>
                     )}
                   </div>
                   <span className="text-sm text-gray-700 dark:text-gray-300 truncate w-full">
-                    {attendee.name}
+                    {attendee.user?.name || attendee.name}
                   </span>
                 </div>
               ))}
@@ -285,58 +318,64 @@ const Events = ({ isAdmin = false }) => {
 
       {/* Events Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {events.map((event) => (
-          <div
-            key={event._id}
-            onClick={() => setSelectedEvent(event)}
-            className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-sm border border-gray-200 dark:border-slate-700 cursor-pointer hover:shadow-md transition"
-          >
-            {event.coverImage && (
-              <img
-                src={event.coverImage}
-                alt={event.title}
-                className="w-full h-48 object-cover"
-              />
-            )}
-            <div className="p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="px-2 py-1 bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium capitalize">
-                  {event.eventType}
-                </span>
-                {isEventPast(event) && (
-                  <span className="px-2 py-1 bg-gray-100 dark:bg-gray-500/20 text-gray-700 dark:text-gray-400 rounded-full text-xs">
-                    Past
+        {events.map((event) => {
+          const cardDate = event.startDate || event.date;
+          const cardCity = getEventCity(event);
+          return (
+            <div
+              key={event._id}
+              onClick={() => setSelectedEvent(event)}
+              className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-sm border border-gray-200 dark:border-slate-700 cursor-pointer hover:shadow-md transition"
+            >
+              {event.coverImage && (
+                <img
+                  src={event.coverImage}
+                  alt={event.title}
+                  className="w-full h-48 object-cover"
+                />
+              )}
+              <div className="p-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-2 py-1 bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium capitalize">
+                    {event.eventType}
                   </span>
-                )}
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2">
-                {event.title}
-              </h3>
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                  <Calendar className="w-4 h-4" />
-                  {moment(event.date).format('MMM D, YYYY')}
+                  {isEventPast(event) && (
+                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-500/20 text-gray-700 dark:text-gray-400 rounded-full text-xs">
+                      Past
+                    </span>
+                  )}
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                  <MapPin className="w-4 h-4" />
-                  {event.city}
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2">
+                  {event.title}
+                </h3>
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                    <Calendar className="w-4 h-4" />
+                    {moment(cardDate).format('MMM D, YYYY')}
+                  </div>
+                  {cardCity && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                      <MapPin className="w-4 h-4" />
+                      {cardCity}
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                <div className="flex items-center gap-1">
-                  <Users className="w-3 h-3" />
-                  {event.attendees?.length || 0} going
-                </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                   <div className="flex items-center gap-1">
-                    <Heart className="w-3 h-3" />
-                    {event.likeCount || 0}
+                    <Users className="w-3 h-3" />
+                    {event.attendees?.length || event.currentAttendees || 0} going
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                      <Heart className="w-3 h-3" />
+                      {event.likeCount || 0}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {events.length === 0 && (
@@ -363,22 +402,27 @@ const Events = ({ isAdmin = false }) => {
             </div>
             <form onSubmit={handleCreate} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="event-title-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Event Title
                 </label>
                 <input
+                  id="event-title-input"
+                  name="title"
                   type="text"
                   required
+                  autoComplete="off"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="event-type-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Event Type
                 </label>
                 <select
+                  id="event-type-select"
+                  name="eventType"
                   value={formData.eventType}
                   onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
@@ -392,23 +436,29 @@ const Events = ({ isAdmin = false }) => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="event-date-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Date
                   </label>
                   <input
+                    id="event-date-input"
+                    name="date"
                     type="date"
                     required
+                    autoComplete="off"
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="event-time-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Time
                   </label>
                   <input
+                    id="event-time-input"
+                    name="time"
                     type="time"
+                    autoComplete="off"
                     value={formData.time}
                     onChange={(e) => setFormData({ ...formData, time: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
@@ -416,12 +466,15 @@ const Events = ({ isAdmin = false }) => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="event-location-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Location
                 </label>
                 <input
+                  id="event-location-input"
+                  name="location"
                   type="text"
                   required
+                  autoComplete="off"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
@@ -429,23 +482,29 @@ const Events = ({ isAdmin = false }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="event-city-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   City
                 </label>
                 <input
+                  id="event-city-input"
+                  name="city"
                   type="text"
                   required
+                  autoComplete="off"
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="event-maxattendees-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Max Attendees (optional)
                 </label>
                 <input
+                  id="event-maxattendees-input"
+                  name="maxAttendees"
                   type="number"
+                  autoComplete="off"
                   value={formData.maxAttendees}
                   onChange={(e) => setFormData({ ...formData, maxAttendees: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
@@ -453,11 +512,14 @@ const Events = ({ isAdmin = false }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="event-description-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Description
                 </label>
                 <textarea
+                  id="event-description-input"
+                  name="description"
                   required
+                  autoComplete="off"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
@@ -466,11 +528,14 @@ const Events = ({ isAdmin = false }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="event-coverimage-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Cover Image URL
                 </label>
                 <input
+                  id="event-coverimage-input"
+                  name="coverImage"
                   type="url"
+                  autoComplete="off"
                   value={formData.coverImage}
                   onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"

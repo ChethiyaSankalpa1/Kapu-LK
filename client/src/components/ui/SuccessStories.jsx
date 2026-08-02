@@ -26,7 +26,7 @@ const SuccessStories = () => {
   const fetchStories = async () => {
     setLoading(true);
     try {
-      const response = await successStoryAPI.getSuccessStories({ featured: true });
+      const response = await successStoryAPI.getSuccessStories();
       setStories(response.data);
     } catch (error) {
       console.error('Error fetching success stories:', error);
@@ -171,23 +171,29 @@ const SuccessStories = () => {
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="story-couplename-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Couple Name
                 </label>
                 <input
+                  id="story-couplename-input"
+                  name="coupleName"
                   type="text"
                   required
+                  autoComplete="off"
                   value={formData.coupleName}
                   onChange={(e) => setFormData({ ...formData, coupleName: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="story-content-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Your Story
                 </label>
                 <textarea
+                  id="story-content-input"
+                  name="story"
                   required
+                  autoComplete="off"
                   value={formData.story}
                   onChange={(e) => setFormData({ ...formData, story: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
@@ -196,10 +202,13 @@ const SuccessStories = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="story-howwemet-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   How You Met
                 </label>
                 <textarea
+                  id="story-howwemet-input"
+                  name="howWeMet"
+                  autoComplete="off"
                   value={formData.howWeMet}
                   onChange={(e) => setFormData({ ...formData, howWeMet: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
@@ -208,21 +217,27 @@ const SuccessStories = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="story-weddingdate-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Wedding Date (optional)
                 </label>
                 <input
+                  id="story-weddingdate-input"
+                  name="weddingDate"
                   type="date"
+                  autoComplete="off"
                   value={formData.weddingDate}
                   onChange={(e) => setFormData({ ...formData, weddingDate: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="story-advice-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Advice for Others
                 </label>
                 <textarea
+                  id="story-advice-input"
+                  name="advice"
+                  autoComplete="off"
                   value={formData.advice}
                   onChange={(e) => setFormData({ ...formData, advice: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"

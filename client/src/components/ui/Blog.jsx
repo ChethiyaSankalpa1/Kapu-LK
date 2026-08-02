@@ -13,9 +13,9 @@ const Blog = ({ isAdmin = false }) => {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
-    category: '',
+    category: 'dating',
     tags: '',
-    featuredImage: ''
+    coverImage: ''
   });
 
   useEffect(() => {
@@ -63,13 +63,16 @@ const Blog = ({ isAdmin = false }) => {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
+      const slug = formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || `post-${Date.now()}`;
       await blogAPI.createBlogPost({
         ...formData,
+        slug,
+        coverImage: formData.coverImage,
         tags: formData.tags.split(',').map(t => t.trim()).filter(t => t)
       });
       toast.success('Blog post created!');
       setShowEditor(false);
-      setFormData({ title: '', content: '', category: '', tags: '', featuredImage: '' });
+      setFormData({ title: '', content: '', category: 'dating', tags: '', coverImage: '' });
       fetchPosts();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create post');
@@ -81,11 +84,12 @@ const Blog = ({ isAdmin = false }) => {
     try {
       await blogAPI.updateBlogPost(selectedPost._id, {
         ...formData,
+        coverImage: formData.coverImage,
         tags: formData.tags.split(',').map(t => t.trim()).filter(t => t)
       });
       toast.success('Blog post updated!');
       setShowEditor(false);
-      setFormData({ title: '', content: '', category: '', tags: '', featuredImage: '' });
+      setFormData({ title: '', content: '', category: 'dating', tags: '', coverImage: '' });
       fetchPosts();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update post');
@@ -120,13 +124,13 @@ const Blog = ({ isAdmin = false }) => {
       setFormData({
         title: post.title,
         content: post.content,
-        category: post.category,
+        category: post.category || 'dating',
         tags: post.tags?.join(', ') || '',
-        featuredImage: post.featuredImage || ''
+        coverImage: post.coverImage || post.featuredImage || ''
       });
     } else {
       setEditorMode('create');
-      setFormData({ title: '', content: '', category: '', tags: '', featuredImage: '' });
+      setFormData({ title: '', content: '', category: 'dating', tags: '', coverImage: '' });
     }
     setShowEditor(true);
   };
@@ -140,6 +144,7 @@ const Blog = ({ isAdmin = false }) => {
   }
 
   if (selectedPost) {
+    const postImg = selectedPost.coverImage || selectedPost.featuredImage;
     return (
       <div className="space-y-6">
         <button
@@ -150,9 +155,9 @@ const Blog = ({ isAdmin = false }) => {
         </button>
 
         <article className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-sm border border-gray-200 dark:border-slate-700">
-          {selectedPost.featuredImage && (
+          {postImg && (
             <img
-              src={selectedPost.featuredImage}
+              src={postImg}
               alt={selectedPost.title}
               className="w-full h-64 md:h-96 object-cover"
             />
@@ -221,16 +226,19 @@ const Blog = ({ isAdmin = false }) => {
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Comments</h3>
           
           <div className="mb-6">
+            <label htmlFor="blog-comment-input" className="sr-only">Add a comment</label>
             <textarea
+              id="blog-comment-input"
+              name="comment"
+              autoComplete="off"
               placeholder="Add a comment..."
               className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg resize-none"
               rows={3}
-              id="comment-input"
             />
             <button
               onClick={() => {
-                const input = document.getElementById('comment-input');
-                if (input.value.trim()) {
+                const input = document.getElementById('blog-comment-input');
+                if (input && input.value.trim()) {
                   handleAddComment(selectedPost._id, input.value.trim());
                   input.value = '';
                 }
@@ -293,50 +301,53 @@ const Blog = ({ isAdmin = false }) => {
 
       {/* Posts Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {posts.map((post) => (
-          <div
-            key={post._id}
-            onClick={() => setSelectedPost(post)}
-            className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-sm border border-gray-200 dark:border-slate-700 cursor-pointer hover:shadow-md transition"
-          >
-            {post.featuredImage && (
-              <img
-                src={post.featuredImage}
-                alt={post.title}
-                className="w-full h-48 object-cover"
-              />
-            )}
-            <div className="p-5">
-              {post.category && (
-                <span className="inline-block px-2 py-1 bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 rounded-full text-xs mb-2">
-                  {post.category}
-                </span>
+        {posts.map((post) => {
+          const cardImg = post.coverImage || post.featuredImage;
+          return (
+            <div
+              key={post._id}
+              onClick={() => setSelectedPost(post)}
+              className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-sm border border-gray-200 dark:border-slate-700 cursor-pointer hover:shadow-md transition"
+            >
+              {cardImg && (
+                <img
+                  src={cardImg}
+                  alt={post.title}
+                  className="w-full h-48 object-cover"
+                />
               )}
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2">
-                {post.title}
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
-                {post.content.substring(0, 150)}...
-              </p>
-              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  {moment(post.createdAt).format('MMM D')}
-                </div>
-                <div className="flex items-center gap-3">
+              <div className="p-5">
+                {post.category && (
+                  <span className="inline-block px-2 py-1 bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 rounded-full text-xs mb-2">
+                    {post.category}
+                  </span>
+                )}
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2">
+                  {post.title}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
+                  {post.content.substring(0, 150)}...
+                </p>
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                   <div className="flex items-center gap-1">
-                    <Heart className="w-3 h-3" />
-                    {post.likeCount || 0}
+                    <Calendar className="w-3 h-3" />
+                    {moment(post.createdAt).format('MMM D')}
                   </div>
-                  <div className="flex items-center gap-1">
-                    <MessageCircle className="w-3 h-3" />
-                    {post.commentCount || 0}
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                      <Heart className="w-3 h-3" />
+                      {post.likeCount || 0}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <MessageCircle className="w-3 h-3" />
+                      {post.commentCount || 0}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {posts.length === 0 && (
@@ -365,35 +376,48 @@ const Blog = ({ isAdmin = false }) => {
             </div>
             <form onSubmit={editorMode === 'create' ? handleCreate : handleUpdate} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="blog-title-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Title
                 </label>
                 <input
+                  id="blog-title-input"
+                  name="title"
                   type="text"
                   required
+                  autoComplete="off"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="blog-category-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Category
                 </label>
-                <input
-                  type="text"
+                <select
+                  id="blog-category-select"
+                  name="category"
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
-                  placeholder="e.g., Dating Tips, Success Stories"
-                />
+                >
+                  <option value="dating">Dating</option>
+                  <option value="relationships">Relationships</option>
+                  <option value="wedding">Wedding</option>
+                  <option value="lifestyle">Lifestyle</option>
+                  <option value="advice">Advice</option>
+                  <option value="success">Success</option>
+                </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="blog-content-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Content
                 </label>
                 <textarea
+                  id="blog-content-input"
+                  name="content"
                   required
+                  autoComplete="off"
                   value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
@@ -402,11 +426,14 @@ const Blog = ({ isAdmin = false }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="blog-tags-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Tags (comma-separated)
                 </label>
                 <input
+                  id="blog-tags-input"
+                  name="tags"
                   type="text"
+                  autoComplete="off"
                   value={formData.tags}
                   onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
@@ -414,13 +441,16 @@ const Blog = ({ isAdmin = false }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Featured Image URL
+                <label htmlFor="blog-coverimage-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Cover Image URL
                 </label>
                 <input
+                  id="blog-coverimage-input"
+                  name="coverImage"
                   type="url"
-                  value={formData.featuredImage}
-                  onChange={(e) => setFormData({ ...formData, featuredImage: e.target.value })}
+                  autoComplete="off"
+                  value={formData.coverImage}
+                  onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
                 />
               </div>

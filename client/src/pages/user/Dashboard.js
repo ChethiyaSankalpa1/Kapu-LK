@@ -12,6 +12,9 @@ import ProfileCard from '../../components/ui/ProfileCard';
 import CustomSelect from '../../components/ui/CustomSelect';
 import PremiumPopup from '../../components/ui/PremiumPopup';
 import PremiumBadge from '../../components/ui/PremiumBadge';
+import SuccessStories from '../../components/ui/SuccessStories';
+import Blog from '../../components/ui/Blog';
+import Events from '../../components/ui/Events';
 
 const Dashboard = () => {
     const { t } = useTranslation();
@@ -1224,43 +1227,19 @@ const Dashboard = () => {
 
                 {activeTab === 'stories' && (
                     <div className="glass-card p-6">
-                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                            <Heart className="w-6 h-6 text-pink-500" />
-                            Success Stories
-                        </h2>
-                        <p className="text-gray-600 dark:text-gray-400 mb-4">Read inspiring stories from couples who found love on Kapu LK.</p>
-                        <div className="text-center py-8">
-                            <Heart className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                            <p className="text-gray-500 dark:text-gray-400">Coming soon! Share your success story.</p>
-                        </div>
+                        <SuccessStories />
                     </div>
                 )}
 
                 {activeTab === 'blog' && (
                     <div className="glass-card p-6">
-                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                            <FileText className="w-6 h-6 text-blue-500" />
-                            Blog
-                        </h2>
-                        <p className="text-gray-600 dark:text-gray-400 mb-4">Read articles about dating, relationships, and more.</p>
-                        <div className="text-center py-8">
-                            <FileText className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                            <p className="text-gray-500 dark:text-gray-400">Coming soon! Check back for articles.</p>
-                        </div>
+                        <Blog isAdmin={user?.role === 'admin'} />
                     </div>
                 )}
 
                 {activeTab === 'events' && (
                     <div className="glass-card p-6">
-                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                            <Calendar className="w-6 h-6 text-green-500" />
-                            Events
-                        </h2>
-                        <p className="text-gray-600 dark:text-gray-400 mb-4">Join events and meet other members in person.</p>
-                        <div className="text-center py-8">
-                            <Calendar className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                            <p className="text-gray-500 dark:text-gray-400">Coming soon! Check back for upcoming events.</p>
-                        </div>
+                        <Events isAdmin={user?.role === 'admin'} />
                     </div>
                 )}
 

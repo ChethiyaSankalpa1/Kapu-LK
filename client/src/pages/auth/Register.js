@@ -98,10 +98,12 @@ const Register = () => {
 
                 <form onSubmit={onSubmit} className="space-y-3 sm:space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.fullName', { defaultValue: 'Full Name' })}</label>
+                        <label htmlFor="reg-name-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.fullName', { defaultValue: 'Full Name' })}</label>
                         <input
+                            id="reg-name-input"
                             type="text"
                             name="name"
+                            autoComplete="name"
                             value={name}
                             onChange={onChange}
                             required
@@ -111,10 +113,12 @@ const Register = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.username', { defaultValue: 'Username' })}</label>
+                        <label htmlFor="reg-username-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.username', { defaultValue: 'Username' })}</label>
                         <input
+                            id="reg-username-input"
                             type="text"
                             name="username"
+                            autoComplete="username"
                             value={username}
                             onChange={onChange}
                             required
@@ -124,10 +128,12 @@ const Register = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.email')}</label>
+                        <label htmlFor="reg-email-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.email')}</label>
                         <input
+                            id="reg-email-input"
                             type="email"
                             name="email"
+                            autoComplete="email"
                             value={email}
                             onChange={onChange}
                             required
@@ -137,11 +143,13 @@ const Register = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.password')}</label>
+                        <label htmlFor="reg-password-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.password')}</label>
                         <div className="relative">
                             <input
+                                id="reg-password-input"
                                 type={showPassword ? 'text' : 'password'}
                                 name="password"
+                                autoComplete="new-password"
                                 value={password}
                                 onChange={onChange}
                                 required
@@ -161,10 +169,12 @@ const Register = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.phone', { defaultValue: 'Phone Number' })}</label>
+                        <label htmlFor="reg-phone-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.phone', { defaultValue: 'Phone Number' })}</label>
                         <input
+                            id="reg-phone-input"
                             type="tel"
                             name="phoneNumber"
+                            autoComplete="tel"
                             value={phoneNumber}
                             onChange={onChange}
                             inputMode="numeric"
@@ -175,13 +185,15 @@ const Register = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                        <label htmlFor="reg-referral-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
                             <Gift className="w-4 h-4 text-purple-500" />
                             {t('auth.referralCode', { defaultValue: 'Referral Code (Optional)' })}
                         </label>
                         <input
+                            id="reg-referral-input"
                             type="text"
                             name="referralCode"
+                            autoComplete="off"
                             value={formData.referralCode}
                             onChange={onChange}
                             className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
@@ -191,10 +203,12 @@ const Register = () => {
 
                     <div className="grid grid-cols-2 gap-3 sm:gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.age', { defaultValue: 'Age' })}</label>
+                            <label htmlFor="reg-age-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.age', { defaultValue: 'Age' })}</label>
                             <input
+                                id="reg-age-input"
                                 type="number"
                                 name="age"
+                                autoComplete="off"
                                 value={age}
                                 onChange={onChange}
                                 min="18"
@@ -205,8 +219,9 @@ const Register = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.gender', { defaultValue: 'Gender' })}</label>
+                            <label htmlFor="reg-gender-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.gender', { defaultValue: 'Gender' })}</label>
                             <select
+                                id="reg-gender-select"
                                 name="gender"
                                 value={gender}
                                 onChange={onChange}

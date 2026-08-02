@@ -310,6 +310,9 @@ exports.seedSriLankanContent = async (req, res) => {
     await SuccessStory.deleteMany({});
 
     // Sri Lankan Events
+    const now = new Date();
+    const addDays = (days) => new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
     const events = [
       {
         title: 'Colombo Singles Meetup',
@@ -322,8 +325,8 @@ exports.seedSriLankanContent = async (req, res) => {
           city: 'Colombo',
           country: 'Sri Lanka'
         },
-        startDate: new Date('2025-02-15T18:00:00'),
-        endDate: new Date('2025-02-15T21:00:00'),
+        startDate: addDays(7),
+        endDate: addDays(7.1),
         maxAttendees: 50,
         isFree: true,
         tags: ['singles', 'networking', 'colombo'],
@@ -342,8 +345,8 @@ exports.seedSriLankanContent = async (req, res) => {
           city: 'Kandy',
           country: 'Sri Lanka'
         },
-        startDate: new Date('2025-02-20T14:00:00'),
-        endDate: new Date('2025-02-20T17:00:00'),
+        startDate: addDays(14),
+        endDate: addDays(14.1),
         maxAttendees: 30,
         isFree: true,
         tags: ['workshop', 'culture', 'dating', 'kandy'],
@@ -362,8 +365,8 @@ exports.seedSriLankanContent = async (req, res) => {
           city: 'Galle',
           country: 'Sri Lanka'
         },
-        startDate: new Date('2025-02-25T10:00:00'),
-        endDate: new Date('2025-02-25T16:00:00'),
+        startDate: addDays(21),
+        endDate: addDays(21.2),
         maxAttendees: 100,
         isFree: true,
         tags: ['beach', 'social', 'galle', 'outdoor'],
@@ -381,8 +384,8 @@ exports.seedSriLankanContent = async (req, res) => {
           city: 'Jaffna',
           country: 'Sri Lanka'
         },
-        startDate: new Date('2025-03-01T15:00:00'),
-        endDate: new Date('2025-03-01T19:00:00'),
+        startDate: addDays(28),
+        endDate: addDays(28.1),
         maxAttendees: 40,
         isFree: true,
         tags: ['matchmaking', 'tamil', 'culture', 'jaffna'],
@@ -399,8 +402,8 @@ exports.seedSriLankanContent = async (req, res) => {
           type: 'online',
           meetingLink: 'https://zoom.us/j/example123'
         },
-        startDate: new Date('2025-02-28T19:00:00'),
-        endDate: new Date('2025-02-28T20:30:00'),
+        startDate: addDays(35),
+        endDate: addDays(35.1),
         maxAttendees: 200,
         isFree: true,
         tags: ['webinar', 'online', 'dating', 'tips'],
@@ -515,7 +518,7 @@ exports.seedSriLankanContent = async (req, res) => {
         howWeMet: 'Coffee breaks between busy work schedules led to a lifetime of love.',
         weddingDate: '2024-10-05',
         advice: 'Make time for what matters. Even busy schedules can\'t stop true love.',
-        photos: ['https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=800&h=600&fit=crop'],
+        photos: ['https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=800&h=400&fit=crop'],
         isFeatured: true
       }
     ];
@@ -529,14 +532,14 @@ exports.seedSriLankanContent = async (req, res) => {
     // Seed Success Stories with actual users or admin as fallback
     let createdStories = 0;
     for (let i = 0; i < successStories.length; i++) {
-      const storyData = successStories[i];
+      const storyData = { ...successStories[i] };
       
       // Use available users or admin as fallback
-      if (users.length >= 2) {
-        const user1 = users[i * 2];
-        const user2 = users[i * 2 + 1] || users[0];
-        storyData.user1 = user1._id;
-        storyData.user2 = user2._id;
+      if (users && users.length >= 2) {
+        const u1 = users[(i * 2) % users.length];
+        const u2 = users[(i * 2 + 1) % users.length];
+        storyData.user1 = u1._id;
+        storyData.user2 = u2._id;
       } else {
         // Use admin as both users if not enough regular users
         storyData.user1 = adminUser;
@@ -544,6 +547,7 @@ exports.seedSriLankanContent = async (req, res) => {
       }
       
       storyData.submittedBy = adminUser;
+      storyData.isApproved = true;
       
       await SuccessStory.create(storyData);
       createdStories++;

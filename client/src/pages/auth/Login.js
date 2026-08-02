@@ -70,10 +70,12 @@ const Login = () => {
 
                 <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.email')}</label>
+                        <label htmlFor="login-email-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.email')}</label>
                         <input
+                            id="login-email-input"
                             type="email"
                             name="email"
+                            autoComplete="email"
                             value={email}
                             onChange={onChange}
                             required
@@ -84,15 +86,17 @@ const Login = () => {
 
                     <div>
                         <div className="flex items-center justify-between mb-1">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('auth.password')}</label>
+                            <label htmlFor="login-password-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('auth.password')}</label>
                             <Link to="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
                                 {t('auth.forgotPassword')}
                             </Link>
                         </div>
                         <div className="relative">
                             <input
+                                id="login-password-input"
                                 type={showPassword ? 'text' : 'password'}
                                 name="password"
+                                autoComplete="current-password"
                                 value={password}
                                 onChange={onChange}
                                 required
