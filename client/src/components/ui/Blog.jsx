@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { blogAPI } from '../../services/api';
-import { Calendar, Clock, Heart, MessageCircle, Share2, Edit, Plus, Eye } from 'lucide-react';
+import { Calendar, Heart, MessageCircle, Share2, Plus, Eye } from 'lucide-react';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 
@@ -96,15 +96,7 @@ const Blog = ({ isAdmin = false }) => {
     }
   };
 
-  const handlePublish = async (postId) => {
-    try {
-      await blogAPI.publishBlogPost(postId);
-      toast.success('Post published!');
-      fetchPosts();
-    } catch (error) {
-      toast.error('Failed to publish post');
-    }
-  };
+// Removed unused handlePublish function
 
   const handleDelete = async (postId) => {
     if (!window.confirm('Are you sure you want to delete this post?')) return;

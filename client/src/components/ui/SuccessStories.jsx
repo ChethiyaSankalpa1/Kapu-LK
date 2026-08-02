@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { successStoryAPI } from '../../services/api';
-import { Heart, Calendar, MapPin, Share2, Plus } from 'lucide-react';
+import { Heart, Calendar, Share2, Plus } from 'lucide-react';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 
