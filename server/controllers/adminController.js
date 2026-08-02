@@ -4,6 +4,7 @@ const PremiumPaymentRequest = require('../models/PremiumPaymentRequest');
 const Event = require('../models/Event');
 const Blog = require('../models/Blog');
 const SuccessStory = require('../models/SuccessStory');
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 // @desc    Get all users (admin)
@@ -299,10 +300,17 @@ exports.deletePremiumRequest = async (req, res) => {
 // @access  Private/Admin
 exports.seedSriLankanContent = async (req, res) => {
   try {
+    const allowSeed = process.env.ENABLE_SEEDER === 'true' || process.env.NODE_ENV !== 'production';
+    if (!allowSeed) {
+      return res.status(403).json({
+        message: 'Seeder is disabled. Set ENABLE_SEEDER=true (and redeploy) to allow seeding.',
+      });
+    }
+
     const adminUser = req.user._id;
 
     // Get some regular users for success stories
-    const users = await User.find({ role: { $ne: 'admin' } }).limit(10);
+    const users = await User.find({ role: mongoose.trusted({ $ne: 'admin' }) }).limit(10);
     
     // Clear existing content
     await Event.deleteMany({});

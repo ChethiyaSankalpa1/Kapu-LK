@@ -83,30 +83,28 @@ const envOrigins = corsOriginEnv
   : [];
 const allowedOrigins = [...new Set([...knownOrigins, ...envOrigins])];
 
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, curl, postman, server-to-server)
     if (!origin) return callback(null, true);
-    
-    // Check if origin matches allowed origins or ends with vercel.app or onrender.com
-    const isAllowed = allowedOrigins.some(allowed => origin === allowed) ||
+
+    const isAllowed =
+      allowedOrigins.includes(origin) ||
       origin.endsWith('.vercel.app') ||
       origin.endsWith('.onrender.com');
 
-    if (isAllowed) {
-      return callback(null, origin);
-    }
-    
-    // Fallback: allow request by passing origin back to prevent CORS blocking
-    return callback(null, origin);
+    // Return boolean: true = reflect requesting origin, false = block
+    return callback(null, isAllowed);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   optionsSuccessStatus: 200,
-}));
+};
 
-app.options('*', cors());
+app.use(cors(corsOptions));
+// Important: use SAME options for preflight responses too
+app.options('*', cors(corsOptions));
 
 // Basic rate limiting (adjust as needed)
 app.use(rateLimit({
