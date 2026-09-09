@@ -2152,8 +2152,10 @@ const AdminDashboard = () => {
               </h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gift Name</label>
+                  <label htmlFor="gift_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gift Name</label>
                   <input
+                    id="gift_name"
+                    name="name"
                     type="text"
                     value={giftFormData.name}
                     onChange={(e) => setGiftFormData({ ...giftFormData, name: e.target.value })}
@@ -2161,8 +2163,10 @@ const AdminDashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Emoji</label>
+                  <label htmlFor="gift_emoji" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Emoji</label>
                   <input
+                    id="gift_emoji"
+                    name="emoji"
                     type="text"
                     value={giftFormData.emoji}
                     onChange={(e) => setGiftFormData({ ...giftFormData, emoji: e.target.value })}
@@ -2171,8 +2175,10 @@ const AdminDashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                  <label htmlFor="gift_category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
                   <select
+                    id="gift_category"
+                    name="category"
                     value={giftFormData.category}
                     onChange={(e) => setGiftFormData({ ...giftFormData, category: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -2187,8 +2193,10 @@ const AdminDashboard = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price (LKR)</label>
+                    <label htmlFor="gift_price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price (LKR)</label>
                     <input
+                      id="gift_price"
+                      name="price"
                       type="number"
                       value={giftFormData.price}
                       onChange={(e) => setGiftFormData({ ...giftFormData, price: parseInt(e.target.value) || 0 })}
@@ -2196,8 +2204,10 @@ const AdminDashboard = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rarity</label>
+                    <label htmlFor="gift_rarity" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rarity</label>
                     <select
+                      id="gift_rarity"
+                      name="rarity"
                       value={giftFormData.rarity}
                       onChange={(e) => setGiftFormData({ ...giftFormData, rarity: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -2210,8 +2220,10 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2">
+                  <label htmlFor="gift_is_premium" className="flex items-center gap-2 cursor-pointer">
                     <input
+                      id="gift_is_premium"
+                      name="isPremium"
                       type="checkbox"
                       checked={giftFormData.isPremium}
                       onChange={(e) => setGiftFormData({ ...giftFormData, isPremium: e.target.checked })}
@@ -2219,8 +2231,10 @@ const AdminDashboard = () => {
                     />
                     <span className="text-sm text-gray-700 dark:text-gray-300">Premium</span>
                   </label>
-                  <label className="flex items-center gap-2">
+                  <label htmlFor="gift_is_recommended" className="flex items-center gap-2 cursor-pointer">
                     <input
+                      id="gift_is_recommended"
+                      name="isRecommended"
                       type="checkbox"
                       checked={giftFormData.isRecommended}
                       onChange={(e) => setGiftFormData({ ...giftFormData, isRecommended: e.target.checked })}
@@ -2228,8 +2242,10 @@ const AdminDashboard = () => {
                     />
                     <span className="text-sm text-gray-700 dark:text-gray-300">Recommended</span>
                   </label>
-                  <label className="flex items-center gap-2">
+                  <label htmlFor="gift_is_active" className="flex items-center gap-2 cursor-pointer">
                     <input
+                      id="gift_is_active"
+                      name="isActive"
                       type="checkbox"
                       checked={giftFormData.isActive}
                       onChange={(e) => setGiftFormData({ ...giftFormData, isActive: e.target.checked })}
@@ -2268,8 +2284,10 @@ const AdminDashboard = () => {
               </h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Event Title</label>
+                  <label htmlFor="event_title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Event Title</label>
                   <input
+                    id="event_title"
+                    name="title"
                     type="text"
                     value={eventFormData.title}
                     onChange={(e) => setEventFormData({ ...eventFormData, title: e.target.value })}
@@ -2277,8 +2295,10 @@ const AdminDashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                  <label htmlFor="event_description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
                   <textarea
+                    id="event_description"
+                    name="description"
                     value={eventFormData.description}
                     onChange={(e) => setEventFormData({ ...eventFormData, description: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -2287,8 +2307,10 @@ const AdminDashboard = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Event Type</label>
+                    <label htmlFor="event_type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Event Type</label>
                     <select
+                      id="event_type"
+                      name="eventType"
                       value={eventFormData.eventType}
                       onChange={(e) => setEventFormData({ ...eventFormData, eventType: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -2301,8 +2323,10 @@ const AdminDashboard = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Attendees</label>
+                    <label htmlFor="event_max_attendees" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Attendees</label>
                     <input
+                      id="event_max_attendees"
+                      name="maxAttendees"
                       type="number"
                       value={eventFormData.maxAttendees}
                       onChange={(e) => setEventFormData({ ...eventFormData, maxAttendees: parseInt(e.target.value) || 0 })}
@@ -2312,8 +2336,10 @@ const AdminDashboard = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
+                    <label htmlFor="event_start_date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
                     <input
+                      id="event_start_date"
+                      name="startDate"
                       type="datetime-local"
                       value={eventFormData.startDate}
                       onChange={(e) => setEventFormData({ ...eventFormData, startDate: e.target.value })}
@@ -2321,8 +2347,10 @@ const AdminDashboard = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
+                    <label htmlFor="event_end_date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
                     <input
+                      id="event_end_date"
+                      name="endDate"
                       type="datetime-local"
                       value={eventFormData.endDate}
                       onChange={(e) => setEventFormData({ ...eventFormData, endDate: e.target.value })}
@@ -2332,8 +2360,10 @@ const AdminDashboard = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">City</label>
+                    <label htmlFor="event_city" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">City</label>
                     <input
+                      id="event_city"
+                      name="city"
                       type="text"
                       value={eventFormData.location.city}
                       onChange={(e) => setEventFormData({ ...eventFormData, location: { ...eventFormData.location, city: e.target.value } })}
@@ -2341,8 +2371,10 @@ const AdminDashboard = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Venue</label>
+                    <label htmlFor="event_venue" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Venue</label>
                     <input
+                      id="event_venue"
+                      name="venue"
                       type="text"
                       value={eventFormData.location.venue}
                       onChange={(e) => setEventFormData({ ...eventFormData, location: { ...eventFormData.location, venue: e.target.value } })}
@@ -2351,8 +2383,10 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
+                  <label htmlFor="event_address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
                   <input
+                    id="event_address"
+                    name="address"
                     type="text"
                     value={eventFormData.location.address}
                     onChange={(e) => setEventFormData({ ...eventFormData, location: { ...eventFormData.location, address: e.target.value } })}
@@ -2360,8 +2394,10 @@ const AdminDashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Image URL</label>
+                  <label htmlFor="event_image_url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Image URL</label>
                   <input
+                    id="event_image_url"
+                    name="imageUrl"
                     type="text"
                     value={eventFormData.imageUrl}
                     onChange={(e) => setEventFormData({ ...eventFormData, imageUrl: e.target.value })}
@@ -2370,8 +2406,10 @@ const AdminDashboard = () => {
                   />
                 </div>
                 <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2">
+                  <label htmlFor="event_is_published" className="flex items-center gap-2 cursor-pointer">
                     <input
+                      id="event_is_published"
+                      name="isPublished"
                       type="checkbox"
                       checked={eventFormData.isPublished}
                       onChange={(e) => setEventFormData({ ...eventFormData, isPublished: e.target.checked })}
@@ -2379,8 +2417,10 @@ const AdminDashboard = () => {
                     />
                     <span className="text-sm text-gray-700 dark:text-gray-300">Published</span>
                   </label>
-                  <label className="flex items-center gap-2">
+                  <label htmlFor="event_is_featured" className="flex items-center gap-2 cursor-pointer">
                     <input
+                      id="event_is_featured"
+                      name="isFeatured"
                       type="checkbox"
                       checked={eventFormData.isFeatured}
                       onChange={(e) => setEventFormData({ ...eventFormData, isFeatured: e.target.checked })}
@@ -2419,8 +2459,10 @@ const AdminDashboard = () => {
               </h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Couple Name</label>
+                  <label htmlFor="story_couple_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Couple Name</label>
                   <input
+                    id="story_couple_name"
+                    name="coupleName"
                     type="text"
                     value={storyFormData.coupleName}
                     onChange={(e) => setStoryFormData({ ...storyFormData, coupleName: e.target.value })}
@@ -2428,8 +2470,10 @@ const AdminDashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Story</label>
+                  <label htmlFor="story_content" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Story</label>
                   <textarea
+                    id="story_content"
+                    name="story"
                     value={storyFormData.story}
                     onChange={(e) => setStoryFormData({ ...storyFormData, story: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -2437,8 +2481,10 @@ const AdminDashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Wedding Date</label>
+                  <label htmlFor="story_wedding_date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Wedding Date</label>
                   <input
+                    id="story_wedding_date"
+                    name="weddingDate"
                     type="date"
                     value={storyFormData.weddingDate}
                     onChange={(e) => setStoryFormData({ ...storyFormData, weddingDate: e.target.value })}
@@ -2446,8 +2492,10 @@ const AdminDashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Image URL</label>
+                  <label htmlFor="story_image_url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Image URL</label>
                   <input
+                    id="story_image_url"
+                    name="imageUrl"
                     type="text"
                     value={storyFormData.imageUrl}
                     onChange={(e) => setStoryFormData({ ...storyFormData, imageUrl: e.target.value })}
@@ -2456,8 +2504,10 @@ const AdminDashboard = () => {
                   />
                 </div>
                 <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2">
+                  <label htmlFor="story_is_published" className="flex items-center gap-2 cursor-pointer">
                     <input
+                      id="story_is_published"
+                      name="isPublished"
                       type="checkbox"
                       checked={storyFormData.isPublished}
                       onChange={(e) => setStoryFormData({ ...storyFormData, isPublished: e.target.checked })}
@@ -2465,8 +2515,10 @@ const AdminDashboard = () => {
                     />
                     <span className="text-sm text-gray-700 dark:text-gray-300">Published</span>
                   </label>
-                  <label className="flex items-center gap-2">
+                  <label htmlFor="story_is_featured" className="flex items-center gap-2 cursor-pointer">
                     <input
+                      id="story_is_featured"
+                      name="isFeatured"
                       type="checkbox"
                       checked={storyFormData.isFeatured}
                       onChange={(e) => setStoryFormData({ ...storyFormData, isFeatured: e.target.checked })}
@@ -2505,8 +2557,10 @@ const AdminDashboard = () => {
               </h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reward Type</label>
+                  <label htmlFor="redemption_reward_type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reward Type</label>
                   <select
+                    id="redemption_reward_type"
+                    name="rewardType"
                     value={redemptionFormData.rewardType}
                     onChange={(e) => setRedemptionFormData({ ...redemptionFormData, rewardType: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -2520,8 +2574,10 @@ const AdminDashboard = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reward Name</label>
+                  <label htmlFor="redemption_reward_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reward Name</label>
                   <input
+                    id="redemption_reward_name"
+                    name="rewardName"
                     type="text"
                     value={redemptionFormData.rewardName}
                     onChange={(e) => setRedemptionFormData({ ...redemptionFormData, rewardName: e.target.value })}
@@ -2530,8 +2586,10 @@ const AdminDashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Points Cost</label>
+                  <label htmlFor="redemption_points_cost" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Points Cost</label>
                   <input
+                    id="redemption_points_cost"
+                    name="pointsCost"
                     type="number"
                     value={redemptionFormData.pointsCost}
                     onChange={(e) => setRedemptionFormData({ ...redemptionFormData, pointsCost: parseInt(e.target.value) })}
@@ -2540,8 +2598,10 @@ const AdminDashboard = () => {
                   />
                 </div>
                 <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2">
+                  <label htmlFor="redemption_is_active" className="flex items-center gap-2 cursor-pointer">
                     <input
+                      id="redemption_is_active"
+                      name="isActive"
                       type="checkbox"
                       checked={redemptionFormData.isActive}
                       onChange={(e) => setRedemptionFormData({ ...redemptionFormData, isActive: e.target.checked })}
@@ -2588,8 +2648,10 @@ const AdminDashboard = () => {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Plan Name</label>
+                <label htmlFor="plan_name" className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Plan Name</label>
                 <input
+                  id="plan_name"
+                  name="name"
                   type="text"
                   value={planFormData.name}
                   onChange={(e) => setPlanFormData({ ...planFormData, name: e.target.value })}
@@ -2600,8 +2662,10 @@ const AdminDashboard = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Badge Tier</label>
+                  <label htmlFor="plan_badge" className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Badge Tier</label>
                   <select
+                    id="plan_badge"
+                    name="badge"
                     value={planFormData.badge}
                     onChange={(e) => setPlanFormData({ ...planFormData, badge: e.target.value })}
                     className="w-full px-3 py-2 border rounded-xl dark:bg-slate-700 dark:text-white text-sm"
@@ -2612,8 +2676,10 @@ const AdminDashboard = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Price (LKR)</label>
+                  <label htmlFor="plan_price" className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Price (LKR)</label>
                   <input
+                    id="plan_price"
+                    name="price"
                     type="number"
                     value={planFormData.price}
                     onChange={(e) => setPlanFormData({ ...planFormData, price: e.target.value })}
@@ -2623,8 +2689,10 @@ const AdminDashboard = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Duration (Days)</label>
+                <label htmlFor="plan_duration_days" className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Duration (Days)</label>
                 <input
+                  id="plan_duration_days"
+                  name="durationDays"
                   type="number"
                   value={planFormData.durationDays}
                   onChange={(e) => setPlanFormData({ ...planFormData, durationDays: e.target.value })}
@@ -2634,8 +2702,10 @@ const AdminDashboard = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                <label htmlFor="plan_description" className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Description</label>
                 <textarea
+                  id="plan_description"
+                  name="description"
                   value={planFormData.description}
                   onChange={(e) => setPlanFormData({ ...planFormData, description: e.target.value })}
                   rows={2}
@@ -2644,10 +2714,12 @@ const AdminDashboard = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="plan_features" className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                   Features (comma separated)
                 </label>
                 <textarea
+                  id="plan_features"
+                  name="features"
                   value={planFormData.features}
                   onChange={(e) => setPlanFormData({ ...planFormData, features: e.target.value })}
                   rows={3}
@@ -2657,8 +2729,10 @@ const AdminDashboard = () => {
               </div>
 
               <div className="flex items-center gap-6 pt-2">
-                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <label htmlFor="plan_is_popular" className="flex items-center gap-2 cursor-pointer text-sm">
                   <input
+                    id="plan_is_popular"
+                    name="isPopular"
                     type="checkbox"
                     checked={planFormData.isPopular}
                     onChange={(e) => setPlanFormData({ ...planFormData, isPopular: e.target.checked })}
@@ -2666,8 +2740,10 @@ const AdminDashboard = () => {
                   />
                   <span>Popular Badge</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <label htmlFor="plan_is_active" className="flex items-center gap-2 cursor-pointer text-sm">
                   <input
+                    id="plan_is_active"
+                    name="isActive"
                     type="checkbox"
                     checked={planFormData.isActive}
                     onChange={(e) => setPlanFormData({ ...planFormData, isActive: e.target.checked })}
@@ -2723,8 +2799,10 @@ const AdminDashboard = () => {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Premium Plan</label>
+                <label htmlFor="grant_plan" className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Premium Plan</label>
                 <select
+                  id="grant_plan"
+                  name="plan"
                   value={premiumGrantData.plan}
                   onChange={(e) => setPremiumGrantData({ ...premiumGrantData, plan: e.target.value })}
                   className="w-full px-3 py-2 border rounded-xl dark:bg-slate-700 dark:text-white text-sm"
@@ -2736,8 +2814,10 @@ const AdminDashboard = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Duration (Days)</label>
+                <label htmlFor="grant_duration_days" className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Duration (Days)</label>
                 <input
+                  id="grant_duration_days"
+                  name="durationDays"
                   type="number"
                   value={premiumGrantData.durationDays}
                   onChange={(e) => setPremiumGrantData({ ...premiumGrantData, durationDays: parseInt(e.target.value) || 1 })}

@@ -83,27 +83,61 @@ const envOrigins = corsOriginEnv
   : [];
 const allowedOrigins = [...new Set([...knownOrigins, ...envOrigins])];
 
+const isOriginAllowed = (origin) => {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  try {
+    const parsed = new URL(origin);
+    const host = parsed.hostname;
+    if (
+      host.endsWith('.vercel.app') ||
+      host.endsWith('.onrender.com') ||
+      host === 'localhost' ||
+      host === '127.0.0.1'
+    ) {
+      return true;
+    }
+  } catch (e) {
+    if (origin.endsWith('.vercel.app') || origin.endsWith('.onrender.com') || origin.includes('localhost')) {
+      return true;
+    }
+  }
+  return false;
+};
+
+// Top-level guaranteed CORS headers for all requests (including preflight and error responses)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (isOriginAllowed(origin)) {
+    if (origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    } else {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', req.headers['access-control-request-headers'] || '*');
+    res.setHeader('Access-Control-Expose-Headers', '*');
+    res.setHeader('Access-Control-Max-Age', '86400');
+  }
+
+  // Immediately respond to OPTIONS preflight without hitting downstream middlewares
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, postman, server-to-server)
-    if (!origin) return callback(null, true);
-
-    const isAllowed =
-      allowedOrigins.includes(origin) ||
-      origin.endsWith('.vercel.app') ||
-      origin.endsWith('.onrender.com');
-
-    // Return boolean: true = reflect requesting origin, false = block
-    return callback(null, isAllowed);
+    return callback(null, isOriginAllowed(origin));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
-// Important: use SAME options for preflight responses too
 app.options('*', cors(corsOptions));
 
 // Basic rate limiting (adjust as needed)

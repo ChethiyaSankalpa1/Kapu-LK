@@ -1,10 +1,23 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 
-  (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api');
+const getApiBaseUrl = () => {
+    if (typeof window !== 'undefined') {
+        const host = window.location.hostname;
+        // When hosted on vercel.app, use same-origin /api rewrite proxy to eliminate CORS,
+        // prevent Edge Tracking Prevention blocks, and improve speed
+        if (host.endsWith('vercel.app')) {
+            return '/api';
+        }
+    }
+    return process.env.REACT_APP_API_URL || 
+      (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api');
+};
+
+const API_URL = getApiBaseUrl();
 
 const api = axios.create({
     baseURL: API_URL,
+    timeout: 45000,
 });
 
 // Add token to requests

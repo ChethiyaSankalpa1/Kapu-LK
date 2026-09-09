@@ -1,5 +1,6 @@
 import React from 'react';
 import { Wallet, Sparkles } from 'lucide-react';
+import { notificationAPI } from '../../services/api';
 
 const WalletTopupModal = ({ isOpen, topupData, onClose }) => {
   if (!isOpen || !topupData) return null;
@@ -31,14 +32,7 @@ const WalletTopupModal = ({ isOpen, topupData, onClose }) => {
           onClick={() => {
             onClose();
             if (topupData.notificationId) {
-              // Mark notification as read
-              fetch(`${process.env.REACT_APP_API_URL || 'https://kapu-lk-2.onrender.com'}/api/notifications/${topupData.notificationId}/read`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-              }).catch(() => {});
+              notificationAPI.markAsRead(topupData.notificationId).catch(() => {});
             }
           }}
           className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition shadow-lg"

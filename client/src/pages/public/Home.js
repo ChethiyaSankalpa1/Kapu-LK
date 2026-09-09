@@ -108,10 +108,13 @@ const Home = () => {
                         <form onSubmit={handleQuickSearch} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             {/* I Am / Seeking */}
                             <div>
-                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                                <label htmlFor="quick_find_iam" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
                                     {t('home.iAm', { defaultValue: 'I Am A' })}
                                 </label>
                                 <select
+                                    id="quick_find_iam"
+                                    name="iAm"
+                                    autoComplete="off"
                                     value={finderData.iAm}
                                     onChange={(e) => setFinderData({
                                         ...finderData,
@@ -127,10 +130,13 @@ const Home = () => {
 
                             {/* Looking For */}
                             <div>
-                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                                <label htmlFor="quick_find_seeking" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
                                     {t('home.seeking', { defaultValue: 'Looking For' })}
                                 </label>
                                 <select
+                                    id="quick_find_seeking"
+                                    name="seeking"
+                                    autoComplete="off"
                                     value={finderData.seeking}
                                     onChange={(e) => setFinderData({ ...finderData, seeking: e.target.value })}
                                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border-0 text-sm font-medium focus:ring-2 focus:ring-purple-500 transition"
@@ -142,10 +148,13 @@ const Home = () => {
 
                             {/* Age Range */}
                             <div>
-                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                                <label htmlFor="quick_find_agerange" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
                                     {t('home.ageRange', { defaultValue: 'Age Range' })}
                                 </label>
                                 <select
+                                    id="quick_find_agerange"
+                                    name="ageRange"
+                                    autoComplete="off"
                                     value={finderData.ageRange}
                                     onChange={(e) => setFinderData({ ...finderData, ageRange: e.target.value })}
                                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border-0 text-sm font-medium focus:ring-2 focus:ring-purple-500 transition"
@@ -161,10 +170,13 @@ const Home = () => {
 
                             {/* District */}
                             <div>
-                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                                <label htmlFor="quick_find_district" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
                                     {t('home.district', { defaultValue: 'District' })}
                                 </label>
                                 <select
+                                    id="quick_find_district"
+                                    name="district"
+                                    autoComplete="off"
                                     value={finderData.district}
                                     onChange={(e) => setFinderData({ ...finderData, district: e.target.value })}
                                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border-0 text-sm font-medium focus:ring-2 focus:ring-purple-500 transition"
