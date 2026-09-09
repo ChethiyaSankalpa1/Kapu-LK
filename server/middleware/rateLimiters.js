@@ -4,15 +4,16 @@ const rateLimit = require('express-rate-limit');
 const getClientIp = (req) => {
   return req.headers['x-forwarded-for']
     ? req.headers['x-forwarded-for'].split(',')[0].trim()
-    : req.ip || req.socket.remoteAddress || 'unknown';
+    : req.ip || req.socket?.remoteAddress || 'unknown';
 };
 
-// Login limiter: 5 attempts per 15 mins per IP
+// Login limiter: 10 attempts per 15 mins per IP/account
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10, // 10 requests per 15m window to allow reasonable user retry while preventing brute force
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false,
   keyGenerator: (req) => `${getClientIp(req)}_${req.body && req.body.email ? req.body.email.toLowerCase().trim() : ''}`,
   message: {
     success: false,
@@ -26,6 +27,7 @@ const registerLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false,
   keyGenerator: getClientIp,
   message: {
     success: false,
@@ -39,6 +41,7 @@ const passwordResetLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false,
   keyGenerator: getClientIp,
   message: {
     success: false,
@@ -52,6 +55,7 @@ const messageLimiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false,
   keyGenerator: (req) => (req.user ? String(req.user._id) : getClientIp(req)),
   message: {
     success: false,
@@ -65,10 +69,25 @@ const paymentLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false,
   keyGenerator: (req) => (req.user ? String(req.user._id) : getClientIp(req)),
   message: {
     success: false,
     message: 'Too many payment requests submitted. Please wait before submitting again.',
+  },
+});
+
+// Support ticket limiter: 20 per hour
+const supportLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: false,
+  keyGenerator: (req) => (req.user ? String(req.user._id) : getClientIp(req)),
+  message: {
+    success: false,
+    message: 'Too many support requests submitted. Please wait before submitting again.',
   },
 });
 
@@ -78,4 +97,6 @@ module.exports = {
   passwordResetLimiter,
   messageLimiter,
   paymentLimiter,
+  supportLimiter,
+  apiLimiter: supportLimiter,
 };

@@ -10,10 +10,10 @@ const {
   updateTicketStatus,
 } = require('../controllers/supportController');
 const { protect, admin, optionalProtect } = require('../middleware/auth');
-const { apiLimiter } = require('../middleware/rateLimiter');
+const { supportLimiter } = require('../middleware/rateLimiters');
 
 // Public / User routes
-router.post('/tickets', apiLimiter, optionalProtect, createTicket);
+router.post('/tickets', supportLimiter, optionalProtect, createTicket);
 router.get('/my-tickets', protect, getMyTickets);
 router.get('/tickets/:id', protect, getTicketById);
 router.post('/tickets/:id/reply', protect, addUserReply);
