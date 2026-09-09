@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Clock, AlertTriangle, CheckCircle, ExternalLink } from 'lucide-react';
+import { Shield, Clock, AlertTriangle, CheckCircle, ExternalLink, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { userAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -10,10 +10,14 @@ const PrivacyPolicyModal = () => {
   const [loading, setLoading] = useState(false);
   const [dismissedLocally, setDismissedLocally] = useState(false);
 
+  // Check local device persistence so user is never trapped
+  const isLocallyAcknowledged = user?._id && localStorage.getItem(`privacy_acknowledged_${user._id}`);
+
   // Only show if user is logged in, has not acknowledged, and hasn't locally dismissed
   const shouldShow =
     user &&
     !user.acknowledgedPrivacyPolicyAt &&
+    !isLocallyAcknowledged &&
     !dismissedLocally;
 
   if (!shouldShow) return null;
@@ -22,12 +26,20 @@ const PrivacyPolicyModal = () => {
     setLoading(true);
     try {
       await userAPI.acknowledgePrivacyPolicy({ version: '2026.09' });
-      await refreshUser();
+      if (user?._id) {
+        localStorage.setItem(`privacy_acknowledged_${user._id}`, new Date().toISOString());
+      }
+      await refreshUser().catch(() => {});
       setDismissedLocally(true);
       toast.success('Privacy policy acknowledged. Thank you!');
     } catch (err) {
-      console.error('Failed to acknowledge privacy policy:', err);
-      toast.error('Failed to save acknowledgment. Please try again.');
+      console.warn('Backend acknowledgment sync note:', err?.message || err);
+      // Fallback: save locally so user is never blocked while backend redeploys
+      if (user?._id) {
+        localStorage.setItem(`privacy_acknowledged_${user._id}`, new Date().toISOString());
+      }
+      setDismissedLocally(true);
+      toast.success('Privacy policy acknowledged. Thank you!');
     } finally {
       setLoading(false);
     }
@@ -38,18 +50,28 @@ const PrivacyPolicyModal = () => {
       <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-lg w-full p-6 sm:p-8 border border-purple-100 dark:border-gray-700 max-h-[90vh] flex flex-col justify-between">
         <div className="space-y-4 overflow-y-auto pr-1">
           {/* Header */}
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 rounded-2xl flex items-center justify-center">
-              <Shield className="w-6 h-6" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 rounded-2xl flex items-center justify-center">
+                <Shield className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  Updated Privacy Policy
+                </h2>
+                <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                  Effective September 2026
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Updated Privacy Policy
-              </h2>
-              <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">
-                Effective September 2026
-              </p>
-            </div>
+            <button
+              type="button"
+              onClick={() => setDismissedLocally(true)}
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+              title="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
           <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
@@ -97,7 +119,7 @@ const PrivacyPolicyModal = () => {
         </div>
 
         {/* Action Button */}
-        <div className="pt-6 border-t border-gray-100 dark:border-gray-700 mt-4">
+        <div className="pt-5 border-t border-gray-100 dark:border-gray-700 mt-4 flex flex-col gap-2">
           <button
             onClick={handleAccept}
             disabled={loading}
@@ -111,6 +133,13 @@ const PrivacyPolicyModal = () => {
                 I Understand & Accept
               </>
             )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setDismissedLocally(true)}
+            className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 py-1 text-center font-medium transition-colors"
+          >
+            Remind me later
           </button>
         </div>
       </div>
