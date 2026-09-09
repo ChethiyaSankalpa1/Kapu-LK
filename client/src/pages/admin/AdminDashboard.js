@@ -1322,7 +1322,7 @@ const AdminDashboard = () => {
                 const userObj = request.user || {};
                 const slipUrl = request.slipImageUrl?.startsWith('http')
                   ? request.slipImageUrl
-                  : `${(process.env.REACT_APP_API_URL || 'https://kapu-lk-2.onrender.com').replace('/api', '')}${request.slipImageUrl?.startsWith('/') ? '' : '/'}${request.slipImageUrl?.replace(/\\/g, '/')}`;
+                  : `${(typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app')) ? '' : (process.env.REACT_APP_API_URL || 'https://kapu-lk-2.onrender.com').replace('/api', '')}${request.slipImageUrl?.startsWith('/') ? '' : '/'}${request.slipImageUrl?.replace(/\\/g, '/')}`;
 
                 return (
                   <div key={request._id} className="glass-card p-6">
