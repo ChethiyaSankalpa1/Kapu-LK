@@ -233,6 +233,7 @@ app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/typing', require('./routes/typingRoutes'));
 app.use('/api/wallet', require('./routes/walletRoutes'));
 app.use('/api/redemption', require('./routes/redemptionRoutes'));
+app.use('/api/support', require('./routes/supportRoutes'));
 
 // Health check
 app.get('/', (req, res) => {
@@ -275,4 +276,11 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  // Initialize inactivity monitoring and permanent cascade cleanup scheduler
+  try {
+    const { startInactivityScheduler } = require('./services/inactivityCleanupService');
+    startInactivityScheduler(3600000); // Hourly checks
+  } catch (e) {
+    console.warn('Failed to start inactivity scheduler:', e.message);
+  }
 });

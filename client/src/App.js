@@ -17,27 +17,96 @@ import PrivateRoute from './routes/PrivateRoute';
 // Layout
 import Navbar from './components/common/Navbar';
 import MobileBottomNav from './components/common/MobileBottomNav';
+import PrivacyPolicyModal from './components/common/PrivacyPolicyModal';
+import SupportChatbot from './components/common/SupportChatbot';
 
-// Lazy-loaded pages
-const Home = lazy(() => import('./pages/public/Home'));
-const PrivacyPolicy = lazy(() => import('./pages/public/PrivacyPolicy'));
+// Resilient chunk loader that automatically recovers from deployment hash mismatches
+const lazyWithRetry = (componentImport) =>
+  lazy(async () => {
+    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
+      window.sessionStorage.getItem('chunk_reload_attempted') || 'false'
+    );
 
-const Login = lazy(() => import('./pages/auth/Login'));
-const Register = lazy(() => import('./pages/auth/Register'));
-const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
-const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
+    try {
+      const component = await componentImport();
+      window.sessionStorage.setItem('chunk_reload_attempted', 'false');
+      return component;
+    } catch (error) {
+      console.warn('Chunk loading failed, attempting recovery reload...', error);
+      if (!pageHasAlreadyBeenForceRefreshed) {
+        window.sessionStorage.setItem('chunk_reload_attempted', 'true');
+        window.location.reload();
+        return new Promise(() => {}); // Wait for browser to reload
+      }
+      throw error;
+    }
+  });
 
-const Dashboard = lazy(() => import('./pages/user/Dashboard'));
-const Profile = lazy(() => import('./pages/user/Profile'));
-const Users = lazy(() => import('./pages/user/Users'));
-const UserDetail = lazy(() => import('./pages/user/UserDetail'));
-const PremiumPayment = lazy(() => import('./pages/user/PremiumPayment'));
-const Conversation = lazy(() => import('./pages/user/Conversation'));
-const ContactAdmin = lazy(() => import('./pages/user/ContactAdmin'));
-const Settings = lazy(() => import('./pages/user/Settings'));
-const Wallet = lazy(() => import('./pages/user/Wallet'));
+class ChunkErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
 
-const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Captured by ChunkErrorBoundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gray-50 dark:bg-gray-900 text-center">
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl max-w-md w-full border border-gray-100 dark:border-gray-700">
+            <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+              ↻
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              Update Available
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
+              A new version of the app is available. Please reload to load the latest features.
+            </p>
+            <button
+              onClick={() => {
+                window.sessionStorage.removeItem('chunk_reload_attempted');
+                window.location.reload();
+              }}
+              className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-purple-500/25 transition-all"
+            >
+              Refresh App
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// Lazy-loaded pages with automatic deployment retry
+const Home = lazyWithRetry(() => import('./pages/public/Home'));
+const PrivacyPolicy = lazyWithRetry(() => import('./pages/public/PrivacyPolicy'));
+
+const Login = lazyWithRetry(() => import('./pages/auth/Login'));
+const Register = lazyWithRetry(() => import('./pages/auth/Register'));
+const ForgotPassword = lazyWithRetry(() => import('./pages/auth/ForgotPassword'));
+const ResetPassword = lazyWithRetry(() => import('./pages/auth/ResetPassword'));
+
+const Dashboard = lazyWithRetry(() => import('./pages/user/Dashboard'));
+const Profile = lazyWithRetry(() => import('./pages/user/Profile'));
+const Users = lazyWithRetry(() => import('./pages/user/Users'));
+const UserDetail = lazyWithRetry(() => import('./pages/user/UserDetail'));
+const PremiumPayment = lazyWithRetry(() => import('./pages/user/PremiumPayment'));
+const Conversation = lazyWithRetry(() => import('./pages/user/Conversation'));
+const ContactAdmin = lazyWithRetry(() => import('./pages/user/ContactAdmin'));
+const Settings = lazyWithRetry(() => import('./pages/user/Settings'));
+const Wallet = lazyWithRetry(() => import('./pages/user/Wallet'));
+
+const AdminDashboard = lazyWithRetry(() => import('./pages/admin/AdminDashboard'));
 
 // Global component to monitor real-time gifts and achievements
 const GlobalRealtimeMonitor = () => {
@@ -182,13 +251,16 @@ function App() {
           <Navbar />
           <MobileBottomNav />
           <GlobalRealtimeMonitor />
-          <Suspense
-            fallback={
-              <div className="flex items-center justify-center py-16">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-purple-500" />
-              </div>
-            }
-          >
+          <PrivacyPolicyModal />
+          <SupportChatbot />
+          <ChunkErrorBoundary>
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center py-16">
+                  <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-purple-500" />
+                </div>
+              }
+            >
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Home />} />
@@ -290,7 +362,8 @@ function App() {
                 }
               />
             </Routes>
-          </Suspense>
+            </Suspense>
+          </ChunkErrorBoundary>
           <ToastContainer
             position="top-right"
             autoClose={1800}

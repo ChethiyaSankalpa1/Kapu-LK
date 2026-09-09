@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Message = require('../models/Message');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
@@ -11,7 +12,7 @@ const { logAuditEvent } = require('../middleware/auditLogger');
 // @access  Private
 exports.sendMessage = async (req, res) => {
   try {
-    const { to, content, type } = req.body;
+    const { to, content, type, replyTo } = req.body;
 
     if (!to || !content) {
       return res.status(400).json({ message: 'Recipient and content are required' });
@@ -95,12 +96,22 @@ exports.sendMessage = async (req, res) => {
       return res.status(500).json({ message: 'Failed to encrypt message' });
     }
 
+    // Validate replyTo if provided
+    let validatedReplyTo = null;
+    if (replyTo && mongoose.isValidObjectId(replyTo)) {
+      const targetMsg = await Message.findById(replyTo);
+      if (targetMsg) {
+        validatedReplyTo = targetMsg._id;
+      }
+    }
+
     const message = await Message.create({
       from: req.user._id,
       to,
       content: encryptedMessage.encryptedContent,
       contentIv: encryptedMessage.iv,
       type: type || 'text',
+      replyTo: validatedReplyTo,
     });
 
     if (sender.role !== 'admin' && !isAdminConversation && !sender.isPremium) {
@@ -116,7 +127,7 @@ exports.sendMessage = async (req, res) => {
         user: to,
         type: 'message',
         relatedUser: req.user._id,
-        createdAt: { $gte: fiveMinutesAgo }
+        createdAt: mongoose.trusted({ $gte: fiveMinutesAgo }),
       });
 
       if (!existingNotification) {
@@ -132,12 +143,37 @@ exports.sendMessage = async (req, res) => {
       // Don't fail the message send if notification fails
     }
 
+    const populatedMsg = await Message.findById(message._id)
+      .populate('from to', 'name profileImageUrl age location isOnline lastLogin')
+      .populate({
+        path: 'replyTo',
+        select: 'content contentIv from type isDeletedForEveryone',
+        populate: { path: 'from', select: 'name profileImageUrl' },
+      });
+
+    let decryptedReplyTo = null;
+    if (populatedMsg && populatedMsg.replyTo) {
+      let replyContent = '[Deleted message]';
+      if (!populatedMsg.replyTo.isDeletedForEveryone) {
+        try {
+          replyContent = decryptMessage(populatedMsg.replyTo.content, populatedMsg.replyTo.contentIv);
+        } catch (e) {
+          replyContent = '[Encrypted message]';
+        }
+      }
+      decryptedReplyTo = {
+        ...populatedMsg.replyTo.toObject(),
+        content: replyContent,
+      };
+    }
+
     res.status(201).json({
-      ...message.toObject(),
+      ...populatedMsg.toObject(),
       content,
+      replyTo: decryptedReplyTo,
       senderIsPremium: sender.isPremium,
       messagesSent: sender.messagesSent,
-      limit: FREE_MESSAGE_LIMIT
+      limit: FREE_MESSAGE_LIMIT,
     });
   } catch (error) {
     console.error('Send message error:', error);
@@ -153,7 +189,10 @@ exports.getConversations = async (req, res) => {
     const userId = req.user._id;
 
     const messages = await Message.find({
-      $or: [{ from: userId }, { to: userId }],
+      $and: [
+        { $or: [{ from: userId }, { to: userId }] },
+        { deletedFor: mongoose.trusted({ $ne: userId }) },
+      ],
     })
       .sort({ createdAt: -1 })
       .populate('from to', 'name profileImageUrl age location isOnline lastLogin');
@@ -169,11 +208,15 @@ exports.getConversations = async (req, res) => {
       const key = otherUser._id.toString();
       
       let decryptedContent = '';
-      try {
-        decryptedContent = decryptMessage(msg.content, msg.contentIv);
-      } catch (decryptError) {
-        console.error('Message decryption error:', decryptError);
-        decryptedContent = '[Encrypted message]';
+      if (msg.isDeletedForEveryone) {
+        decryptedContent = 'This message was deleted';
+      } else {
+        try {
+          decryptedContent = decryptMessage(msg.content, msg.contentIv);
+        } catch (decryptError) {
+          console.error('Message decryption error:', decryptError);
+          decryptedContent = '[Encrypted message]';
+        }
       }
       
       const normalizedMessage = {
@@ -210,23 +253,31 @@ exports.getConversationWithUser = async (req, res) => {
     const userId = req.user._id;
     const otherUserId = req.params.userId;
 
-    console.log('Fetching conversation between:', userId, 'and', otherUserId);
-
     const limit = Math.min(parseInt(req.query.limit, 10) || 100, 200);
     const skip = Math.max(parseInt(req.query.skip, 10) || 0, 0);
 
     const messages = await Message.find({
-      $or: [
-        { from: userId, to: otherUserId },
-        { from: otherUserId, to: userId },
+      $and: [
+        {
+          $or: [
+            { from: userId, to: otherUserId },
+            { from: otherUserId, to: userId },
+          ],
+        },
+        {
+          deletedFor: mongoose.trusted({ $ne: userId }),
+        },
       ],
     })
       .sort({ createdAt: 1 })
       .skip(skip)
       .limit(limit)
-      .populate('from to', 'name profileImageUrl isOnline lastLogin');
-
-    console.log('Found messages count:', messages.length);
+      .populate('from to', 'name profileImageUrl isOnline lastLogin')
+      .populate({
+        path: 'replyTo',
+        select: 'content contentIv from type isDeletedForEveryone',
+        populate: { path: 'from', select: 'name profileImageUrl' },
+      });
 
     await Message.updateMany(
       { from: otherUserId, to: userId, isRead: false },
@@ -244,21 +295,40 @@ exports.getConversationWithUser = async (req, res) => {
     );
 
     const normalizedMessages = messages.map((message) => {
-      try {
-        return {
-          ...message.toObject(),
-          content: decryptMessage(message.content, message.contentIv),
-        };
-      } catch (decryptError) {
-        console.error('Decryption error for message:', message._id, decryptError);
-        return {
-          ...message.toObject(),
-          content: '[Encrypted message]',
+      let content = '[Encrypted message]';
+      if (message.isDeletedForEveryone) {
+        content = 'This message was deleted';
+      } else {
+        try {
+          content = decryptMessage(message.content, message.contentIv);
+        } catch (decryptError) {
+          console.error('Decryption error for message:', message._id, decryptError);
+        }
+      }
+
+      let replyToObj = null;
+      if (message.replyTo) {
+        let replyContent = '[Deleted message]';
+        if (!message.replyTo.isDeletedForEveryone) {
+          try {
+            replyContent = decryptMessage(message.replyTo.content, message.replyTo.contentIv);
+          } catch (e) {
+            replyContent = '[Encrypted message]';
+          }
+        }
+        replyToObj = {
+          ...message.replyTo.toObject(),
+          content: replyContent,
         };
       }
+
+      return {
+        ...message.toObject(),
+        content,
+        replyTo: replyToObj,
+      };
     });
 
-    console.log('Returning messages count:', normalizedMessages.length);
     res.json(normalizedMessages);
   } catch (error) {
     console.error('Error in getConversationWithUser:', error);
@@ -379,6 +449,89 @@ exports.deleteMessage = async (req, res) => {
     });
   } catch (error) {
     console.error('Delete message error:', error);
+    res.status(500).json({ message: error.message || 'Failed to delete message' });
+  }
+};
+
+// @desc    Delete message for current user only ("Delete for Me")
+// @route   DELETE /api/messages/:messageId/for-me
+// @access  Private
+exports.deleteForMe = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user._id;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // Must be either sender or recipient
+    const isSender = message.from.equals(userId);
+    const isRecipient = message.to.equals(userId);
+    if (!isSender && !isRecipient) {
+      return res.status(403).json({ message: 'Not authorized to delete this message' });
+    }
+
+    await Message.findByIdAndUpdate(messageId, {
+      $addToSet: { deletedFor: userId },
+    });
+
+    res.json({
+      success: true,
+      message: 'Message deleted for you',
+      messageId,
+    });
+  } catch (error) {
+    console.error('Delete for me error:', error);
+    res.status(500).json({ message: error.message || 'Failed to delete message' });
+  }
+};
+
+// @desc    Delete message for everyone ("Delete for Everyone" - sender only within 60 minutes)
+// @route   DELETE /api/messages/:messageId/for-everyone
+// @access  Private
+exports.deleteForEveryone = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user._id;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // Only original sender can delete for everyone
+    if (!message.from.equals(userId)) {
+      return res.status(403).json({ message: 'Only the sender can delete a message for everyone' });
+    }
+
+    // 60-minute window check
+    const WINDOW_MS = 60 * 60 * 1000;
+    const messageAge = Date.now() - new Date(message.createdAt).getTime();
+    if (messageAge > WINDOW_MS) {
+      return res.status(400).json({
+        message: 'Messages can only be deleted for everyone within 60 minutes of sending.',
+      });
+    }
+
+    const encryptedPlaceholder = encryptMessage('This message was deleted');
+    message.isDeletedForEveryone = true;
+    message.deletedForEveryoneAt = new Date();
+    message.content = encryptedPlaceholder.encryptedContent;
+    message.contentIv = encryptedPlaceholder.iv;
+    message.reactions = []; // Clear reactions on deleted message
+    await message.save();
+
+    res.json({
+      success: true,
+      message: 'Message deleted for everyone',
+      messageId,
+      content: 'This message was deleted',
+      isDeletedForEveryone: true,
+    });
+  } catch (error) {
+    console.error('Delete for everyone error:', error);
     res.status(500).json({ message: error.message || 'Failed to delete message' });
   }
 };

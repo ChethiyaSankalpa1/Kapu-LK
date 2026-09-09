@@ -458,3 +458,43 @@ exports.unblockUser = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Acknowledge updated Privacy Policy and 10-day retention terms
+// @route   POST /api/users/acknowledge-privacy-policy
+// @access  Private
+exports.acknowledgePrivacyPolicy = async (req, res) => {
+  try {
+    const version = req.body.version || '2026.09';
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $set: {
+          acknowledgedPrivacyPolicyAt: new Date(),
+          acknowledgedPrivacyPolicyVersion: version,
+          lastActiveAt: new Date(),
+        },
+      },
+      { new: true }
+    ).select('-password');
+
+    logAuditEvent({
+      userId: req.user._id,
+      action: 'PRIVACY_POLICY_ACKNOWLEDGED',
+      targetId: req.user._id,
+      targetType: 'User',
+      details: { version },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.json({
+      success: true,
+      message: 'Privacy policy acknowledged successfully',
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error('Error acknowledging privacy policy:', error);
+    res.status(500).json({ message: error.message || 'Failed to record policy acknowledgment' });
+  }
+};
+

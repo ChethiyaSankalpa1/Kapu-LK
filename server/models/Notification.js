@@ -9,7 +9,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['message', 'profile_view', 'match', 'profile_reminder', 'gift', 'gift_received', 'achievement', 'premium_activated', 'premium_expiring', 'premium_expired', 'wallet_topup'],
+      enum: ['message', 'profile_view', 'match', 'profile_reminder', 'gift', 'gift_received', 'achievement', 'premium_activated', 'premium_expiring', 'premium_expired', 'wallet_topup', 'system', 'support_reply'],
       required: true,
     },
     message: {

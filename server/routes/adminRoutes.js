@@ -11,7 +11,10 @@ const {
   getDashboardStats,
   createAdmin,
   deletePremiumRequest,
-  seedSriLankanContent
+  seedSriLankanContent,
+  getInactivityStatus,
+  triggerInactivityCleanup,
+  cancelUserInactivityDeletion
 } = require('../controllers/adminController');
 const { 
   getAllRequests, 
@@ -37,5 +40,10 @@ router.put('/premium-requests/:id/approve', protect, admin, approveRequest);
 router.put('/premium-requests/:id/reject', protect, admin, rejectRequest);
 router.delete('/premium-requests/:id', protect, admin, deletePremiumRequest);
 router.post('/seed-sri-lankan-content', protect, admin, seedSriLankanContent);
+
+// Inactivity & Account Lifecycle Controls
+router.get('/inactivity/status', protect, admin, getInactivityStatus);
+router.post('/inactivity/run-cleanup', protect, admin, triggerInactivityCleanup);
+router.post('/inactivity/cancel/:userId', protect, admin, cancelUserInactivityDeletion);
 
 module.exports = router;

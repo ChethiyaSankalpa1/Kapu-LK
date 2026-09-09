@@ -10,6 +10,7 @@ const {
   getAdminUser,
   blockUser,
   unblockUser,
+  acknowledgePrivacyPolicy,
 } = require('../controllers/userController');
 const { protect, approved } = require('../middleware/auth');
 const validate = require('../middleware/validate');
@@ -32,6 +33,7 @@ router.get('/matches', protect, approved, getMatches);
 router.get('/admin', protect, getAdminUser);
 router.post('/:id/block', protect, blockUser);
 router.post('/:id/unblock', protect, unblockUser);
+router.post('/acknowledge-privacy-policy', protect, acknowledgePrivacyPolicy);
 router.get('/:id', protect, approved, getUserById);
 
 module.exports = router;

@@ -7,8 +7,10 @@ import { toast } from 'react-toastify';
 import {
   Users, User, UserCheck, Activity,
   CheckCircle, XCircle, Trash2, Shield, Crown, AlertTriangle, DollarSign, MessageSquare, MoreVertical,
-  Eye, X, Heart, Phone, Star, Clock, Gift, Trophy, Heart as HeartIcon, FileText, Calendar, Plus, Edit
+  Eye, X, Heart, Phone, Star, Clock, Gift, Trophy, Heart as HeartIcon, FileText, Calendar, Plus, Edit, LifeBuoy
 } from 'lucide-react';
+import SupportInboxTab from '../../components/admin/SupportInboxTab';
+import InactivityTab from '../../components/admin/InactivityTab';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -896,7 +898,33 @@ const AdminDashboard = () => {
             <Star className="w-4 h-4" />
             <span>Redemption</span>
           </button>
+          <button
+            onClick={() => setActiveTab('support')}
+            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'support'
+              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+          >
+            <LifeBuoy className="w-4 h-4 text-pink-400" />
+            <span>Support Inbox</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('inactivity')}
+            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'inactivity'
+              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+          >
+            <Clock className="w-4 h-4 text-rose-500" />
+            <span>Inactivity Engine</span>
+          </button>
         </div>
+
+        {/* Support Inbox Tab */}
+        {activeTab === 'support' && <SupportInboxTab />}
+
+        {/* Inactivity Tab */}
+        {activeTab === 'inactivity' && <InactivityTab />}
 
         {/* Users Table */}
         {activeTab === 'users' && (

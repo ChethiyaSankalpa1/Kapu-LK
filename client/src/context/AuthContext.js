@@ -17,8 +17,12 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode');
-    return saved ? JSON.parse(saved) : false;
+    try {
+      const saved = localStorage.getItem('darkMode');
+      return saved ? JSON.parse(saved) : false;
+    } catch (e) {
+      return false;
+    }
   });
   const [language, setLanguageState] = useState(() => {
     const saved = localStorage.getItem('language');
@@ -75,7 +79,14 @@ export const AuthProvider = ({ children }) => {
         } else {
           // fallback to cached user
           const cached = localStorage.getItem('user');
-          if (cached) setUser(JSON.parse(cached));
+          if (cached) {
+            try {
+              setUser(JSON.parse(cached));
+            } catch (parseErr) {
+              console.warn('Corrupt user cached in localStorage, clearing', parseErr);
+              localStorage.removeItem('user');
+            }
+          }
         }
       }
       setLoading(false);

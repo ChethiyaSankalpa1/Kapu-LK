@@ -5,7 +5,7 @@ import { walletAPI, achievementAPI, giftAPI, redemptionAPI } from '../../service
 import { toast } from 'react-toastify';
 import {
     Crown, Wallet as WalletIcon, Trophy, Flame, Gift, ArrowUpRight, History,
-    Plus, CreditCard, RefreshCw, Star, TrendingUp, Sparkles
+    Plus, CreditCard, RefreshCw, Star, TrendingUp, Sparkles, X
 } from 'lucide-react';
 import { WalletSkeleton } from '../../components/ui/SkeletonLoader';
 
@@ -78,7 +78,8 @@ const Wallet = () => {
     const [selectedBank, setSelectedBank] = useState('HNB');
     const [paymentSlip, setPaymentSlip] = useState(null);
     const [submittingPayment, setSubmittingPayment] = useState(false);
-    const [redeeming, setRedeeming] = useState(false);
+    const [selectedRewardId, setSelectedRewardId] = useState(null);
+    const [confirmingReward, setConfirmingReward] = useState(null);
 
     useEffect(() => {
         fetchAllData();
@@ -170,28 +171,37 @@ const Wallet = () => {
         }
     };
 
-    const handleRedeem = async (config) => {
-        if (userStats?.points < config.pointsCost) {
-            toast.error(`You need ${config.pointsCost} points to redeem this reward`);
+    const handleInitiateRedeem = (config) => {
+        if (!userStats || userStats.points < config.pointsCost) {
+            toast.error(`You need ${config.pointsCost} points to redeem this reward. Current balance: ${userStats?.points || 0} points.`);
             return;
         }
+        setConfirmingReward(config);
+    };
 
-        setRedeeming(true);
+    const handleConfirmRedeem = async () => {
+        if (!confirmingReward || selectedRewardId) return;
+        const config = confirmingReward;
+
+        setSelectedRewardId(config._id);
         try {
             await redemptionAPI.redeemPoints({
+                configId: config._id,
                 rewardType: config.rewardType,
                 rewardName: config.rewardName,
-                pointsCost: config.pointsCost
+                pointsCost: config.pointsCost,
             });
             toast.success(`Successfully redeemed ${config.rewardName}!`);
+            setConfirmingReward(null);
             fetchSummaryOnly();
             redemptionAPI.getHistory().then(res => setRedemptionHistory(res.data || [])).catch(() => {});
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to redeem reward');
         } finally {
-            setRedeeming(false);
+            setSelectedRewardId(null);
         }
     };
+
 
     if (loading) {
         return <WalletSkeleton />;
@@ -441,11 +451,20 @@ const Wallet = () => {
                                         {config.pointsCost} Points
                                     </div>
                                     <button
-                                        onClick={() => handleRedeem(config)}
-                                        disabled={redeeming || userStats?.points < config.pointsCost}
-                                        className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                        onClick={() => handleInitiateRedeem(config)}
+                                        disabled={!!selectedRewardId || (userStats?.points || 0) < config.pointsCost}
+                                        className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm text-sm"
                                     >
-                                        {redeeming ? 'Redeeming...' : 'Redeem'}
+                                        {selectedRewardId === config._id ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                <span>Redeeming...</span>
+                                            </>
+                                        ) : (userStats?.points || 0) < config.pointsCost ? (
+                                            'Insufficient Points'
+                                        ) : (
+                                            'Redeem Reward'
+                                        )}
                                     </button>
                                 </div>
                             ))}
@@ -598,6 +617,83 @@ const Wallet = () => {
                         >
                             Cancel
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Points Redemption Confirmation Modal */}
+            {confirmingReward && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-150">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                                Confirm Points Redemption
+                            </h3>
+                            <button
+                                onClick={() => setConfirmingReward(null)}
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-xl border border-purple-100 dark:border-purple-900/40 mb-4">
+                            <p className="text-xs text-purple-600 dark:text-purple-300 font-semibold uppercase tracking-wider mb-1">
+                                Selected Reward
+                            </p>
+                            <p className="text-base font-bold text-gray-900 dark:text-white">
+                                {confirmingReward.rewardName}
+                            </p>
+                            <div className="mt-3 pt-3 border-t border-purple-200 dark:border-purple-900/60 flex items-center justify-between text-xs">
+                                <span className="text-gray-600 dark:text-gray-300">Cost:</span>
+                                <span className="font-bold text-purple-600 dark:text-purple-400 text-sm">
+                                    {confirmingReward.pointsCost} Points
+                                </span>
+                            </div>
+                            <div className="mt-1 flex items-center justify-between text-xs">
+                                <span className="text-gray-600 dark:text-gray-300">Current Balance:</span>
+                                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                                    {userStats?.points || 0} Points
+                                </span>
+                            </div>
+                            <div className="mt-1 flex items-center justify-between text-xs font-semibold">
+                                <span className="text-gray-600 dark:text-gray-300">Remaining After:</span>
+                                <span className="text-green-600 dark:text-green-400">
+                                    {(userStats?.points || 0) - confirmingReward.pointsCost} Points
+                                </span>
+                            </div>
+                        </div>
+
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-5 leading-relaxed">
+                            Points will be deducted atomically from your balance. This action cannot be reversed once processed.
+                        </p>
+
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={handleConfirmRedeem}
+                                disabled={selectedRewardId === confirmingReward._id}
+                                className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl text-sm transition shadow disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {selectedRewardId === confirmingReward._id ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        <span>Processing...</span>
+                                    </>
+                                ) : (
+                                    'Confirm & Redeem'
+                                )}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setConfirmingReward(null)}
+                                disabled={!!selectedRewardId}
+                                className="px-4 py-2.5 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

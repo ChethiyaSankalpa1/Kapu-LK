@@ -282,6 +282,25 @@ const userSchema = new mongoose.Schema({
     type: Date,
     select: false,
   },
+  // Inactivity & Account Lifecycle
+  lastActiveAt: {
+    type: Date,
+    default: Date.now,
+    index: true,
+  },
+  inactivityWarningsSent: {
+    d5: { type: Boolean, default: false },
+    d2: { type: Boolean, default: false },
+    d1: { type: Boolean, default: false },
+  },
+  // Privacy Policy Acknowledgment
+  acknowledgedPrivacyPolicyAt: {
+    type: Date,
+  },
+  acknowledgedPrivacyPolicyVersion: {
+    type: String,
+    default: '1.0',
+  },
 }, {
   timestamps: true,
 });

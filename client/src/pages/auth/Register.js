@@ -234,7 +234,10 @@ const Register = () => {
                         </div>
                     </div>
 
-                    <div className="pt-2">
+                    <div className="pt-2 space-y-2">
+                        <div className="p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg text-xs text-gray-700 dark:text-gray-300">
+                            <strong>Notice on Account Retention:</strong> Accounts inactive for 10 consecutive days without login are permanently deleted with all data purged. Warnings are sent at 5 days, 2 days, and 1 day remaining. Any login or browsing cancels deletion.
+                        </div>
                         <label className="flex items-start space-x-2 text-sm text-gray-600 dark:text-gray-300">
                             <input
                                 type="checkbox"
@@ -253,7 +256,7 @@ const Register = () => {
                                 <span className="font-semibold"> {t('auth.termsAndConditions', { defaultValue: 'Terms & Conditions' })}</span> {t('auth.and', { defaultValue: 'and' })}
                                 <Link to="/privacy-policy" className="font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
                                     {t('auth.privacyPolicy', { defaultValue: 'Privacy Policy' })}
-                                </Link> {t('auth.platformTerms', { defaultValue: 'of this matrimonial platform.' })}
+                                </Link> (including the 10-day inactivity retention rule).
                             </span>
                         </label>
                     </div>

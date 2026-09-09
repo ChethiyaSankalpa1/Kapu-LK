@@ -103,7 +103,7 @@ exports.redeemPoints = async (req, res) => {
 
     // Determine authentic server-side points cost
     let verifiedCost = null;
-    if (configId && configId.length === 24) {
+    if (configId && mongoose.Types.ObjectId.isValid(configId)) {
       const dbConfig = await RedemptionConfig.findById(configId);
       if (dbConfig && dbConfig.isActive) {
         verifiedCost = dbConfig.pointsCost;
@@ -282,8 +282,10 @@ exports.redeemPoints = async (req, res) => {
       redemption.metadata.error = errorMessage;
       // Refund points on failure
       try {
-        userStats.points += pointsCost;
-        await userStats.save();
+        await UserStats.findOneAndUpdate(
+          { user: userId },
+          { $inc: { points: pointsCost } }
+        );
       } catch (refundError) {
         console.error('Error refunding points:', refundError);
       }

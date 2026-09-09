@@ -7,6 +7,8 @@ const {
   uploadChatImage,
   editMessage,
   deleteMessage,
+  deleteForMe,
+  deleteForEveryone,
   addReaction,
   reportMessage,
 } = require('../controllers/messageController');
@@ -21,6 +23,8 @@ router.get('/:userId', protect, getConversationWithUser);
 router.post('/', protect, messageLimiter, sendMessage);
 router.put('/:messageId', protect, editMessage);
 router.delete('/:messageId', protect, deleteMessage);
+router.delete('/:messageId/for-me', protect, deleteForMe);
+router.delete('/:messageId/for-everyone', protect, deleteForEveryone);
 router.post('/:messageId/reaction', protect, addReaction);
 
 module.exports = router;

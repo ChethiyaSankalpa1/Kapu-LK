@@ -658,3 +658,83 @@ exports.seedSriLankanContent = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Get inactivity lifecycle status & counts
+// @route   GET /api/admin/inactivity/status
+// @access  Private/Admin
+exports.getInactivityStatus = async (req, res) => {
+  try {
+    const { getInactivityStatus } = require('../services/inactivityCleanupService');
+    const status = await getInactivityStatus();
+    res.json({ success: true, ...status });
+  } catch (error) {
+    console.error('Error getting inactivity status:', error);
+    res.status(500).json({ message: error.message || 'Failed to fetch inactivity status' });
+  }
+};
+
+// @desc    Manually trigger inactivity warning checks & permanent cascade purge
+// @route   POST /api/admin/inactivity/run-cleanup
+// @access  Private/Admin
+exports.triggerInactivityCleanup = async (req, res) => {
+  try {
+    const { runInactivityChecks } = require('../services/inactivityCleanupService');
+    const result = await runInactivityChecks();
+
+    logAuditEvent({
+      userId: req.user._id,
+      action: 'ADMIN_TRIGGERED_INACTIVITY_CLEANUP',
+      targetId: req.user._id,
+      targetType: 'Admin',
+      details: result,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.json({
+      success: true,
+      message: 'Inactivity cleanup cycle executed successfully',
+      result,
+    });
+  } catch (error) {
+    console.error('Error triggering inactivity cleanup:', error);
+    res.status(500).json({ message: error.message || 'Failed to execute cleanup' });
+  }
+};
+
+// @desc    Cancel pending inactivity deletion for a specific user (admin override)
+// @route   POST /api/admin/inactivity/cancel/:userId
+// @access  Private/Admin
+exports.cancelUserInactivityDeletion = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.lastActiveAt = new Date();
+    user.inactivityWarningsSent = { d5: false, d2: false, d1: false };
+    await user.save();
+
+    logAuditEvent({
+      userId: req.user._id,
+      action: 'ADMIN_CANCELED_INACTIVITY_DELETION',
+      targetId: user._id,
+      targetType: 'User',
+      details: { email: user.email, name: user.name },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.json({
+      success: true,
+      message: `Inactivity deletion canceled for user ${user.name}. Countdown reset.`,
+      user: { _id: user._id, name: user.name, lastActiveAt: user.lastActiveAt },
+    });
+  } catch (error) {
+    console.error('Error canceling user inactivity deletion:', error);
+    res.status(500).json({ message: error.message || 'Failed to cancel deletion' });
+  }
+};
+

@@ -60,10 +60,28 @@ exports.protect = async (req, res, next) => {
 
     req.user = user;
 
-    // Throttle user online status updates to avoid DB pressure
-    if (!user.isOnline || !user.lastLogin || Date.now() - new Date(user.lastLogin).getTime() > 60000) {
-      User.updateOne({ _id: user._id }, { isOnline: true, lastLogin: new Date() }).catch((e) =>
-        console.warn('Failed to update online status:', e.message)
+    // Throttle user online status & inactivity touch to avoid DB pressure (every 60 seconds)
+    const now = new Date();
+    const lastLoginTime = user.lastLogin ? new Date(user.lastLogin).getTime() : 0;
+    const shouldUpdateActivity = !user.isOnline || !user.lastLogin || Date.now() - lastLoginTime > 60000;
+
+    if (shouldUpdateActivity) {
+      const updates = {
+        isOnline: true,
+        lastLogin: now,
+        lastActiveAt: now,
+      };
+
+      // Reset any active deletion warnings (meaningful activity cancels pending deletion)
+      if (
+        user.inactivityWarningsSent &&
+        (user.inactivityWarningsSent.d5 || user.inactivityWarningsSent.d2 || user.inactivityWarningsSent.d1)
+      ) {
+        updates.inactivityWarningsSent = { d5: false, d2: false, d1: false };
+      }
+
+      User.updateOne({ _id: user._id }, { $set: updates }).catch((e) =>
+        console.warn('Failed to update online / active status:', e.message)
       );
     }
 
@@ -109,6 +127,36 @@ exports.require2FA = (req, res, next) => {
       requires2FA: true,
       message: 'Two-factor authentication code verification required for this action.',
     });
+  }
+  next();
+};
+
+// Optional auth middleware - sets req.user if valid token present, otherwise proceeds as guest
+exports.optionalProtect = async (req, res, next) => {
+  let token;
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    token = req.headers.authorization.split(' ')[1];
+  } else if (req.cookies && req.cookies.accessToken) {
+    token = req.cookies.accessToken;
+  }
+
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const jwtSecret = process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
+    const decoded = jwt.verify(token, jwtSecret);
+    const user = await User.findById(decoded.id).select('-password');
+    if (user && user.isActive !== false) {
+      req.user = user;
+      req.tokenPayload = decoded;
+    }
+  } catch (error) {
+    // Ignore invalid token for optional auth
   }
   next();
 };

@@ -138,6 +138,7 @@ export const userAPI = {
     getAdminUser: () => api.get('/users/admin'),
     blockUser: (id) => api.post(`/users/${id}/block`),
     unblockUser: (id) => api.post(`/users/${id}/unblock`),
+    acknowledgePrivacyPolicy: (data = {}) => api.post('/users/acknowledge-privacy-policy', data),
 };
 
 // Premium API
@@ -186,8 +187,16 @@ export const messageAPI = {
     }),
     editMessage: (messageId, data) => api.put(`/messages/${messageId}`, data),
     deleteMessage: (messageId) => api.delete(`/messages/${messageId}`),
+    deleteForMe: (messageId) => api.delete(`/messages/${messageId}/for-me`),
+    deleteForEveryone: (messageId) => api.delete(`/messages/${messageId}/for-everyone`),
     addReaction: (messageId, emoji) => api.post(`/messages/${messageId}/reaction`, { emoji }),
     reportUser: (reportedUserId, reason, details) => api.post('/messages/report', { reportedUserId, reason, details }),
+};
+
+export const inactivityAPI = {
+    getStatus: () => api.get('/admin/inactivity/status'),
+    runCleanup: () => api.post('/admin/inactivity/run-cleanup'),
+    cancelDeletion: (userId) => api.post(`/admin/inactivity/cancel/${userId}`),
 };
 
 export const notificationAPI = {
@@ -293,6 +302,17 @@ export const redemptionAPI = {
     createRedemptionConfig: (data) => api.post('/redemption/admin/config', data),
     updateRedemptionConfig: (id, data) => api.put(`/redemption/admin/config/${id}`, data),
     deleteRedemptionConfig: (id) => api.delete(`/redemption/admin/config/${id}`),
+};
+
+// Support Ticket API
+export const supportAPI = {
+    createTicket: (data) => api.post('/support/tickets', data),
+    getMyTickets: () => api.get('/support/my-tickets'),
+    getTicketById: (id) => api.get(`/support/tickets/${id}`),
+    addUserReply: (id, text) => api.post(`/support/tickets/${id}/reply`, { text }),
+    getAdminTickets: (params = {}) => api.get('/support/admin/tickets', { params }),
+    addAdminReply: (id, data) => api.post(`/support/admin/tickets/${id}/reply`, data),
+    updateTicketStatus: (id, data) => api.put(`/support/admin/tickets/${id}`, data),
 };
 
 export default api;

@@ -8,7 +8,8 @@ import moment from 'moment';
 import {
   ArrowLeft, Send, User, MessageSquare,
   Check, CheckCheck, Smile, Paperclip,
-  Image, Search, X, Edit2, Trash2, MoreVertical, Gift
+  Image, Search, X, Edit2, Trash2, MoreVertical, Gift,
+  CornerUpLeft, Copy
 } from 'lucide-react';
 import GiftModal from '../../components/ui/GiftModal';
 import PremiumBadge from '../../components/ui/PremiumBadge';
@@ -40,10 +41,12 @@ const Conversation = () => {
   const [showMessageMenu, setShowMessageMenu] = useState(null);
   const [showReactionPicker, setShowReactionPicker] = useState(null);
   const [showGiftModal, setShowGiftModal] = useState(false);
+  const [replyingToMessage, setReplyingToMessage] = useState(null);
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const emojiPickerRef = useRef(null);
+  const textInputRef = useRef(null);
 
   const scrollToBottom = useCallback((behavior = 'smooth') => {
     setTimeout(() => {
@@ -219,7 +222,9 @@ const Conversation = () => {
     if (!messageText.trim()) return;
 
     const textToSend = messageText.trim();
+    const activeReplyTo = replyingToMessage;
     setMessageText('');
+    setReplyingToMessage(null);
     setShowEmojiPicker(false);
 
     // Optimistically add message
@@ -231,7 +236,13 @@ const Conversation = () => {
       content: textToSend,
       type: 'text',
       createdAt: new Date().toISOString(),
-      isRead: false
+      isRead: false,
+      replyTo: activeReplyTo ? {
+        _id: activeReplyTo._id,
+        content: activeReplyTo.content,
+        from: activeReplyTo.from,
+        type: activeReplyTo.type,
+      } : null,
     };
 
     setMessages(prev => [...prev, optimisticMsg]);
@@ -242,7 +253,8 @@ const Conversation = () => {
       await messageAPI.sendMessage({
         to: userId,
         content: textToSend,
-        type: 'text'
+        type: 'text',
+        replyTo: activeReplyTo ? activeReplyTo._id : null,
       });
       // Refresh list and chat
       fetchChatMessages(true);
@@ -251,6 +263,7 @@ const Conversation = () => {
       toast.error(error.response?.data?.message || t('toast.messaging.sendFailed'));
       setMessages(prev => prev.filter(msg => msg._id !== tempId));
       setMessageText(textToSend);
+      setReplyingToMessage(activeReplyTo);
     } finally {
       setSending(false);
     }
@@ -325,18 +338,58 @@ const Conversation = () => {
     }
   };
 
-  const handleDeleteMessage = async (messageId) => {
+
+  const handleDeleteForMe = async (messageId) => {
     try {
-      await messageAPI.deleteMessage(messageId);
+      await messageAPI.deleteForMe(messageId);
+      setMessages(prev => Array.isArray(prev) ? prev.filter(msg => msg._id !== messageId) : []);
+      setShowMessageMenu(null);
+      toast.success('Message deleted for you');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete message');
+    }
+  };
+
+  const handleDeleteForEveryone = async (messageId) => {
+    try {
+      await messageAPI.deleteForEveryone(messageId);
       setMessages(prev => Array.isArray(prev) ? prev.map(msg => 
         msg._id === messageId 
-          ? { ...msg, deleted: true, content: 'This message was deleted.' }
+          ? { ...msg, isDeletedForEveryone: true, content: 'This message was deleted', reactions: [] }
           : msg
       ) : []);
       setShowMessageMenu(null);
-      toast.success('Message deleted');
+      toast.success('Message deleted for everyone');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete message');
+      toast.error(error.response?.data?.message || 'Failed to delete message for everyone');
+    }
+  };
+
+  const handleCopyMessage = (content) => {
+    if (!content) return;
+    navigator.clipboard.writeText(content);
+    toast.success('Message copied to clipboard');
+    setShowMessageMenu(null);
+  };
+
+  const startReply = (message) => {
+    setReplyingToMessage(message);
+    setShowMessageMenu(null);
+    setShowReactionPicker(null);
+    setTimeout(() => {
+      textInputRef.current?.focus();
+    }, 100);
+  };
+
+  const scrollToMessage = (msgId) => {
+    if (!msgId) return;
+    const el = document.getElementById(`msg-${msgId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('ring-2', 'ring-purple-400');
+      setTimeout(() => {
+        el.classList.remove('ring-2', 'ring-purple-400');
+      }, 1500);
     }
   };
 
@@ -623,15 +676,47 @@ const Conversation = () => {
                           )}
 
                           <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[85%] sm:max-w-[78%] md:max-w-[72%] rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 shadow-sm relative group ${
-                              isCurrentUser
-                                ? 'bg-[#d9fdd3] text-gray-900 rounded-tr-sm'
-                                : 'bg-white dark:bg-[#202c33] text-gray-900 dark:text-white rounded-tl-sm border border-[#e9edef] dark:border-[#26353d]'
-                            }`}>
-                              
+                            <div
+                              id={`msg-${msg._id}`}
+                              className={`max-w-[85%] sm:max-w-[78%] md:max-w-[72%] rounded-2xl px-3 py-2 sm:px-3.5 sm:py-2.5 shadow-sm relative group transition-all ${
+                                isCurrentUser
+                                  ? 'bg-[#d9fdd3] dark:bg-[#005c4b] text-gray-900 dark:text-white rounded-tr-sm'
+                                  : 'bg-white dark:bg-[#202c33] text-gray-900 dark:text-white rounded-tl-sm border border-[#e9edef] dark:border-[#26353d]'
+                              }`}
+                            >
+                              {/* Quoted Reply Preview Inside Bubble */}
+                              {msg.replyTo && (
+                                <div
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    scrollToMessage(msg.replyTo._id);
+                                  }}
+                                  className={`mb-2 p-2 rounded-xl text-xs cursor-pointer hover:opacity-85 transition-opacity border-l-4 ${
+                                    isCurrentUser
+                                      ? 'bg-black/5 dark:bg-black/20 border-emerald-600'
+                                      : 'bg-gray-100 dark:bg-slate-700/60 border-purple-500'
+                                  }`}
+                                >
+                                  <div className="font-semibold flex items-center gap-1 text-[11px] text-purple-600 dark:text-purple-400">
+                                    <CornerUpLeft className="w-3 h-3" />
+                                    <span>
+                                      {msg.replyTo.from?._id === currentUser._id || msg.replyTo.from === currentUser._id
+                                        ? 'You'
+                                        : (otherUser?.name || 'User')}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-gray-600 dark:text-gray-300 truncate mt-0.5">
+                                    {msg.replyTo.content || (msg.replyTo.type === 'image' ? '📷 Photo' : 'Message')}
+                                  </p>
+                                </div>
+                              )}
+
                               {/* Message Content */}
-                              {msg.deleted ? (
-                                <p className="text-[13px] sm:text-[14px] italic text-gray-500 dark:text-gray-400">{msg.content}</p>
+                              {msg.isDeletedForEveryone || msg.deleted ? (
+                                <p className="text-[13px] sm:text-[14px] italic text-gray-500 dark:text-gray-400 flex items-center gap-1.5 py-0.5">
+                                  <Trash2 className="w-3.5 h-3.5 opacity-60" />
+                                  <span>{msg.content || 'This message was deleted'}</span>
+                                </p>
                               ) : msg.type === 'image' ? (
                                 <div className="space-y-1.5">
                                   <img
@@ -656,93 +741,148 @@ const Conversation = () => {
 
                               {/* Message Footer Info */}
                               <div className={`flex items-center justify-end gap-1 text-[11px] mt-1 ${
-                                isCurrentUser ? 'text-[#667781]' : 'text-gray-400 dark:text-[#8696a0]'
+                                isCurrentUser ? 'text-[#667781] dark:text-[#8696a0]' : 'text-gray-400 dark:text-[#8696a0]'
                               }`}>
                                 <span>{moment(msg.createdAt).format('LT')}</span>
                                 {msg.edited && <span className="text-[10px] italic">(Edited)</span>}
                                 {isCurrentUser && (
                                   <div className="flex items-center gap-1">
                                     {msg.isRead ? (
-                                      <div className="flex items-center gap-1 group relative">
+                                      <div className="flex items-center gap-1 group/tick relative">
                                         <CheckCheck className="w-3.5 h-3.5 text-[#53bdeb] shrink-0" />
                                         {msg.readAt && (
-                                          <span className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-gray-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                          <span className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-gray-800 text-white text-[10px] rounded opacity-0 group-hover/tick:opacity-100 transition-opacity whitespace-nowrap">
                                             Read {moment(msg.readAt).format('LT')}
                                           </span>
                                         )}
                                       </div>
                                     ) : (
-                                      <Check className="w-3.5 h-3.5 text-[#667781] shrink-0" />
+                                      <Check className="w-3.5 h-3.5 text-[#667781] dark:text-[#8696a0] shrink-0" />
                                     )}
                                   </div>
                                 )}
                               </div>
 
-                              {/* Message Actions Menu - Only for sender and not deleted */}
-                              {isCurrentUser && !msg.deleted && (
-                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {/* Floating Reactions Bar (Top overlay) */}
+                              {showReactionPicker === msg._id && !msg.deleted && !msg.isDeletedForEveryone && (
+                                <div
+                                  className={`absolute -top-11 ${
+                                    isCurrentUser ? 'right-0' : 'left-0'
+                                  } bg-white dark:bg-[#1f2c34] rounded-full shadow-2xl border border-gray-200 dark:border-gray-700 px-2 py-1 flex items-center gap-1 z-30 animate-scale-in`}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {['👍', '❤️', '😂', '😮', '😢', '🙏'].map((emoji) => (
+                                    <button
+                                      key={emoji}
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAddReaction(msg._id, emoji);
+                                        setShowReactionPicker(null);
+                                      }}
+                                      className="w-7 h-7 text-base hover:scale-125 transition-transform flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                                      aria-label={`React with ${emoji}`}
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
                                   <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setShowMessageMenu(showMessageMenu === msg._id ? null : msg._id);
-                                    }}
-                                    className="p-1.5 rounded-full bg-white/80 dark:bg-slate-700/80 hover:bg-white dark:hover:bg-slate-600 shadow-sm"
+                                    type="button"
+                                    onClick={() => setShowReactionPicker(null)}
+                                    className="w-6 h-6 text-xs text-gray-400 hover:text-gray-600 rounded-full flex items-center justify-center"
                                   >
-                                    <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                                    <X className="w-3 h-3" />
                                   </button>
-                                  
-                                  {showMessageMenu === msg._id && (
-                                    <div className="absolute top-8 right-0 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-gray-200 dark:border-slate-700 py-1 min-w-[120px] z-10">
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleEditMessage(msg);
-                                        }}
-                                        className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-2"
-                                      >
-                                        <Edit2 className="w-4 h-4" />
-                                        Edit
-                                      </button>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDeleteMessage(msg._id);
-                                        }}
-                                        className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                        Delete
-                                      </button>
-                                    </div>
-                                  )}
+                                </div>
+                              )}
 
-                                  {/* Reaction Button */}
+                              {/* Message Hover Actions Trigger */}
+                              {!msg.deleted && !msg.isDeletedForEveryone && (
+                                <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  {/* Quick Reaction Button */}
                                   <button
+                                    type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setShowReactionPicker(showReactionPicker === msg._id ? null : msg._id);
+                                      setShowMessageMenu(null);
                                     }}
-                                    className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="p-1 rounded-full bg-white/90 dark:bg-slate-700/90 hover:bg-white dark:hover:bg-slate-600 text-gray-600 dark:text-gray-300 shadow-sm"
+                                    title="React"
                                   >
-                                    <Smile className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                                    <Smile className="w-3.5 h-3.5" />
                                   </button>
 
-                                  {showReactionPicker === msg._id && (
-                                    <div className="absolute bottom-8 right-0 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-gray-200 dark:border-slate-700 p-2 z-20">
-                                      <div className="flex gap-1">
-                                        {['❤️', '😂', '😮', '😢', '👍', '👎', '🎉', '🔥'].map((emoji) => (
+                                  {/* Context Menu Trigger */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowMessageMenu(showMessageMenu === msg._id ? null : msg._id);
+                                      setShowReactionPicker(null);
+                                    }}
+                                    className="p-1 rounded-full bg-white/90 dark:bg-slate-700/90 hover:bg-white dark:hover:bg-slate-600 text-gray-600 dark:text-gray-300 shadow-sm"
+                                    title="More Options"
+                                  >
+                                    <MoreVertical className="w-3.5 h-3.5" />
+                                  </button>
+
+                                  {/* Action Dropdown Menu */}
+                                  {showMessageMenu === msg._id && (
+                                    <div
+                                      className="absolute top-7 right-0 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 py-1.5 min-w-[150px] z-20 text-xs text-gray-700 dark:text-gray-200 divide-y divide-gray-100 dark:divide-gray-700"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <div className="py-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => startReply(msg)}
+                                          className="w-full px-3 py-1.5 text-left hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                                        >
+                                          <CornerUpLeft className="w-3.5 h-3.5 text-purple-600" />
+                                          Reply
+                                        </button>
+                                        {msg.type === 'text' && (
                                           <button
-                                            key={emoji}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleAddReaction(msg._id, emoji);
-                                              setShowReactionPicker(null);
-                                            }}
-                                            className="w-8 h-8 text-xl hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                            type="button"
+                                            onClick={() => handleCopyMessage(msg.content)}
+                                            className="w-full px-3 py-1.5 text-left hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-2"
                                           >
-                                            {emoji}
+                                            <Copy className="w-3.5 h-3.5 text-blue-500" />
+                                            Copy Text
                                           </button>
-                                        ))}
+                                        )}
+                                        {isCurrentUser && msg.type === 'text' && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleEditMessage(msg)}
+                                            className="w-full px-3 py-1.5 text-left hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                                          >
+                                            <Edit2 className="w-3.5 h-3.5 text-amber-500" />
+                                            Edit
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      <div className="py-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDeleteForMe(msg._id)}
+                                          className="w-full px-3 py-1.5 text-left text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                          Delete for Me
+                                        </button>
+                                        {isCurrentUser && moment().diff(moment(msg.createdAt), 'minutes') < 60 && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleDeleteForEveryone(msg._id)}
+                                            className="w-full px-3 py-1.5 text-left text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 font-medium"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                            Delete for Everyone
+                                          </button>
+                                        )}
                                       </div>
                                     </div>
                                   )}
@@ -755,7 +895,7 @@ const Conversation = () => {
                                   {msg.reactions.map((reaction, idx) => (
                                     <div
                                       key={idx}
-                                      className="flex items-center gap-1 bg-gray-100 dark:bg-slate-700 rounded-full px-2 py-0.5 text-xs"
+                                      className="flex items-center gap-1 bg-white/80 dark:bg-slate-700/80 rounded-full px-2 py-0.5 text-xs shadow-xs border border-gray-200 dark:border-slate-600"
                                       title={reaction.user?.name || 'Anonymous'}
                                     >
                                       <span>{reaction.emoji}</span>
@@ -813,6 +953,34 @@ const Conversation = () => {
                   </div>
                 )}
 
+                {/* Replying To Preview Banner */}
+                {replyingToMessage && (
+                  <div className="flex items-center justify-between p-2.5 mb-2 bg-white dark:bg-[#1f2c34] rounded-2xl border-l-4 border-purple-600 shadow-sm animate-fadeIn">
+                    <div className="min-w-0 flex-1 pr-2">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-purple-600 dark:text-purple-400">
+                        <CornerUpLeft className="w-3.5 h-3.5" />
+                        <span>
+                          Replying to{' '}
+                          {replyingToMessage.from === currentUser._id || replyingToMessage.from?._id === currentUser._id
+                            ? 'yourself'
+                            : (otherUser?.name || 'User')}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-gray-300 truncate mt-0.5">
+                        {replyingToMessage.content || (replyingToMessage.type === 'image' ? '📷 Photo' : 'Message')}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setReplyingToMessage(null)}
+                      className="p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                      title="Cancel reply"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
                 {/* Input Controls */}
                 <form onSubmit={editingMessage ? handleSaveEdit : handleSendMessage} className="flex gap-1 sm:gap-1.5 md:gap-2 items-end">
                   {editingMessage && (
@@ -865,9 +1033,7 @@ const Conversation = () => {
                             if (otherUser && otherUser.giftingOptIn === false) {
                               toast.error(`${otherUser.name} has disabled receiving gifts.`);
                             } else {
-                              // Open Gift Modal
-      setShowGiftModal(true);
-      // Optionally could prefetch gifts here
+                              setShowGiftModal(true);
                             }
                           }}
                           disabled={sending}
@@ -890,6 +1056,7 @@ const Conversation = () => {
                   {/* Message Input text field */}
                   <div className="flex-1 bg-white dark:bg-[#2a3942] border border-[#d1d7db] dark:border-[#2a3942] rounded-[20px] sm:rounded-[24px] md:rounded-[28px] px-2.5 sm:px-3 md:px-4 py-1.5">
                     <textarea
+                      ref={textInputRef}
                       value={messageText}
                       onChange={(e) => {
                         setMessageText(e.target.value);

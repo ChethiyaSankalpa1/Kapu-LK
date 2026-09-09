@@ -14,6 +14,12 @@
       ]
     },
     {
+      "source": "/",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    },
+    {
       "source": "/index.html",
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
@@ -36,7 +42,7 @@
       "destination": "https://kapu-lk-2.onrender.com/uploads/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api|uploads|static|favicon\\.ico|manifest\\.json|robots\\.txt).*)",
       "destination": "/index.html"
     }
   ]

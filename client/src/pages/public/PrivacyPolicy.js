@@ -205,16 +205,62 @@ const PrivacyPolicy = () => {
             </ul>
           </section>
 
+          {/* 10-Day Inactivity & Data Retention Policy */}
+          <section className="border-2 border-purple-200 dark:border-purple-800/60 rounded-2xl p-6 bg-purple-50/50 dark:bg-purple-950/20">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Clock className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              10-Day Inactivity & Permanent Deletion Policy
+            </h2>
+            <div className="space-y-4 text-gray-700 dark:text-gray-300 text-sm sm:text-base leading-relaxed">
+              <p>
+                To maintain a safe, active, and privacy-first matchmaking environment and minimize unnecessary data storage, 
+                <strong> Kapu-LK considers accounts inactive after 10 consecutive days without login or meaningful activity</strong>.
+              </p>
+              
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-purple-100 dark:border-purple-900 space-y-2">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Scheduled Warning Notifications</h3>
+                <ul className="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                  <li><strong>5 Days Remaining (Day 5):</strong> First reminder notice delivered via in-app notification.</li>
+                  <li><strong>2 Days Remaining (Day 8):</strong> Urgent warning notification informing you of pending account deletion.</li>
+                  <li><strong>1 Day Remaining (Day 9):</strong> Final 24-hour alert before automated purge execution.</li>
+                </ul>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-purple-100 dark:border-purple-900 space-y-2">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Cancellation of Deletion</h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  <strong>Logging in or performing any activity immediately cancels the deletion countdown</strong> and resets your activity status to active.
+                </p>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-purple-100 dark:border-purple-900 space-y-2">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Permanent Cascade Purge Scope</h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Once an account reaches 10 days of continuous inactivity without login, our automated cleanup engine permanently purges:
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-300">
+                  <li>Personal profile, credentials, and verification records.</li>
+                  <li>All uploaded photos and media from Cloudinary storage.</li>
+                  <li>All sent and received chat messages and image attachments.</li>
+                  <li>In-app notifications, device sessions, and authentication tokens.</li>
+                  <li>Wallet balances, transaction histories, and point redemption records.</li>
+                  <li>Match connections, gifts, and references in other users' blocklists.</li>
+                </ul>
+                <p className="text-red-600 dark:text-red-400 font-medium text-xs sm:text-sm mt-2">
+                  ⚠️ Backup Limitations: Once executed, permanent deletion is irrevocable. Purged records cannot be restored from server logs or backups.
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* Contact Information */}
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-              Contact Us
+              Contact Us & Data Support
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm sm:text-base">
-              If you have any questions about this Privacy Policy or our data practices, please contact us through the 
-              "Contact Admin" feature in your account or email us at admin@kapu-lk.com. We will respond to your inquiries within 
-              a reasonable timeframe.
+              If you have any questions regarding this Privacy Policy, your account retention, or wish to exercise your data rights, please reach out via our built-in <strong>Support Chatbot</strong>, the <strong>"Contact Admin"</strong> tab, or by emailing <a href="mailto:support@kapu-lk.com" className="text-purple-600 font-medium hover:underline">support@kapu-lk.com</a>.
             </p>
           </section>
 
@@ -225,9 +271,7 @@ const PrivacyPolicy = () => {
               Changes to This Privacy Policy
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm sm:text-base">
-              We may update this Privacy Policy from time to time. We will notify you of any material changes by posting the new 
-              Privacy Policy on our platform and updating the "Last Updated" date. Your continued use of our services after 
-              such changes constitutes your acceptance of the updated Privacy Policy.
+              We may update this Privacy Policy from time to time. When significant updates are made, existing users will be prompted to review and acknowledge the updated terms upon logging in. Continued use of the platform after acknowledgment represents agreement to the terms.
             </p>
           </section>
 
