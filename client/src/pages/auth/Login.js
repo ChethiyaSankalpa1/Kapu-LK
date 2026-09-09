@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { authAPI } from '../../services/api';
+import { authAPI, maintenanceAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
-import { Eye, EyeOff, Heart } from 'lucide-react';
+import { Eye, EyeOff, Heart, ShieldAlert } from 'lucide-react';
 
 const Login = () => {
     const { t } = useTranslation();
@@ -16,6 +16,16 @@ const Login = () => {
     });
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [maintenanceInfo, setMaintenanceInfo] = useState(null);
+
+    // Check maintenance status
+    React.useEffect(() => {
+        maintenanceAPI.getStatus().then((res) => {
+            if (res.data?.isActive && res.data?.scope === 'full') {
+                setMaintenanceInfo(res.data);
+            }
+        }).catch(() => {});
+    }, []);
 
     // Redirect if already logged in
     React.useEffect(() => {
@@ -44,10 +54,18 @@ const Login = () => {
 
         try {
             const response = await authAPI.login(formData);
+            const userRole = (response.data?.role || response.data?.user?.role || '').toString().toLowerCase();
+
+            if (maintenanceInfo?.isActive && userRole !== 'admin') {
+                toast.error('Platform is currently in maintenance mode. Only administrators may log in.');
+                setLoading(false);
+                return;
+            }
+
             login(response.data, response.data.token);
             toast.success(t('toast.auth.loginSuccess'));
 
-            if (response.data.role === 'admin') {
+            if (userRole === 'admin') {
                 navigate('/admin');
             } else {
                 navigate('/dashboard');
@@ -67,6 +85,16 @@ const Login = () => {
                     <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{t('auth.welcomeBack', { defaultValue: 'Welcome Back' })}</h2>
                     <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm sm:text-base">{t('auth.signInSubtitle', { defaultValue: 'Sign in to your account' })}</p>
                 </div>
+
+                {maintenanceInfo?.isActive && (
+                    <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700/50 rounded-xl flex items-start gap-3 text-xs sm:text-sm text-amber-800 dark:text-amber-200 shadow-sm">
+                        <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                        <div>
+                            <span className="font-bold block text-sm">Platform Maintenance Break Active</span>
+                            <span>Public access is temporarily paused. Only administrators may log in to preview or deactivate maintenance.</span>
+                        </div>
+                    </div>
+                )}
 
                 <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
                     <div>

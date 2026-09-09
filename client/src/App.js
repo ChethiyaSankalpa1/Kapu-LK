@@ -20,6 +20,7 @@ import MobileBottomNav from './components/common/MobileBottomNav';
 import PrivacyPolicyModal from './components/common/PrivacyPolicyModal';
 import SupportChatbot from './components/common/SupportChatbot';
 import MaintenanceScreen from './components/common/MaintenanceScreen';
+import AdminMaintenanceBar from './components/admin/AdminMaintenanceBar';
 import { maintenanceAPI } from './services/api';
 
 // Resilient chunk loader that automatically recovers from deployment hash mismatches
@@ -262,8 +263,12 @@ const MaintenanceGate = ({ children }) => {
     const interval = setInterval(checkMaintenance, 30000);
 
     const handleMaintenanceEvent = (e) => {
-      if (e.detail?.maintenance) {
-        setMaintenanceData(e.detail);
+      if (e.detail?.maintenance !== undefined) {
+        if (e.detail.maintenance === false || e.detail.isActive === false) {
+          setMaintenanceData(null);
+        } else {
+          setMaintenanceData(e.detail);
+        }
       }
     };
 
@@ -276,13 +281,37 @@ const MaintenanceGate = ({ children }) => {
   }, [checkMaintenance]);
 
   const isAdmin = (user?.role || '').toLowerCase() === 'admin';
+  const isDirectStaffPath = 
+    typeof window !== 'undefined' && 
+    (window.location.pathname === '/login' || window.location.pathname === '/admin');
 
   // If full maintenance is active and user is NOT an admin, display branded MaintenanceScreen
-  if (maintenanceData?.isActive && maintenanceData?.scope === 'full' && !isAdmin) {
-    return <MaintenanceScreen maintenanceData={maintenanceData} onRetry={checkMaintenance} />;
+  // (unless user is navigating to /login or /admin to authenticate)
+  if (maintenanceData?.isActive && maintenanceData?.scope === 'full' && !isAdmin && !isDirectStaffPath) {
+    return (
+      <MaintenanceScreen 
+        maintenanceData={maintenanceData} 
+        onRetry={checkMaintenance} 
+        onAdminLoginSuccess={checkMaintenance} 
+      />
+    );
   }
 
-  return children;
+  return (
+    <>
+      {/* Global Top Admin Bar when maintenance is active and admin is logged in */}
+      {maintenanceData?.isActive && isAdmin && (
+        <AdminMaintenanceBar 
+          maintenanceData={maintenanceData} 
+          onEndMaintenance={async () => {
+            setMaintenanceData(null);
+            await checkMaintenance();
+          }} 
+        />
+      )}
+      {children}
+    </>
+  );
 };
 
 function App() {
