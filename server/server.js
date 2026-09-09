@@ -48,15 +48,32 @@ let dbConnected = false;
   }
 })();
 
+const cookieParser = require('cookie-parser');
+
 const app = express();
 
 app.set('trust proxy', 1);
 
-// Middleware
-// Security headers
+// Cookie parser for secure HttpOnly cookie authentication
+app.use(cookieParser());
+
+// Security headers with strict Content Security Policy
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
-  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https://res.cloudinary.com", "https://*.vercel.app"],
+      connectSrc: ["'self'", "https://*.onrender.com", "https://*.vercel.app", "http://localhost:*", "ws:", "wss:"],
+      frameAncestors: ["'none'"],
+      objectSrc: ["'none'"],
+    },
+  },
+  frameguard: { action: 'deny' },
 }));
 
 // Response compression
@@ -149,12 +166,56 @@ app.use(rateLimit({
 }));
 
 const path = require('path');
+const { protect } = require('./middleware/auth');
+const { PaymentRequest } = require('./models/Wallet');
 
-// Serve uploads static directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
+// Request body size limits
 app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+
+// Deep NoSQL query injection sanitization middleware
+const sanitizeNoSql = (obj) => {
+  if (!obj || typeof obj !== 'object') return;
+  for (const key of Object.keys(obj)) {
+    if (key.startsWith('$') || key.includes('.')) {
+      delete obj[key];
+    } else if (typeof obj[key] === 'object') {
+      sanitizeNoSql(obj[key]);
+    }
+  }
+};
+
+app.use((req, res, next) => {
+  if (req.body) sanitizeNoSql(req.body);
+  if (req.query) sanitizeNoSql(req.query);
+  if (req.params) sanitizeNoSql(req.params);
+  next();
+});
+
+// Protect confidential payment slips from direct unauthenticated public access
+app.use('/uploads/payment-slips', (req, res, next) => {
+  protect(req, res, async () => {
+    try {
+      const filename = path.basename(req.path);
+      if (req.user && req.user.role === 'admin') {
+        return res.sendFile(path.join(__dirname, 'uploads/payment-slips', filename));
+      }
+      const isOwner = req.user && (await PaymentRequest.exists({
+        user: req.user._id,
+        slipImageUrl: { $regex: filename }
+      }));
+      if (isOwner) {
+        return res.sendFile(path.join(__dirname, 'uploads/payment-slips', filename));
+      }
+      return res.status(403).json({ message: 'Access denied to this payment slip' });
+    } catch (err) {
+      return res.status(500).json({ message: 'Error accessing payment slip' });
+    }
+  });
+});
+
+// Serve public uploads static directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
@@ -195,10 +256,19 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// Error handler
+// Error handler (sanitized in production to prevent leaking internals)
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.statusCode || 500).json({ message: err.message || 'Server Error' });
+  const isProd = process.env.NODE_ENV === 'production';
+  if (!isProd) {
+    console.error(err.stack);
+  } else {
+    console.error('API Error:', err.message);
+  }
+  const statusCode = err.statusCode || 500;
+  res.status(statusCode).json({
+    message: isProd && statusCode === 500 ? 'Internal Server Error' : err.message || 'Server Error',
+    ...(isProd ? {} : { stack: err.stack }),
+  });
 });
 
 const PORT = process.env.PORT || 5000;

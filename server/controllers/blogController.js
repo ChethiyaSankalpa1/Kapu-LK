@@ -110,9 +110,21 @@ exports.updateBlogPost = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
+    const { title, content, summary, category, tags, coverImage } = req.body;
+    const allowedUpdates = {};
+    if (title !== undefined) allowedUpdates.title = String(title).trim();
+    if (content !== undefined) allowedUpdates.content = content;
+    if (summary !== undefined) allowedUpdates.summary = summary;
+    if (category !== undefined) allowedUpdates.category = category;
+    if (tags !== undefined) allowedUpdates.tags = tags;
+    if (coverImage !== undefined) allowedUpdates.coverImage = coverImage;
+    if (req.user.role === 'admin' && req.body.isFeatured !== undefined) {
+      allowedUpdates.isFeatured = !!req.body.isFeatured;
+    }
+
     const updatedPost = await Blog.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      { $set: allowedUpdates },
       { new: true }
     ).populate('author', 'name profileImageUrl');
 

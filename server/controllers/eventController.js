@@ -95,9 +95,21 @@ exports.updateEvent = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
+    const { title, description, eventType, date, location, maxAttendees, isVirtual, meetingLink, coverImage } = req.body;
+    const allowedUpdates = {};
+    if (title !== undefined) allowedUpdates.title = String(title).trim();
+    if (description !== undefined) allowedUpdates.description = description;
+    if (eventType !== undefined) allowedUpdates.eventType = eventType;
+    if (date !== undefined) allowedUpdates.date = date;
+    if (location !== undefined) allowedUpdates.location = location;
+    if (maxAttendees !== undefined) allowedUpdates.maxAttendees = Number(maxAttendees);
+    if (isVirtual !== undefined) allowedUpdates.isVirtual = !!isVirtual;
+    if (meetingLink !== undefined) allowedUpdates.meetingLink = meetingLink;
+    if (coverImage !== undefined) allowedUpdates.coverImage = coverImage;
+
     const updatedEvent = await Event.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      { $set: allowedUpdates },
       { new: true }
     ).populate('organizer', 'name profileImageUrl');
 

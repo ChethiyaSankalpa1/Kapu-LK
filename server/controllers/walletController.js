@@ -2,6 +2,9 @@ const { Wallet, WalletTransaction, PaymentRequest } = require('../models/Wallet'
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { UserStats } = require('../models/Achievement');
+const path = require('path');
+const fs = require('fs');
+const { logAuditEvent } = require('../middleware/auditLogger');
 
 // @desc    Get user wallet summary (wallet + stats + recent transactions in 1 request)
 // @route   GET /api/wallet/summary
@@ -197,30 +200,35 @@ exports.getAllPaymentRequests = async (req, res) => {
 // @access  Private/Admin
 exports.approvePaymentRequest = async (req, res) => {
   try {
-    const paymentRequest = await PaymentRequest.findById(req.params.id);
+    // Atomic status transition prevents double-crediting
+    const paymentRequest = await PaymentRequest.findOneAndUpdate(
+      { _id: req.params.id, status: 'pending' },
+      {
+        $set: {
+          status: 'approved',
+          reviewedBy: req.user._id,
+          reviewedAt: new Date(),
+        }
+      },
+      { new: true }
+    );
     
     if (!paymentRequest) {
-      return res.status(404).json({ message: 'Payment request not found' });
+      return res.status(400).json({ message: 'Payment request not found or already processed' });
     }
     
-    if (paymentRequest.status !== 'pending') {
-      return res.status(400).json({ message: 'Payment request already processed' });
-    }
+    // Atomically credit wallet
+    const updatedWallet = await Wallet.findOneAndUpdate(
+      { user: paymentRequest.user },
+      { $inc: { balance: paymentRequest.amount, totalDeposited: paymentRequest.amount } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
     
-    // Get or create wallet
-    let wallet = await Wallet.findOne({ user: paymentRequest.user });
-    if (!wallet) {
-      wallet = await Wallet.create({ user: paymentRequest.user });
-    }
-    
-    const balanceBefore = wallet.balance;
-    wallet.balance += paymentRequest.amount;
-    wallet.totalDeposited += paymentRequest.amount;
-    await wallet.save();
+    const balanceBefore = updatedWallet.balance - paymentRequest.amount;
     
     // Create transaction record
     await WalletTransaction.create({
-      wallet: wallet._id,
+      wallet: updatedWallet._id,
       user: paymentRequest.user,
       type: 'deposit',
       amount: paymentRequest.amount,
@@ -229,16 +237,20 @@ exports.approvePaymentRequest = async (req, res) => {
       relatedId: paymentRequest._id,
       relatedType: 'payment',
       balanceBefore,
-      balanceAfter: wallet.balance,
+      balanceAfter: updatedWallet.balance,
       status: 'completed'
     });
     
-    // Update payment request
-    paymentRequest.status = 'approved';
-    paymentRequest.reviewedBy = req.user._id;
-    paymentRequest.reviewedAt = new Date();
-    await paymentRequest.save();
-    
+    logAuditEvent({
+      userId: req.user._id,
+      action: 'ADMIN_APPROVE_WALLET_DEPOSIT',
+      targetId: paymentRequest._id,
+      targetType: 'PaymentRequest',
+      details: { userId: paymentRequest.user, amount: paymentRequest.amount },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
     // Create notification for user
     await Notification.create({
       user: paymentRequest.user,
@@ -248,7 +260,7 @@ exports.approvePaymentRequest = async (req, res) => {
       relatedType: 'payment'
     });
     
-    res.json({ message: 'Payment approved successfully', wallet });
+    res.json({ message: 'Payment approved successfully', wallet: updatedWallet });
   } catch (error) {
     console.error('Error approving payment request:', error);
     res.status(500).json({ message: 'Failed to approve payment request' });
@@ -261,26 +273,74 @@ exports.approvePaymentRequest = async (req, res) => {
 exports.rejectPaymentRequest = async (req, res) => {
   try {
     const { rejectionReason } = req.body;
-    const paymentRequest = await PaymentRequest.findById(req.params.id);
+    const paymentRequest = await PaymentRequest.findOneAndUpdate(
+      { _id: req.params.id, status: 'pending' },
+      {
+        $set: {
+          status: 'rejected',
+          reviewedBy: req.user._id,
+          reviewedAt: new Date(),
+          rejectionReason: rejectionReason || 'No reason provided',
+        }
+      },
+      { new: true }
+    );
     
     if (!paymentRequest) {
-      return res.status(404).json({ message: 'Payment request not found' });
+      return res.status(400).json({ message: 'Payment request not found or already processed' });
     }
     
-    if (paymentRequest.status !== 'pending') {
-      return res.status(400).json({ message: 'Payment request already processed' });
-    }
-    
-    paymentRequest.status = 'rejected';
-    paymentRequest.reviewedBy = req.user._id;
-    paymentRequest.reviewedAt = new Date();
-    paymentRequest.rejectionReason = rejectionReason || 'No reason provided';
-    await paymentRequest.save();
-    
+    logAuditEvent({
+      userId: req.user._id,
+      action: 'ADMIN_REJECT_WALLET_DEPOSIT',
+      targetId: paymentRequest._id,
+      targetType: 'PaymentRequest',
+      details: { userId: paymentRequest.user, reason: rejectionReason },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
     res.json({ message: 'Payment rejected successfully' });
   } catch (error) {
     console.error('Error rejecting payment request:', error);
     res.status(500).json({ message: 'Failed to reject payment request' });
+  }
+};
+
+// @desc    Get confidential payment slip with ownership/admin access control
+// @route   GET /api/wallet/slips/:filename
+// @access  Private
+exports.getPaymentSlip = async (req, res) => {
+  try {
+    const filename = path.basename(req.params.filename);
+    const slipPath = path.join(__dirname, '../uploads/payment-slips', filename);
+
+    if (!fs.existsSync(slipPath)) {
+      return res.status(404).json({ message: 'Payment slip not found' });
+    }
+
+    // Access control: User must be admin or the owner of the PaymentRequest
+    if (req.user.role !== 'admin') {
+      const isOwner = await PaymentRequest.exists({
+        user: req.user._id,
+        slipImageUrl: { $regex: filename }
+      });
+      if (!isOwner) {
+        logAuditEvent({
+          userId: req.user._id,
+          action: 'PAYMENT_SLIP_UNAUTHORIZED_ACCESS_ATTEMPT',
+          severity: 'warning',
+          details: { filename },
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        });
+        return res.status(403).json({ message: 'Access denied to this payment slip' });
+      }
+    }
+
+    res.sendFile(path.resolve(slipPath));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 

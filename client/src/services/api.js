@@ -18,6 +18,7 @@ const API_URL = getApiBaseUrl();
 const api = axios.create({
     baseURL: API_URL,
     timeout: 45000,
+    withCredentials: true,
 });
 
 // Add token to requests
@@ -29,14 +30,79 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-// Handle 401 Unauthorized globally
+// Handle 401 Unauthorized with token refresh rotation
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+    failedQueue.forEach((prom) => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
+        const originalRequest = error.config;
+
+        if (
+            error.response &&
+            error.response.status === 401 &&
+            !originalRequest._retry &&
+            originalRequest.url &&
+            !originalRequest.url.includes('/auth/login') &&
+            !originalRequest.url.includes('/auth/register') &&
+            !originalRequest.url.includes('/auth/refresh')
+        ) {
+            if (isRefreshing) {
+                return new Promise((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                })
+                    .then((token) => {
+                        originalRequest.headers.Authorization = `Bearer ${token}`;
+                        return api(originalRequest);
+                    })
+                    .catch((err) => Promise.reject(err));
+            }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
+
+            try {
+                const refreshResponse = await axios.post(
+                    `${API_URL}/auth/refresh`,
+                    {},
+                    { withCredentials: true }
+                );
+                const newToken = refreshResponse.data.token;
+                if (newToken) {
+                    localStorage.setItem('token', newToken);
+                    api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+                    processQueue(null, newToken);
+                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                    return api(originalRequest);
+                }
+            } catch (refreshErr) {
+                processQueue(refreshErr, null);
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+                    window.location.href = '/login';
+                }
+                return Promise.reject(refreshErr);
+            } finally {
+                isRefreshing = false;
+            }
+        }
+
         if (error.response && error.response.status === 401) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            // Avoid redirecting if already on login or register page
             if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
                 window.location.href = '/login';
             }
@@ -49,9 +115,14 @@ api.interceptors.response.use(
 export const authAPI = {
     register: (data) => api.post('/auth/register', data),
     login: (data) => api.post('/auth/login', data),
+    refreshToken: () => api.post('/auth/refresh'),
+    logout: () => api.post('/auth/logout'),
     forgotPassword: (data) => api.post('/auth/forgot-password', data),
     resetPassword: (token, data) => api.post(`/auth/reset-password/${token}`, data),
     getMe: () => api.get('/auth/me'),
+    setup2FA: () => api.post('/auth/2fa/setup'),
+    verify2FA: (code) => api.post('/auth/2fa/verify', { code }),
+    disable2FA: (password) => api.post('/auth/2fa/disable', { password }),
     uploadProfileImage: (formData) => api.post('/auth/upload-profile-image', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
     }),
@@ -65,6 +136,8 @@ export const userAPI = {
     searchUsers: (params = {}) => api.get('/users/search', { params }),
     getMatches: (params = {}) => api.get('/users/matches', { params }),
     getAdminUser: () => api.get('/users/admin'),
+    blockUser: (id) => api.post(`/users/${id}/block`),
+    unblockUser: (id) => api.post(`/users/${id}/unblock`),
 };
 
 // Premium API
@@ -106,7 +179,7 @@ export const adminAPI = {
 
 export const messageAPI = {
     getConversations: () => api.get('/messages'),
-    getConversationWithUser: (userId) => api.get(`/messages/${userId}`),
+    getConversationWithUser: (userId, params = {}) => api.get(`/messages/${userId}`, { params }),
     sendMessage: (data) => api.post('/messages', data),
     uploadChatImage: (formData) => api.post('/messages/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -114,6 +187,7 @@ export const messageAPI = {
     editMessage: (messageId, data) => api.put(`/messages/${messageId}`, data),
     deleteMessage: (messageId) => api.delete(`/messages/${messageId}`),
     addReaction: (messageId, emoji) => api.post(`/messages/${messageId}/reaction`, { emoji }),
+    reportUser: (reportedUserId, reason, details) => api.post('/messages/report', { reportedUserId, reason, details }),
 };
 
 export const notificationAPI = {

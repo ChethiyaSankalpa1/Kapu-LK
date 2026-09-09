@@ -6,6 +6,7 @@ const Blog = require('../models/Blog');
 const SuccessStory = require('../models/SuccessStory');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { logAuditEvent } = require('../middleware/auditLogger');
 
 // @desc    Get all users (admin)
 // @route   GET /api/admin/users
@@ -33,6 +34,15 @@ exports.approveUser = async (req, res) => {
     user.isApproved = true;
     await user.save();
 
+    logAuditEvent({
+      userId: req.user ? req.user._id : null,
+      action: 'ADMIN_APPROVE_USER',
+      targetId: user._id,
+      targetType: 'User',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
     res.json({ message: 'User approved successfully', user });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -52,6 +62,15 @@ exports.rejectUser = async (req, res) => {
 
     user.isApproved = false;
     await user.save();
+
+    logAuditEvent({
+      userId: req.user ? req.user._id : null,
+      action: 'ADMIN_REJECT_USER',
+      targetId: user._id,
+      targetType: 'User',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
 
     res.json({ message: 'User approval revoked', user });
   } catch (error) {
@@ -75,6 +94,16 @@ exports.deleteUser = async (req, res) => {
     }
 
     await user.deleteOne();
+
+    logAuditEvent({
+      userId: req.user ? req.user._id : null,
+      action: 'ADMIN_DELETE_USER',
+      targetId: user._id,
+      targetType: 'User',
+      severity: 'warning',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
 
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
@@ -102,6 +131,16 @@ exports.updateUserRole = async (req, res) => {
     user.role = role;
     await user.save();
 
+    logAuditEvent({
+      userId: req.user ? req.user._id : null,
+      action: 'ADMIN_UPDATE_ROLE',
+      targetId: user._id,
+      targetType: 'User',
+      details: { role },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
     res.json({ message: 'User role updated successfully', user });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -120,7 +159,22 @@ exports.toggleUserStatus = async (req, res) => {
     }
 
     user.isActive = !user.isActive;
+    if (!user.isActive) {
+      // Invalidate active sessions immediately when deactivated
+      user.tokenVersion = (user.tokenVersion || 0) + 1;
+    }
     await user.save();
+
+    logAuditEvent({
+      userId: req.user ? req.user._id : null,
+      action: 'ADMIN_TOGGLE_USER_STATUS',
+      targetId: user._id,
+      targetType: 'User',
+      details: { isActive: user.isActive },
+      severity: user.isActive ? 'info' : 'warning',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
 
     res.json({ 
       message: `User ${user.isActive ? 'activated' : 'deactivated'} successfully`, 
@@ -248,25 +302,55 @@ exports.getDashboardStats = async (req, res) => {
   }
 };
 
-// @desc    Create admin user (run once)
+// @desc    Create admin user (bootstrap)
 // @route   POST /api/admin/create-admin
-// @access  Public (should be protected in production)
+// @access  Public with Bootstrap Key
 exports.createAdmin = async (req, res) => {
   try {
-    const adminExists = await User.findOne({ role: 'admin' });
+    const bootstrapKey = req.headers['x-admin-bootstrap-key'] || req.body.bootstrapKey;
+    const requiredKey = process.env.ADMIN_BOOTSTRAP_KEY;
 
+    if (!requiredKey || bootstrapKey !== requiredKey) {
+      logAuditEvent({
+        action: 'ADMIN_BOOTSTRAP_UNAUTHORIZED_ATTEMPT',
+        severity: 'critical',
+        details: { attemptedEmail: req.body.email },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+      return res.status(403).json({
+        message: 'Admin creation is restricted. Valid X-Admin-Bootstrap-Key required.',
+      });
+    }
+
+    const adminExists = await User.findOne({ role: 'admin' });
     if (adminExists) {
       return res.status(400).json({ message: 'Admin already exists' });
     }
 
+    const password = req.body.password || process.env.ADMIN_PASSWORD;
+    if (!password || (password === 'admin123' && process.env.NODE_ENV === 'production')) {
+      return res.status(400).json({ message: 'A secure password is required to bootstrap the admin.' });
+    }
+
     const admin = await User.create({
-      name: 'Admin',
-      username: 'admin',
-      email: process.env.ADMIN_EMAIL || 'admin@matrimony.com',
-      password: process.env.ADMIN_PASSWORD || 'admin123',
+      name: req.body.name || 'Admin',
+      username: req.body.username || 'admin',
+      email: (req.body.email || process.env.ADMIN_EMAIL || 'admin@matrimony.com').toLowerCase().trim(),
+      password,
       role: 'admin',
       isApproved: true,
       isActive: true,
+    });
+
+    logAuditEvent({
+      userId: admin._id,
+      action: 'ADMIN_BOOTSTRAP_SUCCESS',
+      targetId: admin._id,
+      targetType: 'User',
+      severity: 'critical',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
     });
 
     res.status(201).json({

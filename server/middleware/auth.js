@@ -1,52 +1,83 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Protect routes - verify JWT token
+// Protect routes - verify JWT token from HttpOnly cookie OR Authorization Bearer header
 exports.protect = async (req, res, next) => {
   let token;
 
+  // 1. Try Bearer header
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer')
   ) {
-    try {
-      // Get token from header
-      token = req.headers.authorization.split(' ')[1];
-
-      // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-      // Get user from token
-      req.user = await User.findById(decoded.id).select('-password');
-
-      if (!req.user) {
-        return res.status(401).json({ message: 'Not authorized, user not found' });
-      }
-
-      // Update user isOnline status and lastLogin timestamp (throttled to once a minute)
-      if (!req.user.isOnline || !req.user.lastLogin || Date.now() - new Date(req.user.lastLogin).getTime() > 60000) {
-        try {
-          req.user.isOnline = true;
-          req.user.lastLogin = Date.now();
-          await req.user.save();
-        } catch (saveError) {
-          console.error('Failed to save user online status:', saveError.message);
-        }
-      }
-
-      next();
-    } catch (error) {
-      console.warn('JWT verification failed:', error.message);
-      return res.status(401).json({ message: 'Not authorized, token failed' });
-    }
+    token = req.headers.authorization.split(' ')[1];
+  }
+  // 2. Fallback to HttpOnly cookie
+  else if (req.cookies && req.cookies.accessToken) {
+    token = req.cookies.accessToken;
   }
 
   if (!token) {
-    return res.status(401).json({ message: 'Not authorized, no token' });
+    return res.status(401).json({ message: 'Not authorized, no token provided' });
+  }
+
+  try {
+    const jwtSecret = process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
+    const decoded = jwt.verify(token, jwtSecret);
+
+    // Attach decoded payload for 2FA / session claims inspection
+    req.tokenPayload = decoded;
+
+    // Get user from database
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(401).json({ message: 'Not authorized, user account no longer exists' });
+    }
+
+    // Reject deactivated or suspended users immediately
+    if (user.isActive === false) {
+      return res.status(403).json({
+        message: 'Your account has been deactivated or suspended. Please contact support.',
+      });
+    }
+
+    // Verify token version (session invalidation)
+    if (decoded.tokenVersion !== undefined && user.tokenVersion !== undefined) {
+      if (decoded.tokenVersion !== user.tokenVersion) {
+        return res.status(401).json({ message: 'Session has been invalidated. Please log in again.' });
+      }
+    }
+
+    // Reject tokens issued before a password change
+    if (user.passwordChangedAt) {
+      const changedTimestamp = parseInt(user.passwordChangedAt.getTime() / 1000, 10);
+      if (decoded.iat && decoded.iat < changedTimestamp) {
+        return res.status(401).json({
+          message: 'Password was recently changed. Please log in again with your new credentials.',
+        });
+      }
+    }
+
+    req.user = user;
+
+    // Throttle user online status updates to avoid DB pressure
+    if (!user.isOnline || !user.lastLogin || Date.now() - new Date(user.lastLogin).getTime() > 60000) {
+      User.updateOne({ _id: user._id }, { isOnline: true, lastLogin: new Date() }).catch((e) =>
+        console.warn('Failed to update online status:', e.message)
+      );
+    }
+
+    next();
+  } catch (error) {
+    console.warn('JWT verification failed:', error.message);
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token expired', code: 'TOKEN_EXPIRED' });
+    }
+    return res.status(401).json({ message: 'Not authorized, invalid token' });
   }
 };
 
-// Admin middleware
+// Admin role check
 exports.admin = (req, res, next) => {
   if (req.user && req.user.role === 'admin') {
     next();
@@ -55,11 +86,29 @@ exports.admin = (req, res, next) => {
   }
 };
 
-// Approved middleware
+// Approved user check
 exports.approved = (req, res, next) => {
   if (req.user && (req.user.isApproved || req.user.role === 'admin')) {
     next();
   } else {
-    res.status(403).json({ message: 'Account approval required. An administrator must approve your account before you can browse, search, or view other member profiles.' });
+    res.status(403).json({
+      message:
+        'Account approval required. An administrator must approve your account before you can browse, search, or view other member profiles.',
+    });
   }
+};
+
+// Two-Factor Authentication requirement middleware
+exports.require2FA = (req, res, next) => {
+  if (req.user && req.user.twoFactorEnabled) {
+    if (req.tokenPayload && req.tokenPayload.is2FAAuthenticated) {
+      return next();
+    }
+    return res.status(403).json({
+      success: false,
+      requires2FA: true,
+      message: 'Two-factor authentication code verification required for this action.',
+    });
+  }
+  next();
 };

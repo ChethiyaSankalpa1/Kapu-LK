@@ -239,6 +239,49 @@ const userSchema = new mongoose.Schema({
   lastMessageSentAt: {
     type: Date,
   },
+  // Security & Account Protection
+  loginAttempts: {
+    type: Number,
+    default: 0,
+  },
+  lockUntil: {
+    type: Date,
+  },
+  passwordChangedAt: {
+    type: Date,
+  },
+  tokenVersion: {
+    type: Number,
+    default: 0,
+  },
+  twoFactorEnabled: {
+    type: Boolean,
+    default: false,
+  },
+  twoFactorSecret: {
+    type: String,
+    select: false,
+  },
+  twoFactorRecoveryCodes: [{
+    type: String,
+    select: false,
+  }],
+  blockedUsers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  }],
+  isEmailVerified: {
+    type: Boolean,
+    default: false,
+  },
+  emailVerificationToken: {
+    type: String,
+    select: false,
+  },
+  emailVerificationExpires: {
+    type: Date,
+    select: false,
+  },
 }, {
   timestamps: true,
 });
@@ -255,6 +298,34 @@ userSchema.index({ isPremium: 1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ lastLogin: -1 });
 
+// Check if account is currently locked
+userSchema.methods.isAccountLocked = function() {
+  return !!(this.lockUntil && this.lockUntil > Date.now());
+};
+
+// Increment login attempts & lock if >= 5 attempts
+userSchema.methods.incLoginAttempts = async function() {
+  if (this.lockUntil && this.lockUntil < Date.now()) {
+    return await this.updateOne({
+      $set: { loginAttempts: 1 },
+      $unset: { lockUntil: 1 },
+    });
+  }
+  const updates = { $inc: { loginAttempts: 1 } };
+  if ((this.loginAttempts || 0) + 1 >= 5 && (!this.lockUntil || this.lockUntil <= Date.now())) {
+    updates.$set = { lockUntil: new Date(Date.now() + 20 * 60 * 1000) }; // 20 minutes lockout
+  }
+  return await this.updateOne(updates);
+};
+
+// Reset login attempts after successful authentication
+userSchema.methods.resetLoginAttempts = async function() {
+  return await this.updateOne({
+    $set: { loginAttempts: 0 },
+    $unset: { lockUntil: 1 },
+  });
+};
+
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
@@ -262,6 +333,9 @@ userSchema.pre('save', async function(next) {
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  if (!this.isNew) {
+    this.passwordChangedAt = new Date(Date.now() - 1000); // 1 sec in past ensures token issued after
+  }
   next();
 });
 

@@ -1,8 +1,10 @@
 const Message = require('../models/Message');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const Report = require('../models/Report');
 const { encryptMessage, decryptMessage } = require('../utils/messageCrypto');
 const cloudinary = require('../config/cloudinary');
+const { logAuditEvent } = require('../middleware/auditLogger');
 
 // @desc    Send a message
 // @route   POST /api/messages
@@ -15,6 +17,10 @@ exports.sendMessage = async (req, res) => {
       return res.status(400).json({ message: 'Recipient and content are required' });
     }
 
+    if (typeof content !== 'string' || content.trim().length === 0 || content.length > 2000) {
+      return res.status(400).json({ message: 'Message content must be between 1 and 2000 characters.' });
+    }
+
     const sender = await User.findById(req.user._id);
     if (!sender) {
       return res.status(404).json({ message: 'Sender not found' });
@@ -23,6 +29,14 @@ exports.sendMessage = async (req, res) => {
     const recipient = await User.findById(to);
     if (!recipient) {
       return res.status(404).json({ message: 'Recipient not found' });
+    }
+
+    // Check if recipient has blocked sender or sender has blocked recipient
+    if (recipient.blockedUsers && recipient.blockedUsers.some((id) => id.toString() === sender._id.toString())) {
+      return res.status(403).json({ message: 'You cannot send messages to this user.' });
+    }
+    if (sender.blockedUsers && sender.blockedUsers.some((id) => id.toString() === recipient._id.toString())) {
+      return res.status(400).json({ message: 'You have blocked this user. Unblock them first to send a message.' });
     }
 
     const FREE_MESSAGE_LIMIT = 5;
@@ -198,6 +212,9 @@ exports.getConversationWithUser = async (req, res) => {
 
     console.log('Fetching conversation between:', userId, 'and', otherUserId);
 
+    const limit = Math.min(parseInt(req.query.limit, 10) || 100, 200);
+    const skip = Math.max(parseInt(req.query.skip, 10) || 0, 0);
+
     const messages = await Message.find({
       $or: [
         { from: userId, to: otherUserId },
@@ -205,6 +222,8 @@ exports.getConversationWithUser = async (req, res) => {
       ],
     })
       .sort({ createdAt: 1 })
+      .skip(skip)
+      .limit(limit)
       .populate('from to', 'name profileImageUrl isOnline lastLogin');
 
     console.log('Found messages count:', messages.length);
@@ -382,6 +401,11 @@ exports.addReaction = async (req, res) => {
       return res.status(404).json({ message: 'Message not found' });
     }
 
+    // Access control: Only conversation participants can react to messages
+    if (message.from.toString() !== userId.toString() && message.to.toString() !== userId.toString()) {
+      return res.status(403).json({ message: 'Not authorized to react to this message' });
+    }
+
     // Check if user already reacted with this emoji
     const existingReactionIndex = message.reactions.findIndex(
       r => r.user.toString() === userId.toString() && r.emoji === emoji
@@ -409,5 +433,42 @@ exports.addReaction = async (req, res) => {
   } catch (error) {
     console.error('Add reaction error:', error);
     res.status(500).json({ message: error.message || 'Failed to add reaction' });
+  }
+};
+
+// @desc    Report an abusive user or message
+// @route   POST /api/messages/report
+// @access  Private
+exports.reportMessage = async (req, res) => {
+  try {
+    const { reportedUserId, reason, details } = req.body;
+    if (!reportedUserId || !reason) {
+      return res.status(400).json({ message: 'Reported user ID and reason are required' });
+    }
+
+    const report = await Report.create({
+      reporter: req.user._id,
+      reportedUser: reportedUserId,
+      reason: String(reason).slice(0, 200),
+      details: details ? String(details).slice(0, 1000) : '',
+    });
+
+    logAuditEvent({
+      userId: req.user._id,
+      action: 'USER_REPORTED',
+      targetId: reportedUserId,
+      targetType: 'User',
+      details: { reason },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Report submitted successfully. Administrators will review this case.',
+      reportId: report._id,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Failed to submit report' });
   }
 };

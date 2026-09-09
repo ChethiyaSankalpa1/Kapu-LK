@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const {
   getWalletSummary,
   getWallet,
@@ -11,11 +12,12 @@ const {
   getAllPaymentRequests,
   approvePaymentRequest,
   rejectPaymentRequest,
-  deletePaymentRequest
+  deletePaymentRequest,
+  getPaymentSlip,
 } = require('../controllers/walletController');
 const { protect, admin } = require('../middleware/auth');
-
-const fs = require('fs');
+const { paymentLimiter } = require('../middleware/rateLimiters');
+const { validateFileOnDisk } = require('../utils/fileSignature');
 
 // Ensure upload directory exists
 const uploadDir = path.join(__dirname, '../uploads/payment-slips');
@@ -33,7 +35,8 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'slip-' + uniqueSuffix + path.extname(file.originalname));
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, 'slip-' + uniqueSuffix + ext);
   }
 });
 
@@ -47,17 +50,42 @@ const upload = multer({
     if (extname && mimetype) {
       return cb(null, true);
     } else {
-      cb(new Error('Only images (jpeg, jpg, png) and PDF files are allowed'));
+      cb(new Error('Only safe images (jpeg, jpg, png) and PDF files are allowed'));
     }
   },
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
+// Middleware verifying magic bytes of uploaded payment slip on disk
+const verifySlipMagicBytes = (req, res, next) => {
+  if (req.file && req.file.path) {
+    const validation = validateFileOnDisk(req.file.path, ['image/jpeg', 'image/png', 'application/pdf']);
+    if (!validation.valid) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (e) {}
+      return res.status(400).json({
+        success: false,
+        message: validation.reason || 'Invalid file content signature. File may be corrupted or disguised.',
+      });
+    }
+  }
+  next();
+};
+
 router.get('/summary', protect, getWalletSummary);
 router.get('/', protect, getWallet);
 router.get('/transactions', protect, getTransactions);
-router.post('/payment-request', protect, upload.single('paymentSlip'), createPaymentRequest);
+router.post(
+  '/payment-request',
+  protect,
+  paymentLimiter,
+  upload.single('paymentSlip'),
+  verifySlipMagicBytes,
+  createPaymentRequest
+);
 router.get('/payment-requests', protect, getPaymentRequests);
+router.get('/slips/:filename', protect, getPaymentSlip);
 
 // Admin routes
 router.get('/admin/payment-requests', protect, admin, getAllPaymentRequests);
@@ -66,3 +94,4 @@ router.put('/admin/payment-requests/:id/reject', protect, admin, rejectPaymentRe
 router.delete('/admin/payment-requests/:id', protect, admin, deletePaymentRequest);
 
 module.exports = router;
+

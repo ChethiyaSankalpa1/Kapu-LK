@@ -1,17 +1,92 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
+const RefreshToken = require('../models/RefreshToken');
 const Notification = require('../models/Notification');
 const { Referral, ReferralCode } = require('../models/Referral');
 const { UserStats } = require('../models/Achievement');
 const cloudinary = require('../config/cloudinary');
 const { sendPasswordResetEmail } = require('../utils/mailer');
+const { logAuditEvent } = require('../middleware/auditLogger');
+const {
+  generateSecret,
+  verifyTOTP,
+  getOTPAuthURI,
+  generateRecoveryCodes,
+} = require('../utils/totp');
 
-// Generate JWT Token
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d',
+// Helpers for token generation
+const getJwtSecret = () => process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
+
+const generateAccessToken = (user, is2FAAuthenticated = false) => {
+  return jwt.sign(
+    {
+      id: user._id,
+      role: user.role,
+      tokenVersion: user.tokenVersion || 0,
+      is2FAAuthenticated,
+    },
+    getJwtSecret(),
+    { expiresIn: '15m' } // 15-minute short-lived access token
+  );
+};
+
+// Generate and store cryptographically secure refresh token
+const createRefreshToken = async (user, req) => {
+  const rawToken = crypto.randomBytes(40).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+  const ipAddress = req.headers['x-forwarded-for']
+    ? req.headers['x-forwarded-for'].split(',')[0].trim()
+    : req.ip || req.socket.remoteAddress || '';
+  const userAgent = req.headers['user-agent'] || '';
+
+  await RefreshToken.create({
+    user: user._id,
+    tokenHash,
+    expiresAt,
+    ipAddress: String(ipAddress).slice(0, 45),
+    userAgent: String(userAgent).slice(0, 250),
   });
+
+  return rawToken;
+};
+
+// Set HttpOnly, SameSite, Secure cookies
+const setTokenCookies = (res, accessToken, refreshToken) => {
+  const isProd = process.env.NODE_ENV === 'production';
+  const cookieOptions = {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
+  };
+
+  if (accessToken) {
+    res.cookie('accessToken', accessToken, {
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+  }
+
+  if (refreshToken) {
+    res.cookie('refreshToken', refreshToken, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/api/auth',
+    });
+  }
+};
+
+const clearTokenCookies = (res) => {
+  const isProd = process.env.NODE_ENV === 'production';
+  const cookieOptions = {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
+  };
+  res.clearCookie('accessToken', cookieOptions);
+  res.clearCookie('refreshToken', { ...cookieOptions, path: '/api/auth' });
 };
 
 const isValidPhoneNumber = (value) => !value || /^[0-9]+$/.test(value);
@@ -128,6 +203,20 @@ exports.register = async (req, res) => {
         message: 'Add a profile picture to improve your profile visibility and receive better match suggestions.',
       });
 
+      const accessToken = generateAccessToken(user);
+      const refreshToken = await createRefreshToken(user, req);
+      setTokenCookies(res, accessToken, refreshToken);
+
+      logAuditEvent({
+        userId: user._id,
+        action: 'USER_REGISTERED',
+        targetId: user._id,
+        targetType: 'User',
+        details: { email: user.email },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+
       res.status(201).json({
         _id: user._id,
         name: user.name,
@@ -137,7 +226,8 @@ exports.register = async (req, res) => {
         isApproved: user.isApproved,
         language: user.language,
         giftingOptIn: user.giftingOptIn,
-        token: generateToken(user._id),
+        token: accessToken,
+        refreshToken,
       });
     } else {
       res.status(400).json({ message: 'Invalid user data' });
@@ -152,25 +242,109 @@ exports.register = async (req, res) => {
 // @access  Public
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, twoFactorCode } = req.body;
 
     // Check for user email
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({
+      email: email ? email.toLowerCase().trim() : '',
+    }).select('+password +twoFactorSecret +twoFactorRecoveryCodes');
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Check account lockout
+    if (user.isAccountLocked && user.isAccountLocked()) {
+      const minutesRemaining = Math.ceil((new Date(user.lockUntil).getTime() - Date.now()) / (60 * 1000));
+      logAuditEvent({
+        userId: user._id,
+        action: 'LOGIN_LOCKED_ATTEMPT',
+        severity: 'warning',
+        details: { minutesRemaining },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+      return res.status(423).json({
+        message: `Account is temporarily locked due to repeated failed login attempts. Please try again in ${minutesRemaining} minutes.`,
+      });
     }
 
     // Check if password matches
     const isMatch = await user.matchPassword(password);
 
     if (!isMatch) {
+      if (user.incLoginAttempts) {
+        await user.incLoginAttempts();
+      }
+      logAuditEvent({
+        userId: user._id,
+        action: 'LOGIN_FAILED',
+        severity: 'warning',
+        details: { email: user.email },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
       return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Check active status
+    if (user.isActive === false) {
+      return res.status(403).json({
+        message: 'Your account has been deactivated or suspended. Please contact support.',
+      });
+    }
+
+    // 2FA check if enabled
+    let is2FAAuthenticated = false;
+    if (user.twoFactorEnabled) {
+      if (!twoFactorCode) {
+        return res.status(200).json({
+          requires2FA: true,
+          message: 'Two-factor authentication code required',
+        });
+      }
+
+      // Verify code
+      const validTOTP = verifyTOTP(twoFactorCode, user.twoFactorSecret);
+      let validRecovery = false;
+
+      if (!validTOTP && Array.isArray(user.twoFactorRecoveryCodes)) {
+        const cleanCode = twoFactorCode.trim().toUpperCase();
+        const codeIdx = user.twoFactorRecoveryCodes.indexOf(cleanCode);
+        if (codeIdx !== -1) {
+          validRecovery = true;
+          user.twoFactorRecoveryCodes.splice(codeIdx, 1);
+        }
+      }
+
+      if (!validTOTP && !validRecovery) {
+        return res.status(401).json({ message: 'Invalid 2FA code or recovery code' });
+      }
+      is2FAAuthenticated = true;
+    }
+
+    // Reset login attempts after success
+    if (user.resetLoginAttempts) {
+      await user.resetLoginAttempts();
     }
 
     // Update last login
     user.lastLogin = Date.now();
     await user.save();
+
+    const accessToken = generateAccessToken(user, is2FAAuthenticated);
+    const refreshToken = await createRefreshToken(user, req);
+    setTokenCookies(res, accessToken, refreshToken);
+
+    logAuditEvent({
+      userId: user._id,
+      action: 'LOGIN_SUCCESS',
+      targetId: user._id,
+      targetType: 'User',
+      details: { email: user.email, is2FAAuthenticated },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
 
     res.json({
       _id: user._id,
@@ -182,7 +356,9 @@ exports.login = async (req, res) => {
       profileImageUrl: user.profileImageUrl,
       language: user.language,
       giftingOptIn: user.giftingOptIn,
-      token: generateToken(user._id),
+      token: accessToken,
+      refreshToken,
+      twoFactorEnabled: user.twoFactorEnabled,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -284,6 +460,116 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
+// @desc    Refresh access token using refresh token rotation
+// @route   POST /api/auth/refresh
+// @access  Public
+exports.refreshToken = async (req, res) => {
+  try {
+    const rawToken = (req.cookies && req.cookies.refreshToken) || req.body.refreshToken;
+    if (!rawToken) {
+      return res.status(401).json({ message: 'Refresh token is required' });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const existingToken = await RefreshToken.findOne({ tokenHash });
+
+    if (!existingToken) {
+      return res.status(401).json({ message: 'Invalid refresh token' });
+    }
+
+    // Token reuse detection! If already revoked, invalidate all user sessions
+    if (existingToken.isRevoked) {
+      await RefreshToken.updateMany({ user: existingToken.user }, { isRevoked: true });
+      await User.findByIdAndUpdate(existingToken.user, { $inc: { tokenVersion: 1 } });
+      clearTokenCookies(res);
+
+      logAuditEvent({
+        userId: existingToken.user,
+        action: 'REFRESH_TOKEN_REUSE_DETECTED',
+        severity: 'critical',
+        details: { tokenHash },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+
+      return res.status(403).json({
+        message: 'Security alert: Refresh token reuse detected. All sessions have been revoked for your safety. Please log in again.',
+      });
+    }
+
+    // Check expiration
+    if (existingToken.expiresAt < new Date()) {
+      existingToken.isRevoked = true;
+      await existingToken.save();
+      clearTokenCookies(res);
+      return res.status(401).json({ message: 'Refresh token has expired. Please log in again.' });
+    }
+
+    // Find active user
+    const user = await User.findById(existingToken.user);
+    if (!user || user.isActive === false) {
+      clearTokenCookies(res);
+      return res.status(401).json({ message: 'User account inactive or not found' });
+    }
+
+    // Rotate refresh token: revoke current one and generate new one
+    const newRawToken = crypto.randomBytes(40).toString('hex');
+    const newTokenHash = crypto.createHash('sha256').update(newRawToken).digest('hex');
+    const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    existingToken.isRevoked = true;
+    existingToken.replacedByToken = newTokenHash;
+    await existingToken.save();
+
+    await RefreshToken.create({
+      user: user._id,
+      tokenHash: newTokenHash,
+      expiresAt: newExpiresAt,
+      ipAddress: req.ip || '',
+      userAgent: req.headers['user-agent'] || '',
+    });
+
+    const newAccessToken = generateAccessToken(user);
+    setTokenCookies(res, newAccessToken, newRawToken);
+
+    res.json({
+      success: true,
+      token: newAccessToken,
+      refreshToken: newRawToken,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Logout user and invalidate refresh tokens
+// @route   POST /api/auth/logout
+// @access  Public / Private
+exports.logout = async (req, res) => {
+  try {
+    const rawToken = (req.cookies && req.cookies.refreshToken) || req.body.refreshToken;
+    if (rawToken) {
+      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+      await RefreshToken.updateOne({ tokenHash }, { isRevoked: true });
+    }
+
+    if (req.user) {
+      await User.updateOne({ _id: req.user._id }, { isOnline: false });
+      logAuditEvent({
+        userId: req.user._id,
+        action: 'LOGOUT',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    }
+
+    clearTokenCookies(res);
+    res.json({ success: true, message: 'Logged out successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Reset password with token
 // @route   POST /api/auth/reset-password/:token
 // @access  Public
@@ -310,9 +596,125 @@ exports.resetPassword = async (req, res) => {
     user.password = password;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
+    user.passwordChangedAt = new Date();
+    user.tokenVersion = (user.tokenVersion || 0) + 1; // Invalidate all existing tokens across devices
     await user.save();
 
-    res.json({ message: 'Password reset successful' });
+    // Revoke all active refresh tokens on password change
+    await RefreshToken.updateMany({ user: user._id }, { isRevoked: true });
+    clearTokenCookies(res);
+
+    logAuditEvent({
+      userId: user._id,
+      action: 'PASSWORD_RESET_COMPLETED',
+      targetId: user._id,
+      targetType: 'User',
+      severity: 'warning',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.json({ message: 'Password reset successful. Please log in with your new password.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// 2FA Endpoints
+// @desc    Setup 2FA (Generate secret and URI)
+// @route   POST /api/auth/2fa/setup
+// @access  Private
+exports.setup2FA = async (req, res) => {
+  try {
+    const secret = generateSecret();
+    const otpauthUrl = getOTPAuthURI(req.user.email, secret, 'Kapu.lk');
+
+    // Save temporary secret to user
+    await User.findByIdAndUpdate(req.user._id, { twoFactorSecret: secret });
+
+    res.json({
+      success: true,
+      secret,
+      otpauthUrl,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Verify and activate 2FA
+// @route   POST /api/auth/2fa/verify
+// @access  Private
+exports.verify2FA = async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code) {
+      return res.status(400).json({ message: 'Verification code is required' });
+    }
+
+    const user = await User.findById(req.user._id).select('+twoFactorSecret');
+    if (!user || !user.twoFactorSecret) {
+      return res.status(400).json({ message: '2FA setup was not initiated' });
+    }
+
+    const isValid = verifyTOTP(code, user.twoFactorSecret);
+    if (!isValid) {
+      return res.status(400).json({ message: 'Invalid verification code' });
+    }
+
+    const recoveryCodes = generateRecoveryCodes(8);
+    user.twoFactorEnabled = true;
+    user.twoFactorRecoveryCodes = recoveryCodes;
+    await user.save();
+
+    logAuditEvent({
+      userId: user._id,
+      action: '2FA_ENABLED',
+      targetId: user._id,
+      targetType: 'User',
+      severity: 'warning',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.json({
+      success: true,
+      message: 'Two-factor authentication enabled successfully',
+      recoveryCodes,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Disable 2FA
+// @route   POST /api/auth/2fa/disable
+// @access  Private
+exports.disable2FA = async (req, res) => {
+  try {
+    const { password } = req.body;
+    const user = await User.findById(req.user._id).select('+password');
+
+    if (!user || !(await user.matchPassword(password))) {
+      return res.status(401).json({ message: 'Invalid password. Cannot disable 2FA.' });
+    }
+
+    user.twoFactorEnabled = false;
+    user.twoFactorSecret = undefined;
+    user.twoFactorRecoveryCodes = [];
+    await user.save();
+
+    logAuditEvent({
+      userId: user._id,
+      action: '2FA_DISABLED',
+      targetId: user._id,
+      targetType: 'User',
+      severity: 'warning',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.json({ success: true, message: 'Two-factor authentication disabled' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

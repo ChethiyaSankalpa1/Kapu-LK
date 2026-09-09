@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const PremiumPaymentRequest = require('../models/PremiumPaymentRequest');
 const PremiumPlan = require('../models/PremiumPlan');
@@ -5,6 +6,7 @@ const Notification = require('../models/Notification');
 const { Wallet, WalletTransaction } = require('../models/Wallet');
 const cloudinary = require('../config/cloudinary');
 const { checkUserPremiumStatus } = require('../utils/premiumExpiryChecker');
+const { logAuditEvent } = require('../middleware/auditLogger');
 
 const isValidPhoneNumber = (value) => !value || /^[0-9]+$/.test(value);
 
@@ -165,8 +167,15 @@ exports.purchaseWithWallet = async (req, res) => {
     const durationDays = plan.durationDays;
     const planBadge = plan.badge;
 
-    let wallet = await Wallet.findOne({ user: req.user._id });
-    if (!wallet || wallet.balance < price) {
+    // Atomically deduct from wallet (prevents race conditions)
+    const updatedWallet = await Wallet.findOneAndUpdate(
+      { user: req.user._id, balance: mongoose.trusted({ $gte: price }) },
+      { $inc: { balance: -price, totalSpent: price } },
+      { new: true }
+    );
+
+    if (!updatedWallet) {
+      const wallet = await Wallet.findOne({ user: req.user._id });
       return res.status(400).json({ 
         message: 'Insufficient wallet balance',
         required: price,
@@ -174,11 +183,8 @@ exports.purchaseWithWallet = async (req, res) => {
       });
     }
 
-    // Deduct from wallet
-    const balanceBefore = wallet.balance;
-    wallet.balance -= price;
-    wallet.totalSpent += price;
-    await wallet.save();
+    const wallet = updatedWallet;
+    const balanceBefore = wallet.balance + price;
 
     // Create wallet transaction
     await WalletTransaction.create({
@@ -206,6 +212,16 @@ exports.purchaseWithWallet = async (req, res) => {
     user.premiumExpiresAt = new Date(currentExpiry.getTime() + durationDays * 24 * 60 * 60 * 1000);
     user.premiumExpirySentNotification = false;
     await user.save();
+
+    logAuditEvent({
+      userId: user._id,
+      action: 'PREMIUM_PURCHASE_WALLET',
+      targetId: user._id,
+      targetType: 'User',
+      details: { plan: plan.name, price, durationDays },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
 
     // Send activation notification
     await Notification.create({
@@ -348,12 +364,15 @@ exports.getAllRequests = async (req, res) => {
 // @access  Private/Admin
 exports.approveRequest = async (req, res) => {
   try {
-    const request = await PremiumPaymentRequest.findById(req.params.id);
+    // Atomic status transition prevents concurrency race conditions
+    const request = await PremiumPaymentRequest.findOneAndUpdate(
+      { _id: req.params.id, status: 'pending' },
+      { $set: { status: 'approved' } },
+      { new: true }
+    );
+
     if (!request) {
-      return res.status(404).json({ message: 'Request not found' });
-    }
-    if (request.status !== 'pending') {
-      return res.status(400).json({ message: 'Request is already processed' });
+      return res.status(400).json({ message: 'Request not found or already processed' });
     }
 
     const user = await User.findById(request.user);
@@ -377,8 +396,15 @@ exports.approveRequest = async (req, res) => {
     user.premiumExpirySentNotification = false;
     await user.save();
 
-    request.status = 'approved';
-    await request.save();
+    logAuditEvent({
+      userId: req.user._id,
+      action: 'ADMIN_APPROVE_PREMIUM_REQUEST',
+      targetId: request._id,
+      targetType: 'PremiumPaymentRequest',
+      details: { userId: user._id, planBadge, durationDays },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
 
     // Send notification to user
     await Notification.create({
@@ -399,12 +425,19 @@ exports.approveRequest = async (req, res) => {
 exports.rejectRequest = async (req, res) => {
   try {
     const { rejectionReason } = req.body;
-    const request = await PremiumPaymentRequest.findById(req.params.id);
+    const request = await PremiumPaymentRequest.findOneAndUpdate(
+      { _id: req.params.id, status: 'pending' },
+      {
+        $set: {
+          status: 'rejected',
+          rejectionReason: rejectionReason || 'No reason provided',
+        }
+      },
+      { new: true }
+    );
+
     if (!request) {
-      return res.status(404).json({ message: 'Request not found' });
-    }
-    if (request.status !== 'pending') {
-      return res.status(400).json({ message: 'Request is already processed' });
+      return res.status(400).json({ message: 'Request not found or already processed' });
     }
 
     const user = await User.findById(request.user);
@@ -420,11 +453,17 @@ exports.rejectRequest = async (req, res) => {
       });
     }
 
-    request.status = 'rejected';
-    request.rejectionReason = rejectionReason || 'No reason provided';
-    await request.save();
+    logAuditEvent({
+      userId: req.user._id,
+      action: 'ADMIN_REJECT_PREMIUM_REQUEST',
+      targetId: request._id,
+      targetType: 'PremiumPaymentRequest',
+      details: { userId: request.user, reason: rejectionReason },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
 
-    res.json({ message: 'Premium request rejected', user, request });
+    res.json({ message: 'Premium request rejected successfully', request });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

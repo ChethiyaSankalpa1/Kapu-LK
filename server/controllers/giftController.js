@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const { Gift, GiftTransaction } = require('../models/Gift');
 const User = require('../models/User');
 const { UserStats } = require('../models/Achievement');
@@ -59,7 +60,37 @@ exports.sendGift = async (req, res) => {
       return res.status(404).json({ message: 'Recipient not found' });
     }
 
-    // Grant 30 days of Premium Membership to recipient if gift is a Premium Pass!
+    // Check if recipient has opted out of receiving gifts
+    if (recipient.giftingOptIn === false) {
+      return res.status(400).json({ message: `${recipient.name} has opted out of receiving gifts.` });
+    }
+
+    let walletBefore = 0;
+    let walletAfter = 0;
+
+    // Secure payment atomically BEFORE granting any benefits
+    if (gift.price > 0) {
+      const updatedWallet = await Wallet.findOneAndUpdate(
+        { user: sender, balance: mongoose.trusted({ $gte: gift.price }) },
+        { $inc: { balance: -gift.price, totalSpent: gift.price } },
+        { new: true }
+      );
+
+      if (!updatedWallet) {
+        const wallet = await Wallet.findOne({ user: sender });
+        const available = wallet ? wallet.balance : 0;
+        return res.status(400).json({
+          message: 'Insufficient wallet balance',
+          required: gift.price,
+          available,
+        });
+      }
+
+      walletAfter = updatedWallet.balance;
+      walletBefore = updatedWallet.balance + gift.price;
+    }
+
+    // Grant 30 days of Premium Membership to recipient ONLY AFTER payment is secured
     if (gift.isPremium || gift.name.toLowerCase().includes('premium')) {
       recipient.isPremium = true;
       const currentExp = (recipient.premiumExpiresAt && recipient.premiumExpiresAt > new Date())
@@ -67,32 +98,6 @@ exports.sendGift = async (req, res) => {
         : new Date();
       recipient.premiumExpiresAt = new Date(currentExp.getTime() + 30 * 24 * 60 * 60 * 1000);
       await recipient.save();
-    }
-
-    // Check if recipient has opted out of receiving gifts
-    if (recipient.giftingOptIn === false) {
-      return res.status(400).json({ message: `${recipient.name} has opted out of receiving gifts.` });
-    }
-
-    // Check if user has enough wallet balance for paid gifts
-    if (gift.price > 0) {
-      let wallet = await Wallet.findOne({ user: sender });
-      if (!wallet) {
-        wallet = await Wallet.create({ user: sender });
-      }
-      if (wallet.balance < gift.price) {
-        return res.status(400).json({ 
-          message: 'Insufficient wallet balance',
-          required: gift.price,
-          available: wallet.balance
-        });
-      }
-      
-      // Deduct from wallet
-      const balanceBefore = wallet.balance;
-      wallet.balance -= gift.price;
-      wallet.totalSpent += gift.price;
-      await wallet.save();
     }
 
     // Create gift transaction

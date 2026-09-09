@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const { logAuditEvent } = require('../middleware/auditLogger');
 
 const isValidPhoneNumber = (value) => !value || /^[0-9]+$/.test(value);
 
@@ -201,13 +202,17 @@ exports.getAllUsers = async (req, res) => {
 // @access  Private
 exports.getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
+    const user = await User.findById(req.params.id).select(
+      '-password -twoFactorSecret -twoFactorRecoveryCodes -passwordResetToken -passwordResetExpires'
+    );
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (!user._id.equals(req.user._id) && req.user.role !== 'admin') {
+    const isSelfOrAdmin = user._id.equals(req.user._id) || req.user.role === 'admin';
+
+    if (!isSelfOrAdmin) {
       await Notification.create({
         user: user._id,
         type: 'profile_view',
@@ -216,7 +221,20 @@ exports.getUserById = async (req, res) => {
       });
     }
 
-    res.json(user);
+    const userObj = user.toObject();
+
+    // Privacy protection: Mask confidential contact & security fields for other users
+    if (!isSelfOrAdmin) {
+      delete userObj.phoneNumber;
+      delete userObj.email;
+      delete userObj.complaints;
+      delete userObj.loginAttempts;
+      delete userObj.lockUntil;
+      delete userObj.blockedUsers;
+      delete userObj.tokenVersion;
+    }
+
+    res.json(userObj);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -381,6 +399,61 @@ exports.getAdminUser = async (req, res) => {
   try {
     const admin = await User.findOne({ role: 'admin' }).select('-password');
     res.json(admin);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Block a user
+// @route   POST /api/users/:id/block
+// @access  Private
+exports.blockUser = async (req, res) => {
+  try {
+    const targetUserId = req.params.id;
+    if (req.user._id.toString() === targetUserId) {
+      return res.status(400).json({ message: 'Cannot block yourself' });
+    }
+
+    await User.findByIdAndUpdate(req.user._id, {
+      $addToSet: { blockedUsers: targetUserId },
+    });
+
+    logAuditEvent({
+      userId: req.user._id,
+      action: 'USER_BLOCKED',
+      targetId: targetUserId,
+      targetType: 'User',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.json({ success: true, message: 'User blocked successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Unblock a user
+// @route   POST /api/users/:id/unblock
+// @access  Private
+exports.unblockUser = async (req, res) => {
+  try {
+    const targetUserId = req.params.id;
+
+    await User.findByIdAndUpdate(req.user._id, {
+      $pull: { blockedUsers: targetUserId },
+    });
+
+    logAuditEvent({
+      userId: req.user._id,
+      action: 'USER_UNBLOCKED',
+      targetId: targetUserId,
+      targetType: 'User',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.json({ success: true, message: 'User unblocked successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

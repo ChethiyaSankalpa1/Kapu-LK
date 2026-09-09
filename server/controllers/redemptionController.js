@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const { Redemption, RedemptionConfig } = require('../models/Redemption');
 const User = require('../models/User');
 const { UserStats } = require('../models/Achievement');
@@ -78,46 +79,63 @@ exports.getRedemptionHistory = async (req, res) => {
   }
 };
 
+// Canonical costs dictionary for tamper protection
+const CANONICAL_COSTS = {
+  '1-day premium membership': 150,
+  '7 days premium membership': 450,
+  '30 days premium membership': 1200,
+  'rs. 500 wallet cash': 500,
+  '7-day profile boost': 300,
+  'vip profile badge': 200,
+};
+
 // @desc    Redeem points for reward
 // @route   POST /api/redemption/redeem
 // @access  Private
 exports.redeemPoints = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { rewardType, rewardName, pointsCost } = req.body;
+    const { rewardType, rewardName, configId } = req.body;
 
-    if (!rewardType || !rewardName || !pointsCost) {
-      return res.status(400).json({ message: 'Missing required fields: rewardType, rewardName, and pointsCost are required' });
+    if (!rewardType || !rewardName) {
+      return res.status(400).json({ message: 'Missing required fields: rewardType and rewardName are required' });
     }
 
-    if (typeof pointsCost !== 'number' || pointsCost <= 0) {
-      return res.status(400).json({ message: 'Invalid points cost. Must be a positive number.' });
+    // Determine authentic server-side points cost
+    let verifiedCost = null;
+    if (configId && configId.length === 24) {
+      const dbConfig = await RedemptionConfig.findById(configId);
+      if (dbConfig && dbConfig.isActive) {
+        verifiedCost = dbConfig.pointsCost;
+      }
     }
 
-    // Check if user has enough points
-    let userStats;
-    try {
-      userStats = await UserStats.findOne({ user: userId });
-    } catch (statsError) {
-      console.error('Error fetching user stats:', statsError);
-      return res.status(500).json({ message: 'Failed to fetch user stats. Please try again.' });
+    if (!verifiedCost) {
+      const cleanName = rewardName.toLowerCase().trim();
+      verifiedCost = CANONICAL_COSTS[cleanName];
     }
 
-    if (!userStats) {
-      return res.status(404).json({ message: 'User stats not found. Please complete your profile first.' });
+    // Fallback based on type if exact name didn't match canonical list
+    if (!verifiedCost) {
+      if (rewardType === 'wallet') verifiedCost = 500;
+      else if (rewardType === 'premium') {
+        if (rewardName.includes('30')) verifiedCost = 1200;
+        else if (rewardName.includes('7')) verifiedCost = 450;
+        else verifiedCost = 150;
+      } else if (rewardType === 'boost') verifiedCost = 300;
+      else if (rewardType === 'badge') verifiedCost = 200;
+      else verifiedCost = 500;
     }
 
-    if (userStats.points < pointsCost) {
-      return res.status(400).json({ message: `Insufficient points. You have ${userStats.points} points but need ${pointsCost} points.` });
-    }
+    const pointsCost = verifiedCost;
 
     // Check for duplicate redemption (prevent spam)
     try {
       const recentRedemption = await Redemption.findOne({
         user: userId,
         rewardType,
-        status: { $in: ['pending', 'completed'] },
-        createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // Last 24 hours
+        status: mongoose.trusted({ $in: ['pending', 'completed'] }),
+        createdAt: mongoose.trusted({ $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }) // Last 24 hours
       });
 
       if (recentRedemption) {
@@ -125,7 +143,21 @@ exports.redeemPoints = async (req, res) => {
       }
     } catch (recentError) {
       console.error('Error checking recent redemptions:', recentError);
-      // Continue anyway, don't block on this error
+    }
+
+    // ATOMIC deduction of points: eliminates race conditions and double-spending
+    const updatedStats = await UserStats.findOneAndUpdate(
+      { user: userId, points: mongoose.trusted({ $gte: pointsCost }) },
+      { $inc: { points: -pointsCost } },
+      { new: true }
+    );
+
+    if (!updatedStats) {
+      const currentStats = await UserStats.findOne({ user: userId });
+      const currentPoints = currentStats ? currentStats.points : 0;
+      return res.status(400).json({
+        message: `Insufficient points. You have ${currentPoints} points but this reward requires ${pointsCost} points.`,
+      });
     }
 
     // Create redemption record
@@ -140,17 +172,10 @@ exports.redeemPoints = async (req, res) => {
         metadata: {}
       });
     } catch (createError) {
+      // Refund points if record creation fails
+      await UserStats.findOneAndUpdate({ user: userId }, { $inc: { points: pointsCost } });
       console.error('Error creating redemption record:', createError);
-      return res.status(500).json({ message: 'Failed to create redemption record. Please try again.' });
-    }
-
-    // Deduct points
-    try {
-      userStats.points -= pointsCost;
-      await userStats.save();
-    } catch (deductError) {
-      console.error('Error deducting points:', deductError);
-      return res.status(500).json({ message: 'Failed to deduct points. Please try again.' });
+      return res.status(500).json({ message: 'Failed to create redemption record. Points refunded.' });
     }
 
     // Process the redemption based on type
@@ -205,14 +230,13 @@ exports.redeemPoints = async (req, res) => {
           break;
 
         case 'wallet':
-          let userWallet = await Wallet.findOne({ user: userId });
-          if (!userWallet) {
-            userWallet = await Wallet.create({ user: userId });
-          }
           const cashAmount = 500; // 500 LKR wallet cash
-          userWallet.balance += cashAmount;
-          userWallet.totalDeposited = (userWallet.totalDeposited || 0) + cashAmount;
-          await userWallet.save();
+          const updatedWallet = await Wallet.findOneAndUpdate(
+            { user: userId },
+            { $inc: { balance: cashAmount, totalDeposited: cashAmount } },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+          );
+          let userWallet = updatedWallet;
           
           try {
             await WalletTransaction.create({

@@ -8,6 +8,8 @@ const {
   searchUsers,
   getMatches,
   getAdminUser,
+  blockUser,
+  unblockUser,
 } = require('../controllers/userController');
 const { protect, approved } = require('../middleware/auth');
 const validate = require('../middleware/validate');
@@ -28,6 +30,8 @@ router.get('/', protect, approved, getAllUsers);
 router.get('/search', protect, approved, searchUsers);
 router.get('/matches', protect, approved, getMatches);
 router.get('/admin', protect, getAdminUser);
+router.post('/:id/block', protect, blockUser);
+router.post('/:id/unblock', protect, unblockUser);
 router.get('/:id', protect, approved, getUserById);
 
 module.exports = router;
