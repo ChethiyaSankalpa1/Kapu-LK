@@ -169,9 +169,9 @@ const runInactivityChecks = async () => {
     const thresholdPurge = new Date(now - INACTIVITY_LIMIT_DAYS * DAY_MS);
 
     const users1d = await User.find({
-      role: { $ne: 'admin' },
+      role: mongoose.trusted({ $ne: 'admin' }),
       lastActiveAt: mongoose.trusted({ $lte: threshold1d, $gt: thresholdPurge }),
-      'inactivityWarningsSent.d1': { $ne: true },
+      'inactivityWarningsSent.d1': mongoose.trusted({ $ne: true }),
     });
 
     for (const user of users1d) {
@@ -191,9 +191,9 @@ const runInactivityChecks = async () => {
     // 2. Process 2-Days Remaining Warning (inactive >= 8 days, < 9 days)
     const threshold2d = new Date(now - WARNING_2D_DAYS * DAY_MS);
     const users2d = await User.find({
-      role: { $ne: 'admin' },
+      role: mongoose.trusted({ $ne: 'admin' }),
       lastActiveAt: mongoose.trusted({ $lte: threshold2d, $gt: threshold1d }),
-      'inactivityWarningsSent.d2': { $ne: true },
+      'inactivityWarningsSent.d2': mongoose.trusted({ $ne: true }),
     });
 
     for (const user of users2d) {
@@ -212,9 +212,9 @@ const runInactivityChecks = async () => {
     // 3. Process 5-Days Remaining Warning (inactive >= 5 days, < 8 days)
     const threshold5d = new Date(now - WARNING_5D_DAYS * DAY_MS);
     const users5d = await User.find({
-      role: { $ne: 'admin' },
+      role: mongoose.trusted({ $ne: 'admin' }),
       lastActiveAt: mongoose.trusted({ $lte: threshold5d, $gt: threshold2d }),
-      'inactivityWarningsSent.d5': { $ne: true },
+      'inactivityWarningsSent.d5': mongoose.trusted({ $ne: true }),
     });
 
     for (const user of users5d) {
@@ -231,7 +231,7 @@ const runInactivityChecks = async () => {
 
     // 4. Execute Permanent Cascade Purge (inactive >= 10 days)
     const expiredUsers = await User.find({
-      role: { $ne: 'admin' },
+      role: mongoose.trusted({ $ne: 'admin' }),
       lastActiveAt: mongoose.trusted({ $lte: thresholdPurge }),
     });
 
@@ -260,22 +260,22 @@ const getInactivityStatus = async () => {
 
   const [count5d, count2d, count1d, countPendingPurge, totalUsers] = await Promise.all([
     User.countDocuments({
-      role: { $ne: 'admin' },
+      role: mongoose.trusted({ $ne: 'admin' }),
       lastActiveAt: mongoose.trusted({ $lte: threshold5d, $gt: threshold2d }),
     }),
     User.countDocuments({
-      role: { $ne: 'admin' },
+      role: mongoose.trusted({ $ne: 'admin' }),
       lastActiveAt: mongoose.trusted({ $lte: threshold2d, $gt: threshold1d }),
     }),
     User.countDocuments({
-      role: { $ne: 'admin' },
+      role: mongoose.trusted({ $ne: 'admin' }),
       lastActiveAt: mongoose.trusted({ $lte: threshold1d, $gt: thresholdPurge }),
     }),
     User.countDocuments({
-      role: { $ne: 'admin' },
+      role: mongoose.trusted({ $ne: 'admin' }),
       lastActiveAt: mongoose.trusted({ $lte: thresholdPurge }),
     }),
-    User.countDocuments({ role: { $ne: 'admin' } }),
+    User.countDocuments({ role: mongoose.trusted({ $ne: 'admin' }) }),
   ]);
 
   return {

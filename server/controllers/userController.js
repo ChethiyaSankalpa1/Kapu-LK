@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 const User = require('../models/User');
+const PrivacyConsent = require('../models/PrivacyConsent');
 const Notification = require('../models/Notification');
+const { Wallet } = require('../models/Wallet');
+const { UserStats } = require('../models/Achievement');
+const { purgeUserPermanently } = require('../services/inactivityCleanupService');
 const { logAuditEvent } = require('../middleware/auditLogger');
 
 const isValidPhoneNumber = (value) => !value || /^[0-9]+$/.test(value);
@@ -464,13 +468,82 @@ exports.unblockUser = async (req, res) => {
 // @access  Private
 exports.acknowledgePrivacyPolicy = async (req, res) => {
   try {
-    const version = req.body.version || '2026.09';
+    const {
+      is18OrOlder,
+      isAccurateInfo,
+      acceptedTermsAndPrivacy,
+      acceptedInactivityDeletion,
+      consentAgreements,
+      language,
+      consentSource,
+    } = req.body;
+
+    const consent18 = is18OrOlder === true || consentAgreements?.is18OrOlder === true;
+    const consentAccurate = isAccurateInfo === true || consentAgreements?.isAccurateInfo === true;
+    const consentTerms = (
+      acceptedTermsAndPrivacy === true ||
+      req.body.agreedToTerms === true ||
+      consentAgreements?.acceptedTermsAndPrivacy === true
+    );
+    const consentInactivity = (
+      acceptedInactivityDeletion === true ||
+      consentAgreements?.acceptedInactivityDeletion === true
+    );
+
+    if (!consent18 || !consentAccurate || !consentTerms || !consentInactivity) {
+      return res.status(400).json({
+        message: 'All 4 privacy, terms, age, and inactivity consent checkboxes are required and must be accepted.',
+        missingConsents: {
+          is18OrOlder: !consent18,
+          isAccurateInfo: !consentAccurate,
+          acceptedTermsAndPrivacy: !consentTerms,
+          acceptedInactivityDeletion: !consentInactivity,
+        },
+      });
+    }
+
+    const version = req.body.version || '2.0';
+
+    // Mark previous active consents as superseded
+    await PrivacyConsent.updateMany(
+      { user: req.user._id, status: 'accepted' },
+      { $set: { status: 'superseded', supersededAt: new Date() } }
+    );
+
+    const ipAddress = req.headers['x-forwarded-for']
+      ? req.headers['x-forwarded-for'].split(',')[0].trim()
+      : req.ip || req.socket.remoteAddress || '';
+    const userAgent = req.headers['user-agent'] || '';
+
+    // Create fresh audit-grade PrivacyConsent document
+    await PrivacyConsent.create({
+      user: req.user._id,
+      status: 'accepted',
+      policyVersions: {
+        privacyPolicy: version,
+        termsOfService: '2.0',
+        communityGuidelines: '1.0',
+      },
+      language: ['en', 'si', 'ta'].includes(language) ? language : (req.user.language || 'en'),
+      consentSource: consentSource || 'policy_update_modal',
+      agreements: {
+        is18OrOlder: true,
+        isAccurateInfo: true,
+        acceptedTermsAndPrivacy: true,
+        acceptedInactivityDeletion: true,
+      },
+      acceptedAt: new Date(),
+      ipAddress: String(ipAddress).slice(0, 45),
+      userAgent: String(userAgent).slice(0, 250),
+    });
+
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       {
         $set: {
           acknowledgedPrivacyPolicyAt: new Date(),
           acknowledgedPrivacyPolicyVersion: version,
+          agreedToTerms: true,
           lastActiveAt: new Date(),
         },
       },
@@ -482,7 +555,7 @@ exports.acknowledgePrivacyPolicy = async (req, res) => {
       action: 'PRIVACY_POLICY_ACKNOWLEDGED',
       targetId: req.user._id,
       targetType: 'User',
-      details: { version },
+      details: { version, consentSource: consentSource || 'policy_update_modal' },
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });
@@ -495,6 +568,131 @@ exports.acknowledgePrivacyPolicy = async (req, res) => {
   } catch (error) {
     console.error('Error acknowledging privacy policy:', error);
     res.status(500).json({ message: error.message || 'Failed to record policy acknowledgment' });
+  }
+};
+
+// @desc    Get current user's consent history
+// @route   GET /api/users/consent-history
+// @access  Private
+exports.getConsentHistory = async (req, res) => {
+  try {
+    const consents = await PrivacyConsent.find({ user: req.user._id })
+      .sort({ acceptedAt: -1 })
+      .lean();
+
+    res.json({
+      success: true,
+      consents,
+    });
+  } catch (error) {
+    console.error('Error fetching consent history:', error);
+    res.status(500).json({ message: 'Failed to fetch consent history' });
+  }
+};
+
+// @desc    Export personal data in JSON format (GDPR/Privacy Right to Data Portability)
+// @route   GET /api/users/export-data
+// @access  Private
+exports.exportUserData = async (req, res) => {
+  try {
+    const [userDoc, consents, stats, wallet, notifications] = await Promise.all([
+      User.findById(req.user._id)
+        .select('-password -twoFactorSecret -twoFactorRecoveryCodes -emailVerificationToken -passwordResetToken')
+        .lean(),
+      PrivacyConsent.find({ user: req.user._id }).sort({ acceptedAt: -1 }).lean(),
+      UserStats.findOne({ user: req.user._id }).lean(),
+      Wallet.findOne({ user: req.user._id }).lean(),
+      Notification.find({ user: req.user._id }).sort({ createdAt: -1 }).limit(50).lean(),
+    ]);
+
+    if (!userDoc) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const exportPayload = {
+      exportMetadata: {
+        exportedAt: new Date().toISOString(),
+        platform: 'Kapu-LK Matrimonial & Matchmaking Platform',
+        legalNotice: 'This export contains your personal data as recorded on Kapu-LK in accordance with Privacy and Data Portability Rights.',
+        inactivityPolicy: 'Accounts with no activity for 10 days are permanently purged following 5-day, 2-day, and 1-day warning notices.',
+      },
+      profile: userDoc,
+      consents: consents,
+      statistics: stats || null,
+      wallet: wallet ? {
+        balance: wallet.balance,
+        currency: wallet.currency,
+        createdAt: wallet.createdAt,
+      } : null,
+      recentNotifications: notifications.map(n => ({
+        type: n.type,
+        message: n.message,
+        createdAt: n.createdAt,
+        isRead: n.isRead,
+      })),
+    };
+
+    logAuditEvent({
+      userId: req.user._id,
+      action: 'USER_DATA_EXPORTED',
+      targetId: req.user._id,
+      targetType: 'User',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename=kapu-lk-user-data-${req.user._id}.json`);
+    return res.json(exportPayload);
+  } catch (error) {
+    console.error('Error exporting user data:', error);
+    return res.status(500).json({ message: 'Failed to export personal data' });
+  }
+};
+
+// @desc    Request immediate user-initiated permanent account deletion
+// @route   POST /api/users/request-deletion
+// @access  Private
+exports.requestAccountDeletion = async (req, res) => {
+  try {
+    const { confirmation, reason } = req.body;
+
+    if (confirmation !== 'DELETE') {
+      return res.status(400).json({ message: 'Please type DELETE to confirm account deletion' });
+    }
+
+    const userId = req.user._id;
+
+    logAuditEvent({
+      userId,
+      action: 'USER_REQUESTED_DELETION',
+      targetId: userId,
+      targetType: 'User',
+      details: { reason: reason || 'User voluntary deletion' },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    // Execute complete permanent cascade purge
+    await purgeUserPermanently(userId, 'USER_REQUESTED_DELETION');
+
+    // Clear authentication cookies
+    const isProd = process.env.NODE_ENV === 'production';
+    const cookieOptions = {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+    };
+    res.clearCookie('accessToken', cookieOptions);
+    res.clearCookie('refreshToken', { ...cookieOptions, path: '/api/auth' });
+
+    return res.json({
+      success: true,
+      message: 'Your account and all associated personal data have been permanently deleted.',
+    });
+  } catch (error) {
+    console.error('Error processing account deletion:', error);
+    return res.status(500).json({ message: 'Failed to delete account. Please contact support.' });
   }
 };
 

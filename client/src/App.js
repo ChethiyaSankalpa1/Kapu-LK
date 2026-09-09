@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
@@ -19,6 +19,8 @@ import Navbar from './components/common/Navbar';
 import MobileBottomNav from './components/common/MobileBottomNav';
 import PrivacyPolicyModal from './components/common/PrivacyPolicyModal';
 import SupportChatbot from './components/common/SupportChatbot';
+import MaintenanceScreen from './components/common/MaintenanceScreen';
+import { maintenanceAPI } from './services/api';
 
 // Resilient chunk loader that automatically recovers from deployment hash mismatches
 const lazyWithRetry = (componentImport) =>
@@ -238,6 +240,51 @@ const GlobalRealtimeMonitor = () => {
   );
 };
 
+const MaintenanceGate = ({ children }) => {
+  const { user } = useAuth();
+  const [maintenanceData, setMaintenanceData] = useState(null);
+
+  const checkMaintenance = useCallback(async () => {
+    try {
+      const res = await maintenanceAPI.getStatus();
+      if (res.data?.isActive) {
+        setMaintenanceData(res.data);
+      } else {
+        setMaintenanceData(null);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    checkMaintenance();
+    const interval = setInterval(checkMaintenance, 30000);
+
+    const handleMaintenanceEvent = (e) => {
+      if (e.detail?.maintenance) {
+        setMaintenanceData(e.detail);
+      }
+    };
+
+    window.addEventListener('kapu_maintenance_event', handleMaintenanceEvent);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('kapu_maintenance_event', handleMaintenanceEvent);
+    };
+  }, [checkMaintenance]);
+
+  const isAdmin = (user?.role || '').toLowerCase() === 'admin';
+
+  // If full maintenance is active and user is NOT an admin, display branded MaintenanceScreen
+  if (maintenanceData?.isActive && maintenanceData?.scope === 'full' && !isAdmin) {
+    return <MaintenanceScreen maintenanceData={maintenanceData} onRetry={checkMaintenance} />;
+  }
+
+  return children;
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -247,12 +294,13 @@ function App() {
           v7_relativeSplatPath: true,
         }}
       >
-        <div className="min-h-screen pb-20 md:pb-0">
-          <Navbar />
-          <MobileBottomNav />
-          <GlobalRealtimeMonitor />
-          <PrivacyPolicyModal />
-          <SupportChatbot />
+        <MaintenanceGate>
+          <div className="min-h-screen pb-20 md:pb-0">
+            <Navbar />
+            <MobileBottomNav />
+            <GlobalRealtimeMonitor />
+            <PrivacyPolicyModal />
+            <SupportChatbot />
           <ChunkErrorBoundary>
             <Suspense
               fallback={
@@ -380,6 +428,7 @@ function App() {
             closeButton={false}
           />
         </div>
+        </MaintenanceGate>
       </Router>
     </AuthProvider>
   );

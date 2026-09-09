@@ -1,16 +1,17 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { adminAPI, messageAPI, userAPI, giftAPI, achievementAPI, successStoryAPI, blogAPI, eventAPI, redemptionAPI, walletAPI, premiumAPI } from '../../services/api';
+import { adminAPI, messageAPI, userAPI, giftAPI, achievementAPI, successStoryAPI, blogAPI, eventAPI, redemptionAPI, walletAPI, premiumAPI, maintenanceAPI } from '../../services/api';
 import PremiumBadge from '../../components/ui/PremiumBadge';
 import { toast } from 'react-toastify';
 import {
   Users, User, UserCheck, Activity,
   CheckCircle, XCircle, Trash2, Shield, Crown, AlertTriangle, DollarSign, MessageSquare, MoreVertical,
-  Eye, X, Heart, Phone, Star, Clock, Gift, Trophy, Heart as HeartIcon, FileText, Calendar, Plus, Edit, LifeBuoy
+  Eye, X, Heart, Phone, Star, Clock, Gift, Trophy, Heart as HeartIcon, FileText, Calendar, Plus, Edit, LifeBuoy, Power
 } from 'lucide-react';
 import SupportInboxTab from '../../components/admin/SupportInboxTab';
 import InactivityTab from '../../components/admin/InactivityTab';
+import MaintenanceTab from '../../components/admin/MaintenanceTab';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -25,6 +26,20 @@ const AdminDashboard = () => {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [inspectedUser, setInspectedUser] = useState(null);
   const [inspectorLoading, setInspectorLoading] = useState(false);
+  const [maintenanceStatus, setMaintenanceStatus] = useState(null);
+
+  const checkMaintenanceStatus = useCallback(async () => {
+    try {
+      const res = await maintenanceAPI.getStatus();
+      setMaintenanceStatus(res.data);
+    } catch (e) {
+      // fail safe
+    }
+  }, []);
+
+  useEffect(() => {
+    checkMaintenanceStatus();
+  }, [checkMaintenanceStatus]);
 
   // New feature states
   const [gifts, setGifts] = useState([]);
@@ -698,6 +713,49 @@ const AdminDashboard = () => {
           </button>
         </h1>
 
+        {/* Persistent Maintenance Active Warning Banner */}
+        {maintenanceStatus?.isActive && (
+          <div className="mb-6 p-4 sm:p-5 bg-gradient-to-r from-red-600 to-rose-700 text-white rounded-2xl shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pulse border-2 border-red-400">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-6 h-6 text-yellow-300" />
+              </div>
+              <div>
+                <span className="font-extrabold text-sm sm:text-base tracking-wide block">
+                  PLATFORM MAINTENANCE MODE IS ACTIVE ({maintenanceStatus.scope.toUpperCase()})
+                </span>
+                <p className="text-xs text-red-100 mt-0.5 leading-relaxed">
+                  Regular users receive HTTP 503 Service Unavailable responses. Administrators bypass maintenance automatically.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setActiveTab('maintenance')}
+                className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded-xl transition"
+              >
+                Configure
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await maintenanceAPI.endMaintenanceNow();
+                    toast.success('Maintenance mode ended immediately!');
+                    checkMaintenanceStatus();
+                  } catch (e) {
+                    toast.error('Failed to end maintenance');
+                  }
+                }}
+                className="px-4 py-2 bg-white text-red-700 hover:bg-red-50 text-xs font-extrabold rounded-xl transition shadow-md"
+              >
+                End Maintenance Now
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4 mb-5 sm:mb-8">
           <div className="glass-card">
@@ -918,6 +976,19 @@ const AdminDashboard = () => {
             <Clock className="w-4 h-4 text-rose-500" />
             <span>Inactivity Engine</span>
           </button>
+          <button
+            onClick={() => setActiveTab('maintenance')}
+            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'maintenance'
+              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+          >
+            <Power className="w-4 h-4 text-amber-500" />
+            <span>Maintenance Mode</span>
+            {maintenanceStatus?.isActive && (
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+            )}
+          </button>
         </div>
 
         {/* Support Inbox Tab */}
@@ -925,6 +996,9 @@ const AdminDashboard = () => {
 
         {/* Inactivity Tab */}
         {activeTab === 'inactivity' && <InactivityTab />}
+
+        {/* Maintenance Tab */}
+        {activeTab === 'maintenance' && <MaintenanceTab />}
 
         {/* Users Table */}
         {activeTab === 'users' && (

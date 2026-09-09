@@ -57,6 +57,9 @@ const userSchema = new mongoose.Schema({
     min: 18,
     max: 100,
   },
+  birthDate: {
+    type: Date,
+  },
   gender: {
     type: String,
     enum: ['male', 'female', 'other'],
@@ -299,7 +302,7 @@ const userSchema = new mongoose.Schema({
   },
   acknowledgedPrivacyPolicyVersion: {
     type: String,
-    default: '1.0',
+    default: '2.0',
   },
 }, {
   timestamps: true,

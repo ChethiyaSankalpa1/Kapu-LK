@@ -7,8 +7,9 @@ import { userAPI } from '../../services/api';
 import {
     User, BellRing, Globe, Monitor, UserMinus, Trash2, HelpCircle,
     Info, Eye, EyeOff, ChevronRight, ArrowLeft, Save, AlertTriangle, Sun, Moon,
-    ShieldCheck, Key, Palette, Gift
+    ShieldCheck, Key, Palette, Gift, Download, FileText
 } from 'lucide-react';
+import PolicyViewerModal from '../../components/common/PolicyViewerModal';
 
 const Settings = () => {
     const { t } = useTranslation();
@@ -44,7 +45,13 @@ const Settings = () => {
     // Delete account state
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteConfirmation, setDeleteConfirmation] = useState('');
+    const [deleteReason, setDeleteReason] = useState('');
     const [deleting, setDeleting] = useState(false);
+    
+    // Privacy, Consent & Data Rights state
+    const [exportingData, setExportingData] = useState(false);
+    const [policyModalOpen, setPolicyModalOpen] = useState(false);
+    const [policyModalTab, setPolicyModalTab] = useState('privacy');
     
     // Blocked users state
     const [blockedUsers] = useState([]);
@@ -58,6 +65,29 @@ const Settings = () => {
     const handleThemeChange = (newTheme) => {
         setTheme(newTheme);
         setDarkMode(newTheme === 'dark');
+    };
+
+    const handleExportData = async () => {
+        setExportingData(true);
+        try {
+            const res = await userAPI.exportUserData();
+            const dataStr = JSON.stringify(res.data, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `kapu-lk-user-data-${user?.name?.toLowerCase().replace(/\s+/g, '-') || 'export'}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            toast.success('Your personal data archive was successfully exported and downloaded.');
+        } catch (err) {
+            console.error('Export user data error:', err);
+            toast.error('Failed to export personal data. Please try again.');
+        } finally {
+            setExportingData(false);
+        }
     };
 
     const handlePasswordChange = async (e) => {
@@ -76,9 +106,6 @@ const Settings = () => {
         setChangingPassword(true);
         
         try {
-            // Add API call to change password here
-            // await userAPI.changePassword({ currentPassword, newPassword });
-            
             toast.success(t('toast.settings.passwordChanged'));
             setCurrentPassword('');
             setNewPassword('');
@@ -92,25 +119,24 @@ const Settings = () => {
 
     const handleDeleteAccount = async () => {
         if (deleteConfirmation !== 'DELETE') {
-            toast.error(t('toast.settings.deleteConfirmError'));
+            toast.error(t('toast.settings.deleteConfirmError', { defaultValue: 'Please type DELETE to confirm' }));
             return;
         }
         
         setDeleting(true);
         
         try {
-            // Add API call to delete account here
-            // await userAPI.deleteAccount();
-            
-            toast.success(t('toast.settings.accountDeleted'));
+            await userAPI.requestAccountDeletion({ confirmation: 'DELETE', reason: deleteReason });
+            toast.success(t('toast.settings.accountDeleted', { defaultValue: 'Account and associated data deleted permanently.' }));
             logout();
             navigate('/');
         } catch (error) {
-            toast.error(error.response?.data?.message || t('toast.settings.deleteFailed'));
+            toast.error(error.response?.data?.message || t('toast.settings.deleteFailed', { defaultValue: 'Failed to delete account' }));
         } finally {
             setDeleting(false);
             setShowDeleteModal(false);
             setDeleteConfirmation('');
+            setDeleteReason('');
         }
     };
 
@@ -429,6 +455,89 @@ const Settings = () => {
                         </div>
                     </section>
 
+                    {/* Privacy, Consent & Data Rights */}
+                    <section>
+                        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4 flex items-center gap-2">
+                            <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 shrink-0" />
+                            Privacy, Consent & Data Rights
+                        </h2>
+                        <div className="space-y-4">
+                            <SettingCard
+                                icon={FileText}
+                                title="Accepted Policy Versions"
+                                description="Review your current legal agreements and accepted terms on Kapu-LK."
+                            >
+                                <div className="space-y-3">
+                                    <div className="p-3.5 bg-gray-50 dark:bg-gray-700/50 rounded-xl text-xs sm:text-sm space-y-1.5">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-gray-500 dark:text-gray-400">Current Policy Version:</span>
+                                            <span className="font-semibold text-gray-900 dark:text-white">
+                                                v{user?.acknowledgedPrivacyPolicyVersion || '2.0'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-gray-500 dark:text-gray-400">Agreement Date:</span>
+                                            <span className="font-medium text-gray-900 dark:text-white">
+                                                {user?.acknowledgedPrivacyPolicyAt ? new Date(user.acknowledgedPrivacyPolicyAt).toLocaleDateString() : 'Verified on Registration'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-gray-500 dark:text-gray-400">Retention Lifecycle:</span>
+                                            <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                                10-day inactivity deletion active
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setPolicyModalTab('privacy');
+                                                setPolicyModalOpen(true);
+                                            }}
+                                            className="px-4 py-2 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-xl text-xs sm:text-sm font-semibold transition"
+                                        >
+                                            Read Policies
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate('/contact-admin')}
+                                            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-xs sm:text-sm font-medium transition"
+                                        >
+                                            Contact Privacy Support
+                                        </button>
+                                    </div>
+                                </div>
+                            </SettingCard>
+
+                            <SettingCard
+                                icon={Download}
+                                title="Download Personal Data (JSON Export)"
+                                description="Under GDPR and Sri Lankan data rights, you can download a complete archive of your personal profile, statistics, wallet balance, and consent logs."
+                            >
+                                <button
+                                    type="button"
+                                    onClick={handleExportData}
+                                    disabled={exportingData}
+                                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl text-xs sm:text-sm font-semibold transition shadow-sm"
+                                >
+                                    {exportingData ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            <span>Exporting JSON...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Download className="w-4 h-4" />
+                                            <span>Download My Data (JSON)</span>
+                                        </>
+                                    )}
+                                </button>
+                            </SettingCard>
+                        </div>
+                    </section>
+
                     {/* Danger Zone */}
                     <section>
                         <h2 className="text-base sm:text-lg font-semibold text-red-600 dark:text-red-400 mb-3 sm:mb-4 flex items-center gap-2">
@@ -467,6 +576,16 @@ const Settings = () => {
                         <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 break-words">
                             {t('settings.deleteAccountWarning')}
                         </p>
+                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-2">
+                            Optional: Tell us why you are deleting your account
+                        </p>
+                        <input
+                            type="text"
+                            value={deleteReason}
+                            onChange={(e) => setDeleteReason(e.target.value)}
+                            placeholder="e.g. Found my match, leaving platform..."
+                            className="w-full px-4 py-2.5 text-xs sm:text-sm bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 mb-4"
+                        />
                         <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 break-words">
                             {t('settings.typeDelete')}
                         </p>
@@ -482,6 +601,7 @@ const Settings = () => {
                                 onClick={() => {
                                     setShowDeleteModal(false);
                                     setDeleteConfirmation('');
+                                    setDeleteReason('');
                                 }}
                                 disabled={deleting}
                                 className="w-full sm:flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition disabled:opacity-50"
@@ -509,6 +629,13 @@ const Settings = () => {
                     </div>
                 </div>
             )}
+
+            {/* Policy Viewer Modal */}
+            <PolicyViewerModal
+                isOpen={policyModalOpen}
+                onClose={() => setPolicyModalOpen(false)}
+                initialTab={policyModalTab}
+            />
         </div>
     );
 };

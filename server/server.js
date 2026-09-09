@@ -217,10 +217,15 @@ app.use('/uploads/payment-slips', (req, res, next) => {
 // Serve public uploads static directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Maintenance Mode Guard (Evaluates full-site or feature-specific maintenance with admin bypass)
+const { maintenanceMiddleware } = require('./middleware/maintenanceMiddleware');
+app.use(maintenanceMiddleware);
+
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/maintenance', require('./routes/maintenanceRoutes'));
 app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/premium', require('./routes/premiumRoutes'));

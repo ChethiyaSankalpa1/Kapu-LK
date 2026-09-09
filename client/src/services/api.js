@@ -100,6 +100,12 @@ api.interceptors.response.use(
             }
         }
 
+        if (error.response && error.response.status === 503 && error.response.data?.maintenance) {
+            window.dispatchEvent(
+                new CustomEvent('kapu_maintenance_event', { detail: error.response.data })
+            );
+        }
+
         if (error.response && error.response.status === 401) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
@@ -139,6 +145,9 @@ export const userAPI = {
     blockUser: (id) => api.post(`/users/${id}/block`),
     unblockUser: (id) => api.post(`/users/${id}/unblock`),
     acknowledgePrivacyPolicy: (data = {}) => api.post('/users/acknowledge-privacy-policy', data),
+    getConsentHistory: () => api.get('/users/consent-history'),
+    exportUserData: () => api.get('/users/export-data'),
+    requestAccountDeletion: (data) => api.post('/users/request-deletion', data),
 };
 
 // Premium API
@@ -313,6 +322,15 @@ export const supportAPI = {
     getAdminTickets: (params = {}) => api.get('/support/admin/tickets', { params }),
     addAdminReply: (id, data) => api.post(`/support/admin/tickets/${id}/reply`, data),
     updateTicketStatus: (id, data) => api.put(`/support/admin/tickets/${id}`, data),
+};
+
+// Maintenance API
+export const maintenanceAPI = {
+    getStatus: () => api.get('/maintenance/status'),
+    subscribeComingSoon: (email) => api.post('/maintenance/coming-soon/subscribe', { email }),
+    getAdminConfig: () => api.get('/maintenance/admin'),
+    updateAdminConfig: (data) => api.put('/maintenance/admin', data),
+    endMaintenanceNow: () => api.post('/maintenance/admin/end'),
 };
 
 export default api;

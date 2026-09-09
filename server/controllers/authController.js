@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
+const PrivacyConsent = require('../models/PrivacyConsent');
 const RefreshToken = require('../models/RefreshToken');
 const Notification = require('../models/Notification');
 const { Referral, ReferralCode } = require('../models/Referral');
@@ -107,16 +108,95 @@ exports.register = async (req, res) => {
       password, 
       phoneNumber, 
       age, 
+      birthDate,
       gender, 
       interests,
       hobbies,
       agreedToTerms,
+      is18OrOlder,
+      isAccurateInfo,
+      acceptedTermsAndPrivacy,
+      acceptedInactivityDeletion,
+      consentAgreements,
+      policyVersions,
       language,
       referralCode,
     } = req.body;
 
     if (!isValidPhoneNumber(phoneNumber)) {
       return res.status(400).json({ message: 'Phone number must contain only numbers' });
+    }
+
+    // Age & BirthDate Validation (Strictly 18+)
+    let computedAge = null;
+    let parsedBirthDate = null;
+
+    if (birthDate) {
+      parsedBirthDate = new Date(birthDate);
+      if (isNaN(parsedBirthDate.getTime())) {
+        return res.status(400).json({ message: 'Invalid birth date provided' });
+      }
+      if (parsedBirthDate > new Date()) {
+        return res.status(400).json({ message: 'Birth date cannot be in the future' });
+      }
+      const ageDiffMs = Date.now() - parsedBirthDate.getTime();
+      const calculatedYears = Math.floor(ageDiffMs / (365.25 * 24 * 60 * 60 * 1000));
+      if (calculatedYears < 18) {
+        return res.status(400).json({ message: 'You must be at least 18 years of age to register on Kapu-LK' });
+      }
+      if (calculatedYears > 100) {
+        return res.status(400).json({ message: 'Please enter a valid birth date' });
+      }
+      computedAge = calculatedYears;
+    }
+
+    if (age !== undefined && age !== null && age !== '') {
+      const numericAge = Number(age);
+      if (isNaN(numericAge) || numericAge < 18) {
+        return res.status(400).json({ message: 'You must be at least 18 years of age to register on Kapu-LK' });
+      }
+      if (numericAge > 100) {
+        return res.status(400).json({ message: 'Age must be between 18 and 100' });
+      }
+      if (!computedAge) {
+        computedAge = numericAge;
+      }
+    }
+
+    if (!computedAge) {
+      return res.status(400).json({ message: 'Age or birth date is required to verify legal eligibility (18+)' });
+    }
+
+    // Required 4 Consent Agreements Validation
+    const consent18 = is18OrOlder === true || consentAgreements?.is18OrOlder === true;
+    const consentAccurate = isAccurateInfo === true || consentAgreements?.isAccurateInfo === true;
+    const consentTerms = (
+      acceptedTermsAndPrivacy === true ||
+      agreedToTerms === true ||
+      consentAgreements?.acceptedTermsAndPrivacy === true
+    );
+    const consentInactivity = (
+      acceptedInactivityDeletion === true ||
+      consentAgreements?.acceptedInactivityDeletion === true
+    );
+
+    if (!consent18 || !consentAccurate || !consentTerms || !consentInactivity) {
+      return res.status(400).json({
+        message: 'All 4 privacy, terms, age, and inactivity consent checkboxes are required and must be accepted.',
+        missingConsents: {
+          is18OrOlder: !consent18,
+          isAccurateInfo: !consentAccurate,
+          acceptedTermsAndPrivacy: !consentTerms,
+          acceptedInactivityDeletion: !consentInactivity,
+        },
+      });
+    }
+
+    // Validate Policy Versions
+    const policyVer = policyVersions?.privacyPolicy || '2.0';
+    const supportedVersions = ['2.0'];
+    if (!supportedVersions.includes(policyVer)) {
+      return res.status(400).json({ message: 'Unsupported or outdated Privacy Policy version' });
     }
 
     // Check if user exists by email, username or phone number
@@ -154,13 +234,48 @@ exports.register = async (req, res) => {
       interests: interests || '',
       hobbies: hobbies || '',
       language: ['en', 'si', 'ta'].includes(language) ? language : undefined,
-      agreedToTerms: !!agreedToTerms,
+      agreedToTerms: true,
+      acknowledgedPrivacyPolicyAt: new Date(),
+      acknowledgedPrivacyPolicyVersion: '2.0',
+      lastActiveAt: new Date(),
+      age: computedAge,
     };
+    if (parsedBirthDate) userPayload.birthDate = parsedBirthDate;
     if (trimmedUsername) userPayload.username = trimmedUsername;
     if (trimmedPhone) userPayload.phoneNumber = trimmedPhone;
-    if (age && !isNaN(Number(age))) userPayload.age = Number(age);
 
     const user = await User.create(userPayload);
+
+    // Create protected, versioned PrivacyConsent audit record
+    try {
+      const ipAddress = req.headers['x-forwarded-for']
+        ? req.headers['x-forwarded-for'].split(',')[0].trim()
+        : req.ip || req.socket.remoteAddress || '';
+      const userAgent = req.headers['user-agent'] || '';
+
+      await PrivacyConsent.create({
+        user: user._id,
+        status: 'accepted',
+        policyVersions: {
+          privacyPolicy: '2.0',
+          termsOfService: '2.0',
+          communityGuidelines: '1.0',
+        },
+        language: ['en', 'si', 'ta'].includes(language) ? language : 'en',
+        consentSource: 'web_registration',
+        agreements: {
+          is18OrOlder: true,
+          isAccurateInfo: true,
+          acceptedTermsAndPrivacy: true,
+          acceptedInactivityDeletion: true,
+        },
+        acceptedAt: new Date(),
+        ipAddress: String(ipAddress).slice(0, 45),
+        userAgent: String(userAgent).slice(0, 250),
+      });
+    } catch (consentErr) {
+      console.error('Failed to create initial PrivacyConsent record:', consentErr);
+    }
 
     // Handle referral code if provided
     if (referralCode) {
