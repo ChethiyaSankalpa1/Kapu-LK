@@ -149,6 +149,7 @@ exports.togglePremiumStatus = async (req, res) => {
         user.isPremium = false;
         user.premiumPlan = null;
         user.premiumExpiresAt = undefined;
+        user.premiumSince = undefined;
       } else {
         user.isPremium = true;
         user.premiumPlan = plan; // 'bronze', 'silver', 'gold'
@@ -169,6 +170,7 @@ exports.togglePremiumStatus = async (req, res) => {
       } else {
         user.premiumPlan = null;
         user.premiumExpiresAt = undefined;
+        user.premiumSince = undefined;
       }
     }
 

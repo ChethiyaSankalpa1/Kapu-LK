@@ -45,39 +45,47 @@ exports.register = async (req, res) => {
     }
 
     // Check if user exists by email, username or phone number
-    const orConditions = [{ email }, { username }];
-    if (phoneNumber) {
-      orConditions.push({ phoneNumber });
+    const trimmedUsername = typeof username === 'string' && username.trim() ? username.trim() : null;
+    const trimmedPhone = typeof phoneNumber === 'string' && phoneNumber.trim() ? phoneNumber.trim() : null;
+
+    const orConditions = [{ email: email.toLowerCase() }];
+    if (trimmedUsername) {
+      orConditions.push({ username: trimmedUsername });
+    }
+    if (trimmedPhone) {
+      orConditions.push({ phoneNumber: trimmedPhone });
     }
     const existingUser = await User.findOne({ $or: orConditions });
 
     if (existingUser) {
-      if (existingUser.email === email) {
+      if (existingUser.email === email.toLowerCase()) {
         return res.status(400).json({ message: 'Email is already registered' });
       }
-      if (existingUser.username === username) {
+      if (trimmedUsername && existingUser.username === trimmedUsername) {
         return res.status(400).json({ message: 'Username is already taken' });
       }
-      if (phoneNumber && existingUser.phoneNumber === phoneNumber) {
+      if (trimmedPhone && existingUser.phoneNumber === trimmedPhone) {
         return res.status(400).json({ message: 'Phone number is already registered' });
       }
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create user
-    const user = await User.create({
-      name,
-      username,
-      email,
+    // Create user object with sanitized optional fields
+    const userPayload = {
+      name: name.trim(),
+      email: email.toLowerCase(),
       password,
-      phoneNumber,
-      age,
-      gender,
-      interests,
-      hobbies,
+      gender: gender || 'male',
+      interests: interests || '',
+      hobbies: hobbies || '',
       language: ['en', 'si', 'ta'].includes(language) ? language : undefined,
       agreedToTerms: !!agreedToTerms,
-    });
+    };
+    if (trimmedUsername) userPayload.username = trimmedUsername;
+    if (trimmedPhone) userPayload.phoneNumber = trimmedPhone;
+    if (age && !isNaN(Number(age))) userPayload.age = Number(age);
+
+    const user = await User.create(userPayload);
 
     // Handle referral code if provided
     if (referralCode) {

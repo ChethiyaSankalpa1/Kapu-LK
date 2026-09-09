@@ -77,11 +77,16 @@ export const adminAPI = {
     rejectUser: (id) => api.put(`/admin/users/${id}/reject`),
     updateUserRole: (id, role) => api.put(`/admin/users/${id}/role`, { role }),
     toggleUserStatus: (id) => api.put(`/admin/users/${id}/toggle-active`),
+    toggleStatus: (id) => api.put(`/admin/users/${id}/toggle-active`),
     togglePremiumStatus: (id, data) => api.put(`/admin/users/${id}/toggle-premium`, data),
+    togglePremium: (id, data) => api.put(`/admin/users/${id}/toggle-premium`, data),
+    removePremium: (id) => api.put(`/admin/users/${id}/toggle-premium`, { plan: 'remove' }),
     deleteUser: (id) => api.delete(`/admin/users/${id}`),
     getAllRequests: () => api.get('/admin/premium-requests'),
     approveRequest: (id) => api.put(`/admin/premium-requests/${id}/approve`),
+    approvePremium: (id) => api.put(`/admin/premium-requests/${id}/approve`),
     rejectRequest: (id, reason) => api.put(`/admin/premium-requests/${id}/reject`, { rejectionReason: reason }),
+    rejectPremium: (id, reason) => api.put(`/admin/premium-requests/${id}/reject`, { rejectionReason: reason }),
     deletePremiumRequest: (id) => api.delete(`/admin/premium-requests/${id}`),
     seedSriLankanContent: () => api.post('/admin/seed-sri-lankan-content'),
 };
@@ -142,6 +147,7 @@ export const successStoryAPI = {
     approveSuccessStory: (id) => api.put(`/success-stories/${id}/approve`),
     featureSuccessStory: (id, isFeatured) => api.put(`/success-stories/${id}/feature`, { isFeatured }),
     deleteSuccessStory: (id) => api.delete(`/success-stories/${id}`),
+    updateStory: (id, data) => api.put(`/success-stories/${id}`, data),
 };
 
 // Blog API

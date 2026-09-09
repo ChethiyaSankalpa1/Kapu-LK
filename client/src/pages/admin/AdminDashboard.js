@@ -554,13 +554,13 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleTogglePremium = async (userId) => {
+  const handleTogglePremium = async (userId, plan = 'remove') => {
     try {
-      await adminAPI.togglePremium(userId);
+      await adminAPI.togglePremium(userId, { plan });
       toast.success(t('admin.userPremiumUpdated', { defaultValue: 'User premium status updated' }));
       fetchData();
     } catch (error) {
-      toast.error(t('admin.updatePremiumFailed', { defaultValue: 'Failed to update premium status' }));
+      toast.error(error.response?.data?.message || t('admin.updatePremiumFailed', { defaultValue: 'Failed to update premium status' }));
     }
   };
 

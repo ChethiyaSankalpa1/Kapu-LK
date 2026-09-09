@@ -6,7 +6,8 @@ let MongoMemoryServer;
 // Only load mongodb-memory-server in development
 if (process.env.NODE_ENV !== 'production') {
   try {
-    MongoMemoryServer = require('mongodb-memory-server');
+    const MMS = require('mongodb-memory-server');
+    MongoMemoryServer = MMS.MongoMemoryServer || MMS;
   } catch (err) {
     console.warn('mongodb-memory-server not installed, skipping in-memory MongoDB fallback');
   }

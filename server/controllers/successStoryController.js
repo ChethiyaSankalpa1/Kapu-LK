@@ -196,3 +196,23 @@ exports.deleteSuccessStory = async (req, res) => {
     res.status(500).json({ message: 'Failed to delete success story' });
   }
 };
+
+// @desc    Update success story
+// @route   PUT /api/success-stories/:id
+// @access  Private/Admin
+exports.updateSuccessStory = async (req, res) => {
+  try {
+    const story = await SuccessStory.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!story) {
+      return res.status(404).json({ message: 'Success story not found' });
+    }
+    res.json(story);
+  } catch (error) {
+    console.error('Error updating success story:', error);
+    res.status(500).json({ message: error.message || 'Failed to update success story' });
+  }
+};
