@@ -16,6 +16,7 @@ import PrivateRoute from './routes/PrivateRoute';
 
 // Layout
 import Navbar from './components/common/Navbar';
+import MobileBottomNav from './components/common/MobileBottomNav';
 
 // Lazy-loaded pages
 const Home = lazy(() => import('./pages/public/Home'));
@@ -177,8 +178,9 @@ function App() {
           v7_relativeSplatPath: true,
         }}
       >
-        <div className="min-h-screen">
+        <div className="min-h-screen pb-20 md:pb-0">
           <Navbar />
+          <MobileBottomNav />
           <GlobalRealtimeMonitor />
           <Suspense
             fallback={

@@ -6,29 +6,39 @@ import { toast } from 'react-toastify';
 import ProfileCard from '../../components/ui/ProfileCard';
 import CustomSelect from '../../components/ui/CustomSelect';
 import { Search, Filter, RefreshCw } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const Users = () => {
     const { t } = useTranslation();
     const { user: currentUser } = useAuth();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
-    const [isSearching, setIsSearching] = useState(false);
+
+    const initialGender = searchParams.get('gender') || '';
+    const initialMinAge = searchParams.get('minAge') || '';
+    const initialMaxAge = searchParams.get('maxAge') || '';
+    const initialLocation = searchParams.get('location') || searchParams.get('district') || '';
+    const initialReligion = searchParams.get('religion') || '';
+
+    const hasInitialSearch = Boolean(initialGender || initialMinAge || initialLocation || initialReligion);
+
+    const [isSearching, setIsSearching] = useState(hasInitialSearch);
 
     const [filters, setFilters] = useState({
-        gender: '',
-        minAge: '',
-        maxAge: '',
-        location: '',
-        religion: '',
-        maritalStatus: '',
-        interests: '',
+        gender: initialGender,
+        minAge: initialMinAge,
+        maxAge: initialMaxAge,
+        location: initialLocation,
+        religion: initialReligion,
+        maritalStatus: searchParams.get('maritalStatus') || '',
+        interests: searchParams.get('interests') || '',
     });
-    const [showFilters, setShowFilters] = useState(false);
+    const [showFilters, setShowFilters] = useState(hasInitialSearch);
     const observer = useRef(null);
 
     // Cleanup observer on unmount (prevents leaks)
