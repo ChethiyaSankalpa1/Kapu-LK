@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supportAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
@@ -11,6 +11,7 @@ import {
   User,
   Shield,
   RefreshCw,
+  ArrowLeft,
 } from 'lucide-react';
 
 const CATEGORIES = [
@@ -45,7 +46,6 @@ export default function SupportInboxTab() {
   const [replyStatus, setReplyStatus] = useState('in_progress');
   const [isReplying, setIsReplying] = useState(false);
 
-  // Admin notes & status form
   const [adminNotes, setAdminNotes] = useState('');
   const [ticketPriority, setTicketPriority] = useState('medium');
   const [ticketStatus, setTicketStatus] = useState('open');
@@ -66,7 +66,6 @@ export default function SupportInboxTab() {
         if (res.data.statusCounts) {
           setStatusCounts(res.data.statusCounts);
         }
-        // Update selectedTicket if already open
         setSelectedTicket((prev) => {
           if (!prev) return null;
           const updated = fetchedTickets.find((t) => t._id === prev._id);
@@ -163,9 +162,9 @@ export default function SupportInboxTab() {
       case 'resolved':
         return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-300';
       case 'closed':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400 border-gray-300';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 border-gray-300';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-gray-100 text-gray-700 dark:text-gray-300';
     }
   };
 
@@ -178,15 +177,23 @@ export default function SupportInboxTab() {
       case 'medium':
         return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-400';
       case 'low':
-        return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400';
+        return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-gray-100 text-gray-700 dark:text-gray-300';
     }
   };
 
+  const sortedMessages = useMemo(() => {
+    if (!selectedTicket?.messages || !Array.isArray(selectedTicket.messages)) return [];
+    return [...selectedTicket.messages].sort((a, b) => {
+      const ta = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const tb = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return ta - tb;
+    });
+  }, [selectedTicket?._id, selectedTicket?.messages]);
+
   return (
-    <div className="space-y-6">
-      {/* Top Banner & Stat Cards */}
+    <div className="space-y-6 min-w-0">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <button
           onClick={() => setStatusFilter('all')}
@@ -197,7 +204,7 @@ export default function SupportInboxTab() {
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Total Tickets</span>
+            <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">Total Tickets</span>
             <LifeBuoy className="w-4 h-4 text-purple-500" />
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{statusCounts.all}</p>
@@ -212,10 +219,10 @@ export default function SupportInboxTab() {
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">Open Tickets</span>
+            <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Open Tickets</span>
             <Clock className="w-4 h-4 text-amber-500" />
           </div>
-          <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{statusCounts.open}</p>
+          <p className="text-2xl font-bold text-amber-700 dark:text-amber-400 mt-1">{statusCounts.open}</p>
         </button>
 
         <button
@@ -227,10 +234,10 @@ export default function SupportInboxTab() {
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">In Progress</span>
+            <span className="text-xs font-semibold text-blue-700 dark:text-blue-400">In Progress</span>
             <MessageSquare className="w-4 h-4 text-blue-500" />
           </div>
-          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{statusCounts.in_progress}</p>
+          <p className="text-2xl font-bold text-blue-700 dark:text-blue-400 mt-1">{statusCounts.in_progress}</p>
         </button>
 
         <button
@@ -242,31 +249,30 @@ export default function SupportInboxTab() {
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-green-600 dark:text-green-400">Resolved</span>
+            <span className="text-xs font-semibold text-green-700 dark:text-green-400">Resolved</span>
             <CheckCircle2 className="w-4 h-4 text-green-500" />
           </div>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{statusCounts.resolved}</p>
+          <p className="text-2xl font-bold text-green-700 dark:text-green-400 mt-1">{statusCounts.resolved}</p>
         </button>
       </div>
 
-      {/* Filters & Search Bar */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <form onSubmit={handleSearch} className="w-full sm:w-80 relative flex items-center">
-          <Search className="w-4 h-4 absolute left-3 text-gray-400" />
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-3 items-center justify-between min-w-0">
+        <form onSubmit={handleSearch} className="w-full sm:w-80 relative flex items-center min-w-0">
+          <Search className="w-4 h-4 absolute left-3 text-gray-500 dark:text-gray-400 shrink-0" />
           <input
             type="text"
             placeholder="Search #ticket, subject, email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-xs focus:ring-2 focus:ring-pink-500 focus:outline-none dark:text-white"
+            className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-pink-500 focus:outline-none min-w-0"
           />
         </form>
 
-        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto min-w-0">
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-xs focus:ring-2 focus:ring-pink-500 focus:outline-none dark:text-white"
+            className="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-pink-500 focus:outline-none max-w-full"
           >
             {CATEGORIES.map((c) => (
               <option key={c.value} value={c.value}>
@@ -278,33 +284,35 @@ export default function SupportInboxTab() {
           <button
             onClick={() => fetchTickets()}
             title="Refresh"
-            className="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-xl transition-colors"
+            className="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl transition-colors shrink-0"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
-      {/* Two Column Layout: Ticket List & Conversation Drawer */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[550px]">
-        {/* Left Column: Tickets Table / Cards */}
-        <div className="lg:col-span-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
-          <div className="p-3.5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-850/50 flex items-center justify-between">
-            <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[550px] min-w-0 overflow-hidden">
+        <div
+          className={`lg:col-span-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col min-w-0 min-h-0 ${
+            selectedTicket ? 'hidden lg:flex' : 'flex'
+          }`}
+        >
+          <div className="p-3.5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-850/50 flex items-center justify-between shrink-0">
+            <h3 className="text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
               Inbox ({tickets.length})
             </h3>
-            <span className="text-[11px] text-gray-400">Sorted by recent activity</span>
+            <span className="text-[11px] text-gray-600 dark:text-gray-400">Sorted by recent activity</span>
           </div>
 
-          <div className="divide-y divide-gray-100 dark:divide-gray-700 overflow-y-auto max-h-[640px] flex-1">
+          <div className="divide-y divide-gray-100 dark:divide-gray-700 overflow-y-auto min-h-0 flex-1">
             {loading ? (
-              <div className="py-16 text-center text-gray-400 text-xs flex flex-col items-center gap-2">
+              <div className="py-16 text-center text-gray-600 dark:text-gray-400 text-xs flex flex-col items-center gap-2">
                 <RefreshCw className="w-5 h-5 animate-spin text-pink-600" />
                 Loading tickets...
               </div>
             ) : tickets.length === 0 ? (
-              <div className="py-16 text-center text-gray-400 text-xs">
-                <LifeBuoy className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+              <div className="py-16 text-center text-gray-600 dark:text-gray-400 text-xs px-4">
+                <LifeBuoy className="w-8 h-8 text-gray-400 dark:text-gray-600 mx-auto mb-2" />
                 No support tickets found
               </div>
             ) : (
@@ -316,26 +324,26 @@ export default function SupportInboxTab() {
                   <div
                     key={t._id}
                     onClick={() => handleSelectTicket(t)}
-                    className={`p-3.5 cursor-pointer transition-colors ${
+                    className={`p-3.5 cursor-pointer transition-colors min-w-0 ${
                       isSelected
                         ? 'bg-pink-50 dark:bg-pink-950/30 border-l-4 border-pink-600'
                         : 'hover:bg-gray-50 dark:hover:bg-gray-750'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-xs text-gray-900 dark:text-white">
+                    <div className="flex items-center justify-between mb-1.5 min-w-0 gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        <span className="font-bold text-xs text-gray-900 dark:text-white shrink-0">
                           #{t.ticketNumber}
                         </span>
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadge(
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${getStatusBadge(
                             t.status
                           )}`}
                         >
                           {t.status}
                         </span>
                       </div>
-                      <span className="text-[10px] text-gray-400">
+                      <span className="text-[10px] text-gray-600 dark:text-gray-400 shrink-0">
                         {new Date(t.lastActivityAt || t.createdAt).toLocaleDateString([], {
                           month: 'short',
                           day: 'numeric',
@@ -343,15 +351,15 @@ export default function SupportInboxTab() {
                       </span>
                     </div>
 
-                    <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 line-clamp-1 mb-1">
+                    <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 line-clamp-1 mb-1 min-w-0">
                       {t.subject}
                     </p>
 
-                    <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center justify-between text-[11px] text-gray-600 dark:text-gray-400 gap-2 min-w-0">
                       <span className="truncate max-w-[180px]" title={senderEmail}>
                         👤 {senderName}
                       </span>
-                      <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-[10px] font-medium">
+                      <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-[10px] font-medium shrink-0">
                         {t.category}
                       </span>
                     </div>
@@ -362,26 +370,36 @@ export default function SupportInboxTab() {
           </div>
         </div>
 
-        {/* Right Column: Active Ticket Inspector & Reply Center */}
-        <div className="lg:col-span-7 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
+        <div
+          className={`lg:col-span-7 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col min-w-0 min-h-0 ${
+            selectedTicket ? 'flex' : 'hidden lg:flex'
+          }`}
+        >
           {selectedTicket ? (
-            <div className="flex-1 flex flex-col min-h-0">
-              {/* Header */}
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-850/50">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base font-bold text-gray-900 dark:text-white">
+            <div className="flex-1 flex flex-col min-h-0 min-w-0">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-850/50 shrink-0">
+                <button
+                  onClick={() => setSelectedTicket(null)}
+                  className="lg:hidden mb-3 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  Back to Inbox
+                </button>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap min-w-0">
+                    <span className="text-base font-bold text-gray-900 dark:text-white shrink-0">
                       #{selectedTicket.ticketNumber}
                     </span>
                     <span
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStatusBadge(
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-bold border shrink-0 ${getStatusBadge(
                         selectedTicket.status
                       )}`}
                     >
                       {selectedTicket.status?.toUpperCase()}
                     </span>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] uppercase ${getPriorityBadge(
+                      className={`px-2 py-0.5 rounded-full text-[10px] uppercase shrink-0 ${getPriorityBadge(
                         selectedTicket.priority
                       )}`}
                     >
@@ -389,86 +407,94 @@ export default function SupportInboxTab() {
                     </span>
                   </div>
 
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-600 dark:text-gray-400 shrink-0">
                     Created {new Date(selectedTicket.createdAt).toLocaleString()}
                   </span>
                 </div>
 
-                <h2 className="text-sm font-bold text-gray-800 dark:text-gray-100">
+                <h2 className="text-sm font-bold text-gray-800 dark:text-gray-100 break-words min-w-0">
                   {selectedTicket.subject}
                 </h2>
 
-                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
-                  <span>
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400 min-w-0">
+                  <span className="break-words min-w-0">
                     <span className="font-semibold text-gray-700 dark:text-gray-300">Requester:</span>{' '}
                     {selectedTicket.user?.name || selectedTicket.guestName || 'Guest'}{' '}
                     ({selectedTicket.user?.email || selectedTicket.guestEmail || 'No email'})
                   </span>
-                  <span>
+                  <span className="shrink-0">
                     <span className="font-semibold text-gray-700 dark:text-gray-300">Category:</span>{' '}
                     {selectedTicket.category}
                   </span>
                 </div>
               </div>
 
-              {/* Messages Thread */}
-              <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-50/30 dark:bg-gray-900/30 max-h-[380px]">
-                {selectedTicket.messages?.map((msg, idx) => {
-                  const isAdmin = msg.sender === 'admin';
-                  return (
-                    <div
-                      key={idx}
-                      className={`p-3.5 rounded-2xl text-xs ${
-                        isAdmin
-                          ? 'bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/50 text-purple-950 dark:text-purple-100 ml-6'
-                          : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 mr-6 shadow-sm'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between text-[11px] font-bold mb-1 opacity-75">
-                        <span className="flex items-center gap-1.5">
-                          {isAdmin ? (
-                            <>
-                              <Shield className="w-3.5 h-3.5 text-purple-600" />
-                              Admin Response
-                            </>
-                          ) : (
-                            <>
-                              <User className="w-3.5 h-3.5 text-blue-600" />
-                              {selectedTicket.user?.name || selectedTicket.guestName || 'User'}
-                            </>
-                          )}
-                        </span>
-                        <span className="text-[10px] font-normal text-gray-400">
-                          {new Date(msg.createdAt).toLocaleString([], {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
+              <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-50/30 dark:bg-gray-900/30 min-h-0 min-w-0">
+                {sortedMessages.length === 0 ? (
+                  <div className="py-12 text-center text-xs text-gray-600 dark:text-gray-400">
+                    No messages yet in this ticket.
+                  </div>
+                ) : (
+                  sortedMessages.map((msg, idx) => {
+                    const isAdmin = msg.sender === 'admin';
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-3.5 rounded-2xl text-xs min-w-0 ${
+                          isAdmin
+                            ? 'bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/50 text-purple-950 dark:text-purple-100 ml-6'
+                            : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 mr-6 shadow-sm'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[11px] font-bold mb-1 gap-2 min-w-0">
+                          <span className="flex items-center gap-1.5 shrink-0 min-w-0">
+                            {isAdmin ? (
+                              <>
+                                <Shield className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                                <span>Admin Response</span>
+                              </>
+                            ) : (
+                              <>
+                                <User className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                <span className="truncate">
+                                  {selectedTicket.user?.name || selectedTicket.guestName || 'User'}
+                                </span>
+                              </>
+                            )}
+                          </span>
+                          <span className="text-[10px] font-normal text-gray-600 dark:text-gray-400 shrink-0">
+                            {new Date(msg.createdAt).toLocaleString([], {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </div>
+                        <p className="whitespace-pre-wrap break-words overflow-wrap-anywhere leading-relaxed min-w-0">
+                          {msg.text}
+                        </p>
                       </div>
-                      <p className="whitespace-pre-line leading-relaxed">{msg.text}</p>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
 
-              {/* Admin Quick Reply Box */}
               <form
                 onSubmit={handleSendAdminReply}
-                className="p-3.5 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 space-y-2.5"
+                className="p-3.5 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 space-y-2.5 shrink-0 min-w-0"
               >
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2 min-w-0">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1 shrink-0">
                     <Send className="w-3.5 h-3.5 text-pink-600" />
                     Reply to User (Triggers In-App Notification)
                   </span>
-                  <div className="flex items-center gap-1.5">
-                    <label className="text-gray-500 text-[11px]">Set Status:</label>
+                  <div className="flex items-center gap-1.5 shrink-0 min-w-0">
+                    <label className="text-gray-600 dark:text-gray-400 text-[11px] shrink-0">Set Status:</label>
                     <select
                       value={replyStatus}
                       onChange={(e) => setReplyStatus(e.target.value)}
-                      className="px-2 py-1 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-xs"
+                      className="px-2 py-1 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white text-xs"
                     >
                       <option value="in_progress">In Progress</option>
                       <option value="resolved">Resolved</option>
@@ -484,14 +510,14 @@ export default function SupportInboxTab() {
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
                   placeholder="Type your official administrative reply..."
-                  className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-2.5 text-xs text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-pink-500 focus:outline-none resize-none"
+                  className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-2.5 text-xs text-gray-900 dark:text-gray-200 focus:ring-2 focus:ring-pink-500 focus:outline-none resize-none min-w-0"
                 />
 
-                <div className="flex justify-end">
+                <div className="flex justify-end min-w-0">
                   <button
                     type="submit"
                     disabled={isReplying || !replyText.trim()}
-                    className="px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white font-semibold text-xs rounded-xl shadow disabled:opacity-40 flex items-center gap-2 transition-all"
+                    className="px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white font-semibold text-xs rounded-xl shadow disabled:opacity-40 flex items-center gap-2 transition-all shrink-0"
                   >
                     {isReplying ? (
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -503,17 +529,16 @@ export default function SupportInboxTab() {
                 </div>
               </form>
 
-              {/* Status, Priority & Internal Admin Notes Section */}
-              <div className="p-3.5 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-850/60 flex flex-col sm:flex-row gap-3 items-end">
-                <div className="w-full sm:w-1/3 space-y-2">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
+              <div className="p-3.5 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-850/60 flex flex-col sm:flex-row gap-3 items-end shrink-0 min-w-0">
+                <div className="w-full sm:w-1/3 space-y-2 min-w-0">
+                  <div className="min-w-0">
+                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
                       Status
                     </label>
                     <select
                       value={ticketStatus}
                       onChange={(e) => setTicketStatus(e.target.value)}
-                      className="w-full px-2.5 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-xs"
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white text-xs min-w-0"
                     >
                       <option value="open">Open</option>
                       <option value="in_progress">In Progress</option>
@@ -521,14 +546,14 @@ export default function SupportInboxTab() {
                       <option value="closed">Closed</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                  <div className="min-w-0">
+                    <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
                       Priority
                     </label>
                     <select
                       value={ticketPriority}
                       onChange={(e) => setTicketPriority(e.target.value)}
-                      className="w-full px-2.5 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-xs"
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white text-xs min-w-0"
                     >
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
@@ -538,8 +563,8 @@ export default function SupportInboxTab() {
                   </div>
                 </div>
 
-                <div className="w-full sm:flex-1">
-                  <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                <div className="w-full sm:flex-1 min-w-0">
+                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
                     Internal Admin Notes (Private)
                   </label>
                   <textarea
@@ -547,7 +572,7 @@ export default function SupportInboxTab() {
                     value={adminNotes}
                     onChange={(e) => setAdminNotes(e.target.value)}
                     placeholder="Private staff notes, investigation details..."
-                    className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-2 text-xs text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-pink-500 resize-none"
+                    className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-2 text-xs text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-pink-500 resize-none min-w-0"
                   />
                 </div>
 
@@ -562,12 +587,12 @@ export default function SupportInboxTab() {
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-gray-400 text-xs">
-              <MessageSquare className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
-              <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-xs min-w-0">
+              <MessageSquare className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-3" />
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                 Select a ticket from the inbox
               </p>
-              <p className="text-gray-400 mt-1 max-w-sm">
+              <p className="text-gray-600 dark:text-gray-400 mt-1 max-w-sm">
                 Review the user's issue, view conversation thread, update priority, and send an official administrative reply.
               </p>
             </div>

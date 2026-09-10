@@ -123,8 +123,16 @@ export const authAPI = {
     login: (data) => api.post('/auth/login', data),
     refreshToken: () => api.post('/auth/refresh'),
     logout: () => api.post('/auth/logout'),
+    verifyEmail: (data) => api.post('/auth/verify-email', data),
+    resendVerificationCode: (data = {}) => api.post('/auth/resend-verification-code', data),
     forgotPassword: (data) => api.post('/auth/forgot-password', data),
-    resetPassword: (token, data) => api.post(`/auth/reset-password/${token}`, data),
+    verifyResetCode: (data) => api.post('/auth/verify-reset-code', data),
+    resetPassword: (tokenOrData, maybeData) => {
+        if (typeof tokenOrData === 'string') {
+            return api.post(`/auth/reset-password/${tokenOrData}`, maybeData);
+        }
+        return api.post('/auth/reset-password', tokenOrData);
+    },
     getMe: () => api.get('/auth/me'),
     setup2FA: () => api.post('/auth/2fa/setup'),
     verify2FA: (code) => api.post('/auth/2fa/verify', { code }),

@@ -260,7 +260,7 @@ const PrivacyPolicy = () => {
               Contact Us & Data Support
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm sm:text-base">
-              If you have any questions regarding this Privacy Policy, your account retention, or wish to exercise your data rights, please reach out via our built-in <strong>Support Chatbot</strong>, the <strong>"Contact Admin"</strong> tab, or by emailing <a href="mailto:support@kapu-lk.com" className="text-purple-600 font-medium hover:underline">support@kapu-lk.com</a>.
+              If you have any questions regarding this Privacy Policy, your account retention, or wish to exercise your data rights, please reach out via our built-in <strong>Support Chatbot</strong>, the <strong>"Contact Admin"</strong> tab, or by emailing <a href="mailto:kapulk.support@gmail.com" className="text-purple-600 font-medium hover:underline">kapulk.support@gmail.com</a>.
             </p>
           </section>
 

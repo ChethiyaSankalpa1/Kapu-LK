@@ -5,6 +5,7 @@ const Notification = require('../models/Notification');
 const { Wallet } = require('../models/Wallet');
 const { UserStats } = require('../models/Achievement');
 const { purgeUserPermanently } = require('../services/inactivityCleanupService');
+const { checkAndSendWelcomeEmail } = require('../services/welcomeEmailService');
 const { logAuditEvent } = require('../middleware/auditLogger');
 
 const isValidPhoneNumber = (value) => !value || /^[0-9]+$/.test(value);
@@ -112,6 +113,11 @@ exports.updateProfile = async (req, res) => {
 
     const updatedUser = await user.save();
 
+    // Check if profile is complete and send welcome email once
+    checkAndSendWelcomeEmail(updatedUser._id).catch((err) =>
+      console.warn('[WelcomeEmail] Error checking welcome email on updateProfile:', err.message)
+    );
+
     res.json({
       _id: updatedUser._id,
       name: updatedUser.name,
@@ -217,12 +223,52 @@ exports.getUserById = async (req, res) => {
     const isSelfOrAdmin = user._id.equals(req.user._id) || req.user.role === 'admin';
 
     if (!isSelfOrAdmin) {
-      await Notification.create({
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const viewerName = req.user.name || 'A member';
+
+      const existingWindow = await Notification.findOne({
         user: user._id,
-        type: 'profile_view',
-        message: `${req.user.name} viewed your profile`,
         relatedUser: req.user._id,
-      });
+        type: 'profile_view',
+        lastViewedAt: { $gte: twentyFourHoursAgo },
+      }).select('_id').lean();
+
+      if (existingWindow) {
+        await Notification.updateOne(
+          { _id: existingWindow._id },
+          {
+            $inc: { viewCount: 1 },
+            $set: { lastViewedAt: new Date() },
+          }
+        );
+      } else {
+        await Notification.findOneAndUpdate(
+          {
+            user: user._id,
+            relatedUser: req.user._id,
+            type: 'profile_view',
+            lastViewedAt: { $gte: twentyFourHoursAgo },
+          },
+          {
+            $setOnInsert: {
+              user: user._id,
+              relatedUser: req.user._id,
+              type: 'profile_view',
+              message: `${viewerName} viewed your profile`,
+              isRead: false,
+              viewCount: 1,
+              lastViewedAt: new Date(),
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+            $inc: { viewCount: 0 },
+            $set: {
+              lastViewedAt: new Date(),
+            },
+          },
+          { upsert: true, new: false, setDefaultsOnInsert: true }
+        );
+      }
     }
 
     const userObj = user.toObject();

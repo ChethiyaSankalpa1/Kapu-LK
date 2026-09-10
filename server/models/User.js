@@ -239,6 +239,23 @@ const userSchema = new mongoose.Schema({
     type: Date,
     select: false,
   },
+  passwordResetCode: {
+    type: String,
+    select: false,
+  },
+  passwordResetCodeExpires: {
+    type: Date,
+    select: false,
+  },
+  passwordResetCodeAttempts: {
+    type: Number,
+    default: 0,
+    select: false,
+  },
+  welcomeEmailSentAt: {
+    type: Date,
+    default: null,
+  },
   lastMessageSentAt: {
     type: Date,
   },
@@ -273,9 +290,18 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   }],
+  emailVerified: {
+    type: Boolean,
+    default: false,
+    index: true,
+  },
   isEmailVerified: {
     type: Boolean,
     default: false,
+  },
+  emailVerificationCode: {
+    type: String,
+    select: false,
   },
   emailVerificationToken: {
     type: String,
@@ -285,11 +311,38 @@ const userSchema = new mongoose.Schema({
     type: Date,
     select: false,
   },
+  emailVerificationAttempts: {
+    type: Number,
+    default: 0,
+    select: false,
+  },
+  emailVerificationCooldown: {
+    type: Date,
+    select: false,
+  },
   // Inactivity & Account Lifecycle
   lastActiveAt: {
     type: Date,
     default: Date.now,
     index: true,
+  },
+  inactivityReminderSentAt: {
+    type: Date,
+    default: null,
+  },
+  accountStatus: {
+    type: String,
+    enum: ['active', 'deactivated', 'suspended'],
+    default: 'active',
+    index: true,
+  },
+  deactivatedAt: {
+    type: Date,
+    default: null,
+  },
+  deactivationReason: {
+    type: String,
+    default: null,
   },
   inactivityWarningsSent: {
     d5: { type: Boolean, default: false },
@@ -347,6 +400,16 @@ userSchema.methods.resetLoginAttempts = async function() {
     $unset: { lockUntil: 1 },
   });
 };
+
+// Sync emailVerified and isEmailVerified flags
+userSchema.pre('save', function(next) {
+  if (this.isModified('emailVerified')) {
+    this.isEmailVerified = !!this.emailVerified;
+  } else if (this.isModified('isEmailVerified')) {
+    this.emailVerified = !!this.isEmailVerified;
+  }
+  next();
+});
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {

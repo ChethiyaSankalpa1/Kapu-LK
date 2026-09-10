@@ -197,7 +197,13 @@ const PolicyViewerModal = ({ isOpen, onClose, initialTab = 'privacy' }) => {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3.5 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/60 flex justify-end">
+        <div className="px-5 py-3.5 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/60 flex items-center justify-between">
+          <a
+            href="mailto:kapulk.support@gmail.com"
+            className="text-xs text-purple-600 dark:text-purple-400 font-semibold hover:underline"
+          >
+            Support: kapulk.support@gmail.com
+          </a>
           <button
             type="button"
             onClick={onClose}

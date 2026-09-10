@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { userAPI, messageAPI } from '../../services/api';
 import { toast } from 'react-toastify';
-import { Shield, Send, ArrowLeft, Clock, CheckCircle, X, Image as ImageIcon, AlertCircle, HelpCircle, CreditCard, User as UserIcon, Settings, Bug, FileText } from 'lucide-react';
+import { Shield, Send, ArrowLeft, Clock, CheckCircle, X, Image as ImageIcon, AlertCircle, HelpCircle, CreditCard, User as UserIcon, Settings, Bug, FileText, Mail } from 'lucide-react';
 
 const ContactAdmin = () => {
     const { t } = useTranslation();
@@ -200,9 +200,20 @@ const ContactAdmin = () => {
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                                 Need help? Contact our admin team for assistance with your account, profile, payments, or any technical issues.
                             </p>
-                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                <Clock className="w-4 h-4" />
-                                <span>Response time: Within 24 hours</span>
+                            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                                <div className="flex items-center gap-2">
+                                    <Clock className="w-4 h-4" />
+                                    <span>Response time: Within 24 hours</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Mail className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                    <a
+                                        href="mailto:kapulk.support@gmail.com"
+                                        className="text-purple-600 dark:text-purple-400 font-semibold hover:underline"
+                                    >
+                                        kapulk.support@gmail.com
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -347,9 +358,18 @@ const ContactAdmin = () => {
                 </div>
 
                 {/* Help Section */}
-                <div className="mt-8 text-center">
+                <div className="mt-8 text-center space-y-2">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                         For urgent matters, please include detailed information and screenshots to help us resolve your issue faster.
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Prefer direct email? Contact us directly at{' '}
+                        <a
+                            href="mailto:kapulk.support@gmail.com"
+                            className="text-purple-600 dark:text-purple-400 font-semibold hover:underline"
+                        >
+                            kapulk.support@gmail.com
+                        </a>
                     </p>
                 </div>
             </div>

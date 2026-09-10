@@ -58,6 +58,31 @@ exports.protect = async (req, res, next) => {
       }
     }
 
+    // Mandatory email verification check for non-admin users
+    const requireVerification = process.env.REQUIRE_EMAIL_VERIFICATION !== 'false';
+    const isVerificationExempt = user.role === 'admin' || !requireVerification;
+
+    if (!isVerificationExempt && !user.emailVerified) {
+      // Allow only verification and auth check endpoints
+      const allowedPaths = [
+        '/verify-email',
+        '/resend-verification-code',
+        '/logout',
+        '/me',
+      ];
+      const isAllowed = allowedPaths.some((p) => req.originalUrl && req.originalUrl.includes(p));
+
+      if (!isAllowed) {
+        return res.status(403).json({
+          success: false,
+          code: 'EMAIL_VERIFICATION_REQUIRED',
+          requiresEmailVerification: true,
+          email: user.email,
+          message: 'Please verify your email address to access this feature.',
+        });
+      }
+    }
+
     req.user = user;
 
     // Throttle user online status & inactivity touch to avoid DB pressure (every 60 seconds)
@@ -72,7 +97,12 @@ exports.protect = async (req, res, next) => {
         lastActiveAt: now,
       };
 
-      // Reset any active deletion warnings (meaningful activity cancels pending deletion)
+      // Reset inactivity process if active (user has returned!)
+      if (user.inactivityReminderSentAt) {
+        updates.inactivityReminderSentAt = null;
+      }
+
+      // Reset any active deletion warnings
       if (
         user.inactivityWarningsSent &&
         (user.inactivityWarningsSent.d5 || user.inactivityWarningsSent.d2 || user.inactivityWarningsSent.d1)

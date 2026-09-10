@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const PrivacyConsent = require('../models/PrivacyConsent');
 const RefreshToken = require('../models/RefreshToken');
@@ -7,7 +8,13 @@ const Notification = require('../models/Notification');
 const { Referral, ReferralCode } = require('../models/Referral');
 const { UserStats } = require('../models/Achievement');
 const cloudinary = require('../config/cloudinary');
-const { sendPasswordResetEmail } = require('../utils/mailer');
+const {
+  sendEmailVerificationCode,
+  sendPasswordResetCode,
+  sendWelcomeEmail,
+  sendPasswordResetEmail,
+} = require('../services/emailService');
+const { checkAndSendWelcomeEmail } = require('../services/welcomeEmailService');
 const { logAuditEvent } = require('../middleware/auditLogger');
 const {
   generateSecret,
@@ -24,6 +31,7 @@ const generateAccessToken = (user, is2FAAuthenticated = false) => {
     {
       id: user._id,
       role: user.role,
+      emailVerified: !!user.emailVerified,
       tokenVersion: user.tokenVersion || 0,
       is2FAAuthenticated,
     },
@@ -239,10 +247,21 @@ exports.register = async (req, res) => {
       acknowledgedPrivacyPolicyVersion: '2.0',
       lastActiveAt: new Date(),
       age: computedAge,
+      emailVerified: false,
+      isEmailVerified: false,
+      accountStatus: 'active',
     };
     if (parsedBirthDate) userPayload.birthDate = parsedBirthDate;
     if (trimmedUsername) userPayload.username = trimmedUsername;
     if (trimmedPhone) userPayload.phoneNumber = trimmedPhone;
+
+    // Generate 6-digit cryptographically secure verification code
+    const verificationCode = crypto.randomInt(100000, 1000000).toString();
+    const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
+    userPayload.emailVerificationCode = hashedCode;
+    userPayload.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+    userPayload.emailVerificationAttempts = 0;
+    userPayload.emailVerificationCooldown = new Date(Date.now() + 60 * 1000);
 
     const user = await User.create(userPayload);
 
@@ -318,6 +337,16 @@ exports.register = async (req, res) => {
         message: 'Add a profile picture to improve your profile visibility and receive better match suggestions.',
       });
 
+      // Dispatch branded email verification code asynchronously
+      sendEmailVerificationCode({
+        to: user.email,
+        name: user.name,
+        code: verificationCode,
+        expiresMinutes: 15,
+      }).catch((err) =>
+        console.warn('[Register] Failed to send verification code email:', err.message)
+      );
+
       const accessToken = generateAccessToken(user);
       const refreshToken = await createRefreshToken(user, req);
       setTokenCookies(res, accessToken, refreshToken);
@@ -339,10 +368,13 @@ exports.register = async (req, res) => {
         email: user.email,
         role: user.role,
         isApproved: user.isApproved,
+        emailVerified: false,
+        requiresEmailVerification: true,
         language: user.language,
         giftingOptIn: user.giftingOptIn,
         token: accessToken,
         refreshToken,
+        message: 'Registration successful! A 6-digit verification code has been sent to your email.',
       });
     } else {
       res.status(400).json({ message: 'Invalid user data' });
@@ -402,11 +434,27 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Check active status
+    // Check active status with automatic reactivation for 10-day inactivity
     if (user.isActive === false) {
-      return res.status(403).json({
-        message: 'Your account has been deactivated or suspended. Please contact support.',
-      });
+      if (user.deactivationReason === 'inactivity_10_days' || user.accountStatus === 'deactivated') {
+        user.isActive = true;
+        user.accountStatus = 'active';
+        user.deactivatedAt = null;
+        user.deactivationReason = null;
+        user.inactivityReminderSentAt = null;
+        user.lastActiveAt = new Date();
+        await user.save();
+        logAuditEvent({
+          userId: user._id,
+          action: 'ACCOUNT_REACTIVATED_BY_LOGIN',
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        });
+      } else {
+        return res.status(403).json({
+          message: 'Your account has been deactivated or suspended. Please contact support at kapulk.support@gmail.com.',
+        });
+      }
     }
 
     // 2FA check if enabled
@@ -443,6 +491,32 @@ exports.login = async (req, res) => {
       await user.resetLoginAttempts();
     }
 
+    // Handle mandatory email verification for existing or new non-admin members
+    const requireVerification = process.env.REQUIRE_EMAIL_VERIFICATION !== 'false';
+    const isUnverifiedMember = user.role !== 'admin' && requireVerification && !user.emailVerified;
+
+    if (isUnverifiedMember) {
+      // Send a fresh verification code if cooldown has passed
+      const canSend = !user.emailVerificationCooldown || user.emailVerificationCooldown <= Date.now();
+      if (canSend) {
+        const verificationCode = crypto.randomInt(100000, 1000000).toString();
+        const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
+        user.emailVerificationCode = hashedCode;
+        user.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+        user.emailVerificationAttempts = 0;
+        user.emailVerificationCooldown = new Date(Date.now() + 60 * 1000);
+
+        sendEmailVerificationCode({
+          to: user.email,
+          name: user.name,
+          code: verificationCode,
+          expiresMinutes: 15,
+        }).catch((err) =>
+          console.warn('[Login] Failed to dispatch email verification code:', err.message)
+        );
+      }
+    }
+
     // Update last login
     user.lastLogin = Date.now();
     await user.save();
@@ -468,6 +542,8 @@ exports.login = async (req, res) => {
       email: user.email,
       role: user.role,
       isApproved: user.isApproved,
+      emailVerified: user.role === 'admin' ? true : !!user.emailVerified,
+      requiresEmailVerification: isUnverifiedMember,
       profileImageUrl: user.profileImageUrl,
       language: user.language,
       giftingOptIn: user.giftingOptIn,
@@ -528,6 +604,11 @@ exports.uploadProfileImage = async (req, res) => {
       type: 'profile_reminder',
     });
 
+    // Check if profile is complete and send welcome email once
+    checkAndSendWelcomeEmail(user._id).catch((err) =>
+      console.warn('[WelcomeEmail] Error checking welcome email on uploadProfileImage:', err.message)
+    );
+
     res.json({
       message: 'Profile image uploaded successfully',
       profileImageUrl: user.profileImageUrl,
@@ -538,42 +619,322 @@ exports.uploadProfileImage = async (req, res) => {
   }
 };
 
-// @desc    Request password reset email
+// @desc    Request password reset email with 6-digit single-use OTP code
 // @route   POST /api/auth/forgot-password
 // @access  Public
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
-    if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ message: 'A valid email address is required' });
     }
 
-    const user = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
 
-    if (!user) {
-      return res.json({ message: 'If that email exists, a reset link has been sent.' });
+    // Protect Admin: Admin cannot use forgot-password flow
+    if (user && user.role !== 'admin') {
+      // Generate cryptographically secure 6-digit verification code
+      const resetCode = crypto.randomInt(100000, 1000000).toString();
+      const hashedCode = crypto.createHash('sha256').update(resetCode).digest('hex');
+
+      const expiresMinutes = parseInt(process.env.RESET_CODE_EXPIRES_MINUTES, 10) || 10;
+      user.passwordResetCode = hashedCode;
+      user.passwordResetCodeExpires = new Date(Date.now() + expiresMinutes * 60 * 1000);
+      user.passwordResetCodeAttempts = 0;
+
+      // Invalidate any previously active reset tokens or codes
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+
+      await user.save();
+
+      // Dispatch branded OTP code email asynchronously
+      sendPasswordResetCode({
+        to: user.email,
+        name: user.name,
+        code: resetCode,
+        expiresMinutes,
+      }).catch((err) =>
+        console.warn('[ForgotPassword] Failed to send reset code email:', err.message)
+      );
+
+      logAuditEvent({
+        userId: user._id,
+        action: 'PASSWORD_RESET_OTP_REQUESTED',
+        details: { email: user.email },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
     }
 
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const hashedResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-
-    user.passwordResetToken = hashedResetToken;
-    user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000);
-    await user.save();
-
-    const resetUrl = `${getClientBaseUrl()}/reset-password/${resetToken}`;
-    await sendPasswordResetEmail({
-      to: user.email,
-      name: user.name,
-      resetUrl,
+    // Always return identical generic message to prevent account enumeration
+    return res.json({
+      success: true,
+      message: 'If that email exists in our system, a 6-digit verification code has been sent.',
     });
-
-    res.json({ message: 'If that email exists, a reset link has been sent.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Verify 6-digit password reset OTP and receive short-lived reset token
+// @route   POST /api/auth/verify-reset-code
+// @access  Public
+exports.verifyResetCode = async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      return res.status(400).json({ message: 'Email and 6-digit verification code are required' });
+    }
+
+    const cleanCode = String(code).trim();
+    if (!/^\d{6}$/.test(cleanCode)) {
+      return res.status(400).json({ message: 'Verification code must be exactly 6 digits' });
+    }
+
+    const user = await User.findOne({
+      email: email.toLowerCase().trim(),
+    }).select('+passwordResetCode +passwordResetCodeExpires +passwordResetCodeAttempts');
+
+    if (!user || !user.passwordResetCode || !user.passwordResetCodeExpires) {
+      return res.status(400).json({ message: 'Invalid or expired verification code' });
+    }
+
+    // Check expiration
+    if (user.passwordResetCodeExpires < new Date()) {
+      user.passwordResetCode = undefined;
+      user.passwordResetCodeExpires = undefined;
+      await user.save();
+      return res.status(400).json({ message: 'Verification code has expired. Please request a new code.' });
+    }
+
+    // Check attempts limit (Max 5 failed attempts locks the code)
+    if ((user.passwordResetCodeAttempts || 0) >= 5) {
+      user.passwordResetCode = undefined;
+      user.passwordResetCodeExpires = undefined;
+      await user.save();
+      return res.status(400).json({
+        message: 'Too many incorrect attempts. For your security, this code was invalidated. Please request a new code.',
+      });
+    }
+
+    // Timing-safe comparison of SHA-256 hashes
+    const candidateHash = crypto.createHash('sha256').update(cleanCode).digest('hex');
+    const isMatch = crypto.timingSafeEqual(
+      Buffer.from(candidateHash, 'hex'),
+      Buffer.from(user.passwordResetCode, 'hex')
+    );
+
+    if (!isMatch) {
+      user.passwordResetCodeAttempts = (user.passwordResetCodeAttempts || 0) + 1;
+      await user.save();
+      return res.status(400).json({ message: 'Invalid or expired verification code' });
+    }
+
+    // Code matches! Invalidate the OTP code immediately (single-use)
+    user.passwordResetCode = undefined;
+    user.passwordResetCodeExpires = undefined;
+    user.passwordResetCodeAttempts = 0;
+
+    // Issue short-lived, cryptographically secure reset token (15 minutes)
+    const rawResetToken = crypto.randomBytes(32).toString('hex');
+    const hashedResetToken = crypto.createHash('sha256').update(rawResetToken).digest('hex');
+
+    user.passwordResetToken = hashedResetToken;
+    user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+    await user.save();
+
+    logAuditEvent({
+      userId: user._id,
+      action: 'PASSWORD_RESET_CODE_VERIFIED',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    return res.json({
+      success: true,
+      resetToken: rawResetToken,
+      message: 'Code verified successfully. Please enter your new password.',
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Verify user email address using 6-digit OTP code
+// @route   POST /api/auth/verify-email
+// @access  Public / Restricted
+exports.verifyEmail = async (req, res) => {
+  try {
+    const code = req.body.code;
+    const email = (req.body.email || (req.user && req.user.email) || '').toLowerCase().trim();
+
+    if (!email || !code) {
+      return res.status(400).json({ message: 'Email and 6-digit verification code are required' });
+    }
+
+    const cleanCode = String(code).trim();
+    if (!/^\d{6}$/.test(cleanCode)) {
+      return res.status(400).json({ message: 'Verification code must be exactly 6 digits' });
+    }
+
+    const user = await User.findOne({ email }).select(
+      '+emailVerificationCode +emailVerificationExpires +emailVerificationAttempts'
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User account not found' });
+    }
+
+    if (user.emailVerified) {
+      return res.json({
+        success: true,
+        emailVerified: true,
+        requiresEmailVerification: false,
+        message: 'Your email is already verified. You can access Kapu-LK.',
+      });
+    }
+
+    if (!user.emailVerificationCode || !user.emailVerificationExpires) {
+      return res.status(400).json({
+        message: 'No active verification code found. Please request a new code.',
+      });
+    }
+
+    if (user.emailVerificationExpires < new Date()) {
+      user.emailVerificationCode = undefined;
+      user.emailVerificationExpires = undefined;
+      await user.save();
+      return res.status(400).json({
+        message: 'Verification code has expired. Please request a new code.',
+      });
+    }
+
+    if ((user.emailVerificationAttempts || 0) >= 5) {
+      user.emailVerificationCode = undefined;
+      user.emailVerificationExpires = undefined;
+      await user.save();
+      return res.status(400).json({
+        message: 'Too many incorrect attempts. This code was invalidated for your protection. Please request a new code.',
+      });
+    }
+
+    // Timing-safe comparison of SHA-256 hash
+    const candidateHash = crypto.createHash('sha256').update(cleanCode).digest('hex');
+    const isMatch = crypto.timingSafeEqual(
+      Buffer.from(candidateHash, 'hex'),
+      Buffer.from(user.emailVerificationCode, 'hex')
+    );
+
+    if (!isMatch) {
+      user.emailVerificationAttempts = (user.emailVerificationAttempts || 0) + 1;
+      await user.save();
+      return res.status(400).json({ message: 'Invalid or incorrect verification code' });
+    }
+
+    // Verified successfully!
+    user.emailVerified = true;
+    user.isEmailVerified = true;
+    user.emailVerificationCode = undefined;
+    user.emailVerificationExpires = undefined;
+    user.emailVerificationAttempts = 0;
+    user.lastActiveAt = new Date();
+    await user.save();
+
+    // Check if profile is already complete and trigger welcome email
+    checkAndSendWelcomeEmail(user._id).catch((err) =>
+      console.warn('[WelcomeEmail] Error checking welcome email on verifyEmail:', err.message)
+    );
+
+    // Issue full unrestricted token
+    const newAccessToken = generateAccessToken(user);
+    const newRefreshToken = await createRefreshToken(user, req);
+    setTokenCookies(res, newAccessToken, newRefreshToken);
+
+    logAuditEvent({
+      userId: user._id,
+      action: 'EMAIL_VERIFIED_SUCCESS',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.json({
+      success: true,
+      emailVerified: true,
+      requiresEmailVerification: false,
+      token: newAccessToken,
+      refreshToken: newRefreshToken,
+      message: 'Email verified successfully! Welcome to Kapu-LK.',
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Resend email verification 6-digit OTP code
+// @route   POST /api/auth/resend-verification-code
+// @access  Public / Restricted
+exports.resendVerificationCode = async (req, res) => {
+  try {
+    const email = (req.body.email || (req.user && req.user.email) || '').toLowerCase().trim();
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email }).select('+emailVerificationCooldown');
+    if (!user) {
+      return res.status(404).json({ message: 'User account not found' });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({ message: 'Email address is already verified' });
+    }
+
+    // Enforce 60-second cooldown
+    if (user.emailVerificationCooldown && user.emailVerificationCooldown > Date.now()) {
+      const secondsLeft = Math.ceil((user.emailVerificationCooldown.getTime() - Date.now()) / 1000);
+      return res.status(429).json({
+        message: `Please wait ${secondsLeft} seconds before requesting another code.`,
+        retryAfter: secondsLeft,
+      });
+    }
+
+    const verificationCode = crypto.randomInt(100000, 1000000).toString();
+    const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
+
+    user.emailVerificationCode = hashedCode;
+    user.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+    user.emailVerificationAttempts = 0;
+    user.emailVerificationCooldown = new Date(Date.now() + 60 * 1000); // 60s cooldown
+    await user.save();
+
+    sendEmailVerificationCode({
+      to: user.email,
+      name: user.name,
+      code: verificationCode,
+      expiresMinutes: 15,
+    }).catch((err) =>
+      console.warn('[ResendVerification] Failed to dispatch email:', err.message)
+    );
+
+    logAuditEvent({
+      userId: user._id,
+      action: 'EMAIL_VERIFICATION_CODE_RESENT',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.json({
+      success: true,
+      message: 'A fresh 6-digit verification code has been sent to your email.',
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 // @desc    Refresh access token using refresh token rotation
 // @route   POST /api/auth/refresh
@@ -685,13 +1046,18 @@ exports.logout = async (req, res) => {
   }
 };
 
-// @desc    Reset password with token
+// @desc    Reset password with reset token (from body or URL param)
+// @route   POST /api/auth/reset-password
 // @route   POST /api/auth/reset-password/:token
 // @access  Public
 exports.resetPassword = async (req, res) => {
   try {
-    const { token } = req.params;
+    const token = req.params.token || req.body.resetToken || req.body.token;
     const { password } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ message: 'Reset token is required' });
+    }
 
     if (!password || String(password).length < 6) {
       return res.status(400).json({ message: 'Password must be at least 6 characters long' });
@@ -701,16 +1067,19 @@ exports.resetPassword = async (req, res) => {
 
     const user = await User.findOne({
       passwordResetToken: hashedResetToken,
-      passwordResetExpires: { $gt: new Date() },
+      passwordResetExpires: mongoose.trusted({ $gt: new Date() }),
     }).select('+passwordResetToken +passwordResetExpires');
 
     if (!user) {
-      return res.status(400).json({ message: 'Reset link is invalid or has expired' });
+      return res.status(400).json({ message: 'Reset token is invalid or has expired. Please request a new code.' });
     }
 
     user.password = password;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
+    user.passwordResetCode = undefined;
+    user.passwordResetCodeExpires = undefined;
+    user.passwordResetCodeAttempts = 0;
     user.passwordChangedAt = new Date();
     user.tokenVersion = (user.tokenVersion || 0) + 1; // Invalidate all existing tokens across devices
     await user.save();

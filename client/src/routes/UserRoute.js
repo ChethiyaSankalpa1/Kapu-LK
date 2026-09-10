@@ -23,6 +23,11 @@ const UserRoute = ({ children }) => {
         return <Navigate to="/admin" />;
     }
 
+    // Require email verification for all non-admin members
+    if (user.emailVerified === false && location.pathname !== '/verify-email') {
+        return <Navigate to="/verify-email" state={{ email: user.email }} replace />;
+    }
+
     const isProfileComplete = Boolean(
         user?.profileImageUrl &&
         user?.age &&

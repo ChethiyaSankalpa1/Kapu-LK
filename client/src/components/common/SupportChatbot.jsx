@@ -255,10 +255,10 @@ export default function SupportChatbot() {
       let botText = '';
       if (matchedKey) {
         botText = FAQ_KNOWLEDGE_BASE[matchedKey].response;
-      } else if (lower.includes('human') || lower.includes('support') || lower.includes('agent') || lower.includes('admin') || lower.includes('ticket')) {
-        botText = `Need human assistance? You can open an official support ticket anytime, and our administrative team will review your request. Click the "Submit Support Ticket" button below.`;
+      } else if (lower.includes('human') || lower.includes('support') || lower.includes('agent') || lower.includes('admin') || lower.includes('ticket') || lower.includes('email')) {
+        botText = `Need direct human assistance? You can open an official support ticket anytime, or email our support desk directly at kapulk.support@gmail.com. Our administration team is always happy to help.`;
       } else {
-        botText = `I couldn't find an exact match for your question. Here are our common support topics, or you can submit an official support ticket directly to our administration team!`;
+        botText = `I couldn't find an exact match for your question. Here are our common support topics, or you can submit an official support ticket (or email kapulk.support@gmail.com) directly to our administration team!`;
       }
 
       const botMsg = {
@@ -697,6 +697,18 @@ export default function SupportChatbot() {
                   )}
                 </button>
               </form>
+
+              <div className="mt-4 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-center">
+                <p className="text-gray-500 dark:text-gray-400">
+                  Prefer direct email? Reach us at{' '}
+                  <a
+                    href="mailto:kapulk.support@gmail.com"
+                    className="text-pink-600 dark:text-pink-400 font-semibold hover:underline"
+                  >
+                    kapulk.support@gmail.com
+                  </a>
+                </p>
+              </div>
             </div>
           )}
 

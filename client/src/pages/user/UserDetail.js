@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { userAPI, messageAPI } from '../../services/api';
@@ -28,14 +28,22 @@ const UserDetail = () => {
     const [adminAttachments, setAdminAttachments] = useState([]);
     const [attachmentPreviews, setAttachmentPreviews] = useState([]);
 
+    const lastFetchedIdRef = useRef(null);
+    const fetchInFlightRef = useRef(false);
+
     const fetchUser = useCallback(async () => {
+        if (!id) return;
+        if (fetchInFlightRef.current) return;
+        fetchInFlightRef.current = true;
         try {
             const response = await userAPI.getUserById(id);
             setUser(response.data);
+            lastFetchedIdRef.current = id;
         } catch (error) {
             toast.error(t('users.detailFetchFailed', { defaultValue: 'Failed to fetch user details' }));
             navigate('/users');
         } finally {
+            fetchInFlightRef.current = false;
             setLoading(false);
         }
     }, [id, navigate, t]);
@@ -53,9 +61,14 @@ const UserDetail = () => {
     }, [isAdmin]);
 
     useEffect(() => {
-        fetchUser();
+        if (!id) return;
+        if (lastFetchedIdRef.current === id && !fetchInFlightRef.current) {
+            setLoading(false);
+        } else {
+            fetchUser();
+        }
         fetchAdmin();
-    }, [fetchUser, fetchAdmin]);
+    }, [id, fetchUser, fetchAdmin]);
 
     const isOwnProfile = currentUser && user && currentUser._id === user._id;
 

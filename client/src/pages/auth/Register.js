@@ -161,8 +161,8 @@ const Register = () => {
 
             const response = await authAPI.register(payload);
             login(response.data, response.data.token);
-            toast.success(t('toast.auth.registerSuccess', { defaultValue: 'Account registered successfully!' }));
-            navigate('/profile');
+            toast.success(t('toast.auth.registerSuccess', { defaultValue: 'Account created! Please check your email for the verification code.' }));
+            navigate('/verify-email', { state: { email: formData.email } });
         } catch (error) {
             const msg = error.response?.data?.message || t('toast.auth.registerFailed', { defaultValue: 'Registration failed. Please check your inputs.' });
             toast.error(msg);

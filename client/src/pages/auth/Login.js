@@ -67,6 +67,8 @@ const Login = () => {
 
             if (userRole === 'admin') {
                 navigate('/admin');
+            } else if (response.data?.requiresEmailVerification || response.data?.emailVerified === false) {
+                navigate('/verify-email', { state: { email: formData.email } });
             } else {
                 navigate('/dashboard');
             }

@@ -29,6 +29,14 @@ const notificationSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    viewCount: {
+      type: Number,
+      default: 1,
+    },
+    lastViewedAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
   {
     timestamps: true,
@@ -36,5 +44,6 @@ const notificationSchema = new mongoose.Schema(
 );
 
 notificationSchema.index({ user: 1, isRead: 1, createdAt: -1 });
+notificationSchema.index({ user: 1, relatedUser: 1, type: 1, lastViewedAt: -1 });
 
 module.exports = mongoose.model('Notification', notificationSchema);

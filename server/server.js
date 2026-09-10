@@ -6,6 +6,8 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
 const { seedUsers, seedAchievements, seedGifts } = require('./utils/seeder');
+const { migrateEmailVerification } = require('./scripts/migrateEmailVerification');
+const { startInactivityScheduler } = require('./services/inactivityScheduler');
 
 const { startMessageCleanup } = require('./utils/messageCleanup');
 const { startNotificationCleanup } = require('./utils/notificationCleanup');
@@ -44,6 +46,41 @@ let dbConnected = false;
     }
     if (allowNotificationCleanup) {
       startNotificationCleanup();
+    }
+
+    // Run safe email verification schema migration on boot (idempotent)
+    try {
+      await migrateEmailVerification(true);
+    } catch (e) {
+      console.warn('[Migration] Boot email verification migration skipped:', e.message);
+    }
+
+    // Start inactivity reminder and deactivation scheduler
+    try {
+      startInactivityScheduler();
+    } catch (e) {
+      console.warn('[InactivityScheduler] Failed to start scheduler on boot:', e.message);
+    }
+
+    const allowDupMerge = process.env.ENABLE_NOTIFICATION_DUP_MERGE !== 'false';
+    if (allowDupMerge) {
+      try {
+        const { mergeProfileViewDuplicates } = require('./controllers/notificationController');
+        (async () => {
+          try {
+            const r = await mergeProfileViewDuplicates(null);
+            if (r && (r.mergedGroups > 0 || r.deletedDocs > 0)) {
+              console.log(
+                `[NotificationDupMerge] Boot cleanup: merged ${r.mergedGroups} duplicate group(s), deleted ${r.deletedDocs} redundant doc(s)`
+              );
+            }
+          } catch (e) {
+            console.warn('[NotificationDupMerge] Boot merge skipped:', e.message);
+          }
+        })();
+      } catch (e) {
+        console.warn('[NotificationDupMerge] Failed to init boot merge:', e.message);
+      }
     }
   }
 })();

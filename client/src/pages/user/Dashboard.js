@@ -6,7 +6,8 @@ import { userAPI, messageAPI, notificationAPI, achievementAPI, giftAPI, referral
 import { toast } from 'react-toastify';
 import {
     User, CheckCircle, Clock, MessageCircle, Bell, Search, Heart,
-    Crown, Zap, X, RefreshCw, Flame, Share2, FileText, Calendar, Gift, Copy
+    Crown, Zap, X, RefreshCw, Flame, Share2, FileText, Calendar, Gift, Copy,
+    Shield, Lock, ExternalLink
 } from 'lucide-react';
 import ProfileCard from '../../components/ui/ProfileCard';
 import CustomSelect from '../../components/ui/CustomSelect';
@@ -697,6 +698,16 @@ const Dashboard = () => {
                         <Gift className="w-3.5 h-3.5" />
                         <span>Gifts</span>
                     </button>
+                    <button
+                        onClick={() => setActiveTab('privacy')}
+                        className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 whitespace-nowrap transition-all duration-200 ${activeTab === 'privacy'
+                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30'
+                            : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                    >
+                        <Shield className="w-3.5 h-3.5" />
+                        <span>Privacy Policy</span>
+                    </button>
                 </div>
 
                 {activeTab === 'overview' && (
@@ -1285,6 +1296,109 @@ const Dashboard = () => {
                                 <p className="text-gray-500 dark:text-gray-400">No gifts available right now.</p>
                             </div>
                         )}
+                    </div>
+                )}
+
+                {activeTab === 'privacy' && (
+                    <div className="glass-card p-6 sm:p-8 space-y-6">
+                        {/* Header */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-gray-100 dark:border-gray-800">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/20 shrink-0">
+                                    <Shield className="w-6 h-6 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                                        Privacy Policy & Data Protection
+                                    </h2>
+                                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                                        Policy Version 2.0 • Effective September 2026 • GDPR & Privacy Compliant
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Link
+                                    to="/privacy-policy"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-4 py-2 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5"
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    <span>Full Document</span>
+                                </Link>
+                                <Link
+                                    to="/settings"
+                                    className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl text-xs sm:text-sm font-semibold transition"
+                                >
+                                    <span>Manage Consent & Data</span>
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* 10-Day Inactivity Policy Banner */}
+                        <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-pink-500/10 border border-amber-400/30 rounded-2xl p-5 space-y-2">
+                            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-bold text-sm">
+                                <Clock className="w-4 h-4" />
+                                <span>10-Day Inactivity Retention & Deletion Policy</span>
+                            </div>
+                            <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                Accounts inactive for <strong>10 consecutive days</strong> are permanently deleted to uphold data privacy and keep our matchmaking platform active and authentic. Automatic notifications are sent at <strong>5 days</strong>, <strong>2 days</strong>, and <strong>24 hours</strong> remaining. Any authenticated login or profile activity resets your timer.
+                            </p>
+                        </div>
+
+                        {/* Summary Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="bg-white dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700/60 rounded-2xl p-5 space-y-2.5 shadow-sm">
+                                <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-bold text-sm">
+                                    <FileText className="w-4 h-4" />
+                                    <span>Information We Collect</span>
+                                </div>
+                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                    We collect information provided directly by you, including your name, email, verified age (18+), religion, occupation, photos, and partner preferences to facilitate trusted matchmaking.
+                                </p>
+                            </div>
+
+                            <div className="bg-white dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700/60 rounded-2xl p-5 space-y-2.5 shadow-sm">
+                                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                                    <Lock className="w-4 h-4" />
+                                    <span>Data Protection & Security</span>
+                                </div>
+                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                    Industry-standard TLS encryption, strict password hashing, and token-based authentication protect your account. We never sell or share your personal data with third-party advertisers.
+                                </p>
+                            </div>
+
+                            <div className="bg-white dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700/60 rounded-2xl p-5 space-y-2.5 shadow-sm">
+                                <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-sm">
+                                    <Shield className="w-4 h-4" />
+                                    <span>Your Rights & Data Export</span>
+                                </div>
+                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                    You have full control over your personal data. You can download a complete JSON export of all your stored data anytime from your <Link to="/settings" className="text-purple-600 dark:text-purple-400 underline font-medium">Account Settings</Link>.
+                                </p>
+                            </div>
+
+                            <div className="bg-white dark:bg-slate-800/80 border border-gray-100 dark:border-slate-700/60 rounded-2xl p-5 space-y-2.5 shadow-sm">
+                                <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold text-sm">
+                                    <Clock className="w-4 h-4" />
+                                    <span>Permanent Cascade Deletion</span>
+                                </div>
+                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                    Upon account deletion, all messages, images, notifications, tokens, and records are permanently destroyed across all servers with zero orphaned records left behind.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Contact & Support */}
+                        <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-gray-100 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-400">
+                            <span>Have questions about your data or privacy? Contact our Data Protection Officer.</span>
+                            <a 
+                                href="mailto:kapulk.support@gmail.com?subject=Privacy%20Inquiry"
+                                className="text-purple-600 dark:text-purple-400 hover:underline font-semibold shrink-0"
+                            >
+                                kapulk.support@gmail.com
+                            </a>
+                        </div>
                     </div>
                 )}
             </div>

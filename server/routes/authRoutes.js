@@ -8,19 +8,26 @@ const {
   logout,
   getMe,
   uploadProfileImage,
+  verifyEmail,
+  resendVerificationCode,
   forgotPassword,
+  verifyResetCode,
   resetPassword,
   setup2FA,
   verify2FA,
   disable2FA,
 } = require('../controllers/authController');
-const { protect } = require('../middleware/auth');
+const { protect, optionalProtect } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const validate = require('../middleware/validate');
 const {
   loginLimiter,
   registerLimiter,
   passwordResetLimiter,
+  forgotPasswordLimiter,
+  verifyResetCodeLimiter,
+  verifyEmailLimiter,
+  resendVerificationLimiter,
 } = require('../middleware/rateLimiters');
 
 router.post(
@@ -55,12 +62,60 @@ router.post(
 router.post('/refresh', refreshToken);
 router.post('/logout', logout);
 
+// Email Verification
+router.post(
+  '/verify-email',
+  optionalProtect,
+  verifyEmailLimiter,
+  [
+    body('code').trim().matches(/^\d{6}$/).withMessage('Verification code must be exactly 6 digits'),
+    body('email').optional().isEmail().withMessage('Valid email is required').normalizeEmail(),
+  ],
+  validate,
+  verifyEmail
+);
+
+router.post(
+  '/resend-verification-code',
+  optionalProtect,
+  resendVerificationLimiter,
+  [
+    body('email').optional().isEmail().withMessage('Valid email is required').normalizeEmail(),
+  ],
+  validate,
+  resendVerificationCode
+);
+
+// Password Reset Flow: Forgot Password -> Receive Code -> Verify Code -> Reset Password
 router.post(
   '/forgot-password',
-  passwordResetLimiter,
+  forgotPasswordLimiter,
   [body('email').isEmail().withMessage('Valid email is required').normalizeEmail()],
   validate,
   forgotPassword
+);
+
+router.post(
+  '/verify-reset-code',
+  verifyResetCodeLimiter,
+  [
+    body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
+    body('code').trim().matches(/^\d{6}$/).withMessage('Verification code must be exactly 6 digits'),
+  ],
+  validate,
+  verifyResetCode
+);
+
+router.post(
+  '/reset-password',
+  passwordResetLimiter,
+  [
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('resetToken').optional().notEmpty().withMessage('Reset token is required'),
+    body('token').optional().notEmpty().withMessage('Token is required'),
+  ],
+  validate,
+  resetPassword
 );
 
 router.post(

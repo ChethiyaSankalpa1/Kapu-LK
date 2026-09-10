@@ -91,10 +91,70 @@ const supportLimiter = rateLimit({
   },
 });
 
+// Forgot password request limiter: 5 attempts per 15 mins by IP & email
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: false,
+  keyGenerator: (req) => `${getClientIp(req)}_${req.body && req.body.email ? req.body.email.toLowerCase().trim() : ''}`,
+  message: {
+    success: false,
+    message: 'Too many password reset requests. Please wait a few minutes before trying again.',
+  },
+});
+
+// Verification code check limiter (OTP verification): 10 per 15 mins
+const verifyResetCodeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: false,
+  keyGenerator: (req) => `${getClientIp(req)}_${req.body && req.body.email ? req.body.email.toLowerCase().trim() : ''}`,
+  message: {
+    success: false,
+    message: 'Too many verification attempts. Please wait 15 minutes before trying again.',
+  },
+});
+
+// Email verification check limiter: 10 per 15 mins
+const verifyEmailLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: false,
+  keyGenerator: (req) => (req.user ? String(req.user._id) : getClientIp(req)),
+  message: {
+    success: false,
+    message: 'Too many email verification attempts. Please wait 15 minutes.',
+  },
+});
+
+// Resend verification code limiter: 5 per hour
+const resendVerificationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: false,
+  keyGenerator: (req) => (req.user ? String(req.user._id) : getClientIp(req)),
+  message: {
+    success: false,
+    message: 'Too many verification codes requested. Please wait before requesting another code.',
+  },
+});
+
 module.exports = {
   loginLimiter,
   registerLimiter,
   passwordResetLimiter,
+  forgotPasswordLimiter,
+  verifyResetCodeLimiter,
+  verifyEmailLimiter,
+  resendVerificationLimiter,
   messageLimiter,
   paymentLimiter,
   supportLimiter,

@@ -21,6 +21,7 @@ import PrivacyPolicyModal from './components/common/PrivacyPolicyModal';
 import SupportChatbot from './components/common/SupportChatbot';
 import MaintenanceScreen from './components/common/MaintenanceScreen';
 import AdminMaintenanceBar from './components/admin/AdminMaintenanceBar';
+import Footer from './components/common/Footer';
 import { maintenanceAPI } from './services/api';
 
 // Resilient chunk loader that automatically recovers from deployment hash mismatches
@@ -96,6 +97,7 @@ const PrivacyPolicy = lazyWithRetry(() => import('./pages/public/PrivacyPolicy')
 
 const Login = lazyWithRetry(() => import('./pages/auth/Login'));
 const Register = lazyWithRetry(() => import('./pages/auth/Register'));
+const VerifyEmail = lazyWithRetry(() => import('./pages/auth/VerifyEmail'));
 const ForgotPassword = lazyWithRetry(() => import('./pages/auth/ForgotPassword'));
 const ResetPassword = lazyWithRetry(() => import('./pages/auth/ResetPassword'));
 
@@ -344,6 +346,7 @@ function App() {
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
 
@@ -441,6 +444,7 @@ function App() {
             </Routes>
             </Suspense>
           </ChunkErrorBoundary>
+          <Footer />
           <ToastContainer
             position="top-right"
             autoClose={1800}
