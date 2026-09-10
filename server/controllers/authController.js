@@ -233,7 +233,7 @@ exports.register = async (req, res) => {
 
     const orConditions = [{ email: normalizedEmail }];
     if (trimmedUsername) {
-      orConditions.push({ username: { $regex: new RegExp(`^${trimmedUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`), $options: 'i' } });
+      orConditions.push({ username: new RegExp(`^${trimmedUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') });
     }
     if (trimmedPhone) {
       orConditions.push({ phoneNumber: trimmedPhone });
@@ -470,8 +470,8 @@ exports.register = async (req, res) => {
     });
   } catch (error) {
     // Handle MongoDB E11000 duplicate-key errors (TOCTOU race / leftover indexes)
-    if (error && error.code === 11000 && error.keyPattern) {
-      const keyFields = Object.keys(error.keyPattern || {});
+    if (error && (error.code === 11000 || error.code === '11000' || (error.message && error.message.includes('E11000')))) {
+      const keyFields = Object.keys(error.keyPattern || error.keyValue || {});
       let message = 'An account with these credentials already exists. Please try logging in.';
       if (keyFields.includes('email')) {
         message = 'Email is already registered';
