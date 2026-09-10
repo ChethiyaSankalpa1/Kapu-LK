@@ -1,11 +1,16 @@
 import axios from 'axios';
 
 const getApiBaseUrl = () => {
-    // For development, use localhost; for production, use Render backend
-    if (process.env.NODE_ENV === 'development') {
-        return process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+    const envUrl = process.env.REACT_APP_API_URL;
+    // In production, never let localhost sneak in from dev env files
+    if (process.env.NODE_ENV === 'production') {
+        if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+            return envUrl;
+        }
+        return 'https://kapu-lk-2.onrender.com/api';
     }
-    return process.env.REACT_APP_API_URL || 'https://kapu-lk-2.onrender.com/api';
+    // In local development
+    return envUrl || 'http://localhost:5000/api';
 };
 
 const API_URL = getApiBaseUrl();

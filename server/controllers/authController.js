@@ -1415,8 +1415,8 @@ exports.logout = async (req, res) => {
 // @access  Public
 exports.resetPassword = async (req, res) => {
   try {
-    const token = req.params.token || req.body.resetToken || req.body.token;
-    const { password } = req.body;
+    const token = (req.params && req.params.token) || (req.body && (req.body.resetToken || req.body.token));
+    const password = req.body && (req.body.password || req.body.newPassword);
 
     if (!token) {
       return res.status(400).json({ message: 'Reset token is required' });

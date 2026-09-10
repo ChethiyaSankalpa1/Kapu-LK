@@ -49,7 +49,7 @@ async function migrateEmailVerification(existingMongoose = null) {
     const userRes = await User.updateMany(
       {
         role: { $ne: 'admin' },
-        emailVerified: { $exists: false },
+        emailVerified: mongoose.trusted({ $exists: false }),
       },
       {
         $set: {
@@ -65,7 +65,7 @@ async function migrateEmailVerification(existingMongoose = null) {
 
     // 3. Initialize lastActiveAt for existing users who don't have it
     await User.updateMany(
-      { lastActiveAt: { $exists: false } },
+      { lastActiveAt: mongoose.trusted({ $exists: false }) },
       { $set: { lastActiveAt: new Date() } }
     );
 
