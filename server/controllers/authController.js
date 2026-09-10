@@ -910,14 +910,12 @@ exports.resendVerificationCode = async (req, res) => {
     user.emailVerificationCooldown = new Date(Date.now() + 60 * 1000); // 60s cooldown
     await user.save();
 
-    sendEmailVerificationCode({
+    const emailResult = await sendEmailVerificationCode({
       to: user.email,
       name: user.name,
       code: verificationCode,
       expiresMinutes: 15,
-    }).catch((err) =>
-      console.warn('[ResendVerification] Failed to dispatch email:', err.message)
-    );
+    });
 
     logAuditEvent({
       userId: user._id,
@@ -925,6 +923,14 @@ exports.resendVerificationCode = async (req, res) => {
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });
+
+    if (emailResult && emailResult.success === false) {
+      console.warn('[ResendVerification] Failed to dispatch email:', emailResult.error);
+      return res.status(502).json({
+        message: `Email delivery failed: ${emailResult.error || 'SMTP server error'}. Please verify credentials.`,
+        error: emailResult.error,
+      });
+    }
 
     res.json({
       success: true,
@@ -993,14 +999,12 @@ exports.changeVerificationEmail = async (req, res) => {
     user.emailVerificationCooldown = new Date(Date.now() + 60 * 1000); // 60s cooldown
     await user.save();
 
-    sendEmailVerificationCode({
+    const emailResult = await sendEmailVerificationCode({
       to: cleanNewEmail,
       name: user.name,
       code: verificationCode,
       expiresMinutes: 15,
-    }).catch((err) =>
-      console.warn('[ChangeVerificationEmail] Failed to dispatch email:', err.message)
-    );
+    });
 
     logAuditEvent({
       userId: user._id,
@@ -1009,6 +1013,14 @@ exports.changeVerificationEmail = async (req, res) => {
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });
+
+    if (emailResult && emailResult.success === false) {
+      console.warn('[ChangeVerificationEmail] Failed to dispatch email:', emailResult.error);
+      return res.status(502).json({
+        message: `Email updated, but dispatch failed: ${emailResult.error || 'SMTP server error'}. Please verify credentials.`,
+        error: emailResult.error,
+      });
+    }
 
     res.json({
       success: true,

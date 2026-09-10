@@ -287,7 +287,15 @@ app.get('/', (req, res) => {
 });
 
 // Health check for Render
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
+  const { verifyConnection, getLastDeliveryStatus } = require('./services/emailService');
+  let smtpHandshake = null;
+  try {
+    smtpHandshake = await verifyConnection();
+  } catch (err) {
+    smtpHandshake = { success: false, error: err.message };
+  }
+
   res.status(200).json({ 
     status: 'ok',
     database: dbConnected ? 'connected' : 'disconnected',
@@ -296,6 +304,8 @@ app.get('/health', (req, res) => {
       (process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASS || process.env.SMTP_PASS)
     ),
     emailSender: process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || 'not_set',
+    smtpHandshake,
+    lastDelivery: getLastDeliveryStatus ? getLastDeliveryStatus() : null,
   });
 });
 

@@ -9,6 +9,21 @@ const {
 } = require('./emailTemplates');
 
 let transporterInstance = null;
+let lastDeliveryStatus = {
+  timestamp: null,
+  recipient: null,
+  success: null,
+  error: null,
+  messageId: null,
+};
+
+function getCredentials() {
+  const rawUser = process.env.EMAIL_USER || process.env.SMTP_USER || '';
+  const emailUser = rawUser.trim().replace(/['"]+/g, '');
+  const rawPass = process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASS || process.env.SMTP_PASS || '';
+  const emailPass = rawPass.trim().replace(/['"]+/g, '').replace(/\s+/g, '');
+  return { emailUser, emailPass };
+}
 
 /**
  * Mask an email address for safe logging without exposing PII:
@@ -30,25 +45,22 @@ function maskEmail(email) {
  * Build or retrieve the nodemailer transporter singleton
  */
 function getTransporter() {
+  const { emailUser, emailPass } = getCredentials();
+
   if (transporterInstance) {
     return transporterInstance;
   }
 
-  const emailUser = process.env.EMAIL_USER || process.env.SMTP_USER;
-  const emailPass = (
-    process.env.EMAIL_APP_PASSWORD ||
-    process.env.EMAIL_PASS ||
-    process.env.SMTP_PASS ||
-    ''
-  ).replace(/\s+/g, '');
-
-  if ((process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASS) && emailUser) {
+  if (emailUser && emailPass) {
     // Gmail App Password transport
     transporterInstance = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: emailUser,
         pass: emailPass,
+      },
+      tls: {
+        rejectUnauthorized: true,
       },
     });
   } else if ((process.env.SMTP_HOST || process.env.EMAIL_HOST) && (process.env.SMTP_PORT || process.env.EMAIL_PORT)) {
@@ -119,10 +131,24 @@ async function dispatchEmail({ to, subject, html, text }) {
     });
 
     console.log(`[EmailService] Mail sent to ${maskEmail(to)} | MessageId: ${info.messageId || 'ok'}`);
+    lastDeliveryStatus = {
+      timestamp: new Date().toISOString(),
+      recipient: maskEmail(to),
+      success: true,
+      error: null,
+      messageId: info.messageId || 'ok',
+    };
     return { success: true, messageId: info.messageId };
   } catch (err) {
     // Log failure safely without printing passwords, tokens, or raw credentials
     console.error(`[EmailService] Delivery failed to ${maskEmail(to)}:`, err.message);
+    lastDeliveryStatus = {
+      timestamp: new Date().toISOString(),
+      recipient: maskEmail(to),
+      success: false,
+      error: err.message,
+      messageId: null,
+    };
     return { success: false, error: err.message };
   }
 }
@@ -222,16 +248,30 @@ async function sendPasswordResetEmail({ to, resetUrl, name }) {
  * Verify transporter SMTP connectivity
  */
 async function verifyConnection() {
+  const { emailUser, emailPass } = getCredentials();
+  if (!emailUser || !emailPass) {
+    return { success: false, configured: false, error: 'Credentials not configured' };
+  }
   try {
     const transporter = getTransporter();
-    if (transporter.verify) {
+    if (transporter && transporter.verify) {
       await transporter.verify();
-      return { success: true, message: 'SMTP connection verified successfully' };
+      return { success: true, configured: true, message: 'SMTP connection verified successfully' };
     }
-    return { success: true, message: 'Mock transport active' };
+    return { success: true, configured: false, message: 'Mock transport active' };
   } catch (err) {
-    return { success: false, error: err.message };
+    return {
+      success: false,
+      configured: true,
+      error: err.message,
+      code: err.code || 'UNKNOWN',
+      response: err.response || null,
+    };
   }
+}
+
+function getLastDeliveryStatus() {
+  return lastDeliveryStatus;
 }
 
 module.exports = {
@@ -243,4 +283,6 @@ module.exports = {
   sendAccountDeactivatedEmail,
   sendPasswordResetEmail,
   verifyConnection,
+  getLastDeliveryStatus,
+  getCredentials,
 };
