@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Shield, Clock, CheckCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { userAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
@@ -9,7 +10,9 @@ const CURRENT_POLICY_VERSION = '2.0';
 
 const PrivacyPolicyModal = () => {
   const { user, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [inlineError, setInlineError] = useState('');
   const [policyModalOpen, setPolicyModalOpen] = useState(false);
   const [policyModalTab, setPolicyModalTab] = useState('privacy');
 
@@ -26,7 +29,9 @@ const PrivacyPolicyModal = () => {
     user?.acknowledgedPrivacyPolicyVersion === CURRENT_POLICY_VERSION &&
     user?.acknowledgedPrivacyPolicyAt;
 
-  // Unskippable re-consent modal when major policy update occurs
+  // Show for any logged-in user who has NOT yet accepted the current terms.
+  // The modal renders as a z-50 full-screen overlay on top of /verify-email,
+  // enforcing Terms → Email order for previous users.
   const shouldShow = user && !isAcknowledged;
 
   if (!shouldShow) return null;
@@ -36,6 +41,7 @@ const PrivacyPolicyModal = () => {
 
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
+    setInlineError('');
     setConsents((prev) => ({ ...prev, [name]: checked }));
   };
 
@@ -46,10 +52,11 @@ const PrivacyPolicyModal = () => {
 
   const handleAccept = async () => {
     if (!allConsentsChecked) {
-      toast.error('Please check all 4 required consent agreements to continue using Kapu-LK.');
+      setInlineError('Please check all 4 required consent agreements to continue.');
       return;
     }
 
+    setInlineError('');
     setLoading(true);
     try {
       await userAPI.acknowledgePrivacyPolicy({
@@ -61,10 +68,16 @@ const PrivacyPolicyModal = () => {
         consentSource: 'policy_update_modal',
       });
       await refreshUser().catch(() => {});
-      toast.success('Privacy policy acknowledged successfully. Thank you!');
+      toast.success('Privacy policy acknowledged. Thank you!');
+
+      // If the user still needs to verify their email, go there next.
+      // Otherwise the modal unmounts naturally (isAcknowledged becomes true).
+      if (!user?.emailVerified) {
+        navigate('/verify-email', { replace: true });
+      }
     } catch (err) {
-      console.warn('Backend acknowledgment sync note:', err?.message || err);
-      toast.error(err.response?.data?.message || 'Failed to record policy consent. Please try again.');
+      const msg = err.response?.data?.message || 'Failed to record consent. Please try again.';
+      setInlineError(msg);
     } finally {
       setLoading(false);
     }
@@ -213,6 +226,11 @@ const PrivacyPolicyModal = () => {
 
           {/* Accept Button */}
           <div className="pt-4 mt-2 border-t border-gray-100 dark:border-gray-700">
+            {inlineError && (
+              <p className="mb-3 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl px-3 py-2 text-center">
+                {inlineError}
+              </p>
+            )}
             <button
               type="button"
               onClick={handleAccept}
@@ -229,10 +247,10 @@ const PrivacyPolicyModal = () => {
                   <span>Recording Consent...</span>
                 </>
               ) : (
-                <span>Accept Updated Terms & Continue</span>
+                <span>Accept Updated Terms &amp; Continue</span>
               )}
             </button>
-            {!allConsentsChecked && (
+            {!allConsentsChecked && !inlineError && (
               <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-2">
                 All 4 checkboxes must be accepted to continue using your account.
               </p>

@@ -116,6 +116,17 @@ api.interceptors.response.use(
             );
         }
 
+        // 403 EMAIL_VERIFICATION_REQUIRED — the user is authenticated but not yet verified.
+        // Do NOT clear session or redirect to login.
+        // Let the calling component (PrivacyPolicyModal / VerifyEmail) handle it inline.
+        if (
+            error.response &&
+            error.response.status === 403 &&
+            error.response.data?.code === 'EMAIL_VERIFICATION_REQUIRED'
+        ) {
+            return Promise.reject(error);
+        }
+
         if (error.response && error.response.status === 401) {
             const url = typeof originalRequest.url === 'string' ? originalRequest.url : '';
             const isAuthEndpoint = (
@@ -140,6 +151,7 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
 
 // Auth API
 export const authAPI = {

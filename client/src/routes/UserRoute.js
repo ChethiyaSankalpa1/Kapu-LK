@@ -23,11 +23,20 @@ const UserRoute = ({ children }) => {
         return <Navigate to="/admin" />;
     }
 
-    // Require email verification for all non-admin members
-    if (user.emailVerified === false && location.pathname !== '/verify-email') {
+    // Enforce onboarding order: Terms → Email Verification → Profile → App
+    //
+    // Step 1 (Terms): The PrivacyPolicyModal renders as a full-screen overlay and
+    // is suppressed only on /verify-email. It handles terms acceptance visually.
+    // After the user accepts, it redirects them to /verify-email automatically.
+    //
+    // Step 2 (Email): Block unverified users from all protected pages.
+    // /verify-email itself is a public route, so the guard only fires for
+    // everything else, preventing a redirect loop.
+    if (!user.emailVerified && location.pathname !== '/verify-email') {
         return <Navigate to="/verify-email" state={{ email: user.email }} replace />;
     }
 
+    // Step 3: Profile completeness check — only after email is verified.
     const isProfileComplete = Boolean(
         user?.profileImageUrl &&
         user?.age &&

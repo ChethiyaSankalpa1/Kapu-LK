@@ -30,7 +30,14 @@ const Login = () => {
     // Redirect if already logged in
     React.useEffect(() => {
         if (user) {
-            navigate((user?.role || '').toString().toLowerCase() === 'admin' ? '/admin' : '/dashboard');
+            const role = (user?.role || '').toString().toLowerCase();
+            if (role === 'admin') {
+                navigate('/admin');
+            } else if (!user.emailVerified) {
+                navigate('/verify-email', { state: { email: user.email } });
+            } else {
+                navigate('/dashboard');
+            }
         }
     }, [user, navigate]);
 

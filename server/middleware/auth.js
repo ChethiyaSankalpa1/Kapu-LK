@@ -63,13 +63,17 @@ exports.protect = async (req, res, next) => {
     const isVerificationExempt = user.role === 'admin' || !requireVerification;
 
     if (!isVerificationExempt && !user.emailVerified) {
-      // Allow only verification and auth check endpoints
+      // Allow only verification, auth-check, and mandatory onboarding endpoints.
+      // Terms acceptance and email fix must work BEFORE email is verified.
       const allowedPaths = [
         '/verify-email',
         '/resend-verification-code',
         '/change-verification-email',
+        '/fix-invalid-email',
+        '/acknowledge-privacy-policy',
         '/logout',
         '/me',
+        '/contact-admin',     // support while onboarding
       ];
       const isAllowed = allowedPaths.some((p) => req.originalUrl && req.originalUrl.includes(p));
 
