@@ -46,10 +46,18 @@ const createRefreshToken = async (user, req) => {
   const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-  const ipAddress = req.headers['x-forwarded-for']
+  // req.socket is undefined on some reverse proxies (Render, Vercel).
+  // Defensive chained access avoids a TypeError that would otherwise
+  // propagate up and kill the token-issuing step.
+  const socketAddress = req && req.socket && typeof req.socket.remoteAddress === 'string'
+    ? req.socket.remoteAddress
+    : '';
+  const ipAddress = req && req.headers && req.headers['x-forwarded-for']
     ? req.headers['x-forwarded-for'].split(',')[0].trim()
-    : req.ip || req.socket.remoteAddress || '';
-  const userAgent = req.headers['user-agent'] || '';
+    : (req && typeof req.ip === 'string' ? req.ip : socketAddress || '');
+  const userAgent = req && req.headers && typeof req.headers['user-agent'] === 'string'
+    ? req.headers['user-agent']
+    : '';
 
   await RefreshToken.create({
     user: user._id,
@@ -306,10 +314,14 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: 'Invalid user data' });
     }
 
-    const clientIp = req.headers['x-forwarded-for']
+    // Null-safe req.socket + req.headers access (Render/Vercel reverse proxies
+    // sometimes strip socket properties; without these guards we throw
+    // TypeError during any auth operation that reads IP / UA metadata).
+    const socketAddress = req.socket && typeof req.socket.remoteAddress === 'string' ? req.socket.remoteAddress : '';
+    const clientIp = req.headers && req.headers['x-forwarded-for']
       ? req.headers['x-forwarded-for'].split(',')[0].trim()
-      : req.ip || (req.socket && req.socket.remoteAddress) || '';
-    const clientUA = req.headers['user-agent'] || '';
+      : (typeof req.ip === 'string' ? req.ip : socketAddress || '');
+    const clientUA = req.headers && typeof req.headers['user-agent'] === 'string' ? req.headers['user-agent'] : '';
 
     // Create protected, versioned PrivacyConsent audit record
     try {
@@ -646,7 +658,14 @@ exports.login = async (req, res) => {
       twoFactorEnabled: user.twoFactorEnabled,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    const isProd = process.env.NODE_ENV === 'production';
+    if (!isProd) {
+      console.error('[login] stack:', error && error.stack ? error.stack : error);
+    } else {
+      console.error('[login] error:', error && error.message ? error.message : error);
+    }
+    const sanitizedMsg = isProd ? 'Server error during login. Please try again or contact support if the problem continues.' : (error.message || 'Server error');
+    res.status(500).json({ message: sanitizedMsg });
   }
 };
 
@@ -655,10 +674,18 @@ exports.login = async (req, res) => {
 // @access  Private
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Not authorized' });
+    }
+    const user = await User.findById(req.user._id).select('-password -twoFactorSecret -twoFactorRecoveryCodes');
+    if (!user) {
+      return res.status(401).json({ message: 'User no longer exists' });
+    }
     res.json(user);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    const isProd = process.env.NODE_ENV === 'production';
+    console.error('[getMe] error:', error && error.message ? error.message : error);
+    res.status(500).json({ message: isProd ? 'Failed to load your account. Please try again.' : (error.message || 'Server error') });
   }
 };
 

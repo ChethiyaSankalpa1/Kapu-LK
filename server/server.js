@@ -17,6 +17,67 @@ dotenv.config({ override: true });
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 
+// =========================================================================
+// UNIVERSAL ASYNC-ROUTE ERROR GUARD  (must run BEFORE any route is mounted)
+// -------------------------------------------------------------------------
+// Express 4 does NOT catch rejected promises returned by `async` route
+// handlers or middlewares.  Without this, ANY throw inside an async handler
+// becomes an unhandled rejection -> either process death (pre-fix) or
+// (after our process guards below) a request that HANGS FOREVER with no
+// response, which the browser reports as either ERR_CONNECTION_CLOSED or
+// a generic 500 from the reverse proxy.
+//
+// Strategy: monkey-patch the 7 routing verbs on Express.Router.VERB so
+// that every middleware / handler registered is scanned; any function whose
+// constructor name is "AsyncFunction" (i.e. declared with `async`) is
+// transparently wrapped with `.catch(next)` which funnels the error into
+// Express's normal error handling pipeline (and our own error handler
+// near the bottom of this file).
+//
+// This catches EVERY async controller and middleware retroactively, not
+// just the ones we remember to manually wrap.
+// =========================================================================
+(function installAsyncErrorGuard() {
+  const Router = require('express').Router;
+  const original = Router.prototype;
+  const verbs = ['use', 'all', 'get', 'post', 'put', 'delete', 'patch', 'options', 'head'];
+  function isAsyncFn(fn) {
+    return typeof fn === 'function' && Object.prototype.toString.call(fn) === '[object AsyncFunction]';
+  }
+  function wrapAsync(fn) {
+    const wrapped = function asyncGuardWrapper(req, res, next) {
+      const ret = fn.apply(this, arguments);
+      if (ret && typeof ret.catch === 'function') {
+        ret.catch((err) => {
+          try { next(err); } catch (_nextErr) { /* belt and suspenders */ }
+        });
+      }
+      return ret;
+    };
+    try {
+      Object.defineProperty(wrapped, 'name', { value: (fn.name || 'anon') + '__asyncGuard', configurable: true });
+    } catch (_e) { /* noop */ }
+    return wrapped;
+  }
+  verbs.forEach((method) => {
+    const originalFn = original[method];
+    if (typeof originalFn !== 'function') return;
+    original[method] = function () {
+      const args = new Array(arguments.length);
+      for (let i = 0; i < args.length; i++) {
+        let arg = arguments[i];
+        if (Array.isArray(arg)) {
+          arg = arg.map((item) => (isAsyncFn(item) ? wrapAsync(item) : item));
+        } else if (isAsyncFn(arg)) {
+          arg = wrapAsync(arg);
+        }
+        args[i] = arg;
+      }
+      return originalFn.apply(this, args);
+    };
+  });
+})();
+
 // Global process guards — MUST be installed as early as possible.
 // These prevent unhandled promise rejections or stray synchronous throws
 // (e.g. inside a fire-and-forget email send, mongoose model validation
@@ -346,16 +407,33 @@ app.use((req, res) => {
 // Error handler (sanitized in production to prevent leaking internals)
 app.use((err, req, res, next) => {
   const isProd = process.env.NODE_ENV === 'production';
-  if (!isProd) {
-    console.error(err.stack);
-  } else {
-    console.error('API Error:', err.message);
+  // If another handler already started sending a response, do not try to write again.
+  // This protects handlers that issue `res.status().json()` then throw later.
+  if (res.headersSent) {
+    console.error('[errorHandler] headers already sent, suppressing response.  Original error:', err && err.message ? err.message : err);
+    try { next(err); } catch (_n) { /* noop */ }
+    return;
   }
-  const statusCode = err.statusCode || 500;
-  res.status(statusCode).json({
-    message: isProd && statusCode === 500 ? 'Internal Server Error' : err.message || 'Server Error',
-    ...(isProd ? {} : { stack: err.stack }),
-  });
+
+  if (!isProd) {
+    console.error(err && err.stack ? err.stack : err);
+  } else {
+    console.error('API Error:', err && err.message ? err.message : err);
+  }
+  const statusCode = (err && (err.statusCode || err.status)) ? (err.statusCode || err.status) : 500;
+  const clientMessage = isProd && statusCode === 500
+    ? 'Internal Server Error'
+    : (err && err.message ? err.message : 'Server Error');
+
+  try {
+    res.status(statusCode).json({
+      message: clientMessage,
+      ...(isProd ? {} : { stack: err && err.stack ? err.stack : undefined }),
+    });
+  } catch (sendErr) {
+    console.error('[errorHandler] Failed to even write JSON response:', sendErr && sendErr.message ? sendErr.message : sendErr);
+    try { res.end(); } catch (_e) { /* nothing more we can do */ }
+  }
 });
 
 const PORT = process.env.PORT || 5000;
