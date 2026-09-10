@@ -52,9 +52,11 @@ function getTransporter() {
   }
 
   if (emailUser && emailPass) {
-    // Gmail App Password transport
+    // Gmail App Password transport with IPv4 enforcement and strict timeouts
     transporterInstance = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: {
         user: emailUser,
         pass: emailPass,
@@ -62,6 +64,10 @@ function getTransporter() {
       tls: {
         rejectUnauthorized: true,
       },
+      family: 4, // Force IPv4 to prevent hanging on cloud servers without IPv6 routing
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 12000,
     });
   } else if ((process.env.SMTP_HOST || process.env.EMAIL_HOST) && (process.env.SMTP_PORT || process.env.EMAIL_PORT)) {
     // Standard custom SMTP transport
@@ -77,6 +83,10 @@ function getTransporter() {
             pass: emailPass,
           }
         : undefined,
+      family: 4,
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 12000,
     });
   } else {
     // Mock / fallback logger transport in local environments without SMTP configured
@@ -131,13 +141,49 @@ async function dispatchEmail({ to, subject, html, text }) {
       return { success: true, messageId: `mock-${Date.now()}`, mock: true };
     }
 
-    const info = await transporter.sendMail({
-      from,
-      to,
-      subject,
-      text,
-      html,
-    });
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Primary email dispatch timed out after 10s')), 10000)
+    );
+
+    let info;
+    try {
+      info = await Promise.race([
+        transporter.sendMail({
+          from,
+          to,
+          subject,
+          text,
+          html,
+        }),
+        timeoutPromise,
+      ]);
+    } catch (primaryErr) {
+      // If primary port 465 timed out or failed, attempt fallback on port 587
+      if (emailUser.includes('gmail.com') || (process.env.EMAIL_HOST && process.env.EMAIL_HOST.includes('gmail'))) {
+        console.warn(`[EmailService] Primary transport failed (${primaryErr.message}), trying port 587 fallback...`);
+        const fallbackTransporter = nodemailer.createTransport({
+          host: 'smtp.gmail.com',
+          port: 587,
+          secure: false,
+          requireTLS: true,
+          auth: { user: emailUser, pass: emailPass },
+          family: 4,
+          connectionTimeout: 6000,
+          greetingTimeout: 6000,
+          socketTimeout: 8000,
+        });
+        const fallbackTimeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Fallback email dispatch timed out after 8s')), 8000)
+        );
+        info = await Promise.race([
+          fallbackTransporter.sendMail({ from, to, subject, text, html }),
+          fallbackTimeout,
+        ]);
+        transporterInstance = fallbackTransporter;
+      } else {
+        throw primaryErr;
+      }
+    }
 
     console.log(`[EmailService] Mail sent to ${maskEmail(to)} | MessageId: ${info.messageId || 'ok'}`);
     lastDeliveryStatus = {
@@ -268,11 +314,49 @@ async function verifyConnection() {
   try {
     const transporter = getTransporter();
     if (transporter && transporter.verify) {
-      await transporter.verify();
-      return { success: true, configured: true, message: 'SMTP connection verified successfully' };
+      const verifyPromise = transporter.verify();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Primary SMTP verify timed out after 6 seconds')), 6000)
+      );
+      await Promise.race([verifyPromise, timeoutPromise]);
+      return { success: true, configured: true, message: 'SMTP connection verified successfully on port 465' };
     }
     return { success: true, configured: false, message: 'Mock transport active' };
   } catch (err) {
+    // Try fallback on port 587 if port 465 failed
+    if (emailUser.includes('gmail.com')) {
+      try {
+        const fallbackTransporter = nodemailer.createTransport({
+          host: 'smtp.gmail.com',
+          port: 587,
+          secure: false,
+          requireTLS: true,
+          auth: { user: emailUser, pass: emailPass },
+          family: 4,
+          connectionTimeout: 5000,
+          greetingTimeout: 5000,
+          socketTimeout: 5000,
+        });
+        const fbTimeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Fallback SMTP verify timed out after 5 seconds')), 5000)
+        );
+        await Promise.race([fallbackTransporter.verify(), fbTimeout]);
+        transporterInstance = fallbackTransporter;
+        return {
+          success: true,
+          configured: true,
+          message: 'SMTP connection verified successfully on port 587 fallback',
+        };
+      } catch (fbErr) {
+        return {
+          success: false,
+          configured: true,
+          error: `Primary (465) failed: ${err.message}. Fallback (587) failed: ${fbErr.message}`,
+          code: fbErr.code || err.code || 'UNKNOWN',
+        };
+      }
+    }
+
     return {
       success: false,
       configured: true,

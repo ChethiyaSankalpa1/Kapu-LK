@@ -614,16 +614,20 @@ exports.login = async (req, res) => {
         user.emailVerificationAttempts = 0;
         user.emailVerificationCooldown = new Date(Date.now() + 60 * 1000);
 
-        const emailResult = await sendEmailVerificationCode({
+        sendEmailVerificationCode({
           to: user.email,
           name: user.name,
           code: verificationCode,
           expiresMinutes: 15,
-        });
-
-        if (emailResult && emailResult.success === false) {
-          console.warn('[Login] Failed to dispatch email verification code:', emailResult.error);
-        }
+        })
+          .then((emailResult) => {
+            if (emailResult && emailResult.success === false) {
+              console.warn('[Login] Failed to dispatch email verification code:', emailResult.error);
+            }
+          })
+          .catch((emailErr) => {
+            console.error('[Login] Exception while dispatching verification email:', emailErr && emailErr.message ? emailErr.message : emailErr);
+          });
       }
     }
 
@@ -783,21 +787,21 @@ exports.forgotPassword = async (req, res) => {
 
       await user.save();
 
-      // Dispatch branded OTP code email
-      const emailResult = await sendPasswordResetCode({
+      // Dispatch branded OTP code email non-blocking (so slow SMTP does not hang response)
+      sendPasswordResetCode({
         to: user.email,
         name: user.name,
         code: resetCode,
         expiresMinutes,
-      });
-
-      if (emailResult && emailResult.success === false) {
-        console.warn('[ForgotPassword] Failed to dispatch reset email:', emailResult.error);
-        return res.status(502).json({
-          message: `Failed to send password reset email: ${emailResult.error || 'SMTP error'}.`,
-          error: emailResult.error,
+      })
+        .then((emailResult) => {
+          if (emailResult && emailResult.success === false) {
+            console.warn('[ForgotPassword] Failed to dispatch reset email:', emailResult.error);
+          }
+        })
+        .catch((emailErr) => {
+          console.error('[ForgotPassword] Exception while dispatching reset email:', emailErr && emailErr.message ? emailErr.message : emailErr);
         });
-      }
 
       logAuditEvent({
         userId: user._id,

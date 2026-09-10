@@ -1,4 +1,8 @@
 const express = require('express');
+const dns = require('dns');
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 const dotenv = require('dotenv');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -391,9 +395,19 @@ app.get('/health/diagnostics', async (req, res) => {
     smtpHandshake = { success: false, error: err.message };
   }
 
+  const rawPass = (process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASS || process.env.SMTP_PASS || '');
+  const cleanPass = rawPass.trim().replace(/['"]+/g, '').replace(/\s+/g, '');
+  const rawUser = (process.env.EMAIL_USER || process.env.SMTP_USER || '').trim().replace(/['"]+/g, '');
+
   res.status(200).json({ 
     status: 'ok',
     database: dbConnected ? 'connected' : 'disconnected',
+    emailMeta: {
+      user: rawUser ? `${rawUser.slice(0, 3)}***@${rawUser.split('@')[1] || ''}` : 'not_set',
+      passLength: cleanPass.length,
+      hadSpaces: /\s/.test(rawPass),
+      hadQuotes: /['"]/.test(rawPass),
+    },
     smtpHandshake,
     lastDelivery: getLastDeliveryStatus ? getLastDeliveryStatus() : null,
   });
