@@ -221,10 +221,11 @@ exports.register = async (req, res) => {
     // Check if user exists by email, username or phone number
     const trimmedUsername = typeof username === 'string' && username.trim() ? username.trim() : null;
     const trimmedPhone = typeof phoneNumber === 'string' && phoneNumber.trim() ? phoneNumber.trim() : null;
+    const normalizedEmail = String(email || '').toLowerCase().trim();
 
-    const orConditions = [{ email: email.toLowerCase() }];
+    const orConditions = [{ email: normalizedEmail }];
     if (trimmedUsername) {
-      orConditions.push({ username: trimmedUsername });
+      orConditions.push({ username: { $regex: new RegExp(`^${trimmedUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`), $options: 'i' } });
     }
     if (trimmedPhone) {
       orConditions.push({ phoneNumber: trimmedPhone });
@@ -232,16 +233,34 @@ exports.register = async (req, res) => {
     const existingUser = await User.findOne({ $or: orConditions });
 
     if (existingUser) {
-      if (existingUser.email === email.toLowerCase()) {
-        return res.status(400).json({ message: 'Email is already registered' });
+      const conflicts = [];
+      const existingEmail = (existingUser.email || '').toLowerCase().trim();
+      if (existingEmail === normalizedEmail) {
+        conflicts.push('email');
       }
-      if (trimmedUsername && existingUser.username === trimmedUsername) {
-        return res.status(400).json({ message: 'Username is already taken' });
+      const existingUsername = existingUser.username ? String(existingUser.username) : '';
+      if (trimmedUsername && existingUsername && existingUsername.toLowerCase() === trimmedUsername.toLowerCase()) {
+        conflicts.push('username');
       }
-      if (trimmedPhone && existingUser.phoneNumber === trimmedPhone) {
-        return res.status(400).json({ message: 'Phone number is already registered' });
+      const existingPhone = existingUser.phoneNumber ? String(existingUser.phoneNumber).trim() : '';
+      if (trimmedPhone && existingPhone === trimmedPhone) {
+        conflicts.push('phone number');
       }
-      return res.status(400).json({ message: 'User already exists' });
+
+      if (conflicts.length > 0) {
+        const conflictStr = conflicts.length === 1
+          ? conflicts[0]
+          : conflicts.slice(0, -1).join(', ') + ' and ' + conflicts[conflicts.length - 1];
+        const capitalized = conflictStr.charAt(0).toUpperCase() + conflictStr.slice(1);
+        return res.status(400).json({
+          message: `${capitalized} ${conflicts.length === 1 ? 'is' : 'are'} already registered. Please try logging in or use different credentials.`,
+        });
+      }
+
+      // Catch-all: very rare (match on case variant of any field that got normalized)
+      return res.status(400).json({
+        message: 'An account with these credentials already exists. Please try logging in or use different credentials.',
+      });
     }
 
     // Create user object with sanitized optional fields
@@ -348,19 +367,22 @@ exports.register = async (req, res) => {
         message: 'Add a profile picture to improve your profile visibility and receive better match suggestions.',
       });
 
-      // Dispatch branded email verification code asynchronously
-      const emailResult = await sendEmailVerificationCode({
+      // Dispatch branded email verification code non-blocking (fire-and-forget with error logging)
+      // Not awaited so slow SMTP cannot hang the registration response or cause user retries/duplicates
+      sendEmailVerificationCode({
         to: user.email,
         name: user.name,
         code: verificationCode,
         expiresMinutes: 15,
-      });
-
-      if (emailResult && emailResult.success === false) {
-        console.warn('[Register] Failed to send verification code email:', emailResult.error);
-        // Still allow registration but warn about email issues
-        console.warn('[Register] User registered but email verification may not work');
-      }
+      })
+        .then((emailResult) => {
+          if (emailResult && emailResult.success === false) {
+            console.warn('[Register] Failed to send verification code email:', emailResult.error);
+          }
+        })
+        .catch((emailErr) => {
+          console.error('[Register] Exception while dispatching verification email:', emailErr && emailErr.message ? emailErr.message : emailErr);
+        });
 
       const accessToken = generateAccessToken(user);
       const refreshToken = await createRefreshToken(user, req);
@@ -395,7 +417,22 @@ exports.register = async (req, res) => {
       res.status(400).json({ message: 'Invalid user data' });
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    // Handle MongoDB E11000 duplicate-key errors (TOCTOU race / leftover indexes)
+    if (error && error.code === 11000 && error.keyPattern) {
+      const keyFields = Object.keys(error.keyPattern || {});
+      let message = 'An account with these credentials already exists. Please try logging in.';
+      if (keyFields.includes('email')) {
+        message = 'Email is already registered';
+      } else if (keyFields.includes('username')) {
+        message = 'Username is already taken';
+      } else if (keyFields.includes('phoneNumber') || keyFields.includes('phone')) {
+        message = 'Phone number is already registered';
+      }
+      console.warn('[register] E11000 duplicate key after pre-check for:', keyFields, error.keyValue || '');
+      return res.status(400).json({ message });
+    }
+    console.error('[register] Unhandled error:', error && error.message || error);
+    res.status(500).json({ message: 'Server error during registration. Please try again or contact support if the problem continues.' });
   }
 };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { authAPI } from '../../services/api';
@@ -38,6 +38,7 @@ const Register = () => {
     const [showPrivacySummary, setShowPrivacySummary] = useState(false);
     const [policyModalOpen, setPolicyModalOpen] = useState(false);
     const [policyModalTab, setPolicyModalTab] = useState('privacy');
+    const submitInFlightRef = useRef(false);
 
     // Check for referral code in URL
     useEffect(() => {
@@ -127,6 +128,10 @@ const Register = () => {
     const onSubmit = async (e) => {
         e.preventDefault();
 
+        if (submitInFlightRef.current) {
+            return;
+        }
+
         if (!isAgeValid) {
             toast.error(t('auth.ageRequired', { defaultValue: 'You must be at least 18 years of age to register on Kapu-LK.' }));
             return;
@@ -144,6 +149,7 @@ const Register = () => {
             return;
         }
 
+        submitInFlightRef.current = true;
         setLoading(true);
 
         try {
@@ -168,6 +174,9 @@ const Register = () => {
             toast.error(msg);
         } finally {
             setLoading(false);
+            setTimeout(() => {
+                submitInFlightRef.current = false;
+            }, 1000);
         }
     };
 

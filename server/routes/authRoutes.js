@@ -40,7 +40,7 @@ router.post(
     body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
     body('username').optional({ values: 'falsy' }).trim().isLength({ min: 3 }).withMessage('Username must be at least 3 characters'),
-    body('phoneNumber').optional({ values: 'falsy' }).matches(/^[0-9]+$/).withMessage('Phone number must contain only numbers'),
+    body('phoneNumber').optional({ values: 'falsy' }).trim().if((value, { req }) => value).matches(/^[0-9]+$/).withMessage('Phone number must contain only numbers'),
     body('age').optional({ values: 'falsy' }).isInt({ min: 18, max: 100 }).withMessage('Age must be between 18 and 100'),
     body('gender').optional({ values: 'falsy' }).isIn(['male', 'female', 'other']).withMessage('Gender must be male, female, or other'),
     body('language').optional({ values: 'falsy' }).isIn(['en', 'si', 'ta']).withMessage('Language must be en, si, or ta'),

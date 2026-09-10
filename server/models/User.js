@@ -58,7 +58,7 @@ const userSchema = new mongoose.Schema({
   },
   phoneNumber: {
     type: String,
-    default: '',
+    default: null,
     validate: {
       validator: (value) => !value || /^[0-9]+$/.test(value),
       message: 'Phone number must contain only numbers',
