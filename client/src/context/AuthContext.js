@@ -112,7 +112,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await authAPI.logout();
+    } catch (_e) {
+      // swallow network/server errors so logout never hangs the UI
+    }
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);

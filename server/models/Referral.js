@@ -14,7 +14,7 @@ const ReferralSchema = new mongoose.Schema({
   referralCode: {
     type: String,
     required: true,
-    unique: true
+    index: true,
   },
   status: {
     type: String,
@@ -67,6 +67,8 @@ const ReferralCodeSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+ReferralSchema.index({ referrer: 1, referred: 1 }, { unique: true });
 
 const Referral = mongoose.model('Referral', ReferralSchema);
 const ReferralCode = mongoose.model('ReferralCode', ReferralCodeSchema);

@@ -43,13 +43,13 @@ const processQueue = (error, token = null) => {
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
-        const originalRequest = error.config;
+        const originalRequest = error && error.config ? error.config : {};
 
         if (
             error.response &&
             error.response.status === 401 &&
             !originalRequest._retry &&
-            originalRequest.url &&
+            typeof originalRequest.url === 'string' &&
             !originalRequest.url.includes('/auth/login') &&
             !originalRequest.url.includes('/auth/register') &&
             !originalRequest.url.includes('/auth/refresh') &&
@@ -100,28 +100,34 @@ api.interceptors.response.use(
             }
         }
 
-        if (error.response && error.response.status === 503 && error.response.data?.maintenance) {
+        if (
+            error.response &&
+            error.response.status === 503 &&
+            error.response.data &&
+            error.response.data.maintenance
+        ) {
             window.dispatchEvent(
                 new CustomEvent('kapu_maintenance_event', { detail: error.response.data })
             );
         }
 
         if (error.response && error.response.status === 401) {
-            // Don't redirect on auth endpoints that should work without tokens
-            const isAuthEndpoint = originalRequest.url && (
-                originalRequest.url.includes('/auth/login') ||
-                originalRequest.url.includes('/auth/register') ||
-                originalRequest.url.includes('/auth/verify-email') ||
-                originalRequest.url.includes('/auth/resend-verification-code') ||
-                originalRequest.url.includes('/auth/change-verification-email') ||
-                originalRequest.url.includes('/auth/verify-reset-code') ||
-                originalRequest.url.includes('/auth/forgot-password')
+            const url = typeof originalRequest.url === 'string' ? originalRequest.url : '';
+            const isAuthEndpoint = (
+                url.includes('/auth/login') ||
+                url.includes('/auth/register') ||
+                url.includes('/auth/verify-email') ||
+                url.includes('/auth/resend-verification-code') ||
+                url.includes('/auth/change-verification-email') ||
+                url.includes('/auth/verify-reset-code') ||
+                url.includes('/auth/forgot-password')
             );
-            
+
             if (!isAuthEndpoint) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                if (window.location.pathname !== '/login' && window.location.pathname !== '/register' && window.location.pathname !== '/verify-email') {
+                const path = typeof window !== 'undefined' && window.location ? window.location.pathname : '';
+                if (path !== '/login' && path !== '/register' && path !== '/verify-email') {
                     window.location.href = '/login';
                 }
             }

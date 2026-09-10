@@ -4,7 +4,15 @@ const rateLimit = require('express-rate-limit');
 const getClientIp = (req) => {
   return req.headers['x-forwarded-for']
     ? req.headers['x-forwarded-for'].split(',')[0].trim()
-    : req.ip || req.socket?.remoteAddress || 'unknown';
+    : req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
+};
+
+// Build a rate-limit key combining IP and optional normalized email (no trailing separators)
+const keyWithOptionalEmail = (req) => {
+  const ip = getClientIp(req);
+  const rawEmail = req && req.body && typeof req.body.email === 'string' ? req.body.email : '';
+  const normalizedEmail = rawEmail.toLowerCase().trim();
+  return normalizedEmail ? `${ip}_${normalizedEmail}` : ip;
 };
 
 // Login limiter: 10 attempts per 15 mins per IP/account
@@ -14,7 +22,7 @@ const loginLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,
-  keyGenerator: (req) => `${getClientIp(req)}_${req.body && req.body.email ? req.body.email.toLowerCase().trim() : ''}`,
+  keyGenerator: keyWithOptionalEmail,
   message: {
     success: false,
     message: 'Too many login attempts from this IP/account. Please try again after 15 minutes.',
@@ -98,7 +106,7 @@ const forgotPasswordLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,
-  keyGenerator: (req) => `${getClientIp(req)}_${req.body && req.body.email ? req.body.email.toLowerCase().trim() : ''}`,
+  keyGenerator: keyWithOptionalEmail,
   message: {
     success: false,
     message: 'Too many password reset requests. Please wait a few minutes before trying again.',
@@ -112,7 +120,7 @@ const verifyResetCodeLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,
-  keyGenerator: (req) => `${getClientIp(req)}_${req.body && req.body.email ? req.body.email.toLowerCase().trim() : ''}`,
+  keyGenerator: keyWithOptionalEmail,
   message: {
     success: false,
     message: 'Too many verification attempts. Please wait 15 minutes before trying again.',
@@ -126,7 +134,7 @@ const verifyEmailLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,
-  keyGenerator: (req) => `${getClientIp(req)}_${req.body && req.body.email ? req.body.email.toLowerCase().trim() : ''}`,
+  keyGenerator: keyWithOptionalEmail,
   message: {
     success: false,
     message: 'Too many email verification attempts. Please wait 15 minutes.',
@@ -140,7 +148,7 @@ const resendVerificationLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,
-  keyGenerator: (req) => `${getClientIp(req)}_${req.body && req.body.email ? req.body.email.toLowerCase().trim() : ''}`,
+  keyGenerator: keyWithOptionalEmail,
   message: {
     success: false,
     message: 'Too many verification codes requested. Please wait before requesting another code.',

@@ -246,8 +246,8 @@ exports.register = async (req, res) => {
 
     // Create user object with sanitized optional fields
     const userPayload = {
-      name: name.trim(),
-      email: email.toLowerCase(),
+      name: String(name || '').trim(),
+      email: String(email || '').toLowerCase(),
       password,
       gender: gender || 'male',
       interests: interests || '',
@@ -753,10 +753,16 @@ exports.verifyResetCode = async (req, res) => {
 
     // Timing-safe comparison of SHA-256 hashes
     const candidateHash = crypto.createHash('sha256').update(cleanCode).digest('hex');
-    const isMatch = crypto.timingSafeEqual(
-      Buffer.from(candidateHash, 'hex'),
-      Buffer.from(user.passwordResetCode, 'hex')
-    );
+    const candidateBuf = Buffer.from(candidateHash, 'hex');
+    const storedBuf = Buffer.from(user.passwordResetCode || '', 'hex');
+    let isMatch = false;
+    try {
+      if (candidateBuf.length === storedBuf.length && candidateBuf.length > 0) {
+        isMatch = crypto.timingSafeEqual(candidateBuf, storedBuf);
+      }
+    } catch (_e) {
+      isMatch = false;
+    }
 
     if (!isMatch) {
       user.passwordResetCodeAttempts = (user.passwordResetCodeAttempts || 0) + 1;
@@ -862,10 +868,16 @@ exports.verifyEmail = async (req, res) => {
 
     // Timing-safe comparison of SHA-256 hash
     const candidateHash = crypto.createHash('sha256').update(cleanCode).digest('hex');
-    const isMatch = crypto.timingSafeEqual(
-      Buffer.from(candidateHash, 'hex'),
-      Buffer.from(user.emailVerificationCode, 'hex')
-    );
+    const candidateBuf = Buffer.from(candidateHash, 'hex');
+    const storedBuf = Buffer.from(user.emailVerificationCode || '', 'hex');
+    let isMatch = false;
+    try {
+      if (candidateBuf.length === storedBuf.length && candidateBuf.length > 0) {
+        isMatch = crypto.timingSafeEqual(candidateBuf, storedBuf);
+      }
+    } catch (_e) {
+      isMatch = false;
+    }
 
     if (!isMatch) {
       user.emailVerificationAttempts = (user.emailVerificationAttempts || 0) + 1;
@@ -1314,7 +1326,7 @@ exports.resetPassword = async (req, res) => {
 
     const user = await User.findOne({
       passwordResetToken: hashedResetToken,
-      passwordResetExpires: mongoose.trusted({ $gt: new Date() }),
+      passwordResetExpires: { $gt: new Date() },
     }).select('+passwordResetToken +passwordResetExpires');
 
     if (!user) {

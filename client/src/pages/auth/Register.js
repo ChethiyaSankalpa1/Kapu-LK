@@ -209,7 +209,8 @@ const Register = () => {
                     {/* Username */}
                     <div>
                         <label htmlFor="reg-username-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {t('auth.username', { defaultValue: 'Username' })} <span className="text-red-500">*</span>
+                            {t('auth.username', { defaultValue: 'Username' })}
+                            <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">({t('auth.optional', { defaultValue: 'optional' })})</span>
                         </label>
                         <input
                             id="reg-username-input"
@@ -218,7 +219,6 @@ const Register = () => {
                             autoComplete="username"
                             value={username}
                             onChange={onChange}
-                            required
                             className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
                             placeholder={t('auth.usernamePlaceholder', { defaultValue: 'Choose a unique username' })}
                         />

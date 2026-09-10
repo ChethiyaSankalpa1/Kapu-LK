@@ -264,10 +264,6 @@ const userSchema = new mongoose.Schema({
     default: 0,
     select: false,
   },
-  welcomeEmailSentAt: {
-    type: Date,
-    default: null,
-  },
   lastMessageSentAt: {
     type: Date,
   },
@@ -285,6 +281,10 @@ const userSchema = new mongoose.Schema({
   tokenVersion: {
     type: Number,
     default: 0,
+  },
+  welcomeEmailSentAt: {
+    type: Date,
+    default: null,
   },
   twoFactorEnabled: {
     type: Boolean,
@@ -331,38 +331,6 @@ const userSchema = new mongoose.Schema({
   emailVerificationCooldown: {
     type: Date,
     select: false,
-  },
-  // Password Reset Fields (SHA-256 hashed OTP & single-use tokens)
-  passwordResetCode: {
-    type: String,
-    select: false,
-  },
-  passwordResetCodeExpires: {
-    type: Date,
-    select: false,
-  },
-  passwordResetCodeAttempts: {
-    type: Number,
-    default: 0,
-    select: false,
-  },
-  passwordResetToken: {
-    type: String,
-    select: false,
-  },
-  passwordResetExpires: {
-    type: Date,
-    select: false,
-  },
-  // Welcome Email Sent Tracking (atomic deduplication)
-  welcomeEmailSentAt: {
-    type: Date,
-    default: null,
-  },
-  // Token version for session invalidation on password reset
-  tokenVersion: {
-    type: Number,
-    default: 0,
   },
   // Inactivity & Account Lifecycle
   lastActiveAt: {

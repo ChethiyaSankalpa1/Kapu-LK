@@ -10,7 +10,7 @@ const VerifyEmail = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, updateUser, logout } = useAuth();
+    const { user, updateUser, logout, login } = useAuth();
 
     // Support email from route state, user context, or localStorage
     const initialEmail = location.state?.email || user?.email || user?.pendingEmail || localStorage.getItem('unverified_email') || '';
@@ -146,7 +146,10 @@ const VerifyEmail = () => {
             const res = await authAPI.verifyEmail({ code: fullCode, email });
             toast.success(res.data.message || 'Email verified successfully!');
 
-            if (user) {
+            // Backend returns a brand-new JWT with emailVerified=true
+            if (res.data && res.data.token) {
+                await login(res.data.user || res.data, res.data.token);
+            } else if (user) {
                 updateUser({ ...user, emailVerified: true, isEmailVerified: true });
             }
             localStorage.removeItem('unverified_email');
