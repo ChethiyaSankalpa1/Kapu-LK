@@ -650,15 +650,21 @@ exports.forgotPassword = async (req, res) => {
 
       await user.save();
 
-      // Dispatch branded OTP code email asynchronously
-      sendPasswordResetCode({
+      // Dispatch branded OTP code email
+      const emailResult = await sendPasswordResetCode({
         to: user.email,
         name: user.name,
         code: resetCode,
         expiresMinutes,
-      }).catch((err) =>
-        console.warn('[ForgotPassword] Failed to send reset code email:', err.message)
-      );
+      });
+
+      if (emailResult && emailResult.success === false) {
+        console.warn('[ForgotPassword] Failed to dispatch reset email:', emailResult.error);
+        return res.status(502).json({
+          message: `Failed to send password reset email: ${emailResult.error || 'SMTP error'}.`,
+          error: emailResult.error,
+        });
+      }
 
       logAuditEvent({
         userId: user._id,
