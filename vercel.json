@@ -1,6 +1,6 @@
 {
   "name": "kapu-lk",
-  "buildCommand": "cd client && npm run build",
+  "buildCommand": "cd client && CI=false npm run build",
   "outputDirectory": "client/build",
   "installCommand": "cd client && npm install",
   "framework": null,

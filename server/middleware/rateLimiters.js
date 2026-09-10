@@ -126,7 +126,7 @@ const verifyEmailLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,
-  keyGenerator: (req) => (req.user ? String(req.user._id) : getClientIp(req)),
+  keyGenerator: (req) => `${getClientIp(req)}_${req.body && req.body.email ? req.body.email.toLowerCase().trim() : ''}`,
   message: {
     success: false,
     message: 'Too many email verification attempts. Please wait 15 minutes.',
@@ -140,7 +140,7 @@ const resendVerificationLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,
-  keyGenerator: (req) => (req.user ? String(req.user._id) : getClientIp(req)),
+  keyGenerator: (req) => `${getClientIp(req)}_${req.body && req.body.email ? req.body.email.toLowerCase().trim() : ''}`,
   message: {
     success: false,
     message: 'Too many verification codes requested. Please wait before requesting another code.',

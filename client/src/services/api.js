@@ -57,7 +57,12 @@ api.interceptors.response.use(
             originalRequest.url &&
             !originalRequest.url.includes('/auth/login') &&
             !originalRequest.url.includes('/auth/register') &&
-            !originalRequest.url.includes('/auth/refresh')
+            !originalRequest.url.includes('/auth/refresh') &&
+            !originalRequest.url.includes('/auth/verify-email') &&
+            !originalRequest.url.includes('/auth/resend-verification-code') &&
+            !originalRequest.url.includes('/auth/change-verification-email') &&
+            !originalRequest.url.includes('/auth/verify-reset-code') &&
+            !originalRequest.url.includes('/auth/forgot-password')
         ) {
             if (isRefreshing) {
                 return new Promise((resolve, reject) => {
@@ -107,10 +112,23 @@ api.interceptors.response.use(
         }
 
         if (error.response && error.response.status === 401) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
-                window.location.href = '/login';
+            // Don't redirect on auth endpoints that should work without tokens
+            const isAuthEndpoint = originalRequest.url && (
+                originalRequest.url.includes('/auth/login') ||
+                originalRequest.url.includes('/auth/register') ||
+                originalRequest.url.includes('/auth/verify-email') ||
+                originalRequest.url.includes('/auth/resend-verification-code') ||
+                originalRequest.url.includes('/auth/change-verification-email') ||
+                originalRequest.url.includes('/auth/verify-reset-code') ||
+                originalRequest.url.includes('/auth/forgot-password')
+            );
+            
+            if (!isAuthEndpoint) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                if (window.location.pathname !== '/login' && window.location.pathname !== '/register' && window.location.pathname !== '/verify-email') {
+                    window.location.href = '/login';
+                }
             }
         }
         return Promise.reject(error);
