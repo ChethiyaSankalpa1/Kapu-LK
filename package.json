@@ -16,10 +16,14 @@
     "install:all": "npm install && npm install --workspace=client && npm install --workspace=server"
   },
   "devDependencies": {
+    "@babel/types": "^7.24.0",
     "concurrently": "^8.2.0"
   },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "i18next": "^26.4.2"
   }
 }

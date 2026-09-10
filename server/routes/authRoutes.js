@@ -54,7 +54,7 @@ router.post(
   '/login',
   loginLimiter,
   [
-    body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
+    body('email').trim().notEmpty().withMessage('Email or username is required'),
     body('password').notEmpty().withMessage('Password is required'),
     body('twoFactorCode').optional().trim(),
   ],
@@ -72,7 +72,7 @@ router.post(
   verifyEmailLimiter,
   [
     body('code').trim().matches(/^\d{6}$/).withMessage('Verification code must be exactly 6 digits'),
-    body('email').optional().isEmail().withMessage('Valid email is required').normalizeEmail(),
+    body('email').optional().trim(),
   ],
   validate,
   verifyEmail
@@ -83,7 +83,7 @@ router.post(
   optionalProtect,
   resendVerificationLimiter,
   [
-    body('email').optional().isEmail().withMessage('Valid email is required').normalizeEmail(),
+    body('email').optional().trim(),
   ],
   validate,
   resendVerificationCode
@@ -95,7 +95,7 @@ router.post(
   changeVerificationEmailLimiter,
   [
     body('newEmail').isEmail().withMessage('Valid new email is required').normalizeEmail(),
-    body('oldEmail').optional().isEmail().withMessage('Valid current email is required').normalizeEmail(),
+    body('oldEmail').optional().trim(),
   ],
   validate,
   changeVerificationEmail
@@ -107,7 +107,7 @@ router.post(
   resendVerificationLimiter,
   [
     body('newEmail').isEmail().withMessage('Valid new email is required').normalizeEmail(),
-    body('password').notEmpty().withMessage('Password confirmation is required'),
+    body('password').optional(),
   ],
   validate,
   fixInvalidEmail
@@ -117,7 +117,7 @@ router.post(
 router.post(
   '/forgot-password',
   forgotPasswordLimiter,
-  [body('email').isEmail().withMessage('Valid email is required').normalizeEmail()],
+  [body('email').trim().notEmpty().withMessage('Valid email is required')],
   validate,
   forgotPassword
 );
@@ -126,7 +126,7 @@ router.post(
   '/verify-reset-code',
   verifyResetCodeLimiter,
   [
-    body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
+    body('email').trim().notEmpty().withMessage('Valid email is required'),
     body('code').trim().matches(/^\d{6}$/).withMessage('Verification code must be exactly 6 digits'),
   ],
   validate,

@@ -1,4 +1,3 @@
-const nodemailer = require('nodemailer');
 const https = require('https');
 const {
   SUPPORT_EMAIL,
@@ -9,107 +8,6 @@ const {
   getAccountDeactivatedTemplate,
 } = require('./emailTemplates');
 
-/**
- * Send email via Resend REST API (HTTPS port 443 - Render Free Tier compatible)
- */
-function sendViaResend({ apiKey, from, to, subject, html, text }) {
-  return new Promise((resolve, reject) => {
-    const fromAddress = process.env.EMAIL_FROM_ADDRESS || 'onboarding@resend.dev';
-    const fromName = process.env.EMAIL_FROM_NAME || 'Kapu-LK Support Team';
-    const payload = JSON.stringify({
-      from: `"${fromName}" <${fromAddress}>`,
-      to: Array.isArray(to) ? to : [to],
-      subject,
-      html,
-      text,
-    });
-
-    const req = https.request({
-      hostname: 'api.resend.com',
-      port: 443,
-      path: '/emails',
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey.trim()}`,
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload),
-      },
-      timeout: 10000,
-    }, (res) => {
-      let body = '';
-      res.on('data', chunk => body += chunk);
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(body || '{}');
-          if (res.statusCode >= 200 && res.statusCode < 300) {
-            resolve({ success: true, messageId: parsed.id || 'resend-ok' });
-          } else {
-            reject(new Error(parsed.message || `Resend HTTP ${res.statusCode}: ${body}`));
-          }
-        } catch {
-          reject(new Error(`Resend HTTP ${res.statusCode}: ${body}`));
-        }
-      });
-    });
-
-    req.on('error', reject);
-    req.on('timeout', () => { req.destroy(); reject(new Error('Resend HTTP API timed out after 10s')); });
-    req.write(payload);
-    req.end();
-  });
-}
-
-/**
- * Send email via Brevo REST API (HTTPS port 443 - Render Free Tier compatible)
- */
-function sendViaBrevo({ apiKey, from, to, subject, html, text }) {
-  return new Promise((resolve, reject) => {
-    const fromAddress = process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || 'kapulk.support@gmail.com';
-    const fromName = process.env.EMAIL_FROM_NAME || 'Kapu-LK Support Team';
-    const payload = JSON.stringify({
-      sender: { name: fromName, email: fromAddress },
-      to: [{ email: to }],
-      subject,
-      htmlContent: html,
-      textContent: text,
-    });
-
-    const req = https.request({
-      hostname: 'api.brevo.com',
-      port: 443,
-      path: '/v3/smtp/email',
-      method: 'POST',
-      headers: {
-        'api-key': apiKey.trim(),
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload),
-      },
-      timeout: 10000,
-    }, (res) => {
-      let body = '';
-      res.on('data', chunk => body += chunk);
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(body || '{}');
-          if (res.statusCode >= 200 && res.statusCode < 300) {
-            resolve({ success: true, messageId: parsed.messageId || 'brevo-ok' });
-          } else {
-            reject(new Error(parsed.message || `Brevo HTTP ${res.statusCode}: ${body}`));
-          }
-        } catch {
-          reject(new Error(`Brevo HTTP ${res.statusCode}: ${body}`));
-        }
-      });
-    });
-
-    req.on('error', reject);
-    req.on('timeout', () => { req.destroy(); reject(new Error('Brevo HTTP API timed out after 10s')); });
-    req.write(payload);
-    req.end();
-  });
-}
-
-let transporterInstance = null;
 let lastDeliveryStatus = {
   timestamp: null,
   recipient: null,
@@ -117,14 +15,6 @@ let lastDeliveryStatus = {
   error: null,
   messageId: null,
 };
-
-function getCredentials() {
-  const rawUser = process.env.EMAIL_USER || process.env.SMTP_USER || '';
-  const emailUser = rawUser.trim().replace(/['"]+/g, '');
-  const rawPass = process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASS || process.env.SMTP_PASS || '';
-  const emailPass = rawPass.trim().replace(/['"]+/g, '').replace(/\s+/g, '');
-  return { emailUser, emailPass };
-}
 
 /**
  * Mask an email address for safe logging without exposing PII:
@@ -143,74 +33,12 @@ function maskEmail(email) {
 }
 
 /**
- * Build or retrieve the nodemailer transporter singleton
+ * Get sender name and address from environment variables
  */
-function getTransporter() {
-  const { emailUser, emailPass } = getCredentials();
-
-  if (transporterInstance) {
-    return transporterInstance;
-  }
-
-  if (emailUser && emailPass) {
-    // Gmail App Password transport with IPv4 enforcement and strict timeouts
-    transporterInstance = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: {
-        user: emailUser,
-        pass: emailPass,
-      },
-      tls: {
-        rejectUnauthorized: true,
-      },
-      family: 4, // Force IPv4 to prevent hanging on cloud servers without IPv6 routing
-      connectionTimeout: 8000,
-      greetingTimeout: 8000,
-      socketTimeout: 12000,
-    });
-  } else if ((process.env.SMTP_HOST || process.env.EMAIL_HOST) && (process.env.SMTP_PORT || process.env.EMAIL_PORT)) {
-    // Standard custom SMTP transport
-    const host = process.env.SMTP_HOST || process.env.EMAIL_HOST;
-    const port = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT);
-    transporterInstance = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465 || String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true',
-      auth: emailUser
-        ? {
-            user: emailUser,
-            pass: emailPass,
-          }
-        : undefined,
-      family: 4,
-      connectionTimeout: 8000,
-      greetingTimeout: 8000,
-      socketTimeout: 12000,
-    });
-  } else {
-    // Mock / fallback logger transport in local environments without SMTP configured
-    console.warn('[EmailService] SMTP credentials not set. Emails will be logged safely in development mode.');
-    transporterInstance = {
-      sendMail: async (mailOptions) => {
-        console.log(`[EmailService Mock] Outgoing mail to ${maskEmail(mailOptions.to)} | Subject: "${mailOptions.subject}"`);
-        return { messageId: `mock-${Date.now()}` };
-      },
-      verify: async () => true,
-    };
-  }
-
-  return transporterInstance;
-}
-
-/**
- * Resolve the standard "From" header
- */
-function getFromHeader() {
-  const fromName = process.env.EMAIL_FROM_NAME || 'Kapu-LK Support Team';
-  const fromAddress = process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || SUPPORT_EMAIL;
-  return `"${fromName}" <${fromAddress}>`;
+function getSender() {
+  const name = process.env.EMAIL_FROM_NAME || 'Kapu-LK Support Team';
+  const email = process.env.EMAIL_FROM || process.env.EMAIL_FROM_ADDRESS || 'kapulk.support@gmail.com';
+  return { name, email };
 }
 
 /**
@@ -221,158 +49,159 @@ function getClientUrl() {
 }
 
 /**
- * Base internal send method with safe error handling and logging
+ * Single reusable sendEmail service via Brevo Transactional Email REST API over HTTPS
+ * POST https://api.brevo.com/v3/smtp/email
+ * 
+ * Render Free plan blocks outbound SMTP (ports 25, 465, 587).
+ * This service uses pure HTTPS (port 443) which works 100% on Render Free.
  */
-async function dispatchEmail({ to, subject, html, text }) {
-  try {
+function sendEmail({ to, name, subject, html, text }) {
+  return new Promise((resolve) => {
     if (!to) {
-      console.warn('[EmailService] Skipped dispatch: no recipient specified');
-      return { success: false, error: 'Recipient address required' };
+      console.warn('[EmailService] Skipped sendEmail: No recipient specified');
+      return resolve({ success: false, error: 'Recipient address required' });
     }
 
-    // 1. Prioritize Resend REST API if configured (Render Free Tier compatible via HTTPS port 443)
-    if (process.env.RESEND_API_KEY) {
-      try {
-        console.log(`[EmailService] Dispatching email to ${maskEmail(to)} via Resend HTTPS API...`);
-        const resendRes = await sendViaResend({
-          apiKey: process.env.RESEND_API_KEY,
-          from: getFromHeader(),
-          to,
-          subject,
-          html,
-          text,
-        });
-        console.log(`[EmailService] Resend email sent successfully | MessageId: ${resendRes.messageId}`);
-        lastDeliveryStatus = {
-          timestamp: new Date().toISOString(),
-          recipient: maskEmail(to),
-          success: true,
-          error: null,
-          messageId: resendRes.messageId,
-        };
-        return resendRes;
-      } catch (resendErr) {
-        console.error(`[EmailService] Resend API delivery failed: ${resendErr.message}`);
-        // If Resend failed, continue to fallback
-      }
+    const apiKey = (process.env.BREVO_API_KEY || '').trim();
+
+    // In development mode without Brevo API key, simulate dispatch safely without exposing secrets
+    if (!apiKey) {
+      console.log(`[EmailService Mock] Brevo API key not configured. Mocking email to ${maskEmail(to)} | Subject: "${subject}"`);
+      const mockResult = { success: true, messageId: `mock-${Date.now()}`, mock: true };
+      lastDeliveryStatus = {
+        timestamp: new Date().toISOString(),
+        recipient: maskEmail(to),
+        success: true,
+        error: null,
+        messageId: mockResult.messageId,
+      };
+      return resolve(mockResult);
     }
 
-    // 2. Prioritize Brevo REST API if configured (Render Free Tier compatible via HTTPS port 443)
-    if (process.env.BREVO_API_KEY) {
-      try {
-        console.log(`[EmailService] Dispatching email to ${maskEmail(to)} via Brevo HTTPS API...`);
-        const brevoRes = await sendViaBrevo({
-          apiKey: process.env.BREVO_API_KEY,
-          from: getFromHeader(),
-          to,
-          subject,
-          html,
-          text,
-        });
-        console.log(`[EmailService] Brevo email sent successfully | MessageId: ${brevoRes.messageId}`);
-        lastDeliveryStatus = {
-          timestamp: new Date().toISOString(),
-          recipient: maskEmail(to),
-          success: true,
-          error: null,
-          messageId: brevoRes.messageId,
-        };
-        return brevoRes;
-      } catch (brevoErr) {
-        console.error(`[EmailService] Brevo API delivery failed: ${brevoErr.message}`);
-      }
-    }
+    const sender = getSender();
+    const recipientList = Array.isArray(to)
+      ? to.map((r) => (typeof r === 'string' ? { email: r } : r))
+      : [{ email: to, name: name || to }];
 
-    const transporter = getTransporter();
-    const from = getFromHeader();
+    const payload = JSON.stringify({
+      sender,
+      to: recipientList,
+      subject,
+      htmlContent: html,
+      textContent: text || '',
+      headers: {
+        'X-Priority': '3',
+        'X-Mailer': 'Kapu-LK Mailer',
+        'X-Auto-Response-Suppress': 'All',
+        'List-Unsubscribe': `<mailto:${SUPPORT_EMAIL}?subject=unsubscribe>`,
+      },
+    });
 
-    // Check if using mock transport (no SMTP credentials)
-    const { emailUser, emailPass } = getCredentials();
-    if (!emailUser || !emailPass) {
-      console.log(`[EmailService Mock] Outgoing mail to ${maskEmail(to)} | Subject: "${subject}"`);
-      console.log(`[EmailService Mock] SMTP credentials not configured. EMAIL_USER and EMAIL_APP_PASSWORD/EMAIL_PASS must be set in environment variables`);
-      console.log(`[EmailService Mock] Email not actually sent - this is development mode only`);
-      return { success: true, messageId: `mock-${Date.now()}`, mock: true };
-    }
-
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Primary email dispatch timed out after 10s')), 10000)
-    );
-
-    let info;
-    try {
-      info = await Promise.race([
-        transporter.sendMail({
-          from,
-          to,
-          subject,
-          text,
-          html,
-        }),
-        timeoutPromise,
-      ]);
-    } catch (primaryErr) {
-      // If primary port 465 timed out or failed, attempt fallback on port 587
-      if (emailUser.includes('gmail.com') || (process.env.EMAIL_HOST && process.env.EMAIL_HOST.includes('gmail'))) {
-        console.warn(`[EmailService] Primary transport failed (${primaryErr.message}), trying port 587 fallback...`);
-        const fallbackTransporter = nodemailer.createTransport({
-          host: 'smtp.gmail.com',
-          port: 587,
-          secure: false,
-          requireTLS: true,
-          auth: { user: emailUser, pass: emailPass },
-          family: 4,
-          connectionTimeout: 6000,
-          greetingTimeout: 6000,
-          socketTimeout: 8000,
-        });
-        const fallbackTimeout = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Fallback email dispatch timed out after 8s')), 8000)
-        );
-        info = await Promise.race([
-          fallbackTransporter.sendMail({ from, to, subject, text, html }),
-          fallbackTimeout,
-        ]);
-        transporterInstance = fallbackTransporter;
-      } else {
-        throw primaryErr;
-      }
-    }
-
-    console.log(`[EmailService] Mail sent to ${maskEmail(to)} | MessageId: ${info.messageId || 'ok'}`);
-    lastDeliveryStatus = {
-      timestamp: new Date().toISOString(),
-      recipient: maskEmail(to),
-      success: true,
-      error: null,
-      messageId: info.messageId || 'ok',
+    const options = {
+      hostname: 'api.brevo.com',
+      port: 443,
+      path: '/v3/smtp/email',
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'content-type': 'application/json',
+        'api-key': apiKey,
+        'Content-Length': Buffer.byteLength(payload),
+      },
+      timeout: 15000,
     };
-    return { success: true, messageId: info.messageId };
-  } catch (err) {
-    // Log failure safely without printing passwords, tokens, or raw credentials
-    console.error(`[EmailService] Delivery failed to ${maskEmail(to)}:`, err.message);
-    console.error(`[EmailService] Error code: ${err.code || 'UNKNOWN'}`);
-    console.error(`[EmailService] Check your SMTP credentials in environment variables`);
-    
-    lastDeliveryStatus = {
-      timestamp: new Date().toISOString(),
-      recipient: maskEmail(to),
-      success: false,
-      error: err.message,
-      errorCode: err.code || 'UNKNOWN',
-      messageId: null,
-    };
-    return { success: false, error: err.message, errorCode: err.code || 'UNKNOWN' };
-  }
+
+    const req = https.request(options, (res) => {
+      let body = '';
+      res.on('data', (chunk) => {
+        body += chunk;
+      });
+      res.on('end', () => {
+        const statusCode = res.statusCode;
+        try {
+          const parsed = JSON.parse(body || '{}');
+          if (statusCode >= 200 && statusCode < 300) {
+            const messageId = parsed.messageId || 'brevo-success';
+            console.log(`[EmailService] Brevo HTTP ${statusCode} | Email sent to ${maskEmail(to)} | MessageId: ${messageId}`);
+            lastDeliveryStatus = {
+              timestamp: new Date().toISOString(),
+              recipient: maskEmail(to),
+              success: true,
+              error: null,
+              messageId,
+            };
+            return resolve({ success: true, messageId });
+          } else {
+            const safeError = parsed.message || `Brevo HTTP error ${statusCode}`;
+            console.error(`[EmailService] Brevo HTTP ${statusCode} delivery failed to ${maskEmail(to)}: ${safeError}`);
+            lastDeliveryStatus = {
+              timestamp: new Date().toISOString(),
+              recipient: maskEmail(to),
+              success: false,
+              error: safeError,
+              errorCode: statusCode,
+              messageId: null,
+            };
+            return resolve({ success: false, error: safeError, statusCode });
+          }
+        } catch (parseErr) {
+          const safeError = `Brevo returned HTTP ${statusCode} with unexpected format`;
+          console.error(`[EmailService] ${safeError} to ${maskEmail(to)}`);
+          lastDeliveryStatus = {
+            timestamp: new Date().toISOString(),
+            recipient: maskEmail(to),
+            success: false,
+            error: safeError,
+            errorCode: statusCode,
+            messageId: null,
+          };
+          return resolve({ success: false, error: safeError, statusCode });
+        }
+      });
+    });
+
+    req.on('error', (err) => {
+      const safeError = `Network connection to Brevo API failed: ${err.message}`;
+      console.error(`[EmailService] ${safeError}`);
+      lastDeliveryStatus = {
+        timestamp: new Date().toISOString(),
+        recipient: maskEmail(to),
+        success: false,
+        error: safeError,
+        errorCode: err.code || 'NETWORK_ERROR',
+        messageId: null,
+      };
+      return resolve({ success: false, error: safeError });
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      const timeoutError = 'Brevo HTTPS API request timed out after 15s';
+      console.error(`[EmailService] ${timeoutError}`);
+      lastDeliveryStatus = {
+        timestamp: new Date().toISOString(),
+        recipient: maskEmail(to),
+        success: false,
+        error: timeoutError,
+        errorCode: 'TIMEOUT',
+        messageId: null,
+      };
+      return resolve({ success: false, error: timeoutError });
+    });
+
+    req.write(payload);
+    req.end();
+  });
 }
 
 /**
- * 1. Send 6-Digit Email Verification Code (New registration or existing unverified login)
+ * 1. Send 6-Digit Email Verification Code (New user, previous user, or resend)
  */
-async function sendEmailVerificationCode({ to, name, code, expiresMinutes = 15 }) {
+async function sendEmailVerificationCode({ to, name, code, expiresMinutes = 10 }) {
   const template = getEmailVerificationTemplate({ name, code, expiresMinutes });
-  return await dispatchEmail({
+  return await sendEmail({
     to,
+    name,
     subject: template.subject,
     html: template.html,
     text: template.text,
@@ -385,8 +214,9 @@ async function sendEmailVerificationCode({ to, name, code, expiresMinutes = 15 }
 async function sendWelcomeEmail({ to, name, loginUrl }) {
   const targetUrl = loginUrl || `${getClientUrl()}/login`;
   const template = getWelcomeEmailTemplate({ name, loginUrl: targetUrl });
-  return await dispatchEmail({
+  return await sendEmail({
     to,
+    name,
     subject: template.subject,
     html: template.html,
     text: template.text,
@@ -398,8 +228,9 @@ async function sendWelcomeEmail({ to, name, loginUrl }) {
  */
 async function sendPasswordResetCode({ to, name, code, expiresMinutes = 10 }) {
   const template = getPasswordResetCodeTemplate({ name, code, expiresMinutes });
-  return await dispatchEmail({
+  return await sendEmail({
     to,
+    name,
     subject: template.subject,
     html: template.html,
     text: template.text,
@@ -412,8 +243,9 @@ async function sendPasswordResetCode({ to, name, code, expiresMinutes = 10 }) {
 async function sendInactivityReminderEmail({ to, name, daysRemaining = 4, loginUrl }) {
   const targetUrl = loginUrl || `${getClientUrl()}/login`;
   const template = getInactivityReminderTemplate({ name, daysRemaining, loginUrl: targetUrl });
-  return await dispatchEmail({
+  return await sendEmail({
     to,
+    name,
     subject: template.subject,
     html: template.html,
     text: template.text,
@@ -426,8 +258,9 @@ async function sendInactivityReminderEmail({ to, name, daysRemaining = 4, loginU
 async function sendAccountDeactivatedEmail({ to, name, reactivationUrl }) {
   const targetUrl = reactivationUrl || `${getClientUrl()}/login`;
   const template = getAccountDeactivatedTemplate({ name, reactivationUrl: targetUrl });
-  return await dispatchEmail({
+  return await sendEmail({
     to,
+    name,
     subject: template.subject,
     html: template.html,
     text: template.text,
@@ -435,22 +268,23 @@ async function sendAccountDeactivatedEmail({ to, name, reactivationUrl }) {
 }
 
 /**
- * Backward compatibility: send password reset email by URL (if any old call remains)
+ * Backward compatibility: send password reset email by URL
  */
 async function sendPasswordResetEmail({ to, resetUrl, name }) {
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #222;">
       <h2>Reset your Kapu LK password</h2>
       <p>Hello ${name || 'Member'},</p>
-      <p>Click the link below to reset your password. The link expires in 15 minutes.</p>
+      <p>Click the link below to reset your password. The link expires in 10 minutes.</p>
       <p><a href="${resetUrl}">${resetUrl}</a></p>
       <p>If you did not request this, you can ignore this email.</p>
       <p>Support: <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></p>
     </div>
   `;
-  const text = `Hello ${name || 'Member'},\n\nUse this link to reset your password:\n${resetUrl}\n\nExpires in 15 minutes.\nIf you did not request this, ignore this email.\nSupport: ${SUPPORT_EMAIL}`;
-  return await dispatchEmail({
+  const text = `Hello ${name || 'Member'},\n\nUse this link to reset your password:\n${resetUrl}\n\nExpires in 10 minutes.\nIf you did not request this, ignore this email.\nSupport: ${SUPPORT_EMAIL}`;
+  return await sendEmail({
     to,
+    name,
     subject: 'Reset your Kapu LK password',
     html,
     text,
@@ -458,92 +292,91 @@ async function sendPasswordResetEmail({ to, resetUrl, name }) {
 }
 
 /**
- * Verify transporter SMTP connectivity
+ * Verify Brevo HTTPS API connectivity over HTTPS port 443
  */
 async function verifyConnection() {
-  if (process.env.RESEND_API_KEY) {
-    return {
-      success: true,
-      configured: true,
-      provider: 'resend',
-      message: 'Resend HTTPS REST API configured (Render Free Tier 100% compatible via port 443)',
-    };
-  }
-
-  if (process.env.BREVO_API_KEY) {
-    return {
-      success: true,
-      configured: true,
-      provider: 'brevo',
-      message: 'Brevo HTTPS REST API configured (Render Free Tier 100% compatible via port 443)',
-    };
-  }
-
-  const { emailUser, emailPass } = getCredentials();
-  if (!emailUser || !emailPass) {
-    return { success: false, configured: false, error: 'Credentials not configured' };
-  }
-  try {
-    const transporter = getTransporter();
-    if (transporter && transporter.verify) {
-      const verifyPromise = transporter.verify();
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Primary SMTP verify timed out after 6 seconds')), 6000)
-      );
-      await Promise.race([verifyPromise, timeoutPromise]);
-      return { success: true, configured: true, message: 'SMTP connection verified successfully on port 465' };
-    }
-    return { success: true, configured: false, message: 'Mock transport active' };
-  } catch (err) {
-    // Try fallback on port 587 if port 465 failed
-    if (emailUser.includes('gmail.com')) {
-      try {
-        const fallbackTransporter = nodemailer.createTransport({
-          host: 'smtp.gmail.com',
-          port: 587,
-          secure: false,
-          requireTLS: true,
-          auth: { user: emailUser, pass: emailPass },
-          family: 4,
-          connectionTimeout: 5000,
-          greetingTimeout: 5000,
-          socketTimeout: 5000,
-        });
-        const fbTimeout = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Fallback SMTP verify timed out after 5 seconds')), 5000)
-        );
-        await Promise.race([fallbackTransporter.verify(), fbTimeout]);
-        transporterInstance = fallbackTransporter;
-        return {
-          success: true,
-          configured: true,
-          message: 'SMTP connection verified successfully on port 587 fallback',
-        };
-      } catch (fbErr) {
-        return {
-          success: false,
-          configured: true,
-          error: `Primary (465) failed: ${err.message}. Fallback (587) failed: ${fbErr.message}`,
-          code: fbErr.code || err.code || 'UNKNOWN',
-        };
-      }
-    }
-
+  const apiKey = (process.env.BREVO_API_KEY || '').trim();
+  if (!apiKey) {
     return {
       success: false,
-      configured: true,
-      error: err.message,
-      code: err.code || 'UNKNOWN',
-      response: err.response || null,
+      configured: false,
+      provider: 'brevo',
+      error: 'BREVO_API_KEY environment variable not configured',
     };
   }
+
+  return new Promise((resolve) => {
+    const req = https.request(
+      {
+        hostname: 'api.brevo.com',
+        port: 443,
+        path: '/v3/account',
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+          'api-key': apiKey,
+        },
+        timeout: 10000,
+      },
+      (res) => {
+        let body = '';
+        res.on('data', (chunk) => {
+          body += chunk;
+        });
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve({
+              success: true,
+              configured: true,
+              provider: 'brevo',
+              message: 'Brevo HTTPS REST API verified successfully on port 443 (Render Free compatible)',
+            });
+          } else {
+            resolve({
+              success: false,
+              configured: true,
+              provider: 'brevo',
+              statusCode: res.statusCode,
+              error: `Brevo API returned status ${res.statusCode}`,
+            });
+          }
+        });
+      }
+    );
+
+    req.on('error', (err) => {
+      resolve({
+        success: false,
+        configured: true,
+        provider: 'brevo',
+        error: `Brevo connection check error: ${err.message}`,
+      });
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      resolve({
+        success: false,
+        configured: true,
+        provider: 'brevo',
+        error: 'Brevo connection check timed out after 10s',
+      });
+    });
+
+    req.end();
+  });
 }
 
 function getLastDeliveryStatus() {
   return lastDeliveryStatus;
 }
 
+function getCredentials() {
+  return { emailUser: '', emailPass: '' };
+}
+
 module.exports = {
+  sendEmail,
   maskEmail,
   sendEmailVerificationCode,
   sendWelcomeEmail,

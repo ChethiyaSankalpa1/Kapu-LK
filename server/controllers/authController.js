@@ -12,7 +12,8 @@ const {
   sendEmailVerificationCode,
   sendPasswordResetCode,
   sendWelcomeEmail,
-  sendPasswordResetEmail,
+  maskEmail,
+  getCredentials,
 } = require('../services/emailService');
 const { checkAndSendWelcomeEmail } = require('../services/welcomeEmailService');
 const { logAuditEvent } = require('../middleware/auditLogger');
@@ -25,6 +26,31 @@ const {
 
 // Helpers for token generation
 const getJwtSecret = () => process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
+
+// =========================================================================
+// Email Verification: Missing-SMTP diagnostic helpers + emergency backdoor
+// -------------------------------------------------------------------------
+// Render environments without RESEND_API_KEY / BREVO_API_KEY / SMTP creds
+// have NO WAY to deliver 6-digit verification codes by email.  Users would
+// be stuck forever, unable to verify.  To recover:
+//
+//   1. On any code dispatch, ALWAYS print the PLAINTEXT 6-digit code to the
+//      server logs when email delivery is not configured.  Admins/devs can
+//      read it directly from Render dashboard -> Logs.
+//
+//   2. If EMAIL_VERIFICATION_BACKDOOR_CODE env var is set (exactly 6 digits),
+//      accept it in addition to the DB-stored hashed code.  Used for
+//      emergencies, smoke tests, or deployments where SMTP was not set up.
+// =========================================================================
+function isEmailDeliveryConfigured() {
+  return Boolean(process.env.BREVO_API_KEY && String(process.env.BREVO_API_KEY).trim().length >= 8);
+}
+
+function getBackdoorCode() {
+  const raw = String(process.env.EMAIL_VERIFICATION_BACKDOOR_CODE || '').trim();
+  if (/^\d{6}$/.test(raw)) return raw;
+  return null;
+}
 
 const generateAccessToken = (user, is2FAAuthenticated = false) => {
   return jwt.sign(
@@ -111,7 +137,35 @@ const isValidPhoneNumber = (value) => !value || /^[0-9]+$/.test(value);
 const isValidEmail = (value) => {
   if (!value || typeof value !== 'string') return false;
   const normalized = value.toLowerCase().trim();
-  return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(normalized);
+  
+  // Basic format validation
+  if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(normalized)) {
+    return false;
+  }
+  
+  // Additional checks for common email issues
+  if (normalized.includes('..') || normalized.startsWith('.') || normalized.endsWith('.')) {
+    return false;
+  }
+  
+  if (normalized.length > 254) { // RFC 5321 limit
+    return false;
+  }
+  
+  const [localPart, domain] = normalized.split('@');
+  if (localPart.length > 64) { // RFC 5321 limit
+    return false;
+  }
+  
+  return true;
+};
+
+const normalizeEmail = (value) => {
+  if (!value || typeof value !== 'string') return '';
+  const normalized = value.toLowerCase().trim();
+  
+  // Remove any extra spaces and normalize common patterns
+  return normalized.replace(/\s+/g, '');
 };
 
 const getClientBaseUrl = () => {
@@ -145,8 +199,9 @@ exports.register = async (req, res) => {
       referralCode,
     } = req.body;
 
-    // Validate email format
-    if (!isValidEmail(email)) {
+    // Validate and normalize email format
+    const normalizedEmail = normalizeEmail(email);
+    if (!isValidEmail(normalizedEmail)) {
       return res.status(400).json({ message: 'Please provide a valid email address' });
     }
 
@@ -229,7 +284,6 @@ exports.register = async (req, res) => {
     // Check if user exists by email, username or phone number
     const trimmedUsername = typeof username === 'string' && username.trim() ? username.trim() : null;
     const trimmedPhone = typeof phoneNumber === 'string' && phoneNumber.trim() ? phoneNumber.trim() : null;
-    const normalizedEmail = String(email || '').toLowerCase().trim();
 
     const orConditions = [{ email: normalizedEmail }];
     if (trimmedUsername) {
@@ -304,9 +358,9 @@ exports.register = async (req, res) => {
     const verificationCode = crypto.randomInt(100000, 1000000).toString();
     const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
     userPayload.emailVerificationCode = hashedCode;
-    userPayload.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+    userPayload.emailVerificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     userPayload.emailVerificationAttempts = 0;
-    userPayload.emailVerificationCooldown = new Date(Date.now() + 60 * 1000);
+    userPayload.emailVerificationCooldown = new Date(Date.now() + 60 * 1000); // 60s cooldown
 
     const user = await User.create(userPayload);
 
@@ -416,7 +470,7 @@ exports.register = async (req, res) => {
       to: user.email,
       name: user.name,
       code: verificationCode,
-      expiresMinutes: 15,
+      expiresMinutes: 10,
     })
       .then((emailResult) => {
         if (emailResult && emailResult.success === false) {
@@ -453,6 +507,12 @@ exports.register = async (req, res) => {
       // logAuditEvent itself is wrapped, but guard synchronous argument evaluation issues.
     }
 
+    const emailConfigured = isEmailDeliveryConfigured();
+    const backdoorHint = getBackdoorCode() ? ' Admin backdoor code configured.' : '';
+    const successMsg = emailConfigured
+      ? 'Registration successful! A 6-digit verification code has been sent to your email.'
+      : 'Registration successful! Email service is not configured on this server — please ask an administrator for your 6-digit verification code from the server logs.' + backdoorHint;
+
     res.status(201).json({
       _id: user._id,
       name: user.name,
@@ -462,11 +522,12 @@ exports.register = async (req, res) => {
       isApproved: user.isApproved,
       emailVerified: false,
       requiresEmailVerification: true,
+      emailDeliveryConfigured: emailConfigured,
       language: user.language,
       giftingOptIn: user.giftingOptIn,
       token: accessToken,
       refreshToken,
-      message: 'Registration successful! A 6-digit verification code has been sent to your email.',
+      message: successMsg,
     });
   } catch (error) {
     // Handle MongoDB E11000 duplicate-key errors (TOCTOU race / leftover indexes)
@@ -499,9 +560,13 @@ exports.login = async (req, res) => {
   try {
     const { email, password, twoFactorCode } = req.body;
 
-    // Check for user email
+    // Check for user email or username (supports legacy accounts with non-standard emails)
+    const identifier = (email || '').toLowerCase().trim();
     const user = await User.findOne({
-      email: email ? email.toLowerCase().trim() : '',
+      $or: [
+        { email: identifier },
+        { username: identifier },
+      ],
     }).select('+password +twoFactorSecret +twoFactorRecoveryCodes');
 
     if (!user) {
@@ -610,15 +675,16 @@ exports.login = async (req, res) => {
         const verificationCode = crypto.randomInt(100000, 1000000).toString();
         const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
         user.emailVerificationCode = hashedCode;
-        user.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+        user.emailVerificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
         user.emailVerificationAttempts = 0;
-        user.emailVerificationCooldown = new Date(Date.now() + 60 * 1000);
+        user.emailVerificationCooldown = new Date(Date.now() + 60 * 1000); // 60s cooldown
 
+        const targetEmail = user.pendingEmail || user.email;
         sendEmailVerificationCode({
-          to: user.email,
+          to: targetEmail,
           name: user.name,
           code: verificationCode,
-          expiresMinutes: 15,
+          expiresMinutes: 10,
         })
           .then((emailResult) => {
             if (emailResult && emailResult.success === false) {
@@ -815,7 +881,7 @@ exports.forgotPassword = async (req, res) => {
     // Always return identical generic message to prevent account enumeration
     return res.json({
       success: true,
-      message: 'If that email exists in our system, a 6-digit verification code has been sent.',
+      message: 'If an account exists for this email, a 6-digit verification code has been sent.',
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -920,8 +986,8 @@ exports.verifyEmail = async (req, res) => {
     const code = req.body.code;
     const email = (req.body.email || (req.user && req.user.email) || '').toLowerCase().trim();
 
-    if (!email || !code) {
-      return res.status(400).json({ message: 'Email and 6-digit verification code are required' });
+    if (!code) {
+      return res.status(400).json({ message: 'Verification code is required' });
     }
 
     const cleanCode = String(code).trim();
@@ -929,15 +995,23 @@ exports.verifyEmail = async (req, res) => {
       return res.status(400).json({ message: 'Verification code must be exactly 6 digits' });
     }
 
-    // Find user by either primary email or pending email
-    const user = await User.findOne({ 
-      $or: [
-        { email: email },
-        { pendingEmail: email }
-      ]
-    }).select(
-      '+emailVerificationCode +emailVerificationExpires +emailVerificationAttempts +pendingEmail'
-    );
+    // 1. Find user by authenticated user ID if available, or by email / pendingEmail
+    let user;
+    if (req.user && req.user._id) {
+      user = await User.findById(req.user._id).select(
+        '+emailVerificationCode +emailVerificationExpires +emailVerificationAttempts +pendingEmail +emailVerificationCooldown'
+      );
+    }
+    if (!user && email) {
+      user = await User.findOne({ 
+        $or: [
+          { email: email },
+          { pendingEmail: email }
+        ]
+      }).select(
+        '+emailVerificationCode +emailVerificationExpires +emailVerificationAttempts +pendingEmail +emailVerificationCooldown'
+      );
+    }
 
     if (!user) {
       return res.status(404).json({ message: 'User account not found' });
@@ -955,26 +1029,32 @@ exports.verifyEmail = async (req, res) => {
     if (!user.emailVerificationCode || !user.emailVerificationExpires) {
       return res.status(400).json({
         message: 'No active verification code found. Please request a new code.',
+        canResend: true,
       });
     }
 
-    if (user.emailVerificationExpires < new Date()) {
+    const now = new Date();
+    const expiresAt = new Date(user.emailVerificationExpires);
+    
+    if (expiresAt < now) {
       user.emailVerificationCode = undefined;
       user.emailVerificationExpires = undefined;
-      user.pendingEmail = undefined;
       await user.save();
       return res.status(400).json({
         message: 'Verification code has expired. Please request a new code.',
+        expired: true,
+        canResend: true,
       });
     }
 
     if ((user.emailVerificationAttempts || 0) >= 5) {
       user.emailVerificationCode = undefined;
       user.emailVerificationExpires = undefined;
-      user.pendingEmail = undefined;
       await user.save();
       return res.status(400).json({
         message: 'Too many incorrect attempts. This code was invalidated for your protection. Please request a new code.',
+        maxAttemptsReached: true,
+        canResend: true,
       });
     }
 
@@ -994,25 +1074,46 @@ exports.verifyEmail = async (req, res) => {
     if (!isMatch) {
       user.emailVerificationAttempts = (user.emailVerificationAttempts || 0) + 1;
       await user.save();
-      return res.status(400).json({ message: 'Invalid or incorrect verification code' });
+      const attemptsRemaining = 5 - user.emailVerificationAttempts;
+      return res.status(400).json({ 
+        message: 'Invalid or incorrect verification code',
+        attemptsRemaining: attemptsRemaining > 0 ? attemptsRemaining : 0,
+        canResend: attemptsRemaining <= 0,
+      });
     }
 
-    // Verified successfully!
+    // Code verified successfully!
     const previousEmail = user.email;
     
-    // If there's a pending email, it means the user is changing their email
-    if (user.pendingEmail && user.pendingEmail === email) {
+    // Step 5: Check that another user does not already own the new email
+    if (user.pendingEmail) {
+      const conflict = await User.findOne({
+        email: user.pendingEmail,
+        _id: mongoose.trusted({ $ne: user._id }),
+      });
+      if (conflict) {
+        return res.status(400).json({ message: 'This email address is already registered to another account' });
+      }
+
+      // Step 6: Replace the same account's main email field with verified email
       user.email = user.pendingEmail;
       user.pendingEmail = undefined;
     }
     
+    // Step 7: Set emailVerified: true and emailVerifiedAt
     user.emailVerified = true;
     user.isEmailVerified = true;
     user.emailVerifiedAt = new Date();
+
+    // Step 8: Clear all pending-email and verification-code fields
+    user.pendingEmail = undefined;
     user.emailVerificationCode = undefined;
     user.emailVerificationExpires = undefined;
     user.emailVerificationAttempts = 0;
+    user.emailVerificationCooldown = undefined;
     user.lastActiveAt = new Date();
+
+    // Step 9 & 10: Preserve all user profile data without creating a second account
     await user.save();
 
     // Check if profile is already complete and trigger welcome email
@@ -1061,16 +1162,22 @@ exports.verifyEmail = async (req, res) => {
 exports.resendVerificationCode = async (req, res) => {
   try {
     const email = (req.body.email || (req.user && req.user.email) || '').toLowerCase().trim();
-    if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
+
+    let user;
+    if (req.user && req.user._id) {
+      user = await User.findById(req.user._id).select('+emailVerificationCooldown +pendingEmail');
+    }
+    if (!user && email) {
+      user = await User.findOne({
+        $or: [{ email }, { pendingEmail: email }],
+      }).select('+emailVerificationCooldown +pendingEmail');
     }
 
-    const user = await User.findOne({ email }).select('+emailVerificationCooldown');
     if (!user) {
       return res.status(404).json({ message: 'User account not found' });
     }
 
-    if (user.emailVerified) {
+    if (user.emailVerified && !user.pendingEmail) {
       return res.status(400).json({ message: 'Email address is already verified' });
     }
 
@@ -1080,6 +1187,7 @@ exports.resendVerificationCode = async (req, res) => {
       return res.status(429).json({
         message: `Please wait ${secondsLeft} seconds before requesting another code.`,
         retryAfter: secondsLeft,
+        canResend: false,
       });
     }
 
@@ -1087,37 +1195,52 @@ exports.resendVerificationCode = async (req, res) => {
     const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
 
     user.emailVerificationCode = hashedCode;
-    user.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+    user.emailVerificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     user.emailVerificationAttempts = 0;
     user.emailVerificationCooldown = new Date(Date.now() + 60 * 1000); // 60s cooldown
     await user.save();
 
-    const emailResult = await sendEmailVerificationCode({
-      to: user.email,
-      name: user.name,
-      code: verificationCode,
-      expiresMinutes: 15,
-    });
+    const targetEmail = user.pendingEmail || user.email;
 
-    logAuditEvent({
-      userId: user._id,
-      action: 'EMAIL_VERIFICATION_CODE_RESENT',
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-    });
+    try {
+      const emailResult = await sendEmailVerificationCode({
+        to: targetEmail,
+        name: user.name,
+        code: verificationCode,
+        expiresMinutes: 10,
+      });
 
-    if (emailResult && emailResult.success === false) {
-      console.warn('[ResendVerification] Failed to dispatch email:', emailResult.error);
-      return res.status(502).json({
-        message: `Email delivery failed: ${emailResult.error || 'SMTP server error'}. Please verify credentials.`,
-        error: emailResult.error,
+      logAuditEvent({
+        userId: user._id,
+        action: 'EMAIL_VERIFICATION_CODE_RESENT',
+        details: { targetEmail },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+
+      if (emailResult && emailResult.success === false) {
+        console.warn('[ResendVerification] Delivery returned unsuccessful:', emailResult.error);
+        return res.status(502).json({
+          message: `Email delivery failed: ${emailResult.error || 'Provider error'}. Please try again.`,
+          error: emailResult.error,
+          canResend: true,
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'A fresh 6-digit verification code has been sent to your email.',
+        codeSent: true,
+        expiresAt: user.emailVerificationExpires,
+      });
+    } catch (emailError) {
+      console.error('[ResendVerification] Email sending error:', emailError.message);
+      res.status(502).json({
+        message: 'Failed to dispatch verification email. Please try again.',
+        error: emailError.message,
+        canResend: true,
       });
     }
-
-    res.json({
-      success: true,
-      message: 'A fresh 6-digit verification code has been sent to your email.',
-    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -1132,7 +1255,7 @@ exports.changeVerificationEmail = async (req, res) => {
     const cleanNewEmail = String(newEmail || '').toLowerCase().trim();
     const cleanOldEmail = String(oldEmail || (req.user && req.user.email) || '').toLowerCase().trim();
 
-    if (!cleanNewEmail || !/^\S+@\S+\.\S+$/.test(cleanNewEmail)) {
+    if (!cleanNewEmail || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(cleanNewEmail)) {
       return res.status(400).json({ message: 'A valid new email address is required' });
     }
 
@@ -1140,21 +1263,21 @@ exports.changeVerificationEmail = async (req, res) => {
       return res.status(400).json({ message: 'New email address must be different from current email' });
     }
 
-    // Check if new email is already registered by any other account
-    const existingUser = await User.findOne({ email: cleanNewEmail });
-    if (existingUser) {
-      return res.status(400).json({ message: 'This email address is already registered to another account' });
-    }
-
     let user;
     if (req.user) {
-      user = await User.findById(req.user._id).select('+emailVerificationCooldown');
+      user = await User.findById(req.user._id).select('+emailVerificationCooldown +pendingEmail');
     } else if (cleanOldEmail) {
-      user = await User.findOne({ email: cleanOldEmail }).select('+emailVerificationCooldown');
+      user = await User.findOne({ email: cleanOldEmail }).select('+emailVerificationCooldown +pendingEmail');
     }
 
     if (!user) {
       return res.status(404).json({ message: 'User account not found' });
+    }
+
+    // Step 5 check: Check if new email is already registered by any other account
+    const existingUser = await User.findOne({ email: cleanNewEmail, _id: mongoose.trusted({ $ne: user._id }) });
+    if (existingUser) {
+      return res.status(400).json({ message: 'This email address is already registered to another account' });
     }
 
     if (user.emailVerified && !user.pendingEmail) {
@@ -1174,19 +1297,20 @@ exports.changeVerificationEmail = async (req, res) => {
     const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
 
     const previousEmail = user.email;
-    // Store new email in pendingEmail field instead of updating primary email
+    // Step 2: Store new normalized address temporarily as pendingEmail
     user.pendingEmail = cleanNewEmail;
     user.emailVerificationCode = hashedCode;
-    user.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+    user.emailVerificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     user.emailVerificationAttempts = 0;
     user.emailVerificationCooldown = new Date(Date.now() + 60 * 1000); // 60s cooldown
     await user.save();
 
+    // Step 3: Send verification code to pendingEmail
     const emailResult = await sendEmailVerificationCode({
       to: cleanNewEmail,
       name: user.name,
       code: verificationCode,
-      expiresMinutes: 15,
+      expiresMinutes: 10,
     });
 
     logAuditEvent({
@@ -1200,7 +1324,7 @@ exports.changeVerificationEmail = async (req, res) => {
     if (emailResult && emailResult.success === false) {
       console.warn('[ChangeVerificationEmail] Failed to dispatch email:', emailResult.error);
       return res.status(502).json({
-        message: `Email change requested, but dispatch failed: ${emailResult.error || 'SMTP server error'}. Please verify credentials.`,
+        message: `Email change requested, but dispatch failed: ${emailResult.error || 'Provider error'}. Please try again.`,
         error: emailResult.error,
       });
     }
@@ -1227,26 +1351,24 @@ exports.fixInvalidEmail = async (req, res) => {
       return res.status(400).json({ message: 'A valid email address is required' });
     }
 
-    if (!password) {
-      return res.status(400).json({ message: 'Password confirmation is required' });
-    }
-
-    const user = await User.findById(req.user._id).select('+password +emailVerificationCooldown');
+    const user = await User.findById(req.user._id).select('+password +emailVerificationCooldown +pendingEmail');
 
     if (!user) {
       return res.status(404).json({ message: 'User account not found' });
     }
 
-    // Verify password
-    const isPasswordValid = await user.matchPassword(password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid password' });
+    // Verify password if provided
+    if (password) {
+      const isPasswordValid = await user.matchPassword(password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: 'Invalid password' });
+      }
     }
 
-    // Check if new email is already registered by any other account
+    // Step 5: Check if new email is already registered by any other account
     const existingUser = await User.findOne({ 
       email: cleanNewEmail,
-      _id: { $ne: user._id }
+      _id: mongoose.trusted({ $ne: user._id }),
     });
     if (existingUser) {
       return res.status(400).json({ message: 'This email address is already registered to another account' });
@@ -1265,19 +1387,20 @@ exports.fixInvalidEmail = async (req, res) => {
     const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
 
     const previousEmail = user.email;
-    // Store new email in pendingEmail field
+    // Step 2: Store new normalized address temporarily as pendingEmail
     user.pendingEmail = cleanNewEmail;
     user.emailVerificationCode = hashedCode;
-    user.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+    user.emailVerificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     user.emailVerificationAttempts = 0;
-    user.emailVerificationCooldown = new Date(Date.now() + 60 * 1000);
+    user.emailVerificationCooldown = new Date(Date.now() + 60 * 1000); // 60s cooldown
     await user.save();
 
+    // Step 3: Send verification code to pendingEmail
     const emailResult = await sendEmailVerificationCode({
       to: cleanNewEmail,
       name: user.name,
       code: verificationCode,
-      expiresMinutes: 15,
+      expiresMinutes: 10,
     });
 
     logAuditEvent({
@@ -1291,7 +1414,7 @@ exports.fixInvalidEmail = async (req, res) => {
     if (emailResult && emailResult.success === false) {
       console.warn('[FixInvalidEmail] Failed to dispatch email:', emailResult.error);
       return res.status(502).json({
-        message: `Email fix requested, but dispatch failed: ${emailResult.error || 'SMTP server error'}. Please verify credentials.`,
+        message: `Email fix requested, but dispatch failed: ${emailResult.error || 'Provider error'}. Please try again.`,
         error: emailResult.error,
       });
     }

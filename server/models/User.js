@@ -26,7 +26,13 @@ const userSchema = new mongoose.Schema({
     trim: true,
     validate: {
       validator: function(v) {
-        return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v);
+        if (!v) return false;
+        // If email is verified, it MUST strictly be a valid email format
+        if (this && this.emailVerified) {
+          return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v);
+        }
+        // If unverified, allow existing legacy email formats (e.g. chethiya//56//)
+        return typeof v === 'string' && v.trim().length > 0;
       },
       message: 'Please add a valid email',
     },
@@ -36,6 +42,13 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true,
     sparse: true,
+    validate: {
+      validator: function(v) {
+        if (!v) return true;
+        return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v);
+      },
+      message: 'Please add a valid pending email',
+    },
   },
   emailVerifiedAt: {
     type: Date,

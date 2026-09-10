@@ -103,14 +103,14 @@ const Login = () => {
                         <label htmlFor="login-email-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.email')}</label>
                         <input
                             id="login-email-input"
-                            type="email"
+                            type="text"
                             name="email"
-                            autoComplete="email"
+                            autoComplete="username email"
                             value={email}
                             onChange={onChange}
                             required
                             className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
-                            placeholder={t('auth.emailPlaceholder', { defaultValue: 'Enter your email' })}
+                            placeholder={t('auth.emailPlaceholder', { defaultValue: 'Enter your email or username' })}
                         />
                     </div>
 

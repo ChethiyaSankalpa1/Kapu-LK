@@ -370,45 +370,34 @@ app.get('/', (req, res) => {
 
 // Fast health check for Render container monitoring (must respond immediately)
 app.get('/health', (req, res) => {
-  const hasCreds = Boolean(
-    (process.env.EMAIL_USER || process.env.SMTP_USER) &&
-    (process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASS || process.env.SMTP_PASS)
-  );
+  const brevoConfigured = Boolean(process.env.BREVO_API_KEY && String(process.env.BREVO_API_KEY).trim().length >= 8);
 
   res.status(200).json({ 
     status: 'ok',
     database: dbConnected ? 'connected' : 'disconnected',
-    emailConfigured: hasCreds,
-    emailSender: process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || 'not_set',
-    emailUser: process.env.EMAIL_USER ? 'configured' : 'not_set',
-    emailPassword: process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASS || process.env.SMTP_PASS ? 'configured' : 'not_set',
+    provider: 'brevo',
+    emailConfigured: brevoConfigured,
+    emailSender: process.env.EMAIL_FROM || process.env.EMAIL_FROM_ADDRESS || 'kapulk.support@gmail.com',
   });
 });
 
-// Deep email & SMTP diagnostics (on demand)
+// Deep email & HTTPS diagnostics (on demand)
 app.get('/health/diagnostics', async (req, res) => {
   const { verifyConnection, getLastDeliveryStatus } = require('./services/emailService');
-  let smtpHandshake = null;
+  let connectionStatus = null;
   try {
-    smtpHandshake = await verifyConnection();
+    connectionStatus = await verifyConnection();
   } catch (err) {
-    smtpHandshake = { success: false, error: err.message };
+    connectionStatus = { success: false, error: err.message };
   }
-
-  const rawPass = (process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASS || process.env.SMTP_PASS || '');
-  const cleanPass = rawPass.trim().replace(/['"]+/g, '').replace(/\s+/g, '');
-  const rawUser = (process.env.EMAIL_USER || process.env.SMTP_USER || '').trim().replace(/['"]+/g, '');
 
   res.status(200).json({ 
     status: 'ok',
     database: dbConnected ? 'connected' : 'disconnected',
-    emailMeta: {
-      user: rawUser ? `${rawUser.slice(0, 3)}***@${rawUser.split('@')[1] || ''}` : 'not_set',
-      passLength: cleanPass.length,
-      hadSpaces: /\s/.test(rawPass),
-      hadQuotes: /['"]/.test(rawPass),
-    },
-    smtpHandshake,
+    provider: 'brevo',
+    emailConfigured: Boolean(process.env.BREVO_API_KEY),
+    emailSender: process.env.EMAIL_FROM || process.env.EMAIL_FROM_ADDRESS || 'kapulk.support@gmail.com',
+    connectionStatus,
     lastDelivery: getLastDeliveryStatus ? getLastDeliveryStatus() : null,
   });
 });

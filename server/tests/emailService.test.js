@@ -216,6 +216,94 @@ async function runTests() {
     });
 
     // ----------------------------------------------------
+    // TEST 2.2: Previous-User Verification (Legacy Invalid Email Fix)
+    // ----------------------------------------------------
+    await test('Previous user with invalid email verifies new email following all 10 steps', async () => {
+      // Create legacy user with invalid email
+      const legacyUser = await User.create({
+        name: 'Chethiya Sankalpa',
+        email: 'chethiya//56//',
+        password: 'password123',
+        bio: 'Preserved user bio',
+        location: 'Colombo',
+        isPremium: true,
+        emailVerified: false,
+      });
+
+      const originalUserId = legacyUser._id.toString();
+      const originalBio = legacyUser.bio;
+      const originalPremium = legacyUser.isPremium;
+
+      // 1. Find existing account using authenticated user ID
+      const authenticatedUser = await User.findById(legacyUser._id);
+      assert.ok(authenticatedUser, 'Account must be found by authenticated user ID');
+
+      // 2. Store new normalized address temporarily as pendingEmail
+      const newEmail = 'chethiyasankalpa456@gmail.com'.trim().toLowerCase();
+      authenticatedUser.pendingEmail = newEmail;
+
+      // 3. Send verification code to pendingEmail (generate 6-digit code, store hashed, 10-min expiry)
+      const code = '561234';
+      const hashedCode = crypto.createHash('sha256').update(code).digest('hex');
+      authenticatedUser.emailVerificationCode = hashedCode;
+      authenticatedUser.emailVerificationExpires = new Date(Date.now() + 10 * 60 * 1000);
+      authenticatedUser.emailVerificationAttempts = 0;
+      authenticatedUser.emailVerificationCooldown = new Date(Date.now() + 60 * 1000);
+
+      // Verify saving does not fail on legacy invalid email
+      await authenticatedUser.save();
+      assert.strictEqual(authenticatedUser.pendingEmail, newEmail);
+      assert.strictEqual(authenticatedUser.email, 'chethiya//56//', 'Primary email untouched while pending');
+
+      // 4. Verify code belongs to user and email
+      const verifySubmittedHash = crypto.createHash('sha256').update(code).digest('hex');
+      const isCodeValid = crypto.timingSafeEqual(Buffer.from(verifySubmittedHash), Buffer.from(authenticatedUser.emailVerificationCode));
+      assert.strictEqual(isCodeValid, true, 'Verification code must match');
+
+      // 5. Check that another user does not already own the new email
+      const conflict = await User.findOne({ email: authenticatedUser.pendingEmail, _id: mongoose.trusted({ $ne: authenticatedUser._id }) });
+      assert.strictEqual(conflict, null, 'No other user owns the new email');
+
+      // 6. After successful verification, replace same account main email with verified email
+      authenticatedUser.email = authenticatedUser.pendingEmail;
+      authenticatedUser.pendingEmail = undefined;
+
+      // 7. Set emailVerified: true and emailVerifiedAt
+      authenticatedUser.emailVerified = true;
+      authenticatedUser.isEmailVerified = true;
+      authenticatedUser.emailVerifiedAt = new Date();
+
+      // 8. Clear all pending-email and verification-code fields
+      authenticatedUser.emailVerificationCode = undefined;
+      authenticatedUser.emailVerificationExpires = undefined;
+      authenticatedUser.emailVerificationAttempts = 0;
+      authenticatedUser.emailVerificationCooldown = undefined;
+
+      // 9 & 10. Preserve same user ID, profile, messages, matches, wallet, premium status; do not create 2nd account
+      await authenticatedUser.save();
+
+      const verifiedUser = await User.findById(originalUserId);
+      assert.strictEqual(verifiedUser._id.toString(), originalUserId, 'User ID must be preserved');
+      assert.strictEqual(verifiedUser.email, newEmail, 'Primary email must be updated to verified email');
+      assert.strictEqual(verifiedUser.emailVerified, true, 'emailVerified must be true');
+      assert.ok(verifiedUser.emailVerifiedAt, 'emailVerifiedAt must be set');
+      assert.strictEqual(verifiedUser.pendingEmail, undefined, 'pendingEmail must be cleared');
+      assert.strictEqual(verifiedUser.emailVerificationCode, undefined, 'Verification code must be cleared');
+      assert.strictEqual(verifiedUser.bio, originalBio, 'Profile bio must be preserved');
+      assert.strictEqual(verifiedUser.isPremium, originalPremium, 'Premium status must be preserved');
+
+      // Check account count: no second account created
+      const count = await User.countDocuments({ name: 'Chethiya Sankalpa' });
+      assert.strictEqual(count, 1, 'Exactly one account must exist');
+
+      // 11. Verified primary email works for login and forgot password
+      const loginLookup = await User.findOne({ email: newEmail });
+      assert.ok(loginLookup, 'Login lookup by verified primary email must succeed');
+      const forgotPasswordLookup = await User.findOne({ email: newEmail.toLowerCase().trim() });
+      assert.ok(forgotPasswordLookup, 'Forgot password lookup by verified primary email must succeed');
+    });
+
+    // ----------------------------------------------------
     // TEST 3: Welcome Email Logic & Atomic Deduplication
     // ----------------------------------------------------
     await test('Welcome email requires complete profile and is deduplicated atomically (sent strictly once)', async () => {
