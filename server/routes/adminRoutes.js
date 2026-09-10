@@ -3,6 +3,7 @@ const router = express.Router();
 const { 
   getAllUsers, 
   approveUser, 
+  verifyUserEmail,
   rejectUser, 
   deleteUser, 
   updateUserRole, 
@@ -30,6 +31,7 @@ router.post('/create-admin', createAdmin);
 router.get('/users', protect, admin, getAllUsers);
 router.get('/stats', protect, admin, getDashboardStats);
 router.put('/users/:id/approve', protect, admin, approveUser);
+router.put('/users/:id/verify-email', protect, admin, verifyUserEmail);
 router.put('/users/:id/reject', protect, admin, rejectUser);
 router.put('/users/:id/role', protect, admin, updateUserRole);
 router.put('/users/:id/toggle-active', protect, admin, toggleUserStatus);

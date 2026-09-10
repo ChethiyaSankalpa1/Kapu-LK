@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const https = require('https');
 const {
   SUPPORT_EMAIL,
   getEmailVerificationTemplate,
@@ -7,6 +8,106 @@ const {
   getInactivityReminderTemplate,
   getAccountDeactivatedTemplate,
 } = require('./emailTemplates');
+
+/**
+ * Send email via Resend REST API (HTTPS port 443 - Render Free Tier compatible)
+ */
+function sendViaResend({ apiKey, from, to, subject, html, text }) {
+  return new Promise((resolve, reject) => {
+    const fromAddress = process.env.EMAIL_FROM_ADDRESS || 'onboarding@resend.dev';
+    const fromName = process.env.EMAIL_FROM_NAME || 'Kapu-LK Support Team';
+    const payload = JSON.stringify({
+      from: `"${fromName}" <${fromAddress}>`,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      html,
+      text,
+    });
+
+    const req = https.request({
+      hostname: 'api.resend.com',
+      port: 443,
+      path: '/emails',
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey.trim()}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+      },
+      timeout: 10000,
+    }, (res) => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(body || '{}');
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve({ success: true, messageId: parsed.id || 'resend-ok' });
+          } else {
+            reject(new Error(parsed.message || `Resend HTTP ${res.statusCode}: ${body}`));
+          }
+        } catch {
+          reject(new Error(`Resend HTTP ${res.statusCode}: ${body}`));
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('Resend HTTP API timed out after 10s')); });
+    req.write(payload);
+    req.end();
+  });
+}
+
+/**
+ * Send email via Brevo REST API (HTTPS port 443 - Render Free Tier compatible)
+ */
+function sendViaBrevo({ apiKey, from, to, subject, html, text }) {
+  return new Promise((resolve, reject) => {
+    const fromAddress = process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || 'kapulk.support@gmail.com';
+    const fromName = process.env.EMAIL_FROM_NAME || 'Kapu-LK Support Team';
+    const payload = JSON.stringify({
+      sender: { name: fromName, email: fromAddress },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+      textContent: text,
+    });
+
+    const req = https.request({
+      hostname: 'api.brevo.com',
+      port: 443,
+      path: '/v3/smtp/email',
+      method: 'POST',
+      headers: {
+        'api-key': apiKey.trim(),
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+      },
+      timeout: 10000,
+    }, (res) => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(body || '{}');
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve({ success: true, messageId: parsed.messageId || 'brevo-ok' });
+          } else {
+            reject(new Error(parsed.message || `Brevo HTTP ${res.statusCode}: ${body}`));
+          }
+        } catch {
+          reject(new Error(`Brevo HTTP ${res.statusCode}: ${body}`));
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('Brevo HTTP API timed out after 10s')); });
+    req.write(payload);
+    req.end();
+  });
+}
 
 let transporterInstance = null;
 let lastDeliveryStatus = {
@@ -127,6 +228,59 @@ async function dispatchEmail({ to, subject, html, text }) {
     if (!to) {
       console.warn('[EmailService] Skipped dispatch: no recipient specified');
       return { success: false, error: 'Recipient address required' };
+    }
+
+    // 1. Prioritize Resend REST API if configured (Render Free Tier compatible via HTTPS port 443)
+    if (process.env.RESEND_API_KEY) {
+      try {
+        console.log(`[EmailService] Dispatching email to ${maskEmail(to)} via Resend HTTPS API...`);
+        const resendRes = await sendViaResend({
+          apiKey: process.env.RESEND_API_KEY,
+          from: getFromHeader(),
+          to,
+          subject,
+          html,
+          text,
+        });
+        console.log(`[EmailService] Resend email sent successfully | MessageId: ${resendRes.messageId}`);
+        lastDeliveryStatus = {
+          timestamp: new Date().toISOString(),
+          recipient: maskEmail(to),
+          success: true,
+          error: null,
+          messageId: resendRes.messageId,
+        };
+        return resendRes;
+      } catch (resendErr) {
+        console.error(`[EmailService] Resend API delivery failed: ${resendErr.message}`);
+        // If Resend failed, continue to fallback
+      }
+    }
+
+    // 2. Prioritize Brevo REST API if configured (Render Free Tier compatible via HTTPS port 443)
+    if (process.env.BREVO_API_KEY) {
+      try {
+        console.log(`[EmailService] Dispatching email to ${maskEmail(to)} via Brevo HTTPS API...`);
+        const brevoRes = await sendViaBrevo({
+          apiKey: process.env.BREVO_API_KEY,
+          from: getFromHeader(),
+          to,
+          subject,
+          html,
+          text,
+        });
+        console.log(`[EmailService] Brevo email sent successfully | MessageId: ${brevoRes.messageId}`);
+        lastDeliveryStatus = {
+          timestamp: new Date().toISOString(),
+          recipient: maskEmail(to),
+          success: true,
+          error: null,
+          messageId: brevoRes.messageId,
+        };
+        return brevoRes;
+      } catch (brevoErr) {
+        console.error(`[EmailService] Brevo API delivery failed: ${brevoErr.message}`);
+      }
     }
 
     const transporter = getTransporter();
@@ -307,6 +461,24 @@ async function sendPasswordResetEmail({ to, resetUrl, name }) {
  * Verify transporter SMTP connectivity
  */
 async function verifyConnection() {
+  if (process.env.RESEND_API_KEY) {
+    return {
+      success: true,
+      configured: true,
+      provider: 'resend',
+      message: 'Resend HTTPS REST API configured (Render Free Tier 100% compatible via port 443)',
+    };
+  }
+
+  if (process.env.BREVO_API_KEY) {
+    return {
+      success: true,
+      configured: true,
+      provider: 'brevo',
+      message: 'Brevo HTTPS REST API configured (Render Free Tier 100% compatible via port 443)',
+    };
+  }
+
   const { emailUser, emailPass } = getCredentials();
   if (!emailUser || !emailPass) {
     return { success: false, configured: false, error: 'Credentials not configured' };

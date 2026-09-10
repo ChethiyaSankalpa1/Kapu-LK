@@ -49,6 +49,39 @@ exports.approveUser = async (req, res) => {
   }
 };
 
+// @desc    Manually verify user email
+// @route   PUT /api/admin/users/:id/verify-email
+// @access  Private/Admin
+exports.verifyUserEmail = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.emailVerified = true;
+    user.isEmailVerified = true;
+    user.emailVerifiedAt = new Date();
+    user.emailVerificationCode = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+
+    logAuditEvent({
+      userId: req.user ? req.user._id : null,
+      action: 'ADMIN_VERIFY_EMAIL',
+      targetId: user._id,
+      targetType: 'User',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.json({ message: 'User email verified successfully', user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Reject/Unapprove user
 // @route   PUT /api/admin/users/:id/reject
 // @access  Private/Admin
