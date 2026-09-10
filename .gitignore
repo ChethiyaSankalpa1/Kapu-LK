@@ -25,3 +25,5 @@ Thumbs.db
 # Build outputs
 client/build/
 server/dist/
+
+.vercel

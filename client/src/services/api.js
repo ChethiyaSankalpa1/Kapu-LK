@@ -1,16 +1,8 @@
 import axios from 'axios';
 
 const getApiBaseUrl = () => {
-    if (typeof window !== 'undefined') {
-        const host = window.location.hostname;
-        // When hosted on vercel.app, use same-origin /api rewrite proxy to eliminate CORS,
-        // prevent Edge Tracking Prevention blocks, and improve speed
-        if (host.endsWith('vercel.app')) {
-            return '/api';
-        }
-    }
-    return process.env.REACT_APP_API_URL || 
-      (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api');
+    // Always use the Render backend URL for both local and production
+    return process.env.REACT_APP_API_URL || 'https://kapu-lk-2.onrender.com/api';
 };
 
 const API_URL = getApiBaseUrl();

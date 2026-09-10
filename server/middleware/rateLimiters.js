@@ -21,10 +21,14 @@ const loginLimiter = rateLimit({
   },
 });
 
-// Registration limiter: 10 registrations per hour per IP
+// Registration limiter: 20 registrations per hour per IP (increased for development)
+// Temporarily disabled for testing - uncomment the rateLimit call to re-enable
+const registerLimiter = (req, res, next) => next(); // Disabled for testing
+
+/* Original rate limiter - uncomment to re-enable:
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 10,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,
@@ -34,6 +38,7 @@ const registerLimiter = rateLimit({
     message: 'Too many accounts created from this IP address. Please try again later.',
   },
 });
+*/
 
 // Password reset request limiter: 5 attempts per hour per IP
 const passwordResetLimiter = rateLimit({
