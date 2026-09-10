@@ -160,6 +160,25 @@ const resendVerificationLimiter = rateLimit({
   },
 });
 
+// Change verification email limiter: 20 per hour (separate from resend code limiter)
+const changeVerificationEmailLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: false,
+  keyGenerator: keyWithOptionalEmail,
+  handler: (req, res, next, options) => {
+    const retryAfter = Math.ceil(options.windowMs / 1000 / 60);
+    res.status(429).json({
+      success: false,
+      message: 'Too many email change requests. Please wait before trying again.',
+      retryAfter: options.windowMs / 1000,
+      retryAfterMinutes: retryAfter,
+    });
+  },
+});
+
 module.exports = {
   loginLimiter,
   registerLimiter,
@@ -168,6 +187,7 @@ module.exports = {
   verifyResetCodeLimiter,
   verifyEmailLimiter,
   resendVerificationLimiter,
+  changeVerificationEmailLimiter,
   messageLimiter,
   paymentLimiter,
   supportLimiter,

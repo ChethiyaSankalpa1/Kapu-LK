@@ -30,6 +30,7 @@ const {
   verifyResetCodeLimiter,
   verifyEmailLimiter,
   resendVerificationLimiter,
+  changeVerificationEmailLimiter,
 } = require('../middleware/rateLimiters');
 
 router.post(
@@ -91,7 +92,7 @@ router.post(
 router.post(
   '/change-verification-email',
   optionalProtect,
-  resendVerificationLimiter,
+  changeVerificationEmailLimiter,
   [
     body('newEmail').isEmail().withMessage('Valid new email is required').normalizeEmail(),
     body('oldEmail').optional().isEmail().withMessage('Valid current email is required').normalizeEmail(),
