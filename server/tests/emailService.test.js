@@ -304,6 +304,10 @@ async function runTests() {
       user.passwordResetCodeAttempts = 0;
       await user.save();
 
+      const checkStored = await User.findById(user._id).select('+passwordResetCode +passwordResetCodeExpires');
+      assert.strictEqual(checkStored.passwordResetCode, resetCodeHash, 'passwordResetCode must persist in database schema');
+      assert.ok(checkStored.passwordResetCodeExpires, 'passwordResetCodeExpires must persist in database schema');
+
       // Step 2: User verifies OTP -> issues 15-minute single-use reset token
       const submittedHash = crypto.createHash('sha256').update(resetCode).digest('hex');
       const codeMatch = crypto.timingSafeEqual(Buffer.from(submittedHash), Buffer.from(user.passwordResetCode));

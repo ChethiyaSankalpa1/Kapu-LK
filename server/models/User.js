@@ -320,6 +320,38 @@ const userSchema = new mongoose.Schema({
     type: Date,
     select: false,
   },
+  // Password Reset Fields (SHA-256 hashed OTP & single-use tokens)
+  passwordResetCode: {
+    type: String,
+    select: false,
+  },
+  passwordResetCodeExpires: {
+    type: Date,
+    select: false,
+  },
+  passwordResetCodeAttempts: {
+    type: Number,
+    default: 0,
+    select: false,
+  },
+  passwordResetToken: {
+    type: String,
+    select: false,
+  },
+  passwordResetExpires: {
+    type: Date,
+    select: false,
+  },
+  // Welcome Email Sent Tracking (atomic deduplication)
+  welcomeEmailSentAt: {
+    type: Date,
+    default: null,
+  },
+  // Token version for session invalidation on password reset
+  tokenVersion: {
+    type: Number,
+    default: 0,
+  },
   // Inactivity & Account Lifecycle
   lastActiveAt: {
     type: Date,
