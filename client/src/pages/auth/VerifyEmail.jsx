@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { authAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
-import { Mail, AlertCircle, RefreshCw, LogOut, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Mail, AlertCircle, RefreshCw, LogOut, ArrowRight, ShieldCheck, Pencil } from 'lucide-react';
 
 const VerifyEmail = () => {
     const { t } = useTranslation();
@@ -13,13 +13,17 @@ const VerifyEmail = () => {
     const { user, updateUser, logout } = useAuth();
 
     // Support email from route state, user context, or localStorage
-    const email = location.state?.email || user?.email || localStorage.getItem('unverified_email') || '';
+    const initialEmail = location.state?.email || user?.email || localStorage.getItem('unverified_email') || '';
+    const [email, setEmail] = useState(initialEmail);
 
     const [digits, setDigits] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const [resending, setResending] = useState(false);
     const [cooldown, setCooldown] = useState(60);
     const [errorMessage, setErrorMessage] = useState('');
+    const [showChangeEmail, setShowChangeEmail] = useState(false);
+    const [newEmailInput, setNewEmailInput] = useState('');
+    const [changingEmail, setChangingEmail] = useState(false);
     const inputRefs = useRef([]);
 
     // Save unverified email to localStorage for reload persistence
@@ -168,6 +172,50 @@ const VerifyEmail = () => {
         }
     };
 
+    const handleChangeEmail = async (e) => {
+        e.preventDefault();
+        const cleanNewEmail = newEmailInput.trim().toLowerCase();
+        if (!cleanNewEmail || !/^\S+@\S+\.\S+$/.test(cleanNewEmail)) {
+            toast.error('Please enter a valid email address');
+            return;
+        }
+        if (cleanNewEmail === email.toLowerCase()) {
+            toast.error('New email must be different from current email');
+            return;
+        }
+
+        setChangingEmail(true);
+        setErrorMessage('');
+
+        try {
+            const res = await authAPI.changeVerificationEmail({
+                oldEmail: email,
+                newEmail: cleanNewEmail,
+            });
+
+            toast.success(res.data.message || 'Email updated! Verification code sent.');
+            setEmail(cleanNewEmail);
+            localStorage.setItem('unverified_email', cleanNewEmail);
+            if (user) {
+                updateUser({ ...user, email: cleanNewEmail });
+            }
+
+            setShowChangeEmail(false);
+            setNewEmailInput('');
+            setCooldown(60);
+            setDigits(['', '', '', '', '', '']);
+            if (inputRefs.current[0]) inputRefs.current[0].focus();
+        } catch (err) {
+            const msg = err.response?.data?.message || 'Failed to update email. Please try again.';
+            toast.error(msg);
+            if (err.response?.data?.retryAfter) {
+                setCooldown(err.response.data.retryAfter);
+            }
+        } finally {
+            setChangingEmail(false);
+        }
+    };
+
     const handleLogout = async () => {
         try {
             await logout();
@@ -196,6 +244,52 @@ const VerifyEmail = () => {
                     <p className="text-purple-600 dark:text-purple-400 font-semibold text-sm mt-0.5 break-all">
                         {email || 'your registered email address'}
                     </p>
+
+                    {/* Change Email Toggle / Inline Form */}
+                    {!showChangeEmail ? (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setNewEmailInput('');
+                                setShowChangeEmail(true);
+                            }}
+                            className="inline-flex items-center gap-1.5 text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-semibold mt-2 hover:underline cursor-pointer transition"
+                        >
+                            <Pencil className="w-3 h-3" />
+                            <span>Wrong email? Change it here</span>
+                        </button>
+                    ) : (
+                        <form onSubmit={handleChangeEmail} className="mt-3.5 p-3.5 bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 rounded-2xl text-left space-y-2.5">
+                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                Enter your correct email address:
+                            </label>
+                            <input
+                                type="email"
+                                required
+                                value={newEmailInput}
+                                onChange={(e) => setNewEmailInput(e.target.value)}
+                                placeholder="name@example.com"
+                                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none"
+                            />
+                            <div className="flex items-center justify-end gap-2 pt-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowChangeEmail(false)}
+                                    disabled={changingEmail}
+                                    className="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={changingEmail || !newEmailInput.trim()}
+                                    className="px-3.5 py-1.5 text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition disabled:opacity-50 flex items-center gap-1.5 shadow-sm cursor-pointer"
+                                >
+                                    {changingEmail ? 'Updating...' : 'Update & Send Code'}
+                                </button>
+                            </div>
+                        </form>
+                    )}
                 </div>
 
                 {/* Verification Form */}

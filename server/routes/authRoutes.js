@@ -10,6 +10,7 @@ const {
   uploadProfileImage,
   verifyEmail,
   resendVerificationCode,
+  changeVerificationEmail,
   forgotPassword,
   verifyResetCode,
   resetPassword,
@@ -84,6 +85,18 @@ router.post(
   ],
   validate,
   resendVerificationCode
+);
+
+router.post(
+  '/change-verification-email',
+  optionalProtect,
+  resendVerificationLimiter,
+  [
+    body('newEmail').isEmail().withMessage('Valid new email is required').normalizeEmail(),
+    body('oldEmail').optional().isEmail().withMessage('Valid current email is required').normalizeEmail(),
+  ],
+  validate,
+  changeVerificationEmail
 );
 
 // Password Reset Flow: Forgot Password -> Receive Code -> Verify Code -> Reset Password

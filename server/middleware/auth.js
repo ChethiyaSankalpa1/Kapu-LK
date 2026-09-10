@@ -67,6 +67,7 @@ exports.protect = async (req, res, next) => {
       const allowedPaths = [
         '/verify-email',
         '/resend-verification-code',
+        '/change-verification-email',
         '/logout',
         '/me',
       ];

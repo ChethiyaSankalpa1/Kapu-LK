@@ -935,6 +935,91 @@ exports.resendVerificationCode = async (req, res) => {
   }
 };
 
+// @desc    Change unverified email address and request fresh verification code
+// @route   POST /api/auth/change-verification-email
+// @access  Public / Restricted
+exports.changeVerificationEmail = async (req, res) => {
+  try {
+    const { oldEmail, newEmail } = req.body;
+    const cleanNewEmail = String(newEmail || '').toLowerCase().trim();
+    const cleanOldEmail = String(oldEmail || (req.user && req.user.email) || '').toLowerCase().trim();
+
+    if (!cleanNewEmail || !/^\S+@\S+\.\S+$/.test(cleanNewEmail)) {
+      return res.status(400).json({ message: 'A valid new email address is required' });
+    }
+
+    if (cleanNewEmail === cleanOldEmail) {
+      return res.status(400).json({ message: 'New email address must be different from current email' });
+    }
+
+    // Check if new email is already registered by any other account
+    const existingUser = await User.findOne({ email: cleanNewEmail });
+    if (existingUser) {
+      return res.status(400).json({ message: 'This email address is already registered to another account' });
+    }
+
+    let user;
+    if (req.user) {
+      user = await User.findById(req.user._id).select('+emailVerificationCooldown');
+    } else if (cleanOldEmail) {
+      user = await User.findOne({ email: cleanOldEmail }).select('+emailVerificationCooldown');
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: 'User account not found' });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({ message: 'This email address is already verified and cannot be changed here' });
+    }
+
+    // Enforce 60-second cooldown
+    if (user.emailVerificationCooldown && user.emailVerificationCooldown > Date.now()) {
+      const secondsLeft = Math.ceil((user.emailVerificationCooldown.getTime() - Date.now()) / 1000);
+      return res.status(429).json({
+        message: `Please wait ${secondsLeft} seconds before requesting another code.`,
+        retryAfter: secondsLeft,
+      });
+    }
+
+    const verificationCode = crypto.randomInt(100000, 1000000).toString();
+    const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
+
+    const previousEmail = user.email;
+    user.email = cleanNewEmail;
+    user.emailVerificationCode = hashedCode;
+    user.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+    user.emailVerificationAttempts = 0;
+    user.emailVerificationCooldown = new Date(Date.now() + 60 * 1000); // 60s cooldown
+    await user.save();
+
+    sendEmailVerificationCode({
+      to: cleanNewEmail,
+      name: user.name,
+      code: verificationCode,
+      expiresMinutes: 15,
+    }).catch((err) =>
+      console.warn('[ChangeVerificationEmail] Failed to dispatch email:', err.message)
+    );
+
+    logAuditEvent({
+      userId: user._id,
+      action: 'EMAIL_CHANGED_PRE_VERIFICATION',
+      details: { previousEmail, newEmail: cleanNewEmail },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.json({
+      success: true,
+      email: cleanNewEmail,
+      message: `Email updated! A fresh verification code has been sent to ${cleanNewEmail}.`,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 // @desc    Refresh access token using refresh token rotation
 // @route   POST /api/auth/refresh

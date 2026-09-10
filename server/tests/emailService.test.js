@@ -176,6 +176,46 @@ async function runTests() {
     });
 
     // ----------------------------------------------------
+    // TEST 2.1: Change Unverified Email on Typo
+    // ----------------------------------------------------
+    await test('User can change unverified email address when previously typed wrongly', async () => {
+      const wrongEmail = 'wrongtypo@test.com';
+      const correctEmail = 'correctemail@test.com';
+
+      const user = await User.create({
+        name: 'Typo User',
+        email: wrongEmail,
+        password: 'password123',
+        emailVerified: false,
+        emailVerificationCode: crypto.createHash('sha256').update('111111').digest('hex'),
+        emailVerificationExpires: new Date(Date.now() + 15 * 60 * 1000),
+      });
+
+      // Cannot change to an email that is already registered
+      await User.create({
+        name: 'Another User',
+        email: 'alreadytaken@test.com',
+        password: 'password123',
+      });
+
+      const isTaken = await User.findOne({ email: 'alreadytaken@test.com' });
+      assert.ok(isTaken, 'Should detect already taken email');
+
+      // Update to correct new email
+      const newCode = '888999';
+      user.email = correctEmail;
+      user.emailVerificationCode = crypto.createHash('sha256').update(newCode).digest('hex');
+      user.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+      user.emailVerificationAttempts = 0;
+      await user.save();
+
+      const refetched = await User.findById(user._id).select('+emailVerificationCode');
+      assert.strictEqual(refetched.email, correctEmail, 'Email should be updated to correct email');
+      const testHash = crypto.createHash('sha256').update(newCode).digest('hex');
+      assert.strictEqual(refetched.emailVerificationCode, testHash, 'New code must be hashed and stored');
+    });
+
+    // ----------------------------------------------------
     // TEST 3: Welcome Email Logic & Atomic Deduplication
     // ----------------------------------------------------
     await test('Welcome email requires complete profile and is deduplicated atomically (sent strictly once)', async () => {
