@@ -1561,7 +1561,7 @@ exports.resetPassword = async (req, res) => {
 
     const user = await User.findOne({
       passwordResetToken: hashedResetToken,
-      passwordResetExpires: { $gt: new Date() },
+      passwordResetExpires: mongoose.trusted({ $gt: new Date() }),
     }).select('+passwordResetToken +passwordResetExpires');
 
     if (!user) {

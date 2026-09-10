@@ -230,7 +230,7 @@ exports.getUserById = async (req, res) => {
         user: user._id,
         relatedUser: req.user._id,
         type: 'profile_view',
-        lastViewedAt: { $gte: twentyFourHoursAgo },
+        lastViewedAt: mongoose.trusted({ $gte: twentyFourHoursAgo }),
       }).select('_id').lean();
 
       if (existingWindow) {
@@ -247,7 +247,7 @@ exports.getUserById = async (req, res) => {
             user: user._id,
             relatedUser: req.user._id,
             type: 'profile_view',
-            lastViewedAt: { $gte: twentyFourHoursAgo },
+            lastViewedAt: mongoose.trusted({ $gte: twentyFourHoursAgo }),
           },
           {
             $setOnInsert: {

@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Event = require('../models/Event');
 const User = require('../models/User');
 const { UserStats } = require('../models/Achievement');
@@ -16,7 +17,7 @@ exports.getEvents = async (req, res) => {
     }
     
     if (upcoming === 'true') {
-      query.startDate = { $gte: new Date() };
+      query.startDate = mongoose.trusted({ $gte: new Date() });
     }
     
     if (eventType) {
