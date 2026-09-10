@@ -20,6 +20,7 @@ const VerifyEmail = () => {
     const [loading, setLoading] = useState(false);
     const [resending, setResending] = useState(false);
     const [cooldown, setCooldown] = useState(60);
+    const [rateLimited, setRateLimited] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [showChangeEmail, setShowChangeEmail] = useState(false);
     const [showFixInvalidEmail, setShowFixInvalidEmail] = useState(false);
@@ -59,6 +60,9 @@ const VerifyEmail = () => {
         if (cooldown > 0) {
             const timer = setTimeout(() => setCooldown(prev => prev - 1), 1000);
             return () => clearTimeout(timer);
+        } else {
+            // When cooldown hits 0, clear any rate-limit block
+            setRateLimited(false);
         }
     }, [cooldown]);
 
@@ -166,7 +170,7 @@ const VerifyEmail = () => {
     };
 
     const handleResend = async () => {
-        if (cooldown > 0 || resending) return;
+        if (cooldown > 0 || resending || rateLimited) return;
         setResending(true);
         setErrorMessage('');
 
@@ -174,13 +178,21 @@ const VerifyEmail = () => {
             const res = await authAPI.resendVerificationCode({ email });
             toast.success(res.data.message || 'A new verification code has been sent.');
             setCooldown(60);
+            setRateLimited(false);
             setDigits(['', '', '', '', '', '']);
             if (inputRefs.current[0]) inputRefs.current[0].focus();
         } catch (err) {
-            const msg = err.response?.data?.message || 'Failed to resend verification code. Please try again.';
-            toast.error(msg);
-            if (err.response?.data?.retryAfter) {
-                setCooldown(err.response.data.retryAfter);
+            if (err.response?.status === 429) {
+                const data = err.response.data || {};
+                const waitSeconds = data.retryAfter || 3600; // default 1 hour
+                const waitMins = data.retryAfterMinutes || Math.ceil(waitSeconds / 60);
+                const msg = data.message || 'Too many attempts. Please wait before requesting another code.';
+                toast.error(`${msg} (Wait ~${waitMins} min)`);
+                setRateLimited(true);
+                setCooldown(Math.min(waitSeconds, 3600)); // cap display at 1 hour
+            } else {
+                const msg = err.response?.data?.message || 'Failed to resend verification code. Please try again.';
+                toast.error(msg);
             }
         } finally {
             setResending(false);
@@ -492,11 +504,13 @@ const VerifyEmail = () => {
                     <button
                         type="button"
                         onClick={handleResend}
-                        disabled={cooldown > 0 || resending}
+                        disabled={cooldown > 0 || resending || rateLimited}
                         className="text-purple-600 dark:text-purple-400 font-bold hover:underline disabled:text-slate-400 dark:disabled:text-slate-600 text-xs sm:text-sm transition cursor-pointer"
                     >
                         {resending ? (
                             'Sending new code...'
+                        ) : rateLimited && cooldown > 0 ? (
+                            `Rate limited — try again in ${cooldown > 60 ? `${Math.ceil(cooldown / 60)}m` : `${cooldown}s`}`
                         ) : cooldown > 0 ? (
                             `Resend code in ${cooldown}s`
                         ) : (

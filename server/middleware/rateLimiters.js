@@ -141,17 +141,22 @@ const verifyEmailLimiter = rateLimit({
   },
 });
 
-// Resend verification code limiter: 5 per hour
+// Resend verification code limiter: 10 per hour
 const resendVerificationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 5,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,
   keyGenerator: keyWithOptionalEmail,
-  message: {
-    success: false,
-    message: 'Too many verification codes requested. Please wait before requesting another code.',
+  handler: (req, res, next, options) => {
+    const retryAfter = Math.ceil(options.windowMs / 1000 / 60); // minutes
+    res.status(429).json({
+      success: false,
+      message: 'Too many verification codes requested. Please wait before requesting another code.',
+      retryAfter: options.windowMs / 1000, // seconds until window resets
+      retryAfterMinutes: retryAfter,
+    });
   },
 });
 
