@@ -263,10 +263,17 @@ exports.register = async (req, res) => {
       });
     }
 
+    // Use the already-normalized email (trimmed/lowercased) consistently across
+    // duplicate check, mongoose save, and any downstream logic.  This prevents
+    // mismatches where the express-validator .normalizeEmail() step could have
+    // produced a gmail-normalized address, so we accept req.body.email as the
+    // source of truth and apply our own trim/lowercase on top.
+    const finalEmail = String(email || '').toLowerCase().trim();
+
     // Create user object with sanitized optional fields
     const userPayload = {
       name: String(name || '').trim(),
-      email: String(email || '').toLowerCase(),
+      email: finalEmail,
       password,
       gender: gender || 'male',
       interests: interests || '',
@@ -295,13 +302,17 @@ exports.register = async (req, res) => {
 
     const user = await User.create(userPayload);
 
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid user data' });
+    }
+
+    const clientIp = req.headers['x-forwarded-for']
+      ? req.headers['x-forwarded-for'].split(',')[0].trim()
+      : req.ip || (req.socket && req.socket.remoteAddress) || '';
+    const clientUA = req.headers['user-agent'] || '';
+
     // Create protected, versioned PrivacyConsent audit record
     try {
-      const ipAddress = req.headers['x-forwarded-for']
-        ? req.headers['x-forwarded-for'].split(',')[0].trim()
-        : req.ip || req.socket.remoteAddress || '';
-      const userAgent = req.headers['user-agent'] || '';
-
       await PrivacyConsent.create({
         user: user._id,
         status: 'accepted',
@@ -319,103 +330,132 @@ exports.register = async (req, res) => {
           acceptedInactivityDeletion: true,
         },
         acceptedAt: new Date(),
-        ipAddress: String(ipAddress).slice(0, 45),
-        userAgent: String(userAgent).slice(0, 250),
+        ipAddress: String(clientIp).slice(0, 45),
+        userAgent: String(clientUA).slice(0, 250),
       });
     } catch (consentErr) {
-      console.error('Failed to create initial PrivacyConsent record:', consentErr);
+      console.error('[Register] Failed to create PrivacyConsent record (non-fatal):', consentErr && consentErr.message ? consentErr.message : consentErr);
     }
 
-    // Handle referral code if provided
-    if (referralCode) {
-      const validReferralCode = await ReferralCode.findOne({ code: referralCode, isActive: true });
-      if (validReferralCode && validReferralCode.user.toString() !== user._id.toString()) {
-        // Create referral record
-        await Referral.create({
-          referrer: validReferralCode.user,
-          referred: user._id,
-          referralCode: referralCode,
-          status: 'pending'
-        });
+    // Handle referral code if provided (bonus/referral tracking is non-fatal)
+    try {
+      if (referralCode) {
+        const validReferralCode = await ReferralCode.findOne({ code: referralCode, isActive: true });
+        if (validReferralCode && validReferralCode.user && validReferralCode.user.toString() !== user._id.toString()) {
+          try {
+            await Referral.create({
+              referrer: validReferralCode.user,
+              referred: user._id,
+              referralCode: referralCode,
+              status: 'pending',
+            });
+          } catch (_rErr) {
+            console.warn('[Register] Referral.create failed (non-fatal):', _rErr.message);
+          }
 
-        // Update referrer stats
-        validReferralCode.totalReferrals += 1;
-        await validReferralCode.save();
+          try {
+            validReferralCode.totalReferrals = Number(validReferralCode.totalReferrals || 0) + 1;
+            await validReferralCode.save();
+          } catch (_sErr) {
+            console.warn('[Register] ReferralCode save failed (non-fatal):', _sErr.message);
+          }
 
-        let referrerStats = await UserStats.findOne({ user: validReferralCode.user });
-        if (!referrerStats) {
-          referrerStats = new UserStats({ user: validReferralCode.user });
+          try {
+            let referrerStats = await UserStats.findOne({ user: validReferralCode.user });
+            if (!referrerStats) {
+              referrerStats = new UserStats({ user: validReferralCode.user });
+            }
+            referrerStats.totalReferrals = Number(referrerStats.totalReferrals || 0) + 1;
+            await referrerStats.save();
+          } catch (_rsErr) {
+            console.warn('[Register] Referrer UserStats save failed (non-fatal):', _rsErr.message);
+          }
+
+          try {
+            let userStats = await UserStats.findOne({ user: user._id });
+            if (!userStats) {
+              userStats = new UserStats({ user: user._id });
+            }
+            userStats.points = Number(userStats.points || 0) + 25;
+            await userStats.save();
+          } catch (_usErr) {
+            console.warn('[Register] Referred UserStats save failed (non-fatal):', _usErr.message);
+          }
         }
-        referrerStats.totalReferrals += 1;
-        await referrerStats.save();
-
-        // Give referred user bonus
-        let userStats = await UserStats.findOne({ user: user._id });
-        if (!userStats) {
-          userStats = new UserStats({ user: user._id });
-        }
-        userStats.points += 25; // Bonus for using referral
-        await userStats.save();
       }
+    } catch (referralOuterErr) {
+      console.warn('[Register] Referral flow skipped (non-fatal):', referralOuterErr && referralOuterErr.message ? referralOuterErr.message : referralOuterErr);
     }
 
-    if (user) {
-      // Create profile picture reminder notification
+    // Create profile picture reminder notification (non-fatal)
+    try {
       await Notification.create({
         user: user._id,
         type: 'profile_reminder',
         message: 'Add a profile picture to improve your profile visibility and receive better match suggestions.',
       });
+    } catch (notifErr) {
+      console.warn('[Register] Profile reminder notification skipped (non-fatal):', notifErr && notifErr.message ? notifErr.message : notifErr);
+    }
 
-      // Dispatch branded email verification code non-blocking (fire-and-forget with error logging)
-      // Not awaited so slow SMTP cannot hang the registration response or cause user retries/duplicates
-      sendEmailVerificationCode({
-        to: user.email,
-        name: user.name,
-        code: verificationCode,
-        expiresMinutes: 15,
+    // Dispatch branded email verification code non-blocking (fire-and-forget with error logging)
+    // Not awaited so slow SMTP cannot hang the registration response or cause user retries/duplicates
+    sendEmailVerificationCode({
+      to: user.email,
+      name: user.name,
+      code: verificationCode,
+      expiresMinutes: 15,
+    })
+      .then((emailResult) => {
+        if (emailResult && emailResult.success === false) {
+          console.warn('[Register] Failed to send verification code email:', emailResult.error);
+        }
       })
-        .then((emailResult) => {
-          if (emailResult && emailResult.success === false) {
-            console.warn('[Register] Failed to send verification code email:', emailResult.error);
-          }
-        })
-        .catch((emailErr) => {
-          console.error('[Register] Exception while dispatching verification email:', emailErr && emailErr.message ? emailErr.message : emailErr);
-        });
+      .catch((emailErr) => {
+        console.error('[Register] Exception while dispatching verification email:', emailErr && emailErr.message ? emailErr.message : emailErr);
+      });
 
-      const accessToken = generateAccessToken(user);
-      const refreshToken = await createRefreshToken(user, req);
+    // Issue tokens (wrap in try/catch because RefreshToken.create could fail)
+    let accessToken = null;
+    let refreshToken = null;
+    try {
+      accessToken = generateAccessToken(user);
+      refreshToken = await createRefreshToken(user, req);
       setTokenCookies(res, accessToken, refreshToken);
+    } catch (tokenErr) {
+      console.error('[Register] Token issuance partially failed (non-fatal, returning user record):', tokenErr && tokenErr.message ? tokenErr.message : tokenErr);
+    }
 
+    // Audit log is fire-and-forget async; catch its own internal errors but do not await.
+    try {
       logAuditEvent({
         userId: user._id,
         action: 'USER_REGISTERED',
         targetId: user._id,
         targetType: 'User',
         details: { email: user.email },
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent'],
+        ipAddress: clientIp,
+        userAgent: clientUA,
       });
-
-      res.status(201).json({
-        _id: user._id,
-        name: user.name,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        isApproved: user.isApproved,
-        emailVerified: false,
-        requiresEmailVerification: true,
-        language: user.language,
-        giftingOptIn: user.giftingOptIn,
-        token: accessToken,
-        refreshToken,
-        message: 'Registration successful! A 6-digit verification code has been sent to your email.',
-      });
-    } else {
-      res.status(400).json({ message: 'Invalid user data' });
+    } catch (_auditErr) {
+      // logAuditEvent itself is wrapped, but guard synchronous argument evaluation issues.
     }
+
+    res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      isApproved: user.isApproved,
+      emailVerified: false,
+      requiresEmailVerification: true,
+      language: user.language,
+      giftingOptIn: user.giftingOptIn,
+      token: accessToken,
+      refreshToken,
+      message: 'Registration successful! A 6-digit verification code has been sent to your email.',
+    });
   } catch (error) {
     // Handle MongoDB E11000 duplicate-key errors (TOCTOU race / leftover indexes)
     if (error && error.code === 11000 && error.keyPattern) {

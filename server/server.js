@@ -17,6 +17,23 @@ dotenv.config({ override: true });
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 
+// Global process guards — MUST be installed as early as possible.
+// These prevent unhandled promise rejections or stray synchronous throws
+// (e.g. inside a fire-and-forget email send, mongoose model validation
+// bubble-up, etc.) from killing the entire Node process which would
+// surface to the browser as net::ERR_CONNECTION_CLOSED.
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] uncaughtException:', err && err.stack ? err.stack : err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error(
+    '[FATAL] unhandledRejection at:',
+    promise && promise.constructor ? promise.constructor.name : 'Promise',
+    'reason:',
+    reason && reason.stack ? reason.stack : reason
+  );
+});
+
 if (!process.env.JWT_SECRET) {
   if (process.env.NODE_ENV === 'production') {
     console.warn('JWT not configured: missing JWT_SECRET in environment');

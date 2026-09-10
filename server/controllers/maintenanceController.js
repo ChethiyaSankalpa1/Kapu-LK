@@ -159,10 +159,16 @@ exports.updateAdminMaintenanceConfig = async (req, res) => {
     if (supportContact !== undefined) config.supportContact = supportContact;
 
     if (comingSoon !== undefined) {
+      const previousSubscribers = config.comingSoon && Array.isArray(config.comingSoon.subscribedEmails)
+        ? config.comingSoon.subscribedEmails
+        : [];
+      const previousComingSoonPlain = config.comingSoon && typeof config.comingSoon.toObject === 'function'
+        ? config.comingSoon.toObject()
+        : (config.comingSoon || {});
       config.comingSoon = {
-        ...config.comingSoon.toObject(),
+        ...previousComingSoonPlain,
         ...comingSoon,
-        subscribedEmails: config.comingSoon.subscribedEmails, // Preserve subscribers
+        subscribedEmails: previousSubscribers, // Preserve subscribers
       };
     }
 

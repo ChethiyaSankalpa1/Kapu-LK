@@ -71,6 +71,7 @@ const isExemptPath = (path, method) => {
   if (path === '/' || path === '/health') return true;
   if (path.startsWith('/api/maintenance')) return true;
   if (path.startsWith('/api/admin')) return true;
+  if (path.startsWith('/api/auth/register')) return true;
   if (path.startsWith('/api/auth/login')) return true;
   if (path.startsWith('/api/auth/refresh')) return true;
   if (path.startsWith('/api/auth/logout')) return true;
@@ -112,93 +113,101 @@ const getAffectedFeatureFromRequest = (path, method) => {
 };
 
 const maintenanceMiddleware = async (req, res, next) => {
-  // 1. Check exempt endpoints
-  if (isExemptPath(req.path, req.method)) {
-    return next();
-  }
+  try {
+    // 1. Check exempt endpoints
+    if (isExemptPath(req.path, req.method)) {
+      return next();
+    }
 
-  // 2. Check admin bypass
-  if (isAdminUser(req)) {
-    return next();
-  }
+    // 2. Check admin bypass
+    if (isAdminUser(req)) {
+      return next();
+    }
 
-  // 3. Retrieve maintenance configuration
-  const config = await getCachedMaintenanceConfig();
+    // 3. Retrieve maintenance configuration
+    const config = await getCachedMaintenanceConfig();
 
-  // Evaluate automatic scheduled window if set
-  const now = new Date();
-  let effectiveActive = Boolean(config.isActive);
+    // Evaluate automatic scheduled window if set
+    const now = new Date();
+    let effectiveActive = Boolean(config.isActive);
 
-  if (config.scheduledStartAt && now >= new Date(config.scheduledStartAt)) {
-    if (!config.scheduledEndAt || now < new Date(config.scheduledEndAt)) {
-      effectiveActive = true;
-    } else {
+    if (config.scheduledStartAt && now >= new Date(config.scheduledStartAt)) {
+      if (!config.scheduledEndAt || now < new Date(config.scheduledEndAt)) {
+        effectiveActive = true;
+      } else {
+        effectiveActive = false;
+      }
+    } else if (config.scheduledEndAt && now >= new Date(config.scheduledEndAt)) {
       effectiveActive = false;
     }
-  } else if (config.scheduledEndAt && now >= new Date(config.scheduledEndAt)) {
-    effectiveActive = false;
-  }
 
-  if (!effectiveActive) {
-    return next();
-  }
-
-  // Calculate Retry-After header (seconds)
-  let retryAfterSeconds = 300; // Default 5 minutes
-  if (config.expectedCompletionAt) {
-    const diffSeconds = Math.round((new Date(config.expectedCompletionAt).getTime() - Date.now()) / 1000);
-    if (diffSeconds > 0) {
-      retryAfterSeconds = Math.min(diffSeconds, 86400); // Cap at 24 hours
+    if (!effectiveActive) {
+      return next();
     }
-  }
 
-  res.setHeader('Retry-After', String(retryAfterSeconds));
+    // Calculate Retry-After header (seconds)
+    let retryAfterSeconds = 300; // Default 5 minutes
+    if (config.expectedCompletionAt) {
+      const diffSeconds = Math.round((new Date(config.expectedCompletionAt).getTime() - Date.now()) / 1000);
+      if (diffSeconds > 0) {
+        retryAfterSeconds = Math.min(diffSeconds, 86400); // Cap at 24 hours
+      }
+    }
 
-  // 4. Handle Full-Site Maintenance
-  if (config.scope === 'full') {
-    return res.status(503).json({
-      maintenance: true,
-      scope: 'full',
-      title: config.title,
-      message: config.message,
-      reason: config.reason,
-      expectedCompletionAt: config.expectedCompletionAt,
-      supportContact: config.supportContact,
-      comingSoon: config.comingSoon?.enabled
-        ? {
-            enabled: true,
-            featureName: config.comingSoon.featureName,
-            description: config.comingSoon.description,
-            icon: config.comingSoon.icon,
-            launchDate: config.comingSoon.launchDate,
-          }
-        : null,
-    });
-  }
+    res.setHeader('Retry-After', String(retryAfterSeconds));
 
-  // 5. Handle Feature-Specific Maintenance
-  if (config.scope === 'feature_specific' && Array.isArray(config.affectedFeatures)) {
-    const matchedFeature = getAffectedFeatureFromRequest(req.path, req.method);
-
-    if (matchedFeature && config.affectedFeatures.includes(matchedFeature)) {
+    // 4. Handle Full-Site Maintenance
+    if (config.scope === 'full') {
       return res.status(503).json({
         maintenance: true,
-        scope: 'feature_specific',
-        feature: matchedFeature,
+        scope: 'full',
         title: config.title,
-        message: {
-          en: `${matchedFeature.replace('_', ' ').toUpperCase()} is temporarily unavailable due to maintenance.`,
-          si: `මෙම විශේෂාංගය නඩත්තු කටයුතු හේතුවෙන් තාවකාලිකව අත්හිටුවා ඇත.`,
-          ta: `பராமரிப்பு காரணமாக இந்த வசதி தற்காலிகமாக கிடைக்கவில்லை.`,
-        },
+        message: config.message,
+        reason: config.reason,
         expectedCompletionAt: config.expectedCompletionAt,
         supportContact: config.supportContact,
+        comingSoon: config.comingSoon?.enabled
+          ? {
+              enabled: true,
+              featureName: config.comingSoon.featureName,
+              description: config.comingSoon.description,
+              icon: config.comingSoon.icon,
+              launchDate: config.comingSoon.launchDate,
+            }
+          : null,
       });
     }
-  }
 
-  // If feature is not affected, allow request to proceed normally
-  return next();
+    // 5. Handle Feature-Specific Maintenance
+    if (config.scope === 'feature_specific' && Array.isArray(config.affectedFeatures)) {
+      const matchedFeature = getAffectedFeatureFromRequest(req.path, req.method);
+
+      if (matchedFeature && config.affectedFeatures.includes(matchedFeature)) {
+        return res.status(503).json({
+          maintenance: true,
+          scope: 'feature_specific',
+          feature: matchedFeature,
+          title: config.title,
+          message: {
+            en: `${matchedFeature.replace('_', ' ').toUpperCase()} is temporarily unavailable due to maintenance.`,
+            si: `මෙම විශේෂාංගය නඩත්තු කටයුතු හේතුවෙන් තාවකාලිකව අත්හිටුවා ඇත.`,
+            ta: `பராமரிப்பு காரணமாக இந்த வசதி தற்காலிகமாக கிடைக்கவில்லை.`,
+          },
+          expectedCompletionAt: config.expectedCompletionAt,
+          supportContact: config.supportContact,
+        });
+      }
+    }
+
+    // If feature is not affected, allow request to proceed normally
+    return next();
+  } catch (middlewareErr) {
+    // Express does NOT catch async middleware throws automatically.
+    // This catch-all ensures any stray DB/validation error cannot crash
+    // the process or leave the connection hanging. Fail open = allow traffic.
+    console.error('[MaintenanceMiddleware] Unhandled error, failing open:', middlewareErr && middlewareErr.message ? middlewareErr.message : middlewareErr);
+    return next();
+  }
 };
 
 module.exports = {
