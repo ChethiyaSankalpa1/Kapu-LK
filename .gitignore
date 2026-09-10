@@ -9,6 +9,9 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# Allow client .env for development but keep server .env secure
+!client/.env
+
 # OS files
 Thumbs.db
 .DS_Store
