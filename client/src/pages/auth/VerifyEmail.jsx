@@ -118,7 +118,9 @@ const VerifyEmail = () => {
     };
 
     const handlePaste = (e) => {
-        e.preventDefault();
+        // Guard against passive event listeners on mobile — browsers mark some
+        // touch-triggered events as passive and disallow preventDefault() on them.
+        if (e.cancelable) e.preventDefault();
         const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
         if (pasted.length > 0) {
             const newDigits = [...digits];
@@ -449,7 +451,7 @@ const VerifyEmail = () => {
                         </label>
                         
                         {/* 6 Digit Input Group */}
-                        <div className="flex justify-center gap-2 sm:gap-3" onPaste={handlePaste}>
+                        <div className="flex justify-center gap-2 sm:gap-3">
                             {digits.map((digit, idx) => (
                                 <input
                                     key={idx}
@@ -458,9 +460,14 @@ const VerifyEmail = () => {
                                     inputMode="numeric"
                                     pattern="[0-9]*"
                                     maxLength="1"
+                                    autoComplete={idx === 0 ? 'one-time-code' : 'off'}
+                                    autoCapitalize="none"
+                                    autoCorrect="off"
+                                    spellCheck="false"
                                     value={digit}
                                     onChange={(e) => handleDigitChange(idx, e.target.value)}
                                     onKeyDown={(e) => handleKeyDown(idx, e)}
+                                    onPaste={handlePaste}
                                     aria-label={`Digit ${idx + 1}`}
                                     className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-extrabold rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-white focus:border-purple-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-purple-500/20 transition-all outline-none"
                                 />

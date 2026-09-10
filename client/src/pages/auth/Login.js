@@ -52,7 +52,11 @@ const Login = () => {
     const { email, password } = formData;
 
     const onChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        // Normalise email/username: strip leading/trailing spaces and lowercase
+        // so mobile auto-capitalise never sends wrong credentials to the backend
+        const normalised = name === 'email' ? value.trim().toLowerCase() : value;
+        setFormData({ ...formData, [name]: normalised });
     };
 
     const onSubmit = async (e) => {
@@ -113,6 +117,9 @@ const Login = () => {
                             type="text"
                             name="email"
                             autoComplete="username email"
+                            autoCapitalize="none"
+                            autoCorrect="off"
+                            spellCheck="false"
                             value={email}
                             onChange={onChange}
                             required
