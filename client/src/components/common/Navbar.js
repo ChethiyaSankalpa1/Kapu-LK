@@ -28,7 +28,7 @@ const Navbar = () => {
     const drawerRef = useRef(null);
 
     useEffect(() => {
-        if (user && !isAdmin) {
+        if (user && !isAdmin && user.emailVerified) {
             const fetchBalances = async () => {
                 try {
                     const [walletRes, statsRes] = await Promise.all([

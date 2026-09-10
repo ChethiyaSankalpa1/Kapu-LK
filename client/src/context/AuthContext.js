@@ -69,14 +69,14 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('token');
       if (token) {
         const me = await refreshUser();
-        if (me) {
+        if (me && (me.emailVerified || me.role === 'admin')) {
           try {
             const statusRes = await premiumAPI.getStatus();
             setPremiumStatus(statusRes.data);
           } catch (err) {
             console.error('Failed to fetch premium status', err);
           }
-        } else {
+        } else if (!me) {
           // fallback to cached user
           const cached = localStorage.getItem('user');
           if (cached) {
@@ -98,11 +98,13 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', token);
     const me = await refreshUser();
     if (me) {
-      try {
-        const statusRes = await premiumAPI.getStatus();
-        setPremiumStatus(statusRes.data);
-      } catch (err) {
-        console.error('Failed to fetch premium status', err);
+      if (me.emailVerified || me.role === 'admin') {
+        try {
+          const statusRes = await premiumAPI.getStatus();
+          setPremiumStatus(statusRes.data);
+        } catch (err) {
+          console.error('Failed to fetch premium status', err);
+        }
       }
     } else {
       setUser(loginPayload);

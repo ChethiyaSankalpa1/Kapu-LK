@@ -142,7 +142,7 @@ const GlobalRealtimeMonitor = () => {
 
   // Poll notifications for real-time gift & achievement alerts
   useEffect(() => {
-    if (!user || isAdmin) return;
+    if (!user || isAdmin || !user.emailVerified) return;
 
     const checkNotifications = async () => {
       try {
