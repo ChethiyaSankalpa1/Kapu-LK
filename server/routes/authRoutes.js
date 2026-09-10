@@ -11,6 +11,7 @@ const {
   verifyEmail,
   resendVerificationCode,
   changeVerificationEmail,
+  fixInvalidEmail,
   forgotPassword,
   verifyResetCode,
   resetPassword,
@@ -97,6 +98,18 @@ router.post(
   ],
   validate,
   changeVerificationEmail
+);
+
+router.post(
+  '/fix-invalid-email',
+  protect,
+  resendVerificationLimiter,
+  [
+    body('newEmail').isEmail().withMessage('Valid new email is required').normalizeEmail(),
+    body('password').notEmpty().withMessage('Password confirmation is required'),
+  ],
+  validate,
+  fixInvalidEmail
 );
 
 // Password Reset Flow: Forgot Password -> Receive Code -> Verify Code -> Reset Password

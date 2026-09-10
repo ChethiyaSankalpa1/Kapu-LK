@@ -24,10 +24,22 @@ const userSchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
     trim: true,
-    match: [
-      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-      'Please add a valid email',
-    ],
+    validate: {
+      validator: function(v) {
+        return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v);
+      },
+      message: 'Please add a valid email',
+    },
+  },
+  pendingEmail: {
+    type: String,
+    lowercase: true,
+    trim: true,
+    sparse: true,
+  },
+  emailVerifiedAt: {
+    type: Date,
+    default: null,
   },
   password: {
     type: String,
@@ -404,6 +416,7 @@ userSchema.index({ isApproved: 1, isActive: 1, createdAt: -1 });
 userSchema.index({ isPremium: 1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ lastLogin: -1 });
+userSchema.index({ pendingEmail: 1 }, { sparse: true });
 
 // Check if account is currently locked
 userSchema.methods.isAccountLocked = function() {

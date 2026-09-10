@@ -100,6 +100,12 @@ const clearTokenCookies = (res) => {
 
 const isValidPhoneNumber = (value) => !value || /^[0-9]+$/.test(value);
 
+const isValidEmail = (value) => {
+  if (!value || typeof value !== 'string') return false;
+  const normalized = value.toLowerCase().trim();
+  return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(normalized);
+};
+
 const getClientBaseUrl = () => {
   return process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
 };
@@ -130,6 +136,11 @@ exports.register = async (req, res) => {
       language,
       referralCode,
     } = req.body;
+
+    // Validate email format
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: 'Please provide a valid email address' });
+    }
 
     if (!isValidPhoneNumber(phoneNumber)) {
       return res.status(400).json({ message: 'Phone number must contain only numbers' });
@@ -338,14 +349,18 @@ exports.register = async (req, res) => {
       });
 
       // Dispatch branded email verification code asynchronously
-      sendEmailVerificationCode({
+      const emailResult = await sendEmailVerificationCode({
         to: user.email,
         name: user.name,
         code: verificationCode,
         expiresMinutes: 15,
-      }).catch((err) =>
-        console.warn('[Register] Failed to send verification code email:', err.message)
-      );
+      });
+
+      if (emailResult && emailResult.success === false) {
+        console.warn('[Register] Failed to send verification code email:', emailResult.error);
+        // Still allow registration but warn about email issues
+        console.warn('[Register] User registered but email verification may not work');
+      }
 
       const accessToken = generateAccessToken(user);
       const refreshToken = await createRefreshToken(user, req);
@@ -506,14 +521,16 @@ exports.login = async (req, res) => {
         user.emailVerificationAttempts = 0;
         user.emailVerificationCooldown = new Date(Date.now() + 60 * 1000);
 
-        sendEmailVerificationCode({
+        const emailResult = await sendEmailVerificationCode({
           to: user.email,
           name: user.name,
           code: verificationCode,
           expiresMinutes: 15,
-        }).catch((err) =>
-          console.warn('[Login] Failed to dispatch email verification code:', err.message)
-        );
+        });
+
+        if (emailResult && emailResult.success === false) {
+          console.warn('[Login] Failed to dispatch email verification code:', emailResult.error);
+        }
       }
     }
 
@@ -605,9 +622,11 @@ exports.uploadProfileImage = async (req, res) => {
     });
 
     // Check if profile is complete and send welcome email once
-    checkAndSendWelcomeEmail(user._id).catch((err) =>
-      console.warn('[WelcomeEmail] Error checking welcome email on uploadProfileImage:', err.message)
-    );
+    try {
+      await checkAndSendWelcomeEmail(user._id);
+    } catch (err) {
+      console.warn('[WelcomeEmail] Error checking welcome email on uploadProfileImage:', err.message);
+    }
 
     res.json({
       message: 'Profile image uploaded successfully',
@@ -631,6 +650,12 @@ exports.forgotPassword = async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+    
+    // Validate email format before proceeding
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(normalizedEmail)) {
+      return res.status(400).json({ message: 'Please provide a valid email address' });
+    }
+
     const user = await User.findOne({ email: normalizedEmail });
 
     // Protect Admin: Admin cannot use forgot-password flow
@@ -786,15 +811,21 @@ exports.verifyEmail = async (req, res) => {
       return res.status(400).json({ message: 'Verification code must be exactly 6 digits' });
     }
 
-    const user = await User.findOne({ email }).select(
-      '+emailVerificationCode +emailVerificationExpires +emailVerificationAttempts'
+    // Find user by either primary email or pending email
+    const user = await User.findOne({ 
+      $or: [
+        { email: email },
+        { pendingEmail: email }
+      ]
+    }).select(
+      '+emailVerificationCode +emailVerificationExpires +emailVerificationAttempts +pendingEmail'
     );
 
     if (!user) {
       return res.status(404).json({ message: 'User account not found' });
     }
 
-    if (user.emailVerified) {
+    if (user.emailVerified && !user.pendingEmail) {
       return res.json({
         success: true,
         emailVerified: true,
@@ -812,6 +843,7 @@ exports.verifyEmail = async (req, res) => {
     if (user.emailVerificationExpires < new Date()) {
       user.emailVerificationCode = undefined;
       user.emailVerificationExpires = undefined;
+      user.pendingEmail = undefined;
       await user.save();
       return res.status(400).json({
         message: 'Verification code has expired. Please request a new code.',
@@ -821,6 +853,7 @@ exports.verifyEmail = async (req, res) => {
     if ((user.emailVerificationAttempts || 0) >= 5) {
       user.emailVerificationCode = undefined;
       user.emailVerificationExpires = undefined;
+      user.pendingEmail = undefined;
       await user.save();
       return res.status(400).json({
         message: 'Too many incorrect attempts. This code was invalidated for your protection. Please request a new code.',
@@ -841,8 +874,17 @@ exports.verifyEmail = async (req, res) => {
     }
 
     // Verified successfully!
+    const previousEmail = user.email;
+    
+    // If there's a pending email, it means the user is changing their email
+    if (user.pendingEmail && user.pendingEmail === email) {
+      user.email = user.pendingEmail;
+      user.pendingEmail = undefined;
+    }
+    
     user.emailVerified = true;
     user.isEmailVerified = true;
+    user.emailVerifiedAt = new Date();
     user.emailVerificationCode = undefined;
     user.emailVerificationExpires = undefined;
     user.emailVerificationAttempts = 0;
@@ -850,9 +892,11 @@ exports.verifyEmail = async (req, res) => {
     await user.save();
 
     // Check if profile is already complete and trigger welcome email
-    checkAndSendWelcomeEmail(user._id).catch((err) =>
-      console.warn('[WelcomeEmail] Error checking welcome email on verifyEmail:', err.message)
-    );
+    try {
+      await checkAndSendWelcomeEmail(user._id);
+    } catch (err) {
+      console.warn('[WelcomeEmail] Error checking welcome email on verifyEmail:', err.message);
+    }
 
     // Issue full unrestricted token
     const newAccessToken = generateAccessToken(user);
@@ -862,6 +906,10 @@ exports.verifyEmail = async (req, res) => {
     logAuditEvent({
       userId: user._id,
       action: 'EMAIL_VERIFIED_SUCCESS',
+      details: { 
+        previousEmail: previousEmail !== user.email ? previousEmail : undefined,
+        newEmail: user.email 
+      },
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });
@@ -870,9 +918,13 @@ exports.verifyEmail = async (req, res) => {
       success: true,
       emailVerified: true,
       requiresEmailVerification: false,
+      email: user.email,
+      emailChanged: previousEmail !== user.email,
       token: newAccessToken,
       refreshToken: newRefreshToken,
-      message: 'Email verified successfully! Welcome to Kapu-LK.',
+      message: previousEmail !== user.email 
+        ? 'Email updated and verified successfully! Welcome to Kapu-LK.'
+        : 'Email verified successfully! Welcome to Kapu-LK.',
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -981,7 +1033,7 @@ exports.changeVerificationEmail = async (req, res) => {
       return res.status(404).json({ message: 'User account not found' });
     }
 
-    if (user.emailVerified) {
+    if (user.emailVerified && !user.pendingEmail) {
       return res.status(400).json({ message: 'This email address is already verified and cannot be changed here' });
     }
 
@@ -998,7 +1050,8 @@ exports.changeVerificationEmail = async (req, res) => {
     const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
 
     const previousEmail = user.email;
-    user.email = cleanNewEmail;
+    // Store new email in pendingEmail field instead of updating primary email
+    user.pendingEmail = cleanNewEmail;
     user.emailVerificationCode = hashedCode;
     user.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000);
     user.emailVerificationAttempts = 0;
@@ -1014,8 +1067,8 @@ exports.changeVerificationEmail = async (req, res) => {
 
     logAuditEvent({
       userId: user._id,
-      action: 'EMAIL_CHANGED_PRE_VERIFICATION',
-      details: { previousEmail, newEmail: cleanNewEmail },
+      action: 'EMAIL_CHANGE_REQUESTED',
+      details: { previousEmail, pendingEmail: cleanNewEmail },
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });
@@ -1023,15 +1076,106 @@ exports.changeVerificationEmail = async (req, res) => {
     if (emailResult && emailResult.success === false) {
       console.warn('[ChangeVerificationEmail] Failed to dispatch email:', emailResult.error);
       return res.status(502).json({
-        message: `Email updated, but dispatch failed: ${emailResult.error || 'SMTP server error'}. Please verify credentials.`,
+        message: `Email change requested, but dispatch failed: ${emailResult.error || 'SMTP server error'}. Please verify credentials.`,
         error: emailResult.error,
       });
     }
 
     res.json({
       success: true,
+      pendingEmail: cleanNewEmail,
+      message: `Email change requested! A verification code has been sent to ${cleanNewEmail}. Please verify to complete the change.`,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Fix invalid email for authenticated users with password confirmation
+// @route   POST /api/auth/fix-invalid-email
+// @access  Private
+exports.fixInvalidEmail = async (req, res) => {
+  try {
+    const { newEmail, password } = req.body;
+    const cleanNewEmail = String(newEmail || '').toLowerCase().trim();
+
+    if (!cleanNewEmail || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(cleanNewEmail)) {
+      return res.status(400).json({ message: 'A valid email address is required' });
+    }
+
+    if (!password) {
+      return res.status(400).json({ message: 'Password confirmation is required' });
+    }
+
+    const user = await User.findById(req.user._id).select('+password +emailVerificationCooldown');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User account not found' });
+    }
+
+    // Verify password
+    const isPasswordValid = await user.matchPassword(password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid password' });
+    }
+
+    // Check if new email is already registered by any other account
+    const existingUser = await User.findOne({ 
       email: cleanNewEmail,
-      message: `Email updated! A fresh verification code has been sent to ${cleanNewEmail}.`,
+      _id: { $ne: user._id }
+    });
+    if (existingUser) {
+      return res.status(400).json({ message: 'This email address is already registered to another account' });
+    }
+
+    // Enforce 60-second cooldown
+    if (user.emailVerificationCooldown && user.emailVerificationCooldown > Date.now()) {
+      const secondsLeft = Math.ceil((user.emailVerificationCooldown.getTime() - Date.now()) / 1000);
+      return res.status(429).json({
+        message: `Please wait ${secondsLeft} seconds before requesting another code.`,
+        retryAfter: secondsLeft,
+      });
+    }
+
+    const verificationCode = crypto.randomInt(100000, 1000000).toString();
+    const hashedCode = crypto.createHash('sha256').update(verificationCode).digest('hex');
+
+    const previousEmail = user.email;
+    // Store new email in pendingEmail field
+    user.pendingEmail = cleanNewEmail;
+    user.emailVerificationCode = hashedCode;
+    user.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+    user.emailVerificationAttempts = 0;
+    user.emailVerificationCooldown = new Date(Date.now() + 60 * 1000);
+    await user.save();
+
+    const emailResult = await sendEmailVerificationCode({
+      to: cleanNewEmail,
+      name: user.name,
+      code: verificationCode,
+      expiresMinutes: 15,
+    });
+
+    logAuditEvent({
+      userId: user._id,
+      action: 'INVALID_EMAIL_FIX_REQUESTED',
+      details: { previousEmail, pendingEmail: cleanNewEmail },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    if (emailResult && emailResult.success === false) {
+      console.warn('[FixInvalidEmail] Failed to dispatch email:', emailResult.error);
+      return res.status(502).json({
+        message: `Email fix requested, but dispatch failed: ${emailResult.error || 'SMTP server error'}. Please verify credentials.`,
+        error: emailResult.error,
+      });
+    }
+
+    res.json({
+      success: true,
+      pendingEmail: cleanNewEmail,
+      message: `Email fix requested! A verification code has been sent to ${cleanNewEmail}. Please verify to complete the email update.`,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

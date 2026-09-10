@@ -298,6 +298,8 @@ app.get('/health', (req, res) => {
     database: dbConnected ? 'connected' : 'disconnected',
     emailConfigured: hasCreds,
     emailSender: process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || 'not_set',
+    emailUser: process.env.EMAIL_USER ? 'configured' : 'not_set',
+    emailPassword: process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASS || process.env.SMTP_PASS ? 'configured' : 'not_set',
   });
 });
 

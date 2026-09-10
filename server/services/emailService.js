@@ -122,6 +122,15 @@ async function dispatchEmail({ to, subject, html, text }) {
     const transporter = getTransporter();
     const from = getFromHeader();
 
+    // Check if using mock transport (no SMTP credentials)
+    const { emailUser, emailPass } = getCredentials();
+    if (!emailUser || !emailPass) {
+      console.log(`[EmailService Mock] Outgoing mail to ${maskEmail(to)} | Subject: "${subject}"`);
+      console.log(`[EmailService Mock] SMTP credentials not configured. EMAIL_USER and EMAIL_APP_PASSWORD/EMAIL_PASS must be set in environment variables`);
+      console.log(`[EmailService Mock] Email not actually sent - this is development mode only`);
+      return { success: true, messageId: `mock-${Date.now()}`, mock: true };
+    }
+
     const info = await transporter.sendMail({
       from,
       to,
@@ -142,14 +151,18 @@ async function dispatchEmail({ to, subject, html, text }) {
   } catch (err) {
     // Log failure safely without printing passwords, tokens, or raw credentials
     console.error(`[EmailService] Delivery failed to ${maskEmail(to)}:`, err.message);
+    console.error(`[EmailService] Error code: ${err.code || 'UNKNOWN'}`);
+    console.error(`[EmailService] Check your SMTP credentials in environment variables`);
+    
     lastDeliveryStatus = {
       timestamp: new Date().toISOString(),
       recipient: maskEmail(to),
       success: false,
       error: err.message,
+      errorCode: err.code || 'UNKNOWN',
       messageId: null,
     };
-    return { success: false, error: err.message };
+    return { success: false, error: err.message, errorCode: err.code || 'UNKNOWN' };
   }
 }
 
