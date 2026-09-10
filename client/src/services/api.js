@@ -1,7 +1,10 @@
 import axios from 'axios';
 
 const getApiBaseUrl = () => {
-    // Always use the Render backend URL for both local and production
+    // For development, use localhost; for production, use Render backend
+    if (process.env.NODE_ENV === 'development') {
+        return process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+    }
     return process.env.REACT_APP_API_URL || 'https://kapu-lk-2.onrender.com/api';
 };
 
