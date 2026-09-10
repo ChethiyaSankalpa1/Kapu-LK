@@ -190,7 +190,7 @@ export default function SupportInboxTab() {
       const tb = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
       return ta - tb;
     });
-  }, [selectedTicket?._id, selectedTicket?.messages]);
+  }, [selectedTicket?.messages]);
 
   return (
     <div className="space-y-6 min-w-0">
