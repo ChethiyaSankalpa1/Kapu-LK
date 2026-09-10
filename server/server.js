@@ -286,8 +286,23 @@ app.get('/', (req, res) => {
   });
 });
 
-// Health check for Render
-app.get('/health', async (req, res) => {
+// Fast health check for Render container monitoring (must respond immediately)
+app.get('/health', (req, res) => {
+  const hasCreds = Boolean(
+    (process.env.EMAIL_USER || process.env.SMTP_USER) &&
+    (process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASS || process.env.SMTP_PASS)
+  );
+
+  res.status(200).json({ 
+    status: 'ok',
+    database: dbConnected ? 'connected' : 'disconnected',
+    emailConfigured: hasCreds,
+    emailSender: process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || 'not_set',
+  });
+});
+
+// Deep email & SMTP diagnostics (on demand)
+app.get('/health/diagnostics', async (req, res) => {
   const { verifyConnection, getLastDeliveryStatus } = require('./services/emailService');
   let smtpHandshake = null;
   try {
@@ -299,11 +314,6 @@ app.get('/health', async (req, res) => {
   res.status(200).json({ 
     status: 'ok',
     database: dbConnected ? 'connected' : 'disconnected',
-    emailConfigured: Boolean(
-      (process.env.EMAIL_USER || process.env.SMTP_USER) &&
-      (process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASS || process.env.SMTP_PASS)
-    ),
-    emailSender: process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || 'not_set',
     smtpHandshake,
     lastDelivery: getLastDeliveryStatus ? getLastDeliveryStatus() : null,
   });
