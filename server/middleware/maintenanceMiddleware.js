@@ -71,10 +71,7 @@ const isExemptPath = (path, method) => {
   if (path === '/' || path === '/health') return true;
   if (path.startsWith('/api/maintenance')) return true;
   if (path.startsWith('/api/admin')) return true;
-  if (path.startsWith('/api/auth/register')) return true;
-  if (path.startsWith('/api/auth/login')) return true;
-  if (path.startsWith('/api/auth/refresh')) return true;
-  if (path.startsWith('/api/auth/logout')) return true;
+  if (path.startsWith('/api/auth')) return true;
   return false;
 };
 

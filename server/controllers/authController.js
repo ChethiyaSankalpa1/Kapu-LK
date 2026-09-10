@@ -484,7 +484,11 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message });
     }
     console.error('[register] Unhandled error:', error && error.message || error);
-    res.status(500).json({ message: 'Server error during registration. Please try again or contact support if the problem continues.' });
+    res.status(500).json({ 
+      message: 'Server error during registration: ' + ((error && error.message) || String(error)),
+      error: error && error.message,
+      stack: error && error.stack ? error.stack.split('\n').slice(0, 3) : undefined,
+    });
   }
 };
 

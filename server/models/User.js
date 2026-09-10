@@ -425,16 +425,15 @@ userSchema.pre('save', function(next) {
 });
 
 // Hash password before saving
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function() {
   if (!this.isModified('password')) {
-    return next();
+    return;
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   if (!this.isNew) {
     this.passwordChangedAt = new Date(Date.now() - 1000); // 1 sec in past ensures token issued after
   }
-  next();
 });
 
 // Match password
