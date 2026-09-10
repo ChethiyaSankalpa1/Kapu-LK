@@ -35,9 +35,14 @@ function getTransporter() {
   }
 
   const emailUser = process.env.EMAIL_USER || process.env.SMTP_USER;
-  const emailPass = (process.env.EMAIL_APP_PASSWORD || process.env.SMTP_PASS || '').replace(/\s+/g, '');
+  const emailPass = (
+    process.env.EMAIL_APP_PASSWORD ||
+    process.env.EMAIL_PASS ||
+    process.env.SMTP_PASS ||
+    ''
+  ).replace(/\s+/g, '');
 
-  if (process.env.EMAIL_APP_PASSWORD && emailUser) {
+  if ((process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASS) && emailUser) {
     // Gmail App Password transport
     transporterInstance = nodemailer.createTransport({
       service: 'gmail',
@@ -46,12 +51,14 @@ function getTransporter() {
         pass: emailPass,
       },
     });
-  } else if (process.env.SMTP_HOST && process.env.SMTP_PORT) {
+  } else if ((process.env.SMTP_HOST || process.env.EMAIL_HOST) && (process.env.SMTP_PORT || process.env.EMAIL_PORT)) {
     // Standard custom SMTP transport
+    const host = process.env.SMTP_HOST || process.env.EMAIL_HOST;
+    const port = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT);
     transporterInstance = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true',
+      host,
+      port,
+      secure: port === 465 || String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true',
       auth: emailUser
         ? {
             user: emailUser,

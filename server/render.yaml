@@ -31,3 +31,11 @@ services:
         sync: false
       - key: EMAIL_PASS
         sync: false
+      - key: EMAIL_APP_PASSWORD
+        sync: false
+      - key: EMAIL_FROM_NAME
+        value: Kapu-LK Support Team
+      - key: EMAIL_FROM_ADDRESS
+        value: kapulk.support@gmail.com
+      - key: CLIENT_URL
+        sync: false

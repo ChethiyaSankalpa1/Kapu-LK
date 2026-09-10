@@ -291,7 +291,10 @@ app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'ok',
     database: dbConnected ? 'connected' : 'disconnected',
-    emailConfigured: Boolean(process.env.EMAIL_USER && process.env.EMAIL_APP_PASSWORD),
+    emailConfigured: Boolean(
+      (process.env.EMAIL_USER || process.env.SMTP_USER) &&
+      (process.env.EMAIL_APP_PASSWORD || process.env.EMAIL_PASS || process.env.SMTP_PASS)
+    ),
     emailSender: process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || 'not_set',
   });
 });
