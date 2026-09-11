@@ -815,6 +815,73 @@ exports.uploadProfileImage = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// @desc    Change password for authenticated user
+// @route   POST /api/auth/change-password
+// @access  Private (requires protect middleware)
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current password and new password are required.' });
+    }
+
+    if (typeof newPassword !== 'string' || newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters.' });
+    }
+
+    // Fetch user with password field (excluded by default in protect middleware)
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) {
+      return res.status(401).json({ message: 'User not found.' });
+    }
+
+    // Verify current password using the model's bcrypt comparison method
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Current password is incorrect.' });
+    }
+
+    // Prevent reusing the same password
+    const isSamePassword = await user.matchPassword(newPassword);
+    if (isSamePassword) {
+      return res.status(400).json({ message: 'New password must be different from your current password.' });
+    }
+
+    // Assign new password — bcrypt pre-save hook handles hashing automatically
+    user.password = newPassword;
+    await user.save();
+
+    // Issue a fresh access token so the user stays logged in after passwordChangedAt updates
+    const newAccessToken = generateAccessToken(user);
+    const newRefreshToken = await createRefreshToken(user, req);
+    setTokenCookies(res, newAccessToken, newRefreshToken);
+
+    logAuditEvent({
+      userId: user._id,
+      action: 'PASSWORD_CHANGED',
+      targetId: user._id,
+      targetType: 'User',
+      details: { email: user.email },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully.',
+      token: newAccessToken,
+    });
+  } catch (error) {
+    const isProd = process.env.NODE_ENV === 'production';
+    console.error('[changePassword] error:', error && error.message ? error.message : error);
+    res.status(500).json({
+      message: isProd
+        ? 'Failed to change password. Please try again.'
+        : (error.message || 'Server error'),
+    });
+  }
+};
 
 // @desc    Request password reset email with 6-digit single-use OTP code
 // @route   POST /api/auth/forgot-password

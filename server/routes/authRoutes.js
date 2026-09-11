@@ -15,6 +15,7 @@ const {
   forgotPassword,
   verifyResetCode,
   resetPassword,
+  changePassword,
   setup2FA,
   verify2FA,
   disable2FA,
@@ -158,6 +159,20 @@ router.post(
 
 router.get('/me', protect, getMe);
 router.post('/upload-profile-image', protect, upload('profileImage'), uploadProfileImage);
+
+// Change Password (authenticated users only)
+router.post(
+  '/change-password',
+  protect,
+  [
+    body('currentPassword').notEmpty().withMessage('Current password is required'),
+    body('newPassword')
+      .isLength({ min: 6 })
+      .withMessage('New password must be at least 6 characters'),
+  ],
+  validate,
+  changePassword
+);
 
 // 2FA management routes
 router.post('/2fa/setup', protect, setup2FA);

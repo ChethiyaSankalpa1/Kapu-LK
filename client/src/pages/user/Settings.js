@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
-import { userAPI } from '../../services/api';
+import { userAPI, authAPI } from '../../services/api';
 import {
     User, BellRing, Globe, Monitor, UserMinus, Trash2, HelpCircle,
     Info, Eye, EyeOff, ChevronRight, ArrowLeft, Save, AlertTriangle, Sun, Moon,
@@ -22,12 +22,15 @@ const Settings = () => {
     // Theme state
     const [theme, setTheme] = useState(darkMode ? 'dark' : 'light');
     
-    // Password state
-    const [showPassword, setShowPassword] = useState(false);
+    // Password state — separate show/hide per field for better UX
+    const [showCurrentPw, setShowCurrentPw] = useState(false);
+    const [showNewPw, setShowNewPw] = useState(false);
+    const [showConfirmPw, setShowConfirmPw] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [changingPassword, setChangingPassword] = useState(false);
+    const [passwordError, setPasswordError] = useState('');
     
     const handleGiftingOptInChange = async (e) => {
         const newVal = e.target.checked;
@@ -92,26 +95,42 @@ const Settings = () => {
 
     const handlePasswordChange = async (e) => {
         e.preventDefault();
-        
+        setPasswordError('');
+
         if (newPassword !== confirmPassword) {
-            toast.error(t('toast.settings.passwordMismatch'));
+            setPasswordError('Passwords do not match.');
             return;
         }
-        
+
         if (newPassword.length < 6) {
-            toast.error(t('toast.settings.passwordMinLength'));
+            setPasswordError('New password must be at least 6 characters.');
             return;
         }
-        
+
         setChangingPassword(true);
-        
+
         try {
-            toast.success(t('toast.settings.passwordChanged'));
+            const res = await authAPI.changePassword({ currentPassword, newPassword });
+            // Store the fresh token returned by the server so the session stays alive
+            if (res.data?.token) {
+                localStorage.setItem('token', res.data.token);
+            }
+            toast.success('Password changed successfully.');
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
+            setPasswordError('');
         } catch (error) {
-            toast.error(error.response?.data?.message || t('toast.settings.passwordChangeFailed'));
+            const msg = error.response?.data?.message || 'Failed to change password. Please try again.';
+            // Show specific validation messages inline; show other errors via toast
+            if (
+                msg === 'Current password is incorrect.' ||
+                msg === 'New password must be different from your current password.'
+            ) {
+                setPasswordError(msg);
+            } else {
+                toast.error(msg);
+            }
         } finally {
             setChangingPassword(false);
         }
@@ -214,58 +233,97 @@ const Settings = () => {
                                 description={t('settings.changePasswordDesc')}
                             >
                                 <form onSubmit={handlePasswordChange} className="space-y-3 sm:space-y-4">
+                                    {/* Current Password */}
                                     <div className="relative">
                                         <input
-                                            type={showPassword ? 'text' : 'password'}
+                                            type={showCurrentPw ? 'text' : 'password'}
                                             value={currentPassword}
-                                            onChange={(e) => setCurrentPassword(e.target.value)}
-                                            placeholder={t('settings.currentPassword')}
-                                            className="w-full px-4 py-3 text-sm sm:text-base bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                            onChange={(e) => { setCurrentPassword(e.target.value); setPasswordError(''); }}
+                                            placeholder="Current Password"
+                                            className="w-full px-4 py-3 pr-11 text-sm sm:text-base bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                                             required
+                                            autoComplete="current-password"
+                                            disabled={changingPassword}
                                         />
                                         <button
                                             type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                            onClick={() => setShowCurrentPw(!showCurrentPw)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-0.5"
+                                            aria-label={showCurrentPw ? 'Hide current password' : 'Show current password'}
                                         >
-                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                            {showCurrentPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                         </button>
                                     </div>
-                                    <input
-                                        type="password"
-                                        value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
-                                        placeholder={t('settings.newPassword')}
-                                        className="w-full px-4 py-3 text-sm sm:text-base bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                        required
-                                    />
-                                    <input
-                                        type="password"
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        placeholder={t('settings.confirmNewPassword')}
-                                        className="w-full px-4 py-3 text-sm sm:text-base bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                        required
-                                    />
-                                    <div className="flex flex-col sm:flex-row gap-3">
-                                        <button
-                                            type="submit"
+
+                                    {/* New Password */}
+                                    <div className="relative">
+                                        <input
+                                            type={showNewPw ? 'text' : 'password'}
+                                            value={newPassword}
+                                            onChange={(e) => { setNewPassword(e.target.value); setPasswordError(''); }}
+                                            placeholder="New Password (min. 6 characters)"
+                                            className="w-full px-4 py-3 pr-11 text-sm sm:text-base bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                            required
+                                            autoComplete="new-password"
                                             disabled={changingPassword}
-                                            className="w-full sm:flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowNewPw(!showNewPw)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-0.5"
+                                            aria-label={showNewPw ? 'Hide new password' : 'Show new password'}
                                         >
-                                            {changingPassword ? (
-                                                <>
-                                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                    {t('settings.changingPassword')}
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Save className="w-4 h-4" />
-                                                    {t('settings.changePassword')}
-                                                </>
-                                            )}
+                                            {showNewPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                         </button>
                                     </div>
+
+                                    {/* Confirm New Password */}
+                                    <div className="relative">
+                                        <input
+                                            type={showConfirmPw ? 'text' : 'password'}
+                                            value={confirmPassword}
+                                            onChange={(e) => { setConfirmPassword(e.target.value); setPasswordError(''); }}
+                                            placeholder="Confirm New Password"
+                                            className="w-full px-4 py-3 pr-11 text-sm sm:text-base bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                            required
+                                            autoComplete="new-password"
+                                            disabled={changingPassword}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPw(!showConfirmPw)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-0.5"
+                                            aria-label={showConfirmPw ? 'Hide confirm password' : 'Show confirm password'}
+                                        >
+                                            {showConfirmPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+
+                                    {/* Inline error message */}
+                                    {passwordError && (
+                                        <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-700 dark:text-red-400">
+                                            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                                            <span>{passwordError}</span>
+                                        </div>
+                                    )}
+
+                                    <button
+                                        type="submit"
+                                        disabled={changingPassword}
+                                        className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    >
+                                        {changingPassword ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                Updating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Save className="w-4 h-4" />
+                                                Change Password
+                                            </>
+                                        )}
+                                    </button>
                                 </form>
                             </SettingCard>
                         </div>

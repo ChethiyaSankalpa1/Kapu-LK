@@ -172,6 +172,7 @@ export const authAPI = {
         return api.post('/auth/reset-password', tokenOrData);
     },
     getMe: () => api.get('/auth/me'),
+    changePassword: (data) => api.post('/auth/change-password', data),
     setup2FA: () => api.post('/auth/2fa/setup'),
     verify2FA: (code) => api.post('/auth/2fa/verify', { code }),
     disable2FA: (password) => api.post('/auth/2fa/disable', { password }),

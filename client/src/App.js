@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useState, useEffect, useRef, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -316,6 +316,25 @@ const MaintenanceGate = ({ children }) => {
   );
 };
 
+// Route-aware layout: hides the public footer on all /admin/* pages
+const AppLayout = ({ children }) => {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
+  return (
+    <div className="min-h-screen pb-20 md:pb-0">
+      <Navbar />
+      <MobileBottomNav />
+      <GlobalRealtimeMonitor />
+      <PrivacyPolicyModal />
+      <SupportChatbot />
+      {children}
+      {/* Public footer is hidden on all admin pages */}
+      {!isAdminRoute && <Footer />}
+    </div>
+  );
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -326,125 +345,120 @@ function App() {
         }}
       >
         <MaintenanceGate>
-          <div className="min-h-screen pb-20 md:pb-0">
-            <Navbar />
-            <MobileBottomNav />
-            <GlobalRealtimeMonitor />
-            <PrivacyPolicyModal />
-            <SupportChatbot />
-          <ChunkErrorBoundary>
-            <Suspense
-              fallback={
-                <div className="flex items-center justify-center py-16">
-                  <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-purple-500" />
-                </div>
-              }
-            >
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Home />} />
-              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/verify-email" element={<VerifyEmail />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <AppLayout>
+            <ChunkErrorBoundary>
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center py-16">
+                    <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-purple-500" />
+                  </div>
+                }
+              >
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Home />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-              {/* User Routes */}
-              <Route
-                path="/dashboard"
-                element={
-                  <UserRoute>
-                    <Dashboard />
-                  </UserRoute>
-                }
-              />
-              <Route
-                path="/premium"
-                element={
-                  <UserRoute>
-                    <PremiumPayment />
-                  </UserRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <UserRoute>
-                    <Profile />
-                  </UserRoute>
-                }
-              />
-              <Route
-                path="/users"
-                element={
-                  <UserRoute>
-                    <Users />
-                  </UserRoute>
-                }
-              />
-              <Route
-                path="/users/:id"
-                element={
-                  <UserRoute>
-                    <UserDetail />
-                  </UserRoute>
-                }
-              />
-              <Route
-                path="/conversation"
-                element={
-                  <PrivateRoute>
-                    <Conversation />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/conversation/:userId"
-                element={
-                  <PrivateRoute>
-                    <Conversation />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/contact-admin"
-                element={
-                  <UserRoute>
-                    <ContactAdmin />
-                  </UserRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <UserRoute>
-                    <Settings />
-                  </UserRoute>
-                }
-              />
-              <Route
-                path="/wallet"
-                element={
-                  <UserRoute>
-                    <Wallet />
-                  </UserRoute>
-                }
-              />
+                {/* User Routes */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <UserRoute>
+                      <Dashboard />
+                    </UserRoute>
+                  }
+                />
+                <Route
+                  path="/premium"
+                  element={
+                    <UserRoute>
+                      <PremiumPayment />
+                    </UserRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <UserRoute>
+                      <Profile />
+                    </UserRoute>
+                  }
+                />
+                <Route
+                  path="/users"
+                  element={
+                    <UserRoute>
+                      <Users />
+                    </UserRoute>
+                  }
+                />
+                <Route
+                  path="/users/:id"
+                  element={
+                    <UserRoute>
+                      <UserDetail />
+                    </UserRoute>
+                  }
+                />
+                <Route
+                  path="/conversation"
+                  element={
+                    <PrivateRoute>
+                      <Conversation />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/conversation/:userId"
+                  element={
+                    <PrivateRoute>
+                      <Conversation />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/contact-admin"
+                  element={
+                    <UserRoute>
+                      <ContactAdmin />
+                    </UserRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <UserRoute>
+                      <Settings />
+                    </UserRoute>
+                  }
+                />
+                <Route
+                  path="/wallet"
+                  element={
+                    <UserRoute>
+                      <Wallet />
+                    </UserRoute>
+                  }
+                />
 
-              {/* Admin Routes */}
-              <Route
-                path="/admin"
-                element={
-                  <AdminRoute>
-                    <AdminDashboard />
-                  </AdminRoute>
-                }
-              />
-            </Routes>
-            </Suspense>
-          </ChunkErrorBoundary>
-          <Footer />
+                {/* Admin Routes */}
+                <Route
+                  path="/admin"
+                  element={
+                    <AdminRoute>
+                      <AdminDashboard />
+                    </AdminRoute>
+                  }
+                />
+              </Routes>
+              </Suspense>
+            </ChunkErrorBoundary>
+          </AppLayout>
           <ToastContainer
             position="top-right"
             autoClose={1800}
@@ -460,7 +474,6 @@ function App() {
             progressClassName="kapu-toast-progress"
             closeButton={false}
           />
-        </div>
         </MaintenanceGate>
       </Router>
     </AuthProvider>

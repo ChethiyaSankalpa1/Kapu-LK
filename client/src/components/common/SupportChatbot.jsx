@@ -99,8 +99,17 @@ const FAQ_KNOWLEDGE_BASE = {
   },
 };
 
+// Public and auth pages where the chatbot should NOT appear
+const PUBLIC_HIDE_PATHS = [
+  '/login',
+  '/register',
+  '/verify-email',
+  '/forgot-password',
+  '/privacy-policy',
+];
+
 export default function SupportChatbot() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('chat'); // 'chat' | 'ticket' | 'my-tickets'
@@ -400,8 +409,15 @@ export default function SupportChatbot() {
     }
   };
 
-  // Don't display in admin dashboard to prevent clutter
-  if (location.pathname.startsWith('/admin')) {
+  // Hide on: logged-out state, admin users, /admin/* routes, and all public/auth pages
+  const currentPath = location.pathname;
+  if (
+    !user ||
+    isAdmin ||
+    currentPath.startsWith('/admin') ||
+    currentPath.startsWith('/reset-password') ||
+    PUBLIC_HIDE_PATHS.includes(currentPath)
+  ) {
     return null;
   }
 

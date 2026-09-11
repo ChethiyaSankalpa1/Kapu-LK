@@ -1,140 +1,145 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Shield, Heart, HelpCircle } from 'lucide-react';
+import { Mail, Shield, Heart, HelpCircle, MapPin, Clock } from 'lucide-react';
 
 const SUPPORT_EMAIL = 'kapulk.support@gmail.com';
+const CURRENT_YEAR = new Date().getFullYear();
 
 const Footer = () => {
   return (
-    <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-sm mt-auto">
-      <div className="container mx-auto px-4 sm:px-6 py-12 max-w-7xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
-          
-          {/* Column 1: Brand Info */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-slate-900 dark:text-white font-extrabold text-xl">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-white shadow-md">
-                <Heart className="w-5 h-5 fill-white" />
+    <footer className="bg-slate-900 text-slate-400 text-sm mt-auto overflow-hidden">
+      {/* Gradient accent bar */}
+      <div className="h-1 w-full bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500" />
+
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 max-w-7xl">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+
+          {/* Col 1 — Brand */}
+          <div className="col-span-2 md:col-span-1 space-y-4">
+            <Link to="/" className="flex items-center gap-2.5 w-fit group">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-900/40 group-hover:scale-105 transition-transform shrink-0">
+                <Heart className="w-5 h-5 fill-white text-white" />
               </div>
-              <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <span className="text-xl font-extrabold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                 Kapu-LK
               </span>
-            </div>
-            <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-              Sri Lanka's premier matrimonial platform dedicated to connecting singles and families with dignity, safety, and authentic Porondam compatibility.
+            </Link>
+
+            <p className="text-xs leading-relaxed text-slate-400 max-w-[220px]">
+              Sri Lanka's premier matrimonial platform connecting singles and families with dignity, safety, and authentic Porondam compatibility.
             </p>
-            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 rounded-lg w-fit border border-emerald-200 dark:border-emerald-800/40">
-              <Shield className="w-3.5 h-3.5" />
-              <span>100% Screened Profiles</span>
+
+            <div className="flex flex-col gap-2">
+              <div className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-400 bg-emerald-950/60 px-3 py-1.5 rounded-lg w-fit border border-emerald-800/50">
+                <Shield className="w-3.5 h-3.5 shrink-0" />
+                <span>100% Screened Profiles</span>
+              </div>
+              <div className="inline-flex items-center gap-2 text-xs text-slate-500 px-1">
+                <MapPin className="w-3 h-3 text-slate-600 shrink-0" />
+                <span>Serving all Sri Lanka</span>
+              </div>
             </div>
           </div>
 
-          {/* Column 2: Quick Links */}
+          {/* Col 2 — Quick Links */}
           <div className="space-y-3">
-            <h4 className="font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
+            <h4 className="text-xs font-bold text-slate-200 uppercase tracking-widest">
               Quick Links
             </h4>
             <ul className="space-y-2 text-xs">
-              <li>
-                <Link to="/" className="hover:text-purple-600 dark:hover:text-purple-400 transition">
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link to="/users" className="hover:text-purple-600 dark:hover:text-purple-400 transition">
-                  Browse Profiles
-                </Link>
-              </li>
-              <li>
-                <Link to="/register" className="hover:text-purple-600 dark:hover:text-purple-400 transition">
-                  Create Free Account
-                </Link>
-              </li>
-              <li>
-                <Link to="/login" className="hover:text-purple-600 dark:hover:text-purple-400 transition">
-                  Member Login
-                </Link>
-              </li>
-              <li>
-                <Link to="/forgot-password" className="hover:text-purple-600 dark:hover:text-purple-400 transition">
-                  Forgot Password
-                </Link>
-              </li>
+              {[
+                { to: '/', label: 'Home' },
+                { to: '/users', label: 'Browse Profiles' },
+                { to: '/register', label: 'Create Free Account' },
+                { to: '/login', label: 'Member Login' },
+                { to: '/forgot-password', label: 'Forgot Password' },
+              ].map(({ to, label }) => (
+                <li key={to}>
+                  <Link
+                    to={to}
+                    className="text-slate-400 hover:text-purple-400 transition-colors duration-150"
+                  >
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Column 3: Legal & Safety */}
+          {/* Col 3 — Legal */}
           <div className="space-y-3">
-            <h4 className="font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
+            <h4 className="text-xs font-bold text-slate-200 uppercase tracking-widest">
               Legal &amp; Privacy
             </h4>
             <ul className="space-y-2 text-xs">
               <li>
-                <Link to="/privacy-policy" className="hover:text-purple-600 dark:hover:text-purple-400 transition">
+                <Link to="/privacy-policy" className="text-slate-400 hover:text-purple-400 transition-colors duration-150">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <a
-                  href="/privacy-policy"
-                  className="hover:text-purple-600 dark:hover:text-purple-400 transition"
-                >
+                <Link to="/privacy-policy" className="text-slate-400 hover:text-purple-400 transition-colors duration-150">
                   Terms of Service
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="/privacy-policy"
-                  className="hover:text-purple-600 dark:hover:text-purple-400 transition"
-                >
+                <Link to="/privacy-policy" className="text-slate-400 hover:text-purple-400 transition-colors duration-150">
                   Community Guidelines
-                </a>
+                </Link>
               </li>
-              <li>
-                <span className="text-slate-400 dark:text-slate-500">
-                  10-Day Privacy Deletion Policy
-                </span>
+              <li className="text-slate-500 cursor-default select-none">
+                10-Day Data Deletion Policy
               </li>
             </ul>
           </div>
 
-          {/* Column 4: Official Support & Contact */}
+          {/* Col 4 — Support */}
           <div className="space-y-3">
-            <h4 className="font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider flex items-center gap-1.5">
-              <HelpCircle className="w-4 h-4 text-purple-600" />
-              <span>Contact &amp; Support</span>
+            <h4 className="text-xs font-bold text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
+              <HelpCircle className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+              Support
             </h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Need assistance with your account, profile verification, or payments? Contact our dedicated support desk:
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Need help with your account, profile, or payments?
             </p>
-            <div className="pt-1">
-              <a
-                href={`mailto:${SUPPORT_EMAIL}?subject=Kapu-LK%20Support%20Inquiry`}
-                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-semibold text-xs border border-purple-200 dark:border-purple-800/50 transition shadow-sm group"
-              >
-                <Mail className="w-4 h-4 text-purple-600 group-hover:scale-110 transition-transform" />
-                <span className="break-all">{SUPPORT_EMAIL}</span>
-              </a>
+
+            <a
+              href={`mailto:${SUPPORT_EMAIL}?subject=Kapu-LK%20Support%20Inquiry`}
+              className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-purple-950/60 hover:bg-purple-900/70 border border-purple-800/40 hover:border-purple-700/60 text-purple-300 hover:text-purple-200 font-medium text-xs transition-all group shadow-sm min-w-0"
+            >
+              <Mail className="w-4 h-4 shrink-0 group-hover:scale-110 transition-transform" />
+              <span className="break-all leading-snug min-w-0">{SUPPORT_EMAIL}</span>
+            </a>
+
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+              <Clock className="w-3 h-3 shrink-0" />
+              <span>Response within 12–24 hours</span>
             </div>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500">
-              Response time: within 12–24 hours
-            </p>
           </div>
 
         </div>
 
-        {/* Bottom Strip */}
-        <div className="pt-8 border-t border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-          <p>
-            &copy; {new Date().getFullYear()} Kapu-LK Matrimonial. All rights reserved.
+        {/* Bottom strip */}
+        <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+          <p className="flex items-center gap-1.5 text-center sm:text-left">
+            <span>© {CURRENT_YEAR} Kapu-LK Matrimonial. All rights reserved.</span>
+          </p>
+          <p className="flex items-center gap-1.5 text-slate-600">
+            Made with
+            <Heart className="w-3 h-3 fill-pink-500 text-pink-500 inline" />
+            in Sri Lanka
           </p>
           <div className="flex items-center gap-4">
-            <Link to="/privacy-policy" className="hover:text-purple-600 dark:hover:text-purple-400">
+            <Link to="/privacy-policy" className="hover:text-purple-400 transition-colors">
               Privacy
             </Link>
-            <span>•</span>
-            <a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-purple-600 dark:hover:text-purple-400">
-              Helpdesk: {SUPPORT_EMAIL}
+            <span className="text-slate-700">•</span>
+            <Link to="/privacy-policy" className="hover:text-purple-400 transition-colors">
+              Terms
+            </Link>
+            <span className="text-slate-700">•</span>
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-purple-400 transition-colors">
+              Contact
             </a>
           </div>
         </div>
