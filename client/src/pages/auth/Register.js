@@ -181,8 +181,12 @@ const Register = () => {
     };
 
     return (
-        <div className="w-full flex-1 bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-8 sm:py-12 px-4">
-            <div className="max-w-lg w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8">
+        <div className="w-full flex-1 relative flex items-center justify-center py-8 sm:py-12 px-4 overflow-hidden">
+            <img src="/couple-hero.png" className="absolute inset-0 w-full h-full object-cover object-center" alt="" aria-hidden="true" />
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/90 via-purple-950/85 to-rose-950/80" aria-hidden="true" />
+            <div className="absolute inset-0 bg-gray-50/30 dark:bg-gray-900/40" aria-hidden="true" />
+
+            <div className="max-w-lg w-full bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border border-white/40 dark:border-gray-700/60 rounded-2xl shadow-2xl p-6 sm:p-8 relative z-10">
                 
                 {/* Brand Header */}
                 <div className="text-center mb-6 sm:mb-8">
