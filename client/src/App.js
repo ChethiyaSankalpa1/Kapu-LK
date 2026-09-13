@@ -322,13 +322,15 @@ const AppLayout = ({ children }) => {
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   return (
-    <div className="min-h-screen pb-20 md:pb-0">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       <MobileBottomNav />
       <GlobalRealtimeMonitor />
       <PrivacyPolicyModal />
       <SupportChatbot />
-      {children}
+      <main className="flex-1 pb-20 md:pb-0">
+        {children}
+      </main>
       {/* Public footer is hidden on all admin pages */}
       {!isAdminRoute && <Footer />}
     </div>

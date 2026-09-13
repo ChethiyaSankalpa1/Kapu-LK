@@ -301,7 +301,7 @@ const VerifyEmail = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center py-10 px-4">
+        <div className="w-full flex-1 bg-slate-50 dark:bg-slate-900 flex items-center justify-center py-10 px-4">
             <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-6 sm:p-10 border border-slate-100 dark:border-slate-700">
                 
                 {/* Header Icon */}

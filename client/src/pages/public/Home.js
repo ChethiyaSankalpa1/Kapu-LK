@@ -67,34 +67,41 @@ const Home = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-300">
+        <div className="w-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-300">
             {/* Hero Section */}
-            <div className="relative overflow-hidden bg-gradient-to-b from-purple-950 via-slate-900 to-slate-950 pt-10 pb-20 sm:pt-16 sm:pb-28 text-white">
-                {/* Background Glow Elements */}
-                <div className="absolute top-0 left-1/4 -translate-x-1/2 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl pointer-events-none" />
-                <div className="absolute top-20 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative overflow-hidden pt-6 pb-10 sm:pt-8 sm:pb-12 md:pt-10 md:pb-14 text-white">
+                {/* Background Image */}
+                <img src="/couple-hero.png" className="absolute inset-0 w-full h-full object-cover object-[70%_center]" alt="" aria-hidden="true" />
+
+                {/* Overlay: darker left, lighter right */}
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-950/95 via-purple-950/80 to-purple-900/30" aria-hidden="true" />
+                {/* Bottom fade: transparent to slate-950/30 */}
+                <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-slate-950/30 to-transparent" aria-hidden="true" />
 
                 <div className="container mx-auto px-4 relative z-10">
-                    {/* Top Pill */}
-                    <div className="flex justify-center mb-6">
+                    {/* Top Pill - centered on sm, left-aligned on md+ */}
+                    <div className="flex justify-center md:justify-start mb-6">
                         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/15 text-xs sm:text-sm font-semibold text-pink-200 shadow-sm animate-fade-in">
                             <Sparkles className="w-4 h-4 text-pink-400" />
                             <span>{t('home.heroPill', { defaultValue: "Sri Lanka's Most Trusted Modern Matrimony Platform" })}</span>
                         </div>
                     </div>
 
-                    {/* Main Headline */}
-                    <div className="max-w-4xl mx-auto text-center mb-10">
+                    {/* Main Headline - centered on sm, left-aligned on md+ */}
+                    <div className="max-w-4xl text-center md:text-left mb-10">
                         <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.15] mb-4 sm:mb-6">
                             {t('home.heroTitle', { defaultValue: 'Find Your Perfect Life Partner' })}
                         </h1>
-                        <p className="text-base sm:text-xl text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed">
+                        <p className="text-base sm:text-xl text-slate-300 max-w-2xl mx-auto md:mx-0 font-normal leading-relaxed">
                             {t('home.heroSubtitle', { defaultValue: 'Connect with genuine, verified Sri Lankan brides and grooms with shared values, traditions, and aspirations.' })}
                         </p>
                     </div>
 
-                    {/* Interactive Quick Match Finder Widget */}
-                    <div className="max-w-4xl mx-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-3xl p-5 sm:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.35)] border border-white/20 dark:border-slate-800 text-slate-900 dark:text-slate-100 mb-12">
+                    {/* Interactive Quick Match Finder Widget - Glass styled */}
+                    <div className="max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto md:ml-0 backdrop-blur-2xl bg-white/85 dark:bg-slate-900/80 border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-purple-900/40 rounded-3xl p-5 sm:p-7 text-slate-900 dark:text-slate-100 mb-12 relative overflow-hidden">
+                        {/* Top interior accent gradient strip */}
+                        <div className="absolute top-0 left-5 right-5 h-0.5 bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-600 rounded-full" aria-hidden="true" />
+
                         <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
                             <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
                             <h2 className="text-base sm:text-lg font-bold">
@@ -202,7 +209,7 @@ const Home = () => {
                     </div>
 
                     {/* Live Preview Match Cards */}
-                    <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    <div className="max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto md:ml-0 grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                         <div className="bg-white/10 dark:bg-white/5 backdrop-blur-md rounded-2xl p-3.5 border border-white/10 flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-pink-500/30 flex items-center justify-center font-bold text-pink-300">
                                 S

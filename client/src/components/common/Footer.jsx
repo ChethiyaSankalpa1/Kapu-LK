@@ -11,11 +11,11 @@ const Footer = () => {
       {/* Gradient accent bar */}
       <div className="h-1 w-full bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500" />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 max-w-7xl">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-7 sm:py-8 md:py-9 max-w-7xl">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-6 sm:mb-7">
 
           {/* Col 1 — Brand */}
-          <div className="col-span-2 md:col-span-1 space-y-4">
+          <div className="sm:col-span-2 lg:col-span-1 space-y-4">
             <Link to="/" className="flex items-center gap-2.5 w-fit group">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-900/40 group-hover:scale-105 transition-transform shrink-0">
                 <Heart className="w-5 h-5 fill-white text-white" />
@@ -94,7 +94,7 @@ const Footer = () => {
           </div>
 
           {/* Col 4 — Support */}
-          <div className="space-y-3">
+          <div className="space-y-3 min-w-0">
             <h4 className="text-xs font-bold text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
               <HelpCircle className="w-3.5 h-3.5 text-purple-400 shrink-0" />
               Support
@@ -120,7 +120,7 @@ const Footer = () => {
         </div>
 
         {/* Bottom strip */}
-        <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+        <div className="pt-5 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <p className="flex items-center gap-1.5 text-center sm:text-left">
             <span>© {CURRENT_YEAR} Kapu-LK Matrimonial. All rights reserved.</span>
           </p>
