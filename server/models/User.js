@@ -224,6 +224,9 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  lastMessageSentAt: {
+    type: Date,
+  },
   giftingOptIn: {
     type: Boolean,
     default: true,

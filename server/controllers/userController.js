@@ -212,6 +212,10 @@ exports.getAllUsers = async (req, res) => {
 // @access  Private
 exports.getUserById = async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+
     const user = await User.findById(req.params.id).select(
       '-password -twoFactorSecret -twoFactorRecoveryCodes -passwordResetToken -passwordResetExpires'
     );
@@ -223,51 +227,38 @@ exports.getUserById = async (req, res) => {
     const isSelfOrAdmin = user._id.equals(req.user._id) || req.user.role === 'admin';
 
     if (!isSelfOrAdmin) {
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      const viewerName = req.user.name || 'A member';
+      try {
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const viewerName = req.user.name || 'A member';
 
-      const existingWindow = await Notification.findOne({
-        user: user._id,
-        relatedUser: req.user._id,
-        type: 'profile_view',
-        lastViewedAt: mongoose.trusted({ $gte: twentyFourHoursAgo }),
-      }).select('_id').lean();
+        const existingWindow = await Notification.findOne({
+          user: user._id,
+          relatedUser: req.user._id,
+          type: 'profile_view',
+          lastViewedAt: { $gte: twentyFourHoursAgo },
+        }).select('_id').lean();
 
-      if (existingWindow) {
-        await Notification.updateOne(
-          { _id: existingWindow._id },
-          {
-            $inc: { viewCount: 1 },
-            $set: { lastViewedAt: new Date() },
-          }
-        );
-      } else {
-        await Notification.findOneAndUpdate(
-          {
+        if (existingWindow) {
+          await Notification.updateOne(
+            { _id: existingWindow._id },
+            {
+              $inc: { viewCount: 1 },
+              $set: { lastViewedAt: new Date() },
+            }
+          );
+        } else {
+          await Notification.create({
             user: user._id,
             relatedUser: req.user._id,
             type: 'profile_view',
-            lastViewedAt: mongoose.trusted({ $gte: twentyFourHoursAgo }),
-          },
-          {
-            $setOnInsert: {
-              user: user._id,
-              relatedUser: req.user._id,
-              type: 'profile_view',
-              message: `${viewerName} viewed your profile`,
-              isRead: false,
-              viewCount: 1,
-              lastViewedAt: new Date(),
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-            $inc: { viewCount: 0 },
-            $set: {
-              lastViewedAt: new Date(),
-            },
-          },
-          { upsert: true, new: false, setDefaultsOnInsert: true }
-        );
+            message: `${viewerName} viewed your profile`,
+            isRead: false,
+            viewCount: 1,
+            lastViewedAt: new Date(),
+          });
+        }
+      } catch (notifError) {
+        console.error('Profile view notification error (non-fatal):', notifError);
       }
     }
 
@@ -460,6 +451,9 @@ exports.getAdminUser = async (req, res) => {
 exports.blockUser = async (req, res) => {
   try {
     const targetUserId = req.params.id;
+    if (!mongoose.isValidObjectId(targetUserId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
     if (req.user._id.toString() === targetUserId) {
       return res.status(400).json({ message: 'Cannot block yourself' });
     }
@@ -489,6 +483,9 @@ exports.blockUser = async (req, res) => {
 exports.unblockUser = async (req, res) => {
   try {
     const targetUserId = req.params.id;
+    if (!mongoose.isValidObjectId(targetUserId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
 
     await User.findByIdAndUpdate(req.user._id, {
       $pull: { blockedUsers: targetUserId },

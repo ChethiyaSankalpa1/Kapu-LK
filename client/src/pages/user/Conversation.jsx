@@ -75,18 +75,27 @@ const Conversation = () => {
     if (!userId) return;
     if (!silent) setChatLoading(true);
     try {
-      const [messagesRes, userRes] = await Promise.all([
+      const [messagesRes, userRes] = await Promise.allSettled([
         messageAPI.getConversationWithUser(userId),
         userAPI.getUserById(userId)
       ]);
 
-      console.log('Messages response:', messagesRes.data);
-      const newMsgs = Array.isArray(messagesRes.data) ? messagesRes.data : [];
+      const newMsgs = messagesRes.status === 'fulfilled' && Array.isArray(messagesRes.value?.data)
+        ? messagesRes.value.data
+        : [];
+      const fetchedOtherUser = userRes.status === 'fulfilled' ? userRes.value?.data : null;
+
+      if (messagesRes.status === 'rejected') {
+        console.error('Failed to load conversation messages:', messagesRes.reason);
+      }
+      if (userRes.status === 'rejected') {
+        console.error('Failed to load other user details:', userRes.reason);
+      }
       
       // Simulate typing indicator if there is a new message from the other user
       if (prevMsgCountRef.current > 0 && newMsgs.length > prevMsgCountRef.current) {
         const lastMsg = newMsgs[newMsgs.length - 1];
-        const isFromOther = lastMsg.from._id === userId || lastMsg.from === userId;
+        const isFromOther = lastMsg && ((lastMsg.from && lastMsg.from._id === userId) || lastMsg.from === userId);
         
         if (isFromOther) {
           setIsTyping(true);
@@ -97,14 +106,14 @@ const Conversation = () => {
             setIsTyping(false);
             scrollToBottom('smooth');
           }, 1500);
-          setOtherUser(userRes.data);
+          if (fetchedOtherUser) setOtherUser(fetchedOtherUser);
           return;
         }
       }
 
       setMessages(newMsgs);
       prevMsgCountRef.current = newMsgs.length;
-      setOtherUser(userRes.data);
+      if (fetchedOtherUser) setOtherUser(fetchedOtherUser);
     } catch (error) {
       console.error('Failed to load chat messages', error);
       setMessages([]);

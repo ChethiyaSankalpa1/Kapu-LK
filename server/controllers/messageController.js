@@ -18,6 +18,10 @@ exports.sendMessage = async (req, res) => {
       return res.status(400).json({ message: 'Recipient and content are required' });
     }
 
+    if (!mongoose.isValidObjectId(to)) {
+      return res.status(400).json({ message: 'Invalid recipient ID' });
+    }
+
     if (typeof content !== 'string' || content.trim().length === 0 || content.length > 2000) {
       return res.status(400).json({ message: 'Message content must be between 1 and 2000 characters.' });
     }
@@ -167,8 +171,9 @@ exports.sendMessage = async (req, res) => {
       };
     }
 
+    const msgData = populatedMsg ? populatedMsg.toObject() : message.toObject();
     res.status(201).json({
-      ...populatedMsg.toObject(),
+      ...msgData,
       content,
       replyTo: decryptedReplyTo,
       senderIsPremium: sender.isPremium,
@@ -202,10 +207,17 @@ exports.getConversations = async (req, res) => {
     messages.forEach((msg) => {
       if (!msg.from || !msg.to) return; // Skip invalid messages
       
-      const otherUser = msg.from._id.equals(userId) ? msg.to : msg.from;
+      const fromId = msg.from._id || msg.from;
+      const isFromUser = (fromId && typeof fromId.equals === 'function')
+        ? fromId.equals(userId)
+        : String(fromId) === String(userId);
+
+      const otherUser = isFromUser ? msg.to : msg.from;
       if (!otherUser) return; // Skip if other user is null
       
-      const key = otherUser._id.toString();
+      const otherUserId = otherUser._id || otherUser.id || otherUser;
+      if (!otherUserId) return;
+      const key = otherUserId.toString();
       
       let decryptedContent = '';
       if (msg.isDeletedForEveryone) {
@@ -220,7 +232,7 @@ exports.getConversations = async (req, res) => {
       }
       
       const normalizedMessage = {
-        ...msg.toObject(),
+        ...(typeof msg.toObject === 'function' ? msg.toObject() : msg),
         content: decryptedContent,
       };
 
@@ -233,7 +245,9 @@ exports.getConversations = async (req, res) => {
       }
 
       const convo = conversationsMap.get(key);
-      if (!msg.isRead && msg.to._id && msg.to._id.equals(userId)) {
+      const toId = msg.to ? (msg.to._id || msg.to.id || msg.to) : null;
+      const isToUser = toId && ((typeof toId.equals === 'function') ? toId.equals(userId) : String(toId) === String(userId));
+      if (!msg.isRead && isToUser) {
         convo.unreadCount += 1;
       }
     });
@@ -252,6 +266,15 @@ exports.getConversationWithUser = async (req, res) => {
   try {
     const userId = req.user._id;
     const otherUserId = req.params.userId;
+
+    if (!otherUserId || !mongoose.isValidObjectId(otherUserId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+
+    const otherUser = await User.findById(otherUserId).select('_id name');
+    if (!otherUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
     const limit = Math.min(parseInt(req.query.limit, 10) || 100, 200);
     const skip = Math.max(parseInt(req.query.skip, 10) || 0, 0);
@@ -377,6 +400,10 @@ exports.editMessage = async (req, res) => {
     const { messageId } = req.params;
     const { content } = req.body;
 
+    if (!messageId || !mongoose.isValidObjectId(messageId)) {
+      return res.status(400).json({ message: 'Invalid message ID' });
+    }
+
     if (!content || content.trim() === '') {
       return res.status(400).json({ message: 'Content is required' });
     }
@@ -425,6 +452,10 @@ exports.deleteMessage = async (req, res) => {
   try {
     const { messageId } = req.params;
 
+    if (!messageId || !mongoose.isValidObjectId(messageId)) {
+      return res.status(400).json({ message: 'Invalid message ID' });
+    }
+
     const message = await Message.findById(messageId);
 
     if (!message) {
@@ -461,6 +492,10 @@ exports.deleteForMe = async (req, res) => {
     const { messageId } = req.params;
     const userId = req.user._id;
 
+    if (!messageId || !mongoose.isValidObjectId(messageId)) {
+      return res.status(400).json({ message: 'Invalid message ID' });
+    }
+
     const message = await Message.findById(messageId);
     if (!message) {
       return res.status(404).json({ message: 'Message not found' });
@@ -495,6 +530,10 @@ exports.deleteForEveryone = async (req, res) => {
   try {
     const { messageId } = req.params;
     const userId = req.user._id;
+
+    if (!messageId || !mongoose.isValidObjectId(messageId)) {
+      return res.status(400).json({ message: 'Invalid message ID' });
+    }
 
     const message = await Message.findById(messageId);
     if (!message) {
@@ -544,6 +583,10 @@ exports.addReaction = async (req, res) => {
     const { messageId } = req.params;
     const { emoji } = req.body;
     const userId = req.user._id;
+
+    if (!messageId || !mongoose.isValidObjectId(messageId)) {
+      return res.status(400).json({ message: 'Invalid message ID' });
+    }
 
     if (!emoji) {
       return res.status(400).json({ message: 'Emoji is required' });

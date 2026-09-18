@@ -58,7 +58,7 @@ async function mergeProfileViewDuplicates(targetUser = null) {
       {
         $set: {
           viewCount: mergedViewCount,
-          lastViewedAt: mergedLastView,
+          lastViewedAt: mergedLastViewed,
         },
       }
     );
