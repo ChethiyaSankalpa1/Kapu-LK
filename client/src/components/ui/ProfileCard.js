@@ -1,133 +1,171 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Calendar, MessageCircle } from 'lucide-react';
-import moment from 'moment';
+import { MapPin, MessageCircle, Heart, CheckCircle, Briefcase, Eye } from 'lucide-react';
 import PremiumBadge from './PremiumBadge';
 
-const ProfileCard = ({ user, onLike, onView, onMessage, isOwnProfile = false }) => {
+const ProfileCard = ({
+    user,
+    onLike,
+    onView,
+    onMessage,
+    isOwnProfile = false,
+    liked = false,
+    viewedAt = null,
+    viewCount = 1,
+    showViewedInfo = false,
+}) => {
     const { t } = useTranslation();
-    const compact = Boolean(onView);
+    const [imgError, setImgError] = useState(false);
+    const [isLiked, setIsLiked] = useState(liked);
 
-    // Generate a description based on available profile information
-    const generateDescription = () => {
-        const details = [];
-        if (user?.occupation) details.push(user.occupation);
-        if (user?.education) details.push(t('profile.educationIn', { defaultValue: 'educated in {{value}}', value: user.education }));
-        if (user?.maritalStatus) details.push(user.maritalStatus.toLowerCase());
+    if (!user) return null;
 
-        if (details.length > 0) {
-            return details.join(' • ');
+    const firstName = user.name ? user.name.split(' ')[0] : t('common.member', { defaultValue: 'Member' });
+    const location = user.district || user.location || 'Sri Lanka';
+    const hasPhoto = Boolean(user.profileImageUrl) && !imgError;
+    const initial = user.name ? user.name.charAt(0).toUpperCase() : 'U';
+
+    const handleLikeClick = (e) => {
+        e.stopPropagation();
+        setIsLiked(!isLiked);
+        if (onLike) {
+            onLike(user._id);
         }
-        return t('profile.defaultDescription', { defaultValue: 'Looking to connect with like-minded individuals.' });
     };
 
-    const description = generateDescription();
-    const joinDate = user?.createdAt ? moment(user.createdAt).format('MMM YYYY') : t('profile.recently', { defaultValue: 'Recently' });
+    const handleViewClick = (e) => {
+        if (e) e.stopPropagation();
+        if (onView) {
+            onView(user._id);
+        }
+    };
+
+    const handleMessageClick = (e) => {
+        if (e) e.stopPropagation();
+        if (onMessage) {
+            onMessage(user._id);
+        }
+    };
 
     return (
         <div
-            onClick={onView || undefined}
-            className={`
-                group relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl
-                border border-white/60 dark:border-slate-700/60 shadow-2xl overflow-hidden
-                transition-all duration-500 ease-out transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-500/20 dark:hover:shadow-purple-500/30 hover:scale-[1.02]
-                ${compact ? 'cursor-pointer' : ''}
-                w-full max-w-sm mx-auto
-            `}
+            onClick={handleViewClick}
+            className="group relative bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl border border-gray-150 dark:border-gray-800 shadow-xs hover:shadow-xl dark:hover:shadow-purple-950/30 transition-all duration-300 overflow-hidden flex flex-col cursor-pointer transform hover:-translate-y-1"
         >
-            {/* Profile header with image */}
-            <div className="relative p-3 pb-0">
-                <div className="relative h-72 sm:h-64 w-full rounded-3xl overflow-hidden bg-gradient-to-br from-purple-200 via-pink-100 to-violet-200 dark:from-purple-900/40 dark:via-pink-900/30 dark:to-violet-900/40">
-                    {/* Story ring effect */}
-                    <div className="absolute inset-2 rounded-2xl border-2 border-gradient-to-r from-purple-500 via-pink-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                    
-                    {user?.profileImageUrl ? (
-                        <img
-                            src={user.profileImageUrl}
-                            alt={user?.name}
-                            className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
-                        />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                            <div className="w-32 h-32 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-2xl flex items-center justify-center transition-transform duration-500 group-hover:scale-105 border-4 border-purple-200 dark:border-purple-500/30">
-                                <span className="text-6xl font-extrabold bg-gradient-to-r from-purple-600 via-pink-600 to-violet-600 bg-clip-text text-transparent">
-                                    {user?.name?.charAt(0) || t('common.userInitial', { defaultValue: 'U' })}
-                                </span>
-                            </div>
+            {/* Top Photo Area */}
+            <div className="relative h-48 sm:h-56 w-full bg-gradient-to-br from-purple-100 via-pink-50 to-purple-200 dark:from-purple-950/40 dark:via-gray-900 dark:to-pink-950/30 overflow-hidden">
+                {hasPhoto ? (
+                    <img
+                        src={user.profileImageUrl}
+                        alt={user.name || 'User Profile'}
+                        onError={() => setImgError(true)}
+                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+                        loading="lazy"
+                    />
+                ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-indigo-500/10 dark:from-purple-900/30 dark:to-pink-900/20">
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr from-purple-600 to-pink-500 text-white flex items-center justify-center font-black text-3xl sm:text-4xl shadow-md border-4 border-white dark:border-gray-800">
+                            {initial}
                         </div>
-                    )}
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
-                    
-                    {/* Premium Badge Effect */}
-                    {(user?.isPremium || user?.role === 'admin') && (
-                        <div className="absolute top-4 right-4 z-10">
-                            <PremiumBadge plan={user?.premiumPlan} isAdmin={user?.role === 'admin'} size="sm" />
-                        </div>
-                    )}
-                    
-                    {/* Top Badges */}
-                    <div className="absolute top-4 left-4 flex items-center gap-2">
-                        {/* Join date */}
-                        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3 py-1.5 rounded-full text-slate-700 dark:text-white/90 text-[11px] font-semibold flex items-center gap-1.5 border border-white/60 dark:border-slate-600/60 shadow-lg">
-                            <Calendar className="w-3 h-3 text-purple-600" />
-                            <span>{joinDate}</span>
-                        </div>
-                    </div>
-
-                    {/* Bottom Info inside Image */}
-                    <div className="absolute bottom-5 left-5 right-5">
-                        <div className="flex items-center gap-2 mb-2">
-                            <h3 className="text-2xl sm:text-xl font-bold text-white tracking-tight drop-shadow-lg">
-                                {user?.name || t('common.userName', { defaultValue: 'User Name' })}
-                            </h3>
-                            {user?.age && (
-                                <span className="text-lg sm:text-base text-white/95 font-semibold drop-shadow-md bg-black/30 px-2 py-0.5 rounded-full backdrop-blur-sm">, {user.age}</span>
-                            )}
-                        </div>
-                        {(user?.district || user?.location) && (
-                            <div className="flex items-center text-white/90 text-sm font-medium">
-                                <MapPin className="w-4 h-4 mr-1.5 text-pink-400" />
-                                <span className="drop-shadow-sm">{user.district || user.location}</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Card Footer Content */}
-            <div className="px-6 pb-6 pt-5">
-                {/* Description */}
-                <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed line-clamp-2 mb-5 font-medium">
-                    {description}
-                </p>
-
-                {/* Action Buttons */}
-                {onView && (
-                    <div className="flex gap-3">
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onView();
-                            }}
-                            className="flex-1 flex items-center justify-center px-4 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl text-sm font-bold shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/50 hover:from-purple-700 hover:to-pink-700 transition-all active:scale-95"
-                        >
-                            <span>{t('dashboard.viewProfile')}</span>
-                        </button>
-                        {onMessage && !isOwnProfile && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onMessage();
-                                }}
-                                className="flex items-center justify-center px-4 py-4 bg-white dark:bg-slate-800 text-slate-700 dark:text-white rounded-2xl text-sm font-bold border-2 border-slate-200 dark:border-slate-700 shadow-sm hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all active:scale-95"
-                                title={t('dashboard.sendMessage', { defaultValue: 'Send Message' })}
-                            >
-                                <MessageCircle className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                            </button>
-                        )}
                     </div>
                 )}
+
+                {/* Subtle dark gradient overlay on bottom of image for readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+
+                {/* Online Status Pill */}
+                {user.isOnline && (
+                    <span className="absolute bottom-2.5 left-2.5 px-2.5 py-0.5 bg-black/60 backdrop-blur-md rounded-full text-[10px] font-bold text-white flex items-center gap-1.5 shadow-xs">
+                        <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                        <span>Online</span>
+                    </span>
+                )}
+
+                {/* Premium / Admin Badge (Top Left) */}
+                {(user.isPremium || user.role === 'admin') && (
+                    <div className="absolute top-2.5 left-2.5 z-10">
+                        <PremiumBadge plan={user.premiumPlan} isAdmin={user.role === 'admin'} size="sm" />
+                    </div>
+                )}
+
+                {/* Quick Like Heart Button (Top Right) */}
+                {!isOwnProfile && (
+                    <button
+                        type="button"
+                        onClick={handleLikeClick}
+                        title={isLiked ? 'Liked' : 'Send Like'}
+                        className={`absolute top-2.5 right-2.5 p-2 rounded-full backdrop-blur-md transition-transform duration-200 hover:scale-115 active:scale-90 shadow-sm ${
+                            isLiked
+                                ? 'bg-pink-600 text-white shadow-pink-500/30'
+                                : 'bg-white/85 dark:bg-gray-800/85 text-pink-600 dark:text-pink-400 hover:bg-white dark:hover:bg-gray-800'
+                        }`}
+                    >
+                        <Heart className={`w-4 h-4 ${isLiked ? 'fill-white stroke-white' : 'fill-pink-500/20 stroke-pink-600'}`} />
+                    </button>
+                )}
+
+                {/* Viewed time tag if in Visitors page */}
+                {showViewedInfo && viewedAt && (
+                    <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 bg-purple-900/80 backdrop-blur-md rounded-full text-[9px] font-semibold text-purple-200 flex items-center gap-1">
+                        <Eye className="w-2.5 h-2.5" />
+                        {viewCount > 1 ? `${viewCount}x` : 'Viewed'}
+                    </span>
+                )}
+            </div>
+
+            {/* Content Details Area */}
+            <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
+                <div className="space-y-1">
+                    {/* Name, Age, and Verification */}
+                    <div className="flex items-center justify-between gap-1.5">
+                        <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate flex items-center gap-1.5">
+                            <span>{firstName}</span>
+                            {user.age && <span className="font-semibold text-gray-600 dark:text-gray-300">, {user.age}</span>}
+                            {user.isApproved && (
+                                <CheckCircle
+                                    className="w-3.5 h-3.5 text-blue-500 fill-blue-500 text-white shrink-0"
+                                    title="Verified Profile"
+                                />
+                            )}
+                        </h3>
+                    </div>
+
+                    {/* Location */}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-purple-500 shrink-0" />
+                        <span>{location}</span>
+                    </p>
+
+                    {/* Sub-info: Occupation / Education / Bio */}
+                    {(user.occupation || user.education || user.maritalStatus) && (
+                        <p className="text-[11px] text-gray-600 dark:text-gray-400 truncate flex items-center gap-1 pt-0.5">
+                            <Briefcase className="w-3 h-3 text-pink-500 shrink-0" />
+                            <span>{user.occupation || user.education || user.maritalStatus}</span>
+                        </p>
+                    )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-gray-100 dark:border-gray-800">
+                    <button
+                        type="button"
+                        onClick={handleViewClick}
+                        className="w-full py-2 px-3 text-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-xs font-bold text-gray-700 dark:text-gray-200 rounded-xl transition active:scale-95 flex items-center justify-center gap-1"
+                    >
+                        <span>{t('dashboard.viewProfile', { defaultValue: 'View' })}</span>
+                    </button>
+
+                    {!isOwnProfile && (
+                        <button
+                            type="button"
+                            onClick={handleMessageClick}
+                            className="w-full py-2 px-3 text-center bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-xs font-bold text-white rounded-xl shadow-xs hover:shadow-md hover:shadow-purple-500/20 transition active:scale-95 flex items-center justify-center gap-1.5"
+                        >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span>{t('dashboard.message', { defaultValue: 'Message' })}</span>
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );

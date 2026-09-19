@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { userAPI } from '../../services/api';
+import { userAPI, messageAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import ProfileCard from '../../components/ui/ProfileCard';
 import CustomSelect from '../../components/ui/CustomSelect';
-import { Search, Filter, RefreshCw } from 'lucide-react';
+import { Search, Filter, RefreshCw, Heart, Sparkles } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-const Users = () => {
+const Users = ({ isMatchesOnly = false }) => {
     const { t } = useTranslation();
     const { user: currentUser } = useAuth();
     const navigate = useNavigate();
@@ -18,6 +18,8 @@ const Users = () => {
     const [loadingMore, setLoadingMore] = useState(false);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
+
+    const isMatchesMode = isMatchesOnly || searchParams.get('matches') === 'true';
 
     const initialGender = searchParams.get('gender') || '';
     const initialMinAge = searchParams.get('minAge') || '';
@@ -57,13 +59,33 @@ const Users = () => {
         if (node) observer.current.observe(node);
     }, [loading, loadingMore, hasMore]);
 
+    const fetchMatches = useCallback(async (pageNum = 1) => {
+        if (pageNum === 1) setLoading(true);
+        else setLoadingMore(true);
+
+        try {
+            const response = await userAPI.getMatches({ page: pageNum, limit: 12 });
+            const filteredUsers = (response.data.data || response.data || []).filter(
+                (u) => u._id !== currentUser?._id && u.role !== 'admin'
+            );
+
+            setUsers(prev => pageNum === 1 ? filteredUsers : [...prev, ...filteredUsers]);
+            setHasMore(response.data.hasMore ?? false);
+        } catch (error) {
+            toast.error(t('users.matchesFailed', { defaultValue: 'Failed to fetch matches' }));
+        } finally {
+            setLoading(false);
+            setLoadingMore(false);
+        }
+    }, [currentUser?._id, t]);
+
     const fetchUsers = useCallback(async (pageNum = 1) => {
         if (pageNum === 1) setLoading(true);
         else setLoadingMore(true);
 
         try {
             const response = await userAPI.getAllUsers({ page: pageNum, limit: 12 });
-            const filteredUsers = (response.data.data || response.data).filter(
+            const filteredUsers = (response.data.data || response.data || []).filter(
                 (u) => u._id !== currentUser?._id && u.role !== 'admin'
             );
 
@@ -83,7 +105,7 @@ const Users = () => {
 
         try {
             const response = await userAPI.searchUsers({ ...filters, page: pageNum, limit: 12 });
-            const filteredUsers = (response.data.data || response.data).filter(
+            const filteredUsers = (response.data.data || response.data || []).filter(
                 (u) => u._id !== currentUser?._id && u.role !== 'admin'
             );
 
@@ -101,12 +123,14 @@ const Users = () => {
     }, [currentUser?._id, filters, t]);
 
     useEffect(() => {
-        if (isSearching) {
+        if (isMatchesMode) {
+            fetchMatches(page);
+        } else if (isSearching) {
             fetchSearchResults(page);
         } else {
             fetchUsers(page);
         }
-    }, [page, isSearching, fetchSearchResults, fetchUsers]);
+    }, [page, isMatchesMode, isSearching, fetchMatches, fetchSearchResults, fetchUsers]);
 
     const handleSearch = () => {
         setIsSearching(true);
@@ -138,6 +162,19 @@ const Users = () => {
             setPage(1);
         } else {
             fetchUsers(1);
+        }
+    };
+
+    const handleLike = async (targetUserId) => {
+        try {
+            await messageAPI.sendMessage({
+                to: targetUserId,
+                content: 'sent you a like on LoveLK',
+                type: 'like',
+            });
+            toast.success(t('users.likeSent', { defaultValue: 'Like sent successfully! ❤️' }));
+        } catch (error) {
+            toast.error(error.response?.data?.message || t('users.likeFailed', { defaultValue: 'Failed to send like' }));
         }
     };
 
@@ -181,12 +218,32 @@ const Users = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-6 pb-24 md:py-8 transition-colors duration-300">
-            <div className="container mx-auto px-4 max-w-6xl">
+            <div className="container mx-auto px-4 max-w-7xl">
                 <div className="mb-6 sm:mb-8">
                     <div className="flex items-center justify-between gap-3 mb-4">
-                        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-                            {t('nav.browse', { defaultValue: 'Browse Profiles' })}
-                        </h1>
+                        <div className="flex items-center gap-3">
+                            {isMatchesMode ? (
+                                <div className="w-10 h-10 rounded-2xl bg-pink-50 dark:bg-pink-950/40 flex items-center justify-center text-pink-600">
+                                    <Heart className="w-5 h-5 fill-pink-600 stroke-pink-600" />
+                                </div>
+                            ) : (
+                                <div className="w-10 h-10 rounded-2xl bg-purple-50 dark:bg-purple-950/40 flex items-center justify-center text-purple-600">
+                                    <Search className="w-5 h-5" />
+                                </div>
+                            )}
+                            <div>
+                                <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                                    {isMatchesMode
+                                        ? t('nav.matches', { defaultValue: 'My Matches' })
+                                        : t('nav.browse', { defaultValue: 'Browse Profiles' })}
+                                </h1>
+                                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                                    {isMatchesMode
+                                        ? 'Recommended partner profiles based on your mutual preferences'
+                                        : 'Explore members and discover compatible connections'}
+                                </p>
+                            </div>
+                        </div>
 
                         {/* Filter Toggle */}
                         <button
@@ -194,18 +251,18 @@ const Users = () => {
                             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all text-sm font-semibold ${
                                 showFilters
                                     ? 'bg-purple-600 border-purple-600 text-white shadow-md shadow-purple-500/25'
-                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/60 shadow-sm'
+                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/60 shadow-xs'
                             }`}
                             aria-expanded={showFilters}
                         >
-                            <Filter className="w-4 h-4 animate-pulse" />
+                            <Filter className="w-4 h-4" />
                             <span>{showFilters ? t('users.hideFilters', { defaultValue: 'Hide Filters' }) : t('users.showFilters', { defaultValue: 'Filter Profiles' })}</span>
                         </button>
                     </div>
 
                     {/* Redesigned Premium Filters Container */}
                     {showFilters && (
-                        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl rounded-[1.5rem] shadow-2xl border border-white/40 dark:border-gray-700/50 p-5 sm:p-6 mb-6 transition-all duration-500 animate-in fade-in slide-in-from-top-4">
+                        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-[1.5rem] shadow-xl border border-gray-150 dark:border-gray-800 p-5 sm:p-6 mb-6 transition-all duration-500 animate-in fade-in slide-in-from-top-4">
                             <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-5 font-medium">
                                 Refine your match preferences below to find compatible profiles.
                             </p>
@@ -303,7 +360,7 @@ const Users = () => {
                                 {/* Interests */}
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                                        {t('profile.interests')}
+                                        {t('profile.interests', { defaultValue: 'Interests' })}
                                     </label>
                                     <input
                                         type="text"
@@ -316,7 +373,7 @@ const Users = () => {
                             </div>
 
                             {/* Actions Grouped in a clean Flex layout */}
-                            <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100 dark:border-gray-750">
+                            <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
                                 <button
                                     onClick={handleSearch}
                                     className="flex-1 btn-primary text-sm py-2.5"
@@ -338,17 +395,22 @@ const Users = () => {
 
                 {/* Users Grid */}
                 {loading ? (
-                    <div className="text-center py-16">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-purple-500 mx-auto"></div>
+                    <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-3xl border border-gray-150 dark:border-gray-800 shadow-xs">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-purple-500 mx-auto mb-4"></div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Loading profiles...</p>
                     </div>
                 ) : users.length > 0 ? (
                     <>
-                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-4 flex items-center gap-1.5">
-                            <span>🔍</span>
-                            <span>{t('users.profilesFound', { defaultValue: 'Found {{count}} profiles', count: users.length })}</span>
-                        </p>
-                        {/* Perfect Responsive Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="flex items-center justify-between mb-5">
+                            <p className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                                <Sparkles className="w-4 h-4 text-purple-600" />
+                                <span>{t('users.profilesFound', { defaultValue: 'Found {{count}} profiles', count: users.length })}</span>
+                            </p>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">Showing members</span>
+                        </div>
+
+                        {/* Responsive Grid matching modern cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                             {users.map((u, index) => {
                                 if (users.length === index + 1) {
                                     return (
@@ -357,6 +419,7 @@ const Users = () => {
                                                 user={u}
                                                 onView={() => handleView(u._id)}
                                                 onMessage={() => handleMessage(u._id)}
+                                                onLike={handleLike}
                                                 isOwnProfile={false}
                                             />
                                         </div>
@@ -368,12 +431,14 @@ const Users = () => {
                                             user={u}
                                             onView={() => handleView(u._id)}
                                             onMessage={() => handleMessage(u._id)}
+                                            onLike={handleLike}
                                             isOwnProfile={false}
                                         />
                                     );
                                 }
                             })}
                         </div>
+
                         {loadingMore && (
                             <div className="text-center py-6 mt-4">
                                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500 mx-auto"></div>
@@ -381,8 +446,18 @@ const Users = () => {
                         )}
                     </>
                 ) : (
-                    <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                        <p className="text-gray-600 dark:text-gray-300 text-sm">{t('users.noResults', { defaultValue: 'No profiles found matching your criteria.' })}</p>
+                    <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-3xl border border-gray-150 dark:border-gray-800 shadow-xs max-w-md mx-auto">
+                        <p className="text-gray-600 dark:text-gray-300 text-sm font-medium mb-3">
+                            {isMatchesMode
+                                ? 'No direct matches found matching your preferences yet.'
+                                : t('users.noResults', { defaultValue: 'No profiles found matching your criteria.' })}
+                        </p>
+                        <button
+                            onClick={handleReset}
+                            className="btn-primary text-xs py-2 px-4"
+                        >
+                            Reset Filters
+                        </button>
                     </div>
                 )}
             </div>

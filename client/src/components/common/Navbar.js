@@ -7,7 +7,7 @@ import moment from 'moment';
 import {
     Heart, LogOut, User, Users, LayoutDashboard, Menu, X,
     Sun, Moon, Crown, Globe, ChevronRight, Sparkles, MessageSquare,
-    Shield, FileText, Search, Bell, Settings, ChevronDown, BellRing, Wallet, Trophy
+    Shield, FileText, Search, Bell, Settings, ChevronDown, BellRing, Wallet, Trophy, Eye
 } from 'lucide-react';
 import PremiumBadge from '../ui/PremiumBadge';
 
@@ -520,8 +520,10 @@ const Navbar = () => {
                                     <>
                                         <NavItem to="/dashboard" icon={LayoutDashboard} label={t('nav.dashboard')} />
                                         <NavItem to="/users" icon={Users} label={t('nav.browse')} />
+                                        <NavItem to="/matches" icon={Heart} label={t('nav.matches', { defaultValue: 'Matches' })} />
                                         <NavItem to="/conversation" icon={MessageSquare} label={t('nav.messages')} />
-                                        <NavItem to="/wallet" icon={Crown} label="Wallet & Achievements" />
+                                        <NavItem to="/visitors" icon={Eye} label={t('visitors.title', { defaultValue: 'Profile Visitors' })} />
+                                        <NavItem to="/premium" icon={Crown} label="Wallet & Premium" />
                                         <NavItem to="/profile" icon={User} label={t('nav.profile')} />
                                         <NavItem to="/settings" icon={Settings} label={t('nav.settings')} />
                                         <NavItem to="/contact-admin" icon={Shield} label={t('nav.contactAdmin')} />

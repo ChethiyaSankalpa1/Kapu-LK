@@ -110,6 +110,7 @@ const Conversation = lazyWithRetry(() => import('./pages/user/Conversation'));
 const ContactAdmin = lazyWithRetry(() => import('./pages/user/ContactAdmin'));
 const Settings = lazyWithRetry(() => import('./pages/user/Settings'));
 const Wallet = lazyWithRetry(() => import('./pages/user/Wallet'));
+const ProfileVisitors = lazyWithRetry(() => import('./pages/user/ProfileVisitors'));
 
 const AdminDashboard = lazyWithRetry(() => import('./pages/admin/AdminDashboard'));
 
@@ -400,6 +401,38 @@ function App() {
                   }
                 />
                 <Route
+                  path="/browse"
+                  element={
+                    <UserRoute>
+                      <Users />
+                    </UserRoute>
+                  }
+                />
+                <Route
+                  path="/matches"
+                  element={
+                    <UserRoute>
+                      <Users isMatchesOnly={true} />
+                    </UserRoute>
+                  }
+                />
+                <Route
+                  path="/visitors"
+                  element={
+                    <UserRoute>
+                      <ProfileVisitors />
+                    </UserRoute>
+                  }
+                />
+                <Route
+                  path="/profile-visitors"
+                  element={
+                    <UserRoute>
+                      <ProfileVisitors />
+                    </UserRoute>
+                  }
+                />
+                <Route
                   path="/users/:id"
                   element={
                     <UserRoute>
@@ -417,6 +450,22 @@ function App() {
                 />
                 <Route
                   path="/conversation/:userId"
+                  element={
+                    <PrivateRoute>
+                      <Conversation />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/messages"
+                  element={
+                    <PrivateRoute>
+                      <Conversation />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/messages/:userId"
                   element={
                     <PrivateRoute>
                       <Conversation />
