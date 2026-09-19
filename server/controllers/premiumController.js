@@ -7,53 +7,61 @@ const { Wallet, WalletTransaction } = require('../models/Wallet');
 const cloudinary = require('../config/cloudinary');
 const { checkUserPremiumStatus } = require('../utils/premiumExpiryChecker');
 const { logAuditEvent } = require('../middleware/auditLogger');
+const { getUserPremiumDetails, PLAN_DURATIONS } = require('../utils/entitlements');
 
 const isValidPhoneNumber = (value) => !value || /^[0-9]+$/.test(value);
+
+const OFFICIAL_PLANS = [
+  {
+    name: 'Bronze Plan',
+    badge: 'bronze',
+    price: 500,
+    currency: 'LKR',
+    durationDays: 10,
+    description: 'Essential 10-day premium pass for quick matching',
+    features: ['10 Days Premium Access', 'Unlimited Messages', 'Profile Boost', 'Bronze Badge', 'Ad-Free Experience'],
+    isPopular: false,
+    isActive: true,
+  },
+  {
+    name: 'Silver Plan',
+    badge: 'silver',
+    price: 1300,
+    currency: 'LKR',
+    durationDays: 21,
+    description: 'Popular 21-day plan with priority matching',
+    features: ['21 Days Premium Access', 'Unlimited Messages', 'Priority Matching', 'Direct Contact Info', 'Silver Badge', 'Profile Visitors List', 'Ad-Free Experience'],
+    isPopular: true,
+    isActive: true,
+  },
+  {
+    name: 'Gold Plan',
+    badge: 'gold',
+    price: 3000,
+    currency: 'LKR',
+    durationDays: 60,
+    description: 'Ultimate 60-day VIP pass for serious matchmaking',
+    features: ['60 Days Premium Access', 'Unlimited Messages', 'Highest Priority Matching', 'Direct Contact Info', 'Gold Badge', 'VIP Profile Spotlight', 'Profile Visitors List', 'Ad-Free Experience', 'Priority Support'],
+    isPopular: false,
+    isActive: true,
+  },
+];
 
 // @desc    Get all available premium plans
 // @route   GET /api/premium/plans
 // @access  Public / Private
 exports.getPlans = async (req, res) => {
   try {
-    let plans = await PremiumPlan.find({ isActive: true }).sort({ price: 1 });
-    if (!plans || plans.length === 0) {
-      // Seed default 3 plans if empty
-      plans = await PremiumPlan.insertMany([
-        {
-          name: 'Bronze Plan',
-          badge: 'bronze',
-          price: 500,
-          currency: 'LKR',
-          durationDays: 7,
-          description: 'Essential 7-day premium pass for quick matching',
-          features: ['7 Days Full Access', 'Unlimited Messages', 'Profile Boost', 'Bronze Badge', 'Ad-Free Experience'],
-          isPopular: false,
-          isActive: true,
-        },
-        {
-          name: 'Silver Plan',
-          badge: 'silver',
-          price: 800,
-          currency: 'LKR',
-          durationDays: 14,
-          description: 'Popular 14-day plan with priority matching',
-          features: ['14 Days Full Access', 'Unlimited Messages', 'Priority Matching', 'Direct Contact Info', 'Silver Badge', 'Profile Visitors List'],
-          isPopular: true,
-          isActive: true,
-        },
-        {
-          name: 'Gold Plan',
-          badge: 'gold',
-          price: 1000,
-          currency: 'LKR',
-          durationDays: 28,
-          description: 'Ultimate 28-day VIP pass for serious matchmaking',
-          features: ['28 Days Full Access', 'VIP Spotlighting', 'Unlimited Messaging', 'Direct Contact Info', 'Gold Badge', '24/7 Priority Support'],
-          isPopular: false,
-          isActive: true,
-        },
-      ]);
+    // Ensure official plans are always up-to-date with consistent specifications
+    for (const official of OFFICIAL_PLANS) {
+      await PremiumPlan.findOneAndUpdate(
+        { badge: official.badge },
+        { $set: official },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
     }
+
+    const plans = await PremiumPlan.find({ isActive: true }).sort({ price: 1 });
     res.json(plans);
   } catch (error) {
     console.error('Error fetching premium plans:', error);
@@ -204,6 +212,8 @@ exports.purchaseWithWallet = async (req, res) => {
     user.isPremium = true;
     user.premiumPlan = planBadge;
     user.premiumSince = new Date();
+    user.premiumStartedAt = new Date();
+    user.premiumStatus = 'active';
     
     // Extend expiry if already premium and active
     const currentExpiry = (user.premiumExpiresAt && new Date(user.premiumExpiresAt) > new Date())
@@ -329,15 +339,22 @@ exports.getPremiumStatus = async (req, res) => {
       ? await PremiumPaymentRequest.findById(user.pendingPremiumRequest) 
       : null;
 
+    const premiumDetails = getUserPremiumDetails(user);
+
     res.json({
       isPremium: user.isPremium,
       premiumPlan: user.premiumPlan,
       premiumSince: user.premiumSince,
+      premiumStartedAt: user.premiumStartedAt,
       premiumExpiresAt: user.premiumExpiresAt,
+      premiumStatus: user.premiumStatus,
       premiumRequested: user.premiumRequested,
       pendingRequest,
       messagesSent: user.messagesSent,
       limit: 5,
+      features: premiumDetails.features,
+      daysRemaining: premiumDetails.daysRemaining,
+      effectivePlan: premiumDetails.plan,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -386,6 +403,8 @@ exports.approveRequest = async (req, res) => {
     user.isPremium = true;
     user.premiumPlan = planBadge;
     user.premiumSince = new Date();
+    user.premiumStartedAt = new Date();
+    user.premiumStatus = 'active';
     
     const currentExpiry = (user.premiumExpiresAt && new Date(user.premiumExpiresAt) > new Date())
       ? new Date(user.premiumExpiresAt)

@@ -77,6 +77,14 @@ const userSchema = new mongoose.Schema({
       message: 'Phone number must contain only numbers',
     },
   },
+  showPhoneNumber: {
+    type: Boolean,
+    default: false,
+  },
+  showEmail: {
+    type: Boolean,
+    default: false,
+  },
   age: {
     type: Number,
     min: 18,
@@ -213,8 +221,16 @@ const userSchema = new mongoose.Schema({
   premiumSince: {
     type: Date,
   },
+  premiumStartedAt: {
+    type: Date,
+  },
   premiumExpiresAt: {
     type: Date,
+  },
+  premiumStatus: {
+    type: String,
+    enum: ['active', 'expired', 'none'],
+    default: 'none',
   },
   premiumExpirySentNotification: {
     type: Boolean,

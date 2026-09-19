@@ -7,7 +7,7 @@ import { userAPI, authAPI } from '../../services/api';
 import {
     User, BellRing, Globe, Monitor, UserMinus, Trash2, HelpCircle,
     Info, Eye, EyeOff, ChevronRight, ArrowLeft, Save, AlertTriangle, Sun, Moon,
-    ShieldCheck, Key, Palette, Gift, Download, FileText
+    ShieldCheck, Key, Palette, Gift, Download, FileText, Phone
 } from 'lucide-react';
 import PolicyViewerModal from '../../components/common/PolicyViewerModal';
 
@@ -18,6 +18,36 @@ const Settings = () => {
     
     // Gifting opt-in state
     const [giftingOptIn, setGiftingOptIn] = useState(user?.giftingOptIn !== false);
+    
+    // Contact Info Privacy state
+    const [showPhoneNumber, setShowPhoneNumber] = useState(user?.showPhoneNumber || false);
+    const [showEmail, setShowEmail] = useState(user?.showEmail || false);
+    
+    const handlePhoneVisibilityChange = async (e) => {
+        const newVal = e.target.checked;
+        setShowPhoneNumber(newVal);
+        try {
+            await userAPI.updateProfile({ showPhoneNumber: newVal });
+            updateUser({ showPhoneNumber: newVal });
+            toast.success(newVal ? 'Phone number visibility enabled for Silver/Gold members' : 'Phone number hidden from all members');
+        } catch (err) {
+            setShowPhoneNumber(!newVal);
+            toast.error('Failed to update phone visibility setting');
+        }
+    };
+
+    const handleEmailVisibilityChange = async (e) => {
+        const newVal = e.target.checked;
+        setShowEmail(newVal);
+        try {
+            await userAPI.updateProfile({ showEmail: newVal });
+            updateUser({ showEmail: newVal });
+            toast.success(newVal ? 'Email visibility enabled for Silver/Gold members' : 'Email hidden from all members');
+        } catch (err) {
+            setShowEmail(!newVal);
+            toast.error('Failed to update email visibility setting');
+        }
+    };
     
     // Theme state
     const [theme, setTheme] = useState(darkMode ? 'dark' : 'light');
@@ -437,6 +467,36 @@ const Settings = () => {
                                             className="mt-0.5 w-5 h-5 text-purple-600 rounded shrink-0" 
                                         />
                                     </label>
+                                </div>
+                            </SettingCard>
+
+                            <SettingCard
+                                icon={Phone}
+                                title="Contact Info Privacy"
+                                description="Control who can see your contact information. Note: Only Silver and Gold members can view your contact info if enabled."
+                            >
+                                <div className="space-y-3">
+                                    <label className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-xl cursor-pointer">
+                                        <span className="flex-1 text-sm sm:text-base text-gray-700 dark:text-gray-300 break-words">Show Phone Number to eligible Silver/Gold members</span>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={showPhoneNumber} 
+                                            onChange={handlePhoneVisibilityChange}
+                                            className="mt-0.5 w-5 h-5 text-purple-600 rounded shrink-0" 
+                                        />
+                                    </label>
+                                    <label className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-xl cursor-pointer">
+                                        <span className="flex-1 text-sm sm:text-base text-gray-700 dark:text-gray-300 break-words">Show Email Address to eligible Silver/Gold members</span>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={showEmail} 
+                                            onChange={handleEmailVisibilityChange}
+                                            className="mt-0.5 w-5 h-5 text-purple-600 rounded shrink-0" 
+                                        />
+                                    </label>
+                                    <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2.5 rounded-lg border border-amber-200 dark:border-amber-800/30">
+                                        🔒 Both toggles are off by default. Leaving them disabled keeps your contact details completely private from all members.
+                                    </p>
                                 </div>
                             </SettingCard>
                         </div>

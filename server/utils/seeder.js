@@ -305,41 +305,44 @@ const seedPremiumPlans = async () => {
         badge: 'bronze',
         price: 500,
         currency: 'LKR',
-        durationDays: 7,
-        description: 'Essential 7-day premium pass for quick matching',
-        features: ['7 Days Full Access', 'Unlimited Messages', 'Profile Boost', 'Bronze Badge', 'Ad-Free Experience'],
+        durationDays: 10,
+        description: 'Essential 10-day premium pass for quick matching',
+        features: ['10 Days Premium Access', 'Unlimited Messages', 'Profile Boost', 'Bronze Badge', 'Ad-Free Experience'],
         isPopular: false,
         isActive: true,
       },
       {
         name: 'Silver Plan',
         badge: 'silver',
-        price: 800,
+        price: 1300,
         currency: 'LKR',
-        durationDays: 14,
-        description: 'Popular 14-day plan with priority matching',
-        features: ['14 Days Full Access', 'Unlimited Messages', 'Priority Matching', 'Direct Contact Info', 'Silver Badge', 'Profile Visitors List'],
+        durationDays: 21,
+        description: 'Popular 21-day plan with priority matching',
+        features: ['21 Days Premium Access', 'Unlimited Messages', 'Priority Matching', 'Direct Contact Info', 'Silver Badge', 'Profile Visitors List', 'Ad-Free Experience'],
         isPopular: true,
         isActive: true,
       },
       {
         name: 'Gold Plan',
         badge: 'gold',
-        price: 1000,
+        price: 3000,
         currency: 'LKR',
-        durationDays: 28,
-        description: 'Ultimate 28-day VIP pass for serious matchmaking',
-        features: ['28 Days Full Access', 'VIP Spotlighting', 'Unlimited Messaging', 'Direct Contact Info', 'Gold Badge', '24/7 Priority Support'],
+        durationDays: 60,
+        description: 'Ultimate 60-day VIP pass for serious matchmaking',
+        features: ['60 Days Premium Access', 'Unlimited Messages', 'Highest Priority Matching', 'Direct Contact Info', 'Gold Badge', 'VIP Profile Spotlight', 'Profile Visitors List', 'Ad-Free Experience', 'Priority Support'],
         isPopular: false,
         isActive: true,
       },
     ];
 
     for (const plan of plans) {
-      const exists = await PremiumPlan.findOne({ badge: plan.badge });
-      if (!exists) {
+      const existing = await PremiumPlan.findOne({ badge: plan.badge });
+      if (!existing) {
         await PremiumPlan.create(plan);
         console.log(`✅ Premium Plan Created: ${plan.name} - ${plan.price} ${plan.currency} (${plan.durationDays} Days)`);
+      } else {
+        await PremiumPlan.updateOne({ _id: existing._id }, { $set: plan });
+        console.log(`✅ Premium Plan Updated: ${plan.name} - ${plan.price} ${plan.currency} (${plan.durationDays} Days)`);
       }
     }
   } catch (error) {

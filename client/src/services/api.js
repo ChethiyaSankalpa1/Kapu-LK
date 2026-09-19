@@ -195,6 +195,8 @@ export const userAPI = {
     getConsentHistory: () => api.get('/users/consent-history'),
     exportUserData: () => api.get('/users/export-data'),
     requestAccountDeletion: (data) => api.post('/users/request-deletion', data),
+    getProfileVisitors: () => api.get('/users/visitors'),
+    getSpotlightUsers: () => api.get('/users/spotlight'),
 };
 
 // Premium API

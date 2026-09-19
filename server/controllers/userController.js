@@ -7,6 +7,7 @@ const { UserStats } = require('../models/Achievement');
 const { purgeUserPermanently } = require('../services/inactivityCleanupService');
 const { checkAndSendWelcomeEmail } = require('../services/welcomeEmailService');
 const { logAuditEvent } = require('../middleware/auditLogger');
+const { hasPremiumFeature } = require('../utils/entitlements');
 
 const isValidPhoneNumber = (value) => !value || /^[0-9]+$/.test(value);
 
@@ -24,6 +25,7 @@ const USER_LIST_SELECT = [
   'maritalStatus',
   'profileImageUrl',
   'isPremium',
+  'premiumPlan',
   'isApproved',
   'isActive',
   'role',
@@ -86,6 +88,8 @@ exports.updateProfile = async (req, res) => {
       'firstDatePreference',
       'livingArrangements',
       'giftingOptIn',
+      'showPhoneNumber',
+      'showEmail',
     ].forEach(assignIfDefined);
 
     if (
@@ -130,6 +134,8 @@ exports.updateProfile = async (req, res) => {
       isPremium: updatedUser.isPremium,
       language: updatedUser.language,
       phoneNumber: updatedUser.phoneNumber,
+      showPhoneNumber: updatedUser.showPhoneNumber,
+      showEmail: updatedUser.showEmail,
       age: updatedUser.age,
       gender: updatedUser.gender,
       bio: updatedUser.bio,
@@ -169,6 +175,80 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
+/**
+ * Helper to query users with tier-based discovery priority:
+ * - Gold (Highest Priority Matching: 3)
+ * - Silver (Priority Matching: 2)
+ * - Bronze (Profile Boost: 1)
+ * - Free / Expired (0)
+ * Maintains natural discovery of Free users without hiding them.
+ */
+const getDiscoveryUsers = async (matchQuery, skip, limit, isAdmin = false) => {
+  const now = new Date();
+  
+  if (isAdmin) {
+    return await User.find(matchQuery)
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+  }
+
+  const pipeline = [
+    { $match: matchQuery },
+    {
+      $addFields: {
+        tierPriority: {
+          $cond: {
+            if: {
+              $and: [
+                { $eq: ['$isPremium', true] },
+                { $gt: ['$premiumExpiresAt', now] },
+              ],
+            },
+            then: {
+              $switch: {
+                branches: [
+                  { case: { $eq: ['$premiumPlan', 'gold'] }, then: 3 },
+                  { case: { $eq: ['$premiumPlan', 'silver'] }, then: 2 },
+                  { case: { $eq: ['$premiumPlan', 'bronze'] }, then: 1 },
+                ],
+                default: 0,
+              },
+            },
+            else: 0,
+          },
+        },
+      },
+    },
+    { $sort: { tierPriority: -1, createdAt: -1 } },
+    { $skip: skip },
+    { $limit: limit },
+    {
+      $project: {
+        name: 1,
+        age: 1,
+        gender: 1,
+        district: 1,
+        location: 1,
+        occupation: 1,
+        education: 1,
+        maritalStatus: 1,
+        profileImageUrl: 1,
+        isPremium: 1,
+        premiumPlan: 1,
+        isApproved: 1,
+        isActive: 1,
+        role: 1,
+        createdAt: 1,
+      },
+    },
+  ];
+
+  return await User.aggregate(pipeline);
+};
+
 // @desc    Get all users (approved only for regular users)
 // @route   GET /api/users
 // @access  Private
@@ -187,12 +267,7 @@ exports.getAllUsers = async (req, res) => {
           role: mongoose.trusted({ $ne: 'admin' }),
         };
 
-    const users = await User.find(query)
-      .select(req.user.role === 'admin' ? '-password' : USER_LIST_SELECT)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    const users = await getDiscoveryUsers(query, skip, limit, req.user.role === 'admin');
     const total = await User.countDocuments(query);
 
     res.json({
@@ -264,15 +339,35 @@ exports.getUserById = async (req, res) => {
 
     const userObj = user.toObject();
 
-    // Privacy protection: Mask confidential contact & security fields for other users
-    if (!isSelfOrAdmin) {
-      delete userObj.phoneNumber;
-      delete userObj.email;
+    // Privacy & Direct Contact Info entitlement handling
+    const viewerHasDirectContact = isSelfOrAdmin || hasPremiumFeature(req.user, 'direct_contact_info');
+
+    if (isSelfOrAdmin) {
+      userObj.phoneVisibility = 'visible';
+      userObj.emailVisibility = 'visible';
+    } else {
+      // Remove confidential security fields unconditionally for other users
       delete userObj.complaints;
       delete userObj.loginAttempts;
       delete userObj.lockUntil;
       delete userObj.blockedUsers;
       delete userObj.tokenVersion;
+
+      // Enforce phone number visibility: owner must enable it AND viewer must have Direct Contact Info
+      if (user.showPhoneNumber && viewerHasDirectContact) {
+        userObj.phoneVisibility = 'visible';
+      } else {
+        delete userObj.phoneNumber;
+        userObj.phoneVisibility = user.showPhoneNumber ? 'premium_required' : 'hidden_by_user';
+      }
+
+      // Enforce email visibility: owner must enable it AND viewer must have Direct Contact Info
+      if (user.showEmail && viewerHasDirectContact) {
+        userObj.emailVisibility = 'visible';
+      } else {
+        delete userObj.email;
+        userObj.emailVisibility = user.showEmail ? 'premium_required' : 'hidden_by_user';
+      }
     }
 
     res.json(userObj);
@@ -309,12 +404,7 @@ exports.searchUsers = async (req, res) => {
       if (maxAge) query.age.$lte = parseInt(maxAge);
     }
 
-    const users = await User.find(query)
-      .select(USER_LIST_SELECT)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limitNum)
-      .lean();
+    const users = await getDiscoveryUsers(query, skip, limitNum, false);
     const total = await User.countDocuments(query);
 
     res.json({
@@ -408,6 +498,14 @@ exports.getMatches = async (req, res) => {
       if (prefs.religion && user.religion && user.religion.toLowerCase() === prefs.religion.toLowerCase()) score += 10;
       if (prefs.district && user.district && user.district.toLowerCase() === prefs.district.toLowerCase()) score += 10;
       if (prefs.maritalStatus && user.maritalStatus === prefs.maritalStatus) score += 10;
+
+      // Premium priority matching boost (Gold highest priority, Silver priority matching, Bronze boost)
+      const isPlanActive = user.isPremium && user.premiumExpiresAt && new Date(user.premiumExpiresAt) > new Date();
+      if (isPlanActive) {
+        if (user.premiumPlan === 'gold') score += 15;
+        else if (user.premiumPlan === 'silver') score += 10;
+        else if (user.premiumPlan === 'bronze') score += 5;
+      }
 
       score = Math.min(100, score);
 
@@ -738,4 +836,76 @@ exports.requestAccountDeletion = async (req, res) => {
     return res.status(500).json({ message: 'Failed to delete account. Please contact support.' });
   }
 };
+
+// @desc    Get profile visitor history (Silver and Gold only)
+// @route   GET /api/users/visitors
+// @access  Private
+exports.getProfileVisitors = async (req, res) => {
+  try {
+    if (!hasPremiumFeature(req.user, 'profile_visitors')) {
+      return res.status(403).json({
+        success: false,
+        isPremiumRequired: true,
+        requiredPlan: 'silver',
+        message: 'Profile Visitors List is a Silver and Gold Premium feature. Upgrade your plan to see who viewed your profile.',
+      });
+    }
+
+    const visitors = await Notification.find({
+      user: req.user._id,
+      type: 'profile_view',
+    })
+      .sort({ lastViewedAt: -1, createdAt: -1 })
+      .limit(50)
+      .populate('relatedUser', 'name profileImageUrl age gender location district occupation isPremium premiumPlan')
+      .lean();
+
+    const visitorList = visitors
+      .filter((v) => v.relatedUser)
+      .map((v) => ({
+        id: v._id,
+        user: v.relatedUser,
+        viewCount: v.viewCount || 1,
+        lastViewedAt: v.lastViewedAt || v.createdAt,
+      }));
+
+    res.json({
+      success: true,
+      visitors: visitorList,
+    });
+  } catch (error) {
+    console.error('Error fetching profile visitors:', error);
+    res.status(500).json({ message: 'Failed to fetch profile visitors' });
+  }
+};
+
+// @desc    Get VIP Spotlight profiles (Gold users only)
+// @route   GET /api/users/spotlight
+// @access  Private
+exports.getSpotlightUsers = async (req, res) => {
+  try {
+    const now = new Date();
+    const query = {
+      isApproved: true,
+      isActive: true,
+      isPremium: true,
+      premiumPlan: 'gold',
+      premiumExpiresAt: { $gt: now },
+      role: { $ne: 'admin' },
+      _id: { $ne: req.user._id },
+    };
+
+    const spotlightUsers = await User.find(query)
+      .select(USER_LIST_SELECT)
+      .sort({ updatedAt: -1, createdAt: -1 })
+      .limit(10)
+      .lean();
+
+    res.json(spotlightUsers);
+  } catch (error) {
+    console.error('Error fetching spotlight users:', error);
+    res.status(500).json({ message: 'Failed to fetch spotlight users' });
+  }
+};
+
 

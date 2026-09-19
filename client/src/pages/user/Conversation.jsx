@@ -269,7 +269,11 @@ const Conversation = () => {
       fetchChatMessages(true);
       fetchConversationsList(true);
     } catch (error) {
-      toast.error(error.response?.data?.message || t('toast.messaging.sendFailed'));
+      if (error.response?.data?.code === 'CONTACT_INFO_RESTRICTED') {
+        toast.error('Sharing contact information is restricted for your tier. Upgrade to Silver or Gold to send contact details!', { duration: 5000 });
+      } else {
+        toast.error(error.response?.data?.message || t('toast.messaging.sendFailed'));
+      }
       setMessages(prev => prev.filter(msg => msg._id !== tempId));
       setMessageText(textToSend);
       setReplyingToMessage(activeReplyTo);

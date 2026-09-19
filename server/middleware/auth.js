@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { syncUserPremiumStatus } = require('../utils/entitlements');
 
 // Protect routes - verify JWT token from HttpOnly cookie OR Authorization Bearer header
 exports.protect = async (req, res, next) => {
@@ -33,6 +34,9 @@ exports.protect = async (req, res, next) => {
     if (!user) {
       return res.status(401).json({ message: 'Not authorized, user account no longer exists' });
     }
+
+    // Automatically check and sync premium expiration (expired users behave as free users)
+    await syncUserPremiumStatus(user);
 
     // Reject deactivated or suspended users immediately
     if (user.isActive === false) {
@@ -187,6 +191,7 @@ exports.optionalProtect = async (req, res, next) => {
     const decoded = jwt.verify(token, jwtSecret);
     const user = await User.findById(decoded.id).select('-password');
     if (user && user.isActive !== false) {
+      await syncUserPremiumStatus(user);
       req.user = user;
       req.tokenPayload = decoded;
     }

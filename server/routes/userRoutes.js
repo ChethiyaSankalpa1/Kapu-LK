@@ -14,6 +14,8 @@ const {
   getConsentHistory,
   exportUserData,
   requestAccountDeletion,
+  getProfileVisitors,
+  getSpotlightUsers,
 } = require('../controllers/userController');
 const { protect, approved } = require('../middleware/auth');
 const validate = require('../middleware/validate');
@@ -33,6 +35,8 @@ router.put(
 router.get('/', protect, approved, getAllUsers);
 router.get('/search', protect, approved, searchUsers);
 router.get('/matches', protect, approved, getMatches);
+router.get('/visitors', protect, approved, getProfileVisitors);
+router.get('/spotlight', protect, approved, getSpotlightUsers);
 router.get('/admin', protect, getAdminUser);
 router.get('/consent-history', protect, getConsentHistory);
 router.get('/export-data', protect, exportUserData);

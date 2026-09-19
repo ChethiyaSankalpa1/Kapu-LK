@@ -6,6 +6,8 @@ const Report = require('../models/Report');
 const { encryptMessage, decryptMessage } = require('../utils/messageCrypto');
 const cloudinary = require('../config/cloudinary');
 const { logAuditEvent } = require('../middleware/auditLogger');
+const { hasPremiumFeature } = require('../utils/entitlements');
+const { containsRestrictedContactInfo } = require('../utils/contactDetector');
 
 // @desc    Send a message
 // @route   POST /api/messages
@@ -44,15 +46,28 @@ exports.sendMessage = async (req, res) => {
       return res.status(400).json({ message: 'You have blocked this user. Unblock them first to send a message.' });
     }
 
+    // Contact restriction check: Normal/free and Bronze users cannot share phone numbers or email addresses in chat
+    const canShareContactInfo = sender.role === 'admin' || hasPremiumFeature(sender, 'direct_contact_info');
+    if (!canShareContactInfo) {
+      const contactCheck = containsRestrictedContactInfo(content);
+      if (contactCheck.hasRestrictedInfo) {
+        return res.status(403).json({
+          success: false,
+          code: 'CONTACT_INFO_RESTRICTED',
+          message: 'Sharing contact numbers is a Premium feature. Upgrade your plan to share contact details.',
+        });
+      }
+    }
+
     const FREE_MESSAGE_LIMIT = 5;
     const MESSAGE_COOLDOWN_MS = 60 * 1000;
     const isAdminConversation = recipient.role === 'admin';
+    const hasUnlimitedMessages = sender.role === 'admin' || hasPremiumFeature(sender, 'unlimited_messages');
 
-    // Only apply cooldown for non-premium users and non-admin conversations
+    // Only apply cooldown for users without unlimited messages and non-admin conversations
     if (
-      sender.role !== 'admin' &&
+      !hasUnlimitedMessages &&
       !isAdminConversation &&
-      !sender.isPremium &&
       sender.lastMessageSentAt &&
       Date.now() - new Date(sender.lastMessageSentAt).getTime() < MESSAGE_COOLDOWN_MS
     ) {
@@ -84,7 +99,7 @@ exports.sendMessage = async (req, res) => {
       await sender.save();
     }
 
-    if (sender.role !== 'admin' && !isAdminConversation && !sender.isPremium && sender.messagesSent >= FREE_MESSAGE_LIMIT) {
+    if (!hasUnlimitedMessages && !isAdminConversation && sender.messagesSent >= FREE_MESSAGE_LIMIT) {
       return res.status(403).json({
         message: 'Free message limit reached',
         limit: FREE_MESSAGE_LIMIT,
@@ -118,7 +133,7 @@ exports.sendMessage = async (req, res) => {
       replyTo: validatedReplyTo,
     });
 
-    if (sender.role !== 'admin' && !isAdminConversation && !sender.isPremium) {
+    if (sender.role !== 'admin' && !isAdminConversation && !hasUnlimitedMessages) {
       sender.messagesSent += 1;
     }
     sender.lastMessageSentAt = new Date();

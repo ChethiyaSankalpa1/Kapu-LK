@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { messageAPI } from '../../services/api';
-import { Heart, Search, Users, MessageSquare, User, LogIn } from 'lucide-react';
+import { Heart, Search, Users, MessageSquare, User, LogIn, Crown } from 'lucide-react';
 
 const MobileBottomNav = () => {
     const { t } = useTranslation();
@@ -40,20 +40,25 @@ const MobileBottomNav = () => {
         ? [
               {
                   to: '/dashboard',
-                  label: t('nav.home', { defaultValue: 'Home' }),
+                  label: t('nav.dashboard', { defaultValue: 'Dashboard' }),
                   icon: Heart,
                   matchExact: true,
               },
               {
                   to: '/users',
-                  label: t('nav.browse', { defaultValue: 'Explore' }),
+                  label: t('nav.browse', { defaultValue: 'Browse' }),
                   icon: Search,
               },
               {
                   to: '/conversation',
-                  label: t('nav.messages', { defaultValue: 'Chats' }),
+                  label: t('nav.messages', { defaultValue: 'Messages' }),
                   icon: MessageSquare,
                   badge: unreadMessages,
+              },
+              {
+                  to: '/premium',
+                  label: t('nav.walletRewards', { defaultValue: 'Wallet & Rewards' }),
+                  icon: Crown,
               },
               {
                   to: '/profile',

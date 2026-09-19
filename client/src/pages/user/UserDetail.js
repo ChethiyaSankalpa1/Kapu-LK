@@ -462,17 +462,8 @@ const UserDetail = () => {
                                 Contact Information
                             </h2>
 
-                            {!isOwnProfile && currentUser?.premiumPlan !== 'gold' ? (
-                                <div className="text-center py-10 px-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10 rounded-2xl border border-yellow-150 dark:border-yellow-800/20">
-                                    <Crown className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-                                    <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mb-2">Gold Membership Required</h3>
-                                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-5 max-w-sm mx-auto">Upgrade to Gold membership to view contact information and connect with matches!</p>
-                                    <Link to="/premium" className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-650 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition">
-                                        <Crown className="w-4 h-4" />
-                                        <span>Get Gold</span>
-                                    </Link>
-                                </div>
-                            ) : (
+                            {isOwnProfile ? (
+                                /* Owner sees their own info always */
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {user.phoneNumber && (
                                         <div className="flex items-center gap-3.5 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10 rounded-xl border border-green-100/60 dark:border-green-800/20">
@@ -490,6 +481,80 @@ const UserDetail = () => {
                                                 <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Email Address</p>
                                                 <p className="text-base font-semibold text-gray-950 dark:text-white mt-0.5 truncate max-w-[180px] sm:max-w-none">{user.email}</p>
                                             </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                /* Visitor sees based on phoneVisibility / emailVisibility from server */
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Phone */}
+                                    {user.phoneVisibility === 'visible' && user.phoneNumber && (
+                                        <div className="flex items-center gap-3.5 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10 rounded-xl border border-green-100/60 dark:border-green-800/20">
+                                            <Phone className="w-5.5 h-5.5 text-green-600 flex-shrink-0" />
+                                            <div>
+                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Phone Number</p>
+                                                <p className="text-base font-semibold text-gray-950 dark:text-white mt-0.5">{user.phoneNumber}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {user.phoneVisibility === 'premium_required' && (
+                                        <div className="flex items-center gap-3.5 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10 rounded-xl border border-yellow-100/60 dark:border-yellow-800/20">
+                                            <Crown className="w-5.5 h-5.5 text-yellow-500 flex-shrink-0" />
+                                            <div>
+                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Phone Number</p>
+                                                <Link to="/premium" className="text-sm font-semibold text-yellow-600 dark:text-yellow-400 mt-0.5 hover:underline">Upgrade to Silver or Gold to view</Link>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {user.phoneVisibility === 'hidden_by_user' && (
+                                        <div className="flex items-center gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
+                                            <Phone className="w-5.5 h-5.5 text-gray-400 flex-shrink-0" />
+                                            <div>
+                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Phone Number</p>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">User has kept this private</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Email */}
+                                    {user.emailVisibility === 'visible' && user.email && (
+                                        <div className="flex items-center gap-3.5 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/10 dark:to-cyan-900/10 rounded-xl border border-blue-100/60 dark:border-blue-800/20">
+                                            <Mail className="w-5.5 h-5.5 text-blue-600 flex-shrink-0" />
+                                            <div>
+                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Email Address</p>
+                                                <p className="text-base font-semibold text-gray-950 dark:text-white mt-0.5 truncate max-w-[180px] sm:max-w-none">{user.email}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {user.emailVisibility === 'premium_required' && (
+                                        <div className="flex items-center gap-3.5 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10 rounded-xl border border-yellow-100/60 dark:border-yellow-800/20">
+                                            <Crown className="w-5.5 h-5.5 text-yellow-500 flex-shrink-0" />
+                                            <div>
+                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Email Address</p>
+                                                <Link to="/premium" className="text-sm font-semibold text-yellow-600 dark:text-yellow-400 mt-0.5 hover:underline">Upgrade to Silver or Gold to view</Link>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {user.emailVisibility === 'hidden_by_user' && (
+                                        <div className="flex items-center gap-3.5 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/20 dark:to-gray-700/5 rounded-xl border border-gray-100/60 dark:border-gray-700">
+                                            <Mail className="w-5.5 h-5.5 text-gray-400 flex-shrink-0" />
+                                            <div>
+                                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Email Address</p>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">User has kept this private</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Fallback: no visibility info — show upgrade prompt */}
+                                    {!user.phoneVisibility && !user.emailVisibility && (
+                                        <div className="col-span-2 text-center py-8 px-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10 rounded-2xl border border-yellow-150 dark:border-yellow-800/20">
+                                            <Crown className="w-10 h-10 text-yellow-500 mx-auto mb-3" />
+                                            <h3 className="text-base font-extrabold text-gray-900 dark:text-white mb-1">Silver or Gold Membership Required</h3>
+                                            <p className="text-xs text-gray-600 dark:text-gray-300 mb-4">Upgrade to view contact information and connect directly with matches.</p>
+                                            <Link to="/premium" className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-md transition">
+                                                <Crown className="w-4 h-4" />
+                                                <span>Get Premium</span>
+                                            </Link>
                                         </div>
                                     )}
                                 </div>
