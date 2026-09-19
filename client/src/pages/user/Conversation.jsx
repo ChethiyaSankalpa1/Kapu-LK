@@ -42,11 +42,20 @@ const Conversation = () => {
   const [showReactionPicker, setShowReactionPicker] = useState(null);
   const [showGiftModal, setShowGiftModal] = useState(false);
   const [replyingToMessage, setReplyingToMessage] = useState(null);
+  const [viewportHeight, setViewportHeight] = useState(null);
 
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const isNearBottomRef = useRef(true);
   const fileInputRef = useRef(null);
   const emojiPickerRef = useRef(null);
   const textInputRef = useRef(null);
+
+  const handleScroll = () => {
+    if (!messagesContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < 140;
+  };
 
   const scrollToBottom = useCallback((behavior = 'smooth') => {
     setTimeout(() => {
@@ -122,26 +131,58 @@ const Conversation = () => {
     }
   }, [userId, scrollToBottom]);
 
-  // Initial load & body scroll locking on mobile
+  // Track visual viewport dynamically on mobile (handles Android & iOS keyboard open/close seamlessly)
   useEffect(() => {
     fetchConversationsList();
-    
-    const handleResize = () => {
+
+    const handleViewport = () => {
       if (window.innerWidth < 768) {
-        document.body.style.overflow = 'hidden';
+        if (window.visualViewport) {
+          setViewportHeight(window.visualViewport.height);
+          // Prevent browser from scrolling the body/page when keyboard pops up
+          if (window.scrollY !== 0) {
+            window.scrollTo(0, 0);
+          }
+        } else {
+          setViewportHeight(window.innerHeight);
+        }
       } else {
-        document.body.style.overflow = 'unset';
+        setViewportHeight(null);
       }
     };
-    
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    
+
+    handleViewport();
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleViewport);
+      window.visualViewport.addEventListener('scroll', handleViewport);
+    }
+    window.addEventListener('resize', handleViewport);
+
     return () => {
-      window.removeEventListener('resize', handleResize);
-      document.body.style.overflow = 'unset';
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleViewport);
+        window.visualViewport.removeEventListener('scroll', handleViewport);
+      }
+      window.removeEventListener('resize', handleViewport);
     };
   }, [fetchConversationsList]);
+
+  // Lock document bounce / page scroll when in mobile chat
+  useEffect(() => {
+    if (window.innerWidth < 768 && userId) {
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    };
+  }, [userId]);
 
   // Load chat on userId change
   useEffect(() => {
@@ -151,15 +192,25 @@ const Conversation = () => {
       setOtherUser(null);
       fetchChatMessages(false);
       setShowEmojiPicker(false);
+      isNearBottomRef.current = true;
     }
   }, [userId, fetchChatMessages]);
 
-  // Scroll to bottom on messages change
+  // Smart scroll to bottom when messages change
   useEffect(() => {
     if (messages.length > 0) {
-      scrollToBottom('auto');
+      if (isNearBottomRef.current || messages.length <= 1) {
+        scrollToBottom('auto');
+      }
     }
   }, [messages.length, scrollToBottom]);
+
+  // When visual viewport shrinks (e.g. keyboard opens), keep conversation pinned to latest message if near bottom
+  useEffect(() => {
+    if (viewportHeight && isNearBottomRef.current) {
+      scrollToBottom('smooth');
+    }
+  }, [viewportHeight, scrollToBottom]);
 
   // Check typing status
   const checkTypingStatus = useCallback(async () => {
@@ -461,8 +512,20 @@ const Conversation = () => {
   ) : [];
 
   return (
-    <div className="fixed top-14 sm:top-16 left-0 right-0 bottom-0 bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-500 page-transition pb-0 sm:pb-0">
-      <div className="h-full flex w-full max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden">
+    <div
+      className={`fixed left-0 right-0 bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-300 overflow-hidden ${
+        userId
+          ? 'top-0 md:top-16 bottom-0 z-40'
+          : 'top-14 sm:top-16 bottom-0 z-30'
+      }`}
+      style={{
+        height: viewportHeight
+          ? (userId ? `${viewportHeight}px` : `${Math.max(viewportHeight - 56, 200)}px`)
+          : (userId ? '100dvh' : 'calc(100dvh - 3.5rem)'),
+        maxHeight: viewportHeight ? `${viewportHeight}px` : undefined,
+      }}
+    >
+      <div className="h-full flex w-full max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden min-h-0">
         
         {/* ================= SIDEBAR: Conversation List ================= */}
         <div className={`w-full md:w-[360px] lg:w-[400px] flex flex-col h-full border-r border-[#d1d7db] dark:border-[#222d34] shrink-0 bg-white dark:bg-[#111b21] ${
@@ -651,7 +714,11 @@ const Conversation = () => {
               </div>
 
               {/* Messages scroll area */}
-              <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-4 space-y-3 sm:space-y-4 chat-scrollbar whatsapp-chat-bg relative min-h-0">
+              <div 
+                ref={messagesContainerRef}
+                onScroll={handleScroll}
+                className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-4 space-y-3 sm:space-y-4 chat-scrollbar whatsapp-chat-bg relative min-h-0"
+              >
                 {chatLoading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-500" />

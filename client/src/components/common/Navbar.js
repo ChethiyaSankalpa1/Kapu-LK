@@ -221,6 +221,10 @@ const Navbar = () => {
                             notifications.map((notif, index) => (
                                 <div
                                     key={index}
+                                    onClick={() => {
+                                        setNotifOpen(false);
+                                        navigate('/activity');
+                                    }}
                                     className={`p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
                                         !notif.read ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''
                                     }`}
@@ -240,7 +244,7 @@ const Navbar = () => {
                     </div>
                     <div className="p-3 border-t border-gray-200 dark:border-gray-700">
                         <Link
-                            to="/dashboard"
+                            to="/activity"
                             onClick={() => setNotifOpen(false)}
                             className="block text-center text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium"
                         >
@@ -329,10 +333,14 @@ const Navbar = () => {
         </div>
     );
 
+    const isMobileChatActive =
+        (location.pathname.startsWith('/conversation/') && location.pathname.length > '/conversation/'.length) ||
+        (location.pathname.startsWith('/messages/') && location.pathname.length > '/messages/'.length);
+
     return (
         <>
             {/* ===== TOPBAR ===== */}
-            <nav className="glass-nav sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-150 dark:border-gray-800">
+            <nav className={`glass-nav sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-150 dark:border-gray-800 ${isMobileChatActive ? 'hidden md:block' : ''}`}>
                 <div className="w-full max-w-[1550px] mx-auto px-4 lg:px-8">
                     <div className="flex items-center justify-between h-14 sm:h-16 gap-3">
                         {/* Logo with Tagline */}

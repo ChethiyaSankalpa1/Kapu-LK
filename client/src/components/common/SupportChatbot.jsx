@@ -146,6 +146,31 @@ export default function SupportChatbot() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [ticketReplyText, setTicketReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  // Detect virtual keyboard on mobile to hide floating chatbot button while user types
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.visualViewport) {
+        const isKeyboard = window.innerHeight - window.visualViewport.height > 150;
+        setIsKeyboardOpen(isKeyboard);
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      window.visualViewport.addEventListener('scroll', handleResize);
+    }
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+        window.visualViewport.removeEventListener('scroll', handleResize);
+      }
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   const messagesEndRef = useRef(null);
 
@@ -409,11 +434,12 @@ export default function SupportChatbot() {
     }
   };
 
-  // Hide on: logged-out state, admin users, /admin/* routes, chat /conversation routes, and all public/auth pages
+  // Hide on: logged-out state, admin users, /admin/* routes, chat /conversation routes, all public/auth pages, and when mobile keyboard is open
   const currentPath = location.pathname;
   if (
     !user ||
     isAdmin ||
+    isKeyboardOpen ||
     currentPath.startsWith('/admin') ||
     currentPath.startsWith('/reset-password') ||
     currentPath.startsWith('/conversation') ||

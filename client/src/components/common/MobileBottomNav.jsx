@@ -11,6 +11,32 @@ const MobileBottomNav = () => {
     const location = useLocation();
     const [unreadMessages, setUnreadMessages] = useState(0);
 
+    const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+    // Detect virtual keyboard on mobile to prevent floating bar overlapping inputs
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.visualViewport) {
+                const isKeyboard = window.innerHeight - window.visualViewport.height > 150;
+                setIsKeyboardOpen(isKeyboard);
+            }
+        };
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', handleResize);
+            window.visualViewport.addEventListener('scroll', handleResize);
+        }
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', handleResize);
+                window.visualViewport.removeEventListener('scroll', handleResize);
+            }
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
     // Fetch unread count for conversations if logged in
     useEffect(() => {
         if (!user) return;
@@ -31,12 +57,12 @@ const MobileBottomNav = () => {
         return () => clearInterval(timer);
     }, [user]);
 
-    // Hide on admin portal or active 1-on-1 chat conversation so composer is not covered
+    // Hide on admin portal, active 1-on-1 chat conversation, or when mobile keyboard is open
     const isChatOpen =
         (location.pathname.startsWith('/conversation/') && location.pathname.length > '/conversation/'.length) ||
         (location.pathname.startsWith('/messages/') && location.pathname.length > '/messages/'.length);
 
-    if (isAdmin || location.pathname.startsWith('/admin') || isChatOpen) {
+    if (isAdmin || location.pathname.startsWith('/admin') || isChatOpen || isKeyboardOpen) {
         return null;
     }
 
