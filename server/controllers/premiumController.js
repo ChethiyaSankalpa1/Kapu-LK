@@ -266,9 +266,9 @@ exports.createPaymentRequest = async (req, res) => {
       return res.status(400).json({ message: 'You already have a pending premium request' });
     }
 
-    const { bank, accountHolderName, email, phoneNumber, paymentDate, paymentAmount, planId, planBadge } = req.body;
+    const { bank, accountHolderName, email, phoneNumber, paymentDate, paymentAmount, planId, planBadge, transactionReference, paymentMethod, notes } = req.body;
     if (!bank || !accountHolderName || !email || !phoneNumber || !paymentDate || !paymentAmount) {
-      return res.status(400).json({ message: 'All fields are required' });
+      return res.status(400).json({ message: 'All required fields must be completed' });
     }
 
     if (!isValidPhoneNumber(phoneNumber)) {
@@ -287,8 +287,8 @@ exports.createPaymentRequest = async (req, res) => {
       plan = await PremiumPlan.findOne({ badge: planBadge });
     }
 
-    const selectedBadge = plan?.badge || planBadge || (parseFloat(paymentAmount) >= 1000 ? 'gold' : parseFloat(paymentAmount) >= 800 ? 'silver' : 'bronze');
-    const selectedDuration = plan?.durationDays || (selectedBadge === 'gold' ? 28 : selectedBadge === 'silver' ? 14 : 7);
+    const selectedBadge = plan?.badge || planBadge || (parseFloat(paymentAmount) >= 3000 ? 'gold' : parseFloat(paymentAmount) >= 1300 ? 'silver' : 'bronze');
+    const selectedDuration = plan?.durationDays || (selectedBadge === 'gold' ? 60 : selectedBadge === 'silver' ? 21 : 10);
 
     // Upload payment slip to Cloudinary
     const b64 = Buffer.from(req.file.buffer).toString('base64');
@@ -301,12 +301,15 @@ exports.createPaymentRequest = async (req, res) => {
     const paymentRequest = await PremiumPaymentRequest.create({
       user: req.user._id,
       bank,
+      paymentMethod: paymentMethod || 'bank_transfer',
       accountHolderName,
       email,
       phoneNumber,
+      transactionReference: transactionReference || `PREM-${Date.now()}`,
       paymentDate,
-      paymentAmount,
+      paymentAmount: parseFloat(paymentAmount),
       paymentSlipUrl: result.secure_url,
+      notes: notes || '',
       plan: plan?._id || null,
       planBadge: selectedBadge,
       durationDays: selectedDuration,
@@ -397,8 +400,8 @@ exports.approveRequest = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const planBadge = request.planBadge || (request.paymentAmount >= 1000 ? 'gold' : request.paymentAmount >= 800 ? 'silver' : 'bronze');
-    const durationDays = request.durationDays || (planBadge === 'gold' ? 28 : planBadge === 'silver' ? 14 : 7);
+    const planBadge = request.planBadge || (request.paymentAmount >= 3000 ? 'gold' : request.paymentAmount >= 1300 ? 'silver' : 'bronze');
+    const durationDays = request.durationDays || (planBadge === 'gold' ? 60 : planBadge === 'silver' ? 21 : 10);
 
     user.isPremium = true;
     user.premiumPlan = planBadge;
@@ -414,6 +417,25 @@ exports.approveRequest = async (req, res) => {
     user.pendingPremiumRequest = null;
     user.premiumExpirySentNotification = false;
     await user.save();
+
+    // Create a completed WalletTransaction of type purchase for transaction history
+    let wallet = await Wallet.findOne({ user: user._id });
+    if (!wallet) {
+      wallet = await Wallet.create({ user: user._id });
+    }
+    await WalletTransaction.create({
+      wallet: wallet._id,
+      user: user._id,
+      type: 'purchase',
+      amount: request.paymentAmount,
+      currency: 'LKR',
+      description: `Admin approved ${planBadge.toUpperCase()} Premium Membership (${durationDays} Days) via ${request.bank}`,
+      relatedType: 'premium',
+      relatedId: request._id,
+      balanceBefore: wallet.balance,
+      balanceAfter: wallet.balance,
+      status: 'completed'
+    });
 
     logAuditEvent({
       userId: req.user._id,

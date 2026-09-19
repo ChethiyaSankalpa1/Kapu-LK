@@ -2,9 +2,54 @@ const { Wallet, WalletTransaction, PaymentRequest } = require('../models/Wallet'
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { UserStats } = require('../models/Achievement');
-const path = require('path');
-const fs = require('fs');
+const cloudinary = require('../config/cloudinary');
 const { logAuditEvent } = require('../middleware/auditLogger');
+
+// Canonical Bank & Payment Account Details
+const PAYMENT_ACCOUNTS = {
+  'Sampath Bank': {
+    name: 'Sampath Bank',
+    account: '110552360840',
+    branch: 'Wattegama',
+    accountHolder: 'S. Kumarasinghe',
+    type: 'bank_transfer',
+  },
+  'Hatton National Bank (HNB)': {
+    name: 'Hatton National Bank (HNB)',
+    account: '018021102658',
+    branch: 'Kandy',
+    accountHolder: 'S. Kumarasinghe',
+    type: 'bank_transfer',
+  },
+  'Bank of Ceylon (BOC)': {
+    name: 'Bank of Ceylon (BOC)',
+    account: '00069058',
+    branch: 'Kandy',
+    accountHolder: 'R. Ratnayake',
+    type: 'bank_transfer',
+  },
+  'Regional Development Bank (RDB)': {
+    name: 'Regional Development Bank (RDB)',
+    account: '409010110698',
+    branch: 'Kandy',
+    accountHolder: 'T. Dharmapriya',
+    type: 'bank_transfer',
+  },
+  'eZ Cash': {
+    name: 'eZ Cash',
+    account: '0764134658',
+    branch: 'Mobile Wallet',
+    accountHolder: 'LoveLK Official',
+    type: 'ez_cash',
+  },
+  'Binance': {
+    name: 'Binance Pay',
+    account: '520375906',
+    branch: 'Crypto Transfer (USDT/BUSD)',
+    accountHolder: 'LoveLK Binance ID',
+    type: 'binance',
+  },
+};
 
 // @desc    Get user wallet summary (wallet + stats + recent transactions in 1 request)
 // @route   GET /api/wallet/summary
@@ -13,21 +58,23 @@ exports.getWalletSummary = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    let [wallet, userStats, transactions] = await Promise.all([
+    let [wallet, userStats, transactions, pendingRequests] = await Promise.all([
       Wallet.findOne({ user: userId }).lean(),
       UserStats.findOne({ user: userId }).lean(),
-      WalletTransaction.find({ user: userId }).sort({ createdAt: -1 }).limit(10).lean(),
+      WalletTransaction.find({ user: userId }).sort({ createdAt: -1 }).limit(15).lean(),
+      PaymentRequest.find({ user: userId, status: 'pending' }).lean(),
     ]);
 
     if (!wallet) {
-      wallet = await Wallet.create({ user: userId });
-      wallet = wallet.toObject();
+      const newWallet = await Wallet.create({ user: userId });
+      wallet = newWallet.toObject();
     }
 
     res.json({
       wallet,
       userStats: userStats || { points: 0, loginStreak: 0, totalGiftsSent: 0 },
       transactions: transactions || [],
+      pendingRequestsCount: pendingRequests.length,
     });
   } catch (error) {
     console.error('Error fetching wallet summary:', error);
@@ -44,7 +91,8 @@ exports.getWallet = async (req, res) => {
     
     let wallet = await Wallet.findOne({ user: userId }).lean();
     if (!wallet) {
-      wallet = await Wallet.create({ user: userId });
+      const newWallet = await Wallet.create({ user: userId });
+      wallet = newWallet.toObject();
     }
     
     res.json(wallet);
@@ -60,18 +108,18 @@ exports.getWallet = async (req, res) => {
 exports.getTransactions = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { limit = 20, skip = 0, type } = req.query;
+    const { limit = 30, skip = 0, type } = req.query;
     
     const query = { user: userId };
-    if (type) {
+    if (type && type !== 'all') {
       query.type = type;
     }
     
     const [transactions, total] = await Promise.all([
       WalletTransaction.find(query)
         .sort({ createdAt: -1 })
-        .limit(parseInt(limit))
-        .skip(parseInt(skip))
+        .limit(parseInt(limit, 10))
+        .skip(parseInt(skip, 10))
         .lean(),
       WalletTransaction.countDocuments(query),
     ]);
@@ -83,76 +131,92 @@ exports.getTransactions = async (req, res) => {
   }
 };
 
-// @desc    Create payment request (bank slip upload)
+// @desc    Create payment request (bank slip / eZ Cash / Binance receipt upload)
 // @route   POST /api/wallet/payment-request
 // @access  Private
 exports.createPaymentRequest = async (req, res) => {
   try {
     const userId = req.user._id;
-    
-    // Handle FormData upload
-    if (req.file) {
-      const { amount, bankName } = req.body;
-      
-      if (!amount || parseFloat(amount) <= 0) {
-        return res.status(400).json({ message: 'Invalid amount' });
-      }
-      
-      // Get account details based on selected bank
-      const bankDetails = {
-        'HNB': { name: 'Hatton National Bank', account: '018021102658', branch: 'Kandy', accountHolder: 'S. Kumarasinghe' },
-        'Sampath': { name: 'Sampath Bank', account: 'Contact for details', branch: 'Wattegama', accountHolder: 'S. Kumarasinghe' },
-        'BOC': { name: 'Bank of Ceylon', account: '00069058', branch: 'Kandy', accountHolder: 'R. Ratnayake' },
-        'RDB': { name: 'Regional Development Bank', account: '409010110698', branch: 'Kandy', accountHolder: 'T. Dharmapriya' }
-      };
-      
-      const selectedBank = bankDetails[bankName] || bankDetails['HNB'];
-      
-      const paymentRequest = await PaymentRequest.create({
-        user: userId,
-        amount: parseFloat(amount),
-        currency: 'LKR',
-        paymentMethod: 'bank_transfer',
-        bankName: selectedBank.name,
-        accountNumber: selectedBank.account,
-        branch: selectedBank.branch,
-        accountHolder: selectedBank.accountHolder,
-        transactionReference: `TXN${Date.now()}`,
-        slipImageUrl: `/uploads/payment-slips/${req.file.filename}`,
-        status: 'pending'
-      });
-      
-      res.status(201).json(paymentRequest);
-    } else {
-      // Handle JSON body (legacy)
-      const { amount, paymentMethod, bankName, accountNumber, transactionReference, slipImageUrl, notes } = req.body;
-      
-      if (!amount || amount <= 0) {
-        return res.status(400).json({ message: 'Invalid amount' });
-      }
-      
-      if (!paymentMethod || !bankName || !accountNumber || !transactionReference || !slipImageUrl) {
-        return res.status(400).json({ message: 'Missing required fields' });
-      }
-      
-      const paymentRequest = await PaymentRequest.create({
-        user: userId,
-        amount,
-        currency: 'LKR',
-        paymentMethod,
-        bankName,
-        accountNumber,
-        transactionReference,
-        slipImageUrl,
-        notes,
-        status: 'pending'
-      });
-      
-      res.status(201).json(paymentRequest);
+    const {
+      amount,
+      bankName,
+      paymentMethod,
+      payerName,
+      payerPhone,
+      transactionReference,
+      notes,
+    } = req.body;
+
+    const parsedAmount = parseFloat(amount);
+    if (!parsedAmount || isNaN(parsedAmount) || parsedAmount < 100) {
+      return res.status(400).json({ message: 'Minimum top-up amount is 100 LKR' });
     }
+
+    if (!transactionReference || !transactionReference.trim()) {
+      return res.status(400).json({ message: 'Please provide a transaction or reference ID' });
+    }
+
+    let slipImageUrl = '';
+
+    if (req.file) {
+      const b64 = Buffer.from(req.file.buffer).toString('base64');
+      const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+      const uploadRes = await cloudinary.uploader.upload(dataURI, {
+        folder: 'wallet_payment_slips',
+        resource_type: 'auto',
+      });
+      slipImageUrl = uploadRes.secure_url;
+    } else if (req.body.slipImageUrl) {
+      slipImageUrl = req.body.slipImageUrl;
+    } else {
+      return res.status(400).json({ message: 'Please attach a payment receipt or transfer slip' });
+    }
+
+    // Resolve matching official account details
+    const selectedAccount = PAYMENT_ACCOUNTS[bankName] || {
+      name: bankName || 'Bank Transfer',
+      account: req.body.accountNumber || '',
+      branch: req.body.branch || '',
+      accountHolder: req.body.accountHolder || '',
+      type: paymentMethod || 'bank_transfer',
+    };
+
+    const resolvedMethod = paymentMethod || selectedAccount.type || 'bank_transfer';
+
+    const paymentRequest = await PaymentRequest.create({
+      user: userId,
+      amount: parsedAmount,
+      currency: 'LKR',
+      paymentMethod: resolvedMethod,
+      bankName: selectedAccount.name,
+      accountNumber: selectedAccount.account,
+      accountHolder: selectedAccount.accountHolder,
+      branch: selectedAccount.branch,
+      payerName: payerName || req.user.name || '',
+      payerPhone: payerPhone || req.user.phoneNumber || '',
+      transactionReference: transactionReference.trim(),
+      slipImageUrl,
+      notes: notes || '',
+      status: 'pending',
+    });
+
+    logAuditEvent({
+      userId,
+      action: 'SUBMIT_WALLET_TOPUP_REQUEST',
+      targetId: paymentRequest._id,
+      targetType: 'PaymentRequest',
+      details: { amount: parsedAmount, method: resolvedMethod, bankName: selectedAccount.name, ref: transactionReference },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.status(201).json({
+      message: 'Payment request submitted successfully! Your top-up is pending admin review.',
+      paymentRequest,
+    });
   } catch (error) {
     console.error('Error creating payment request:', error);
-    res.status(500).json({ message: 'Failed to create payment request' });
+    res.status(500).json({ message: error.message || 'Failed to create payment request' });
   }
 };
 
@@ -164,7 +228,8 @@ exports.getPaymentRequests = async (req, res) => {
     const userId = req.user._id;
     
     const requests = await PaymentRequest.find({ user: userId })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     
     res.json(requests);
   } catch (error) {
@@ -180,13 +245,15 @@ exports.getAllPaymentRequests = async (req, res) => {
   try {
     const { status } = req.query;
     const query = {};
-    if (status) {
+    if (status && status !== 'all') {
       query.status = status;
     }
     
     const requests = await PaymentRequest.find(query)
-      .populate('user', 'name email username')
-      .sort({ createdAt: -1 });
+      .populate('user', 'name email phoneNumber profileImageUrl profileName')
+      .populate('reviewedBy', 'name email')
+      .sort({ createdAt: -1 })
+      .lean();
     
     res.json(requests);
   } catch (error) {
@@ -208,7 +275,7 @@ exports.approvePaymentRequest = async (req, res) => {
           status: 'approved',
           reviewedBy: req.user._id,
           reviewedAt: new Date(),
-        }
+        },
       },
       { new: true }
     );
@@ -232,13 +299,13 @@ exports.approvePaymentRequest = async (req, res) => {
       user: paymentRequest.user,
       type: 'deposit',
       amount: paymentRequest.amount,
-      currency: paymentRequest.currency,
-      description: 'Bank deposit approved',
+      currency: paymentRequest.currency || 'LKR',
+      description: `Top-up approved via ${paymentRequest.bankName} (Ref: ${paymentRequest.transactionReference})`,
       relatedId: paymentRequest._id,
       relatedType: 'payment',
       balanceBefore,
       balanceAfter: updatedWallet.balance,
-      status: 'completed'
+      status: 'completed',
     });
     
     logAuditEvent({
@@ -246,7 +313,7 @@ exports.approvePaymentRequest = async (req, res) => {
       action: 'ADMIN_APPROVE_WALLET_DEPOSIT',
       targetId: paymentRequest._id,
       targetType: 'PaymentRequest',
-      details: { userId: paymentRequest.user, amount: paymentRequest.amount },
+      details: { userId: paymentRequest.user, amount: paymentRequest.amount, method: paymentRequest.paymentMethod },
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });
@@ -255,12 +322,12 @@ exports.approvePaymentRequest = async (req, res) => {
     await Notification.create({
       user: paymentRequest.user,
       type: 'wallet_topup',
-      message: `🎉 Congratulations! Your wallet has been topped up with Rs. ${paymentRequest.amount} LKR`,
+      message: `🎉 Great news! Your wallet has been topped up with Rs. ${paymentRequest.amount} LKR via ${paymentRequest.bankName}.`,
       relatedId: paymentRequest._id,
-      relatedType: 'payment'
+      relatedType: 'payment',
     });
     
-    res.json({ message: 'Payment approved successfully', wallet: updatedWallet });
+    res.json({ message: 'Payment approved and wallet credited successfully', wallet: updatedWallet, paymentRequest });
   } catch (error) {
     console.error('Error approving payment request:', error);
     res.status(500).json({ message: 'Failed to approve payment request' });
@@ -280,8 +347,8 @@ exports.rejectPaymentRequest = async (req, res) => {
           status: 'rejected',
           reviewedBy: req.user._id,
           reviewedAt: new Date(),
-          rejectionReason: rejectionReason || 'No reason provided',
-        }
+          rejectionReason: rejectionReason || 'Payment verification failed',
+        },
       },
       { new: true }
     );
@@ -300,7 +367,14 @@ exports.rejectPaymentRequest = async (req, res) => {
       userAgent: req.headers['user-agent'],
     });
 
-    res.json({ message: 'Payment rejected successfully' });
+    // Send notification to user
+    await Notification.create({
+      user: paymentRequest.user,
+      type: 'profile_reminder',
+      message: `Your wallet top-up request for Rs. ${paymentRequest.amount} LKR was rejected: ${rejectionReason || 'Invalid slip or details mismatch'}`,
+    });
+
+    res.json({ message: 'Payment request rejected', paymentRequest });
   } catch (error) {
     console.error('Error rejecting payment request:', error);
     res.status(500).json({ message: 'Failed to reject payment request' });
@@ -312,33 +386,8 @@ exports.rejectPaymentRequest = async (req, res) => {
 // @access  Private
 exports.getPaymentSlip = async (req, res) => {
   try {
-    const filename = path.basename(req.params.filename);
-    const slipPath = path.join(__dirname, '../uploads/payment-slips', filename);
-
-    if (!fs.existsSync(slipPath)) {
-      return res.status(404).json({ message: 'Payment slip not found' });
-    }
-
-    // Access control: User must be admin or the owner of the PaymentRequest
-    if (req.user.role !== 'admin') {
-      const isOwner = await PaymentRequest.exists({
-        user: req.user._id,
-        slipImageUrl: { $regex: filename }
-      });
-      if (!isOwner) {
-        logAuditEvent({
-          userId: req.user._id,
-          action: 'PAYMENT_SLIP_UNAUTHORIZED_ACCESS_ATTEMPT',
-          severity: 'warning',
-          details: { filename },
-          ipAddress: req.ip,
-          userAgent: req.headers['user-agent'],
-        });
-        return res.status(403).json({ message: 'Access denied to this payment slip' });
-      }
-    }
-
-    res.sendFile(path.resolve(slipPath));
+    const filename = req.params.filename;
+    res.json({ message: 'Payment slips are hosted on secure cloud storage', filename });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -349,24 +398,10 @@ exports.getPaymentSlip = async (req, res) => {
 // @access  Private/Admin
 exports.deletePaymentRequest = async (req, res) => {
   try {
-    const paymentRequest = await PaymentRequest.findById(req.params.id);
-    
+    const paymentRequest = await PaymentRequest.findByIdAndDelete(req.params.id);
     if (!paymentRequest) {
       return res.status(404).json({ message: 'Payment request not found' });
     }
-    
-    // Delete the payment slip file if it exists
-    if (paymentRequest.slipImageUrl) {
-      const fs = require('fs');
-      const path = require('path');
-      const filePath = path.join(__dirname, '..', paymentRequest.slipImageUrl);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
-    }
-    
-    await PaymentRequest.findByIdAndDelete(req.params.id);
-    
     res.json({ message: 'Payment request deleted successfully' });
   } catch (error) {
     console.error('Error deleting payment request:', error);
@@ -374,9 +409,7 @@ exports.deletePaymentRequest = async (req, res) => {
   }
 };
 
-// @desc    Add reward points to wallet
-// @route   POST /api/wallet/reward
-// @access  Private (internal use)
+// @desc    Add reward points to wallet (internal helper)
 exports.addReward = async (userId, amount, description, relatedType = 'achievement', relatedId = null) => {
   try {
     let wallet = await Wallet.findOne({ user: userId });
@@ -399,7 +432,7 @@ exports.addReward = async (userId, amount, description, relatedType = 'achieveme
       relatedType,
       balanceBefore,
       balanceAfter: wallet.balance,
-      status: 'completed'
+      status: 'completed',
     });
     
     return wallet;

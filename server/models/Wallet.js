@@ -83,7 +83,7 @@ const WalletTransactionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Payment request for bank slip uploads
+// Payment request for bank slip & manual uploads
 const PaymentRequestSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
@@ -102,8 +102,8 @@ const PaymentRequestSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['bank_transfer', 'mobile_banking', 'other'],
-    required: true
+    enum: ['bank_transfer', 'ez_cash', 'binance', 'mobile_banking', 'other'],
+    default: 'bank_transfer'
   },
   bankName: {
     type: String,
@@ -111,7 +111,23 @@ const PaymentRequestSchema = new mongoose.Schema({
   },
   accountNumber: {
     type: String,
-    required: true
+    default: ''
+  },
+  accountHolder: {
+    type: String,
+    default: ''
+  },
+  branch: {
+    type: String,
+    default: ''
+  },
+  payerName: {
+    type: String,
+    default: ''
+  },
+  payerPhone: {
+    type: String,
+    default: ''
   },
   transactionReference: {
     type: String,

@@ -9,7 +9,11 @@ const premiumPaymentRequestSchema = new mongoose.Schema({
   bank: {
     type: String,
     required: true,
-    enum: ['Hatton National Bank (HNB)', 'Sampath Bank', 'Bank of Ceylon (BOC)', 'Regional Development Bank (RDB)'],
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['bank_transfer', 'ez_cash', 'binance', 'wallet', 'other'],
+    default: 'bank_transfer',
   },
   accountHolderName: {
     type: String,
@@ -22,10 +26,10 @@ const premiumPaymentRequestSchema = new mongoose.Schema({
   phoneNumber: {
     type: String,
     required: true,
-    validate: {
-      validator: (value) => /^[0-9]+$/.test(value),
-      message: 'Phone number must contain only numbers',
-    },
+  },
+  transactionReference: {
+    type: String,
+    default: '',
   },
   paymentDate: {
     type: Date,
@@ -39,6 +43,10 @@ const premiumPaymentRequestSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  notes: {
+    type: String,
+    maxlength: 500,
+  },
   plan: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'PremiumPlan',
@@ -50,7 +58,7 @@ const premiumPaymentRequestSchema = new mongoose.Schema({
   },
   durationDays: {
     type: Number,
-    default: 7,
+    default: 10,
   },
   status: {
     type: String,
