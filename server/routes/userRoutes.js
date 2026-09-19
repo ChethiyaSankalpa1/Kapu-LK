@@ -16,9 +16,20 @@ const {
   requestAccountDeletion,
   getProfileVisitors,
   getSpotlightUsers,
+  uploadGalleryPhoto,
+  deleteGalleryPhoto,
+  setMainGalleryPhoto,
+  reorderGalleryPhotos,
 } = require('../controllers/userController');
 const { protect, approved } = require('../middleware/auth');
 const validate = require('../middleware/validate');
+const upload = require('../middleware/upload');
+
+// Photo Gallery Routes (Max 4 photos, min 1)
+router.post('/photos', protect, upload('photo'), uploadGalleryPhoto);
+router.delete('/photos/:photoId', protect, deleteGalleryPhoto);
+router.put('/photos/:photoId/main', protect, setMainGalleryPhoto);
+router.put('/photos/reorder', protect, reorderGalleryPhotos);
 
 router.put(
   '/profile',

@@ -322,10 +322,11 @@ const MaintenanceGate = ({ children }) => {
   );
 };
 
-// Route-aware layout: hides the public footer on all /admin/* pages
+// Route-aware layout: hides the public footer on all /admin/* and /conversation/* full-screen chat pages
 const AppLayout = ({ children }) => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isChatRoute = location.pathname.startsWith('/conversation') || location.pathname.startsWith('/messages');
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -334,11 +335,11 @@ const AppLayout = ({ children }) => {
       <GlobalRealtimeMonitor />
       <PrivacyPolicyModal />
       <SupportChatbot />
-      <main className="flex-1 pb-20 md:pb-0">
+      <main className={`flex-1 ${isChatRoute ? 'pb-0' : 'pb-20 md:pb-0'}`}>
         {children}
       </main>
-      {/* Public footer is hidden on all admin pages */}
-      {!isAdminRoute && <Footer />}
+      {/* Public footer is hidden on admin pages and full-screen chat pages */}
+      {!isAdminRoute && !isChatRoute && <Footer />}
     </div>
   );
 };

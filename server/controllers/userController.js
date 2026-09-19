@@ -2,12 +2,27 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const PrivacyConsent = require('../models/PrivacyConsent');
 const Notification = require('../models/Notification');
+const Message = require('../models/Message');
 const { Wallet } = require('../models/Wallet');
 const { UserStats } = require('../models/Achievement');
+const cloudinary = require('../config/cloudinary');
 const { purgeUserPermanently } = require('../services/inactivityCleanupService');
 const { checkAndSendWelcomeEmail } = require('../services/welcomeEmailService');
 const { logAuditEvent } = require('../middleware/auditLogger');
 const { hasPremiumFeature } = require('../utils/entitlements');
+
+const extractCloudinaryPublicId = (url) => {
+  if (!url || typeof url !== 'string' || !url.includes('cloudinary.com')) return null;
+  try {
+    const parts = url.split('/');
+    const uploadIndex = parts.indexOf('upload');
+    if (uploadIndex === -1) return null;
+    const pathAfterUpload = parts.slice(uploadIndex + 2).join('/');
+    return pathAfterUpload.replace(/\.[^/.]+$/, '');
+  } catch (err) {
+    return null;
+  }
+};
 
 const isValidPhoneNumber = (value) => !value || /^[0-9]+$/.test(value);
 
@@ -338,6 +353,41 @@ exports.getUserById = async (req, res) => {
     }
 
     const userObj = user.toObject();
+
+    // Ensure photo gallery array is present with legacy profileImageUrl fallback
+    if (!userObj.photos || userObj.photos.length === 0) {
+      if (userObj.profileImageUrl) {
+        userObj.photos = [{
+          url: userObj.profileImageUrl,
+          publicId: '',
+          isMain: true,
+          order: 0,
+        }];
+      } else {
+        userObj.photos = [];
+      }
+    } else {
+      userObj.photos.sort((a, b) => {
+        if (a.isMain && !b.isMain) return -1;
+        if (!a.isMain && b.isMain) return 1;
+        return (a.order || 0) - (b.order || 0);
+      });
+    }
+
+    // Check if viewer has already expressed interest in this user
+    try {
+      const existingInterest = await Message.findOne({
+        from: req.user._id,
+        to: user._id,
+        type: 'like',
+      }).select('_id').lean();
+      userObj.hasExpressedInterest = !!existingInterest;
+    } catch (e) {
+      userObj.hasExpressedInterest = false;
+    }
+
+    // Check if viewer has blocked target user
+    userObj.isBlockedByMe = Array.isArray(req.user.blockedUsers) && req.user.blockedUsers.some(bId => bId.toString() === user._id.toString());
 
     // Privacy & Direct Contact Info entitlement handling
     const viewerHasDirectContact = isSelfOrAdmin || hasPremiumFeature(req.user, 'direct_contact_info');
@@ -906,6 +956,245 @@ exports.getSpotlightUsers = async (req, res) => {
   } catch (error) {
     console.error('Error fetching spotlight users:', error);
     res.status(500).json({ message: 'Failed to fetch spotlight users' });
+  }
+};
+
+// @desc    Upload photo to user's gallery (max 4 photos total)
+// @route   POST /api/users/photos
+// @access  Private
+exports.uploadGalleryPhoto = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Please upload an image file.' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Initialize photos array if empty
+    if (!Array.isArray(user.photos)) {
+      user.photos = [];
+    }
+
+    // Migrate legacy profileImageUrl if photos array was empty
+    if (user.photos.length === 0 && user.profileImageUrl) {
+      user.photos.push({
+        url: user.profileImageUrl,
+        publicId: extractCloudinaryPublicId(user.profileImageUrl) || '',
+        isMain: true,
+        order: 0,
+      });
+    }
+
+    // Enforce max 4 photos constraint
+    if (user.photos.length >= 4) {
+      return res.status(400).json({ message: 'You can upload a maximum of 4 profile photos.' });
+    }
+
+    // Convert buffer to base64 for Cloudinary upload
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: 'matrimonial_profiles',
+      resource_type: 'image',
+      transformation: [
+        { width: 1000, height: 1000, crop: 'limit' },
+        { quality: 'auto' },
+      ],
+    });
+
+    const isFirstPhoto = user.photos.length === 0;
+    const isMainRequested = req.body.isMain === 'true' || req.body.isMain === true || isFirstPhoto;
+
+    if (isMainRequested) {
+      user.photos.forEach(p => { p.isMain = false; });
+      user.profileImageUrl = result.secure_url;
+    }
+
+    const newPhoto = {
+      url: result.secure_url,
+      publicId: result.public_id,
+      isMain: isMainRequested,
+      order: user.photos.length,
+    };
+
+    user.photos.push(newPhoto);
+
+    // If main photo wasn't set, ensure first photo is main
+    if (!user.photos.some(p => p.isMain)) {
+      user.photos[0].isMain = true;
+      user.profileImageUrl = user.photos[0].url;
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Photo uploaded successfully.',
+      photos: user.photos,
+      profileImageUrl: user.profileImageUrl,
+    });
+  } catch (error) {
+    console.error('Gallery photo upload error:', error);
+    res.status(500).json({ message: error.message || 'Failed to upload photo.' });
+  }
+};
+
+// @desc    Delete photo from gallery (min 1 photo required)
+// @route   DELETE /api/users/photos/:photoId
+// @access  Private
+exports.deleteGalleryPhoto = async (req, res) => {
+  try {
+    const { photoId } = req.params;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!Array.isArray(user.photos) || user.photos.length === 0) {
+      return res.status(400).json({ message: 'No photos to delete.' });
+    }
+
+    // Enforce minimum 1 photo constraint
+    if (user.photos.length <= 1) {
+      return res.status(400).json({ message: 'You must maintain at least 1 profile photo.' });
+    }
+
+    const photoIndex = user.photos.findIndex(p => p._id.toString() === photoId || p.publicId === photoId);
+    if (photoIndex === -1) {
+      return res.status(404).json({ message: 'Photo not found in your profile.' });
+    }
+
+    const [deletedPhoto] = user.photos.splice(photoIndex, 1);
+
+    // Destroy image from Cloudinary
+    const pubId = deletedPhoto.publicId || extractCloudinaryPublicId(deletedPhoto.url);
+    if (pubId) {
+      try {
+        await cloudinary.uploader.destroy(pubId);
+      } catch (cErr) {
+        console.warn('Could not destroy Cloudinary image:', cErr.message);
+      }
+    }
+
+    // If the deleted photo was the main photo, promote the first remaining photo to main
+    if (deletedPhoto.isMain || !user.photos.some(p => p.isMain)) {
+      user.photos[0].isMain = true;
+      user.profileImageUrl = user.photos[0].url;
+    }
+
+    // Re-index photo order
+    user.photos.forEach((p, idx) => {
+      p.order = idx;
+    });
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Photo deleted successfully.',
+      photos: user.photos,
+      profileImageUrl: user.profileImageUrl,
+    });
+  } catch (error) {
+    console.error('Delete photo error:', error);
+    res.status(500).json({ message: error.message || 'Failed to delete photo.' });
+  }
+};
+
+// @desc    Set a photo as the main profile photo
+// @route   PUT /api/users/photos/:photoId/main
+// @access  Private
+exports.setMainGalleryPhoto = async (req, res) => {
+  try {
+    const { photoId } = req.params;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const targetPhoto = (user.photos || []).find(p => p._id.toString() === photoId || p.publicId === photoId);
+    if (!targetPhoto) {
+      return res.status(404).json({ message: 'Photo not found.' });
+    }
+
+    user.photos.forEach(p => {
+      p.isMain = (p._id.toString() === photoId || p.publicId === photoId);
+    });
+
+    user.profileImageUrl = targetPhoto.url;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Main profile photo updated.',
+      photos: user.photos,
+      profileImageUrl: user.profileImageUrl,
+    });
+  } catch (error) {
+    console.error('Set main photo error:', error);
+    res.status(500).json({ message: error.message || 'Failed to update main photo.' });
+  }
+};
+
+// @desc    Reorder photos in gallery
+// @route   PUT /api/users/photos/reorder
+// @access  Private
+exports.reorderGalleryPhotos = async (req, res) => {
+  try {
+    const { photoIds } = req.body;
+    if (!Array.isArray(photoIds) || photoIds.length === 0) {
+      return res.status(400).json({ message: 'Please provide an array of photo IDs.' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const currentPhotos = user.photos || [];
+    const reordered = [];
+
+    photoIds.forEach((id, idx) => {
+      const match = currentPhotos.find(p => p._id.toString() === id.toString() || p.publicId === id);
+      if (match) {
+        match.order = idx;
+        reordered.push(match);
+      }
+    });
+
+    // Add any remaining unreferenced photos
+    currentPhotos.forEach(p => {
+      if (!reordered.some(r => r._id.toString() === p._id.toString())) {
+        p.order = reordered.length;
+        reordered.push(p);
+      }
+    });
+
+    user.photos = reordered;
+
+    // Ensure main photo is synchronized with profileImageUrl
+    const mainPhoto = user.photos.find(p => p.isMain) || user.photos[0];
+    if (mainPhoto) {
+      user.profileImageUrl = mainPhoto.url;
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Photos reordered successfully.',
+      photos: user.photos,
+      profileImageUrl: user.profileImageUrl,
+    });
+  } catch (error) {
+    console.error('Reorder photos error:', error);
+    res.status(500).json({ message: error.message || 'Failed to reorder photos.' });
   }
 };
 

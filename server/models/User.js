@@ -69,6 +69,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  photos: [{
+    url: { type: String, required: true },
+    publicId: { type: String, default: '' },
+    isMain: { type: Boolean, default: false },
+    order: { type: Number, default: 0 },
+  }],
   phoneNumber: {
     type: String,
     default: null,

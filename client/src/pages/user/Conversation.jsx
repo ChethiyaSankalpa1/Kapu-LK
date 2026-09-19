@@ -519,10 +519,10 @@ const Conversation = () => {
           : 'top-14 sm:top-16 bottom-0 z-30'
       }`}
       style={{
-        height: viewportHeight
+        height: viewportHeight && window.innerWidth < 768
           ? (userId ? `${viewportHeight}px` : `${Math.max(viewportHeight - 56, 200)}px`)
-          : (userId ? '100dvh' : 'calc(100dvh - 3.5rem)'),
-        maxHeight: viewportHeight ? `${viewportHeight}px` : undefined,
+          : undefined,
+        maxHeight: viewportHeight && window.innerWidth < 768 ? `${viewportHeight}px` : undefined,
       }}
     >
       <div className="h-full flex w-full max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden min-h-0">

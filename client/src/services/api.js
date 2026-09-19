@@ -197,6 +197,12 @@ export const userAPI = {
     requestAccountDeletion: (data) => api.post('/users/request-deletion', data),
     getProfileVisitors: () => api.get('/users/visitors'),
     getSpotlightUsers: () => api.get('/users/spotlight'),
+    uploadPhoto: (formData) => api.post('/users/photos', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+    deletePhoto: (photoId) => api.delete(`/users/photos/${photoId}`),
+    setMainPhoto: (photoId) => api.put(`/users/photos/${photoId}/main`),
+    reorderPhotos: (photoIds) => api.put('/users/photos/reorder', { photoIds }),
 };
 
 // Premium API
