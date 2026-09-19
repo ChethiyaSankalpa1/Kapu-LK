@@ -31,8 +31,12 @@ const MobileBottomNav = () => {
         return () => clearInterval(timer);
     }, [user]);
 
-    // Hide on admin portal
-    if (isAdmin || location.pathname.startsWith('/admin')) {
+    // Hide on admin portal or active 1-on-1 chat conversation so composer is not covered
+    const isChatOpen =
+        (location.pathname.startsWith('/conversation/') && location.pathname.length > '/conversation/'.length) ||
+        (location.pathname.startsWith('/messages/') && location.pathname.length > '/messages/'.length);
+
+    if (isAdmin || location.pathname.startsWith('/admin') || isChatOpen) {
         return null;
     }
 

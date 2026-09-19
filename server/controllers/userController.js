@@ -845,6 +845,7 @@ exports.getProfileVisitors = async (req, res) => {
     if (!hasPremiumFeature(req.user, 'profile_visitors')) {
       return res.status(403).json({
         success: false,
+        code: 'PREMIUM_REQUIRED',
         isPremiumRequired: true,
         requiredPlan: 'silver',
         message: 'Profile Visitors List is a Silver and Gold Premium feature. Upgrade your plan to see who viewed your profile.',

@@ -409,13 +409,15 @@ export default function SupportChatbot() {
     }
   };
 
-  // Hide on: logged-out state, admin users, /admin/* routes, and all public/auth pages
+  // Hide on: logged-out state, admin users, /admin/* routes, chat /conversation routes, and all public/auth pages
   const currentPath = location.pathname;
   if (
     !user ||
     isAdmin ||
     currentPath.startsWith('/admin') ||
     currentPath.startsWith('/reset-password') ||
+    currentPath.startsWith('/conversation') ||
+    currentPath.startsWith('/messages') ||
     PUBLIC_HIDE_PATHS.includes(currentPath)
   ) {
     return null;

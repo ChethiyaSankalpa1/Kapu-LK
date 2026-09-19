@@ -21,6 +21,7 @@ const UserDetail = () => {
     const [admin, setAdmin] = useState(null);
     const [loading, setLoading] = useState(true);
     const [sendingInterest, setSendingInterest] = useState(false);
+    const [imgError, setImgError] = useState(false);
     const [messageText, setMessageText] = useState(''); // for user-to-user message
     const [adminMessageText, setAdminMessageText] = useState(''); // for contact admin
     const [sendingMessage, setSendingMessage] = useState(false);
@@ -241,15 +242,16 @@ const UserDetail = () => {
                         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden sticky top-8">
                             {/* Profile Image Section */}
                             <div className="relative h-64 sm:h-80 bg-gradient-to-r from-pink-400 via-purple-500 to-indigo-600">
-                                {user.profileImageUrl ? (
+                                {user.profileImageUrl && !imgError ? (
                                     <img
                                         src={user.profileImageUrl}
                                         alt={user.name}
+                                        onError={() => setImgError(true)}
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                        <User className="w-24 sm:w-36 h-24 sm:h-36 text-white opacity-80" />
+                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500">
+                                        <span className="text-white text-6xl font-black">{user.name ? user.name.charAt(0).toUpperCase() : 'U'}</span>
                                     </div>
                                 )}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
@@ -294,6 +296,14 @@ const UserDetail = () => {
                                             >
                                                 <Heart className="w-4.5 h-4.5" />
                                                 <span>{sendingInterest ? t('common.sending', { defaultValue: 'Sending...' }) : t('users.expressInterest', { defaultValue: 'Express Interest' })}</span>
+                                            </button>
+
+                                            <button
+                                                onClick={() => navigate(`/conversation/${user._id}`)}
+                                                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-purple-200 dark:border-purple-800 text-purple-600 dark:text-purple-400 font-bold text-sm hover:bg-purple-50 dark:hover:bg-purple-950/40 transition shadow-sm active:scale-98"
+                                            >
+                                                <MessageSquare className="w-4.5 h-4.5" />
+                                                <span>{t('users.messageUser', { defaultValue: 'Open Chat / Message' })}</span>
                                             </button>
                                         </div>
                                     )}

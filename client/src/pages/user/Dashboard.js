@@ -46,6 +46,8 @@ const Dashboard = () => {
     const completedCount = profileCompletenessItems.filter(i => i.done).length;
     const completenessPercentage = Math.round((completedCount / profileCompletenessItems.length) * 100);
 
+    const isVisitorsAllowed = user?.role === 'admin' || (user?.isPremium && (user?.premiumPlan === 'silver' || user?.premiumPlan === 'gold' || premiumStatus?.premiumPlan === 'silver' || premiumStatus?.premiumPlan === 'gold'));
+
     // Fetch dashboard data
     const fetchDashboardData = useCallback(async () => {
         try {
@@ -62,7 +64,7 @@ const Dashboard = () => {
                 achievementAPI.getMyStats(),
                 userAPI.getAllUsers({ limit: 12 }),
                 userAPI.getMatches(),
-                userAPI.getProfileVisitors()
+                isVisitorsAllowed ? userAPI.getProfileVisitors() : Promise.resolve({ data: { count: 0, visitors: [] } })
             ]);
 
             if (convsRes.status === 'fulfilled') {
@@ -96,7 +98,7 @@ const Dashboard = () => {
         } catch (error) {
             console.error('Dashboard data load error:', error);
         }
-    }, [user?._id]);
+    }, [user?._id, isVisitorsAllowed]);
 
     useEffect(() => {
         fetchDashboardData();
@@ -146,10 +148,21 @@ const Dashboard = () => {
                             <div className="relative">
                                 <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-purple-500 p-0.5 bg-purple-50 shrink-0">
                                     {user?.profileImageUrl ? (
-                                        <img src={user.profileImageUrl} alt={firstName} className="w-full h-full object-cover rounded-full" />
-                                    ) : (
-                                        <User className="w-full h-full p-2 text-purple-600" />
-                                    )}
+                                        <img
+                                            src={user.profileImageUrl}
+                                            alt={firstName}
+                                            onError={(e) => {
+                                                e.currentTarget.onerror = null;
+                                                e.currentTarget.style.display = 'none';
+                                                const fb = e.currentTarget.parentElement.querySelector('.dash-avatar-fb');
+                                                if (fb) fb.style.display = 'flex';
+                                            }}
+                                            className="w-full h-full object-cover rounded-full"
+                                        />
+                                    ) : null}
+                                    <div className={`dash-avatar-fb w-full h-full ${user?.profileImageUrl ? 'hidden' : 'flex'} items-center justify-center bg-gradient-to-tr from-purple-600 to-pink-500 text-white font-bold rounded-full`}>
+                                        {firstName.charAt(0).toUpperCase()}
+                                    </div>
                                 </div>
                                 <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-gray-900 rounded-full" />
                             </div>
@@ -311,7 +324,7 @@ const Dashboard = () => {
                             <Activity className="w-4 h-4 text-purple-600" />
                             Recent Activity
                         </h2>
-                        <Link to="/profile" className="text-xs font-bold text-purple-600 hover:underline flex items-center gap-0.5">
+                        <Link to="/activity" className="text-xs font-bold text-purple-600 hover:underline flex items-center gap-0.5">
                             View All <ChevronRight className="w-3.5 h-3.5" />
                         </Link>
                     </div>
@@ -456,12 +469,21 @@ const Dashboard = () => {
                                         <div className="relative shrink-0">
                                             <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-white dark:border-gray-900 shadow-xl bg-purple-100 dark:bg-purple-950">
                                                 {user?.profileImageUrl ? (
-                                                    <img src={user.profileImageUrl} alt={user?.name || firstName} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-tr from-purple-600 to-pink-500 text-white text-3xl font-black">
-                                                        {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                                                    </div>
-                                                )}
+                                                    <img
+                                                        src={user.profileImageUrl}
+                                                        alt={user?.name || firstName}
+                                                        onError={(e) => {
+                                                            e.currentTarget.onerror = null;
+                                                            e.currentTarget.style.display = 'none';
+                                                            const fb = e.currentTarget.parentElement.querySelector('.desktop-avatar-fb');
+                                                            if (fb) fb.style.display = 'flex';
+                                                        }}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : null}
+                                                <div className={`desktop-avatar-fb w-full h-full ${user?.profileImageUrl ? 'hidden' : 'flex'} items-center justify-center bg-gradient-to-tr from-purple-600 to-pink-500 text-white text-3xl font-black`}>
+                                                    {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                                                </div>
                                             </div>
                                             <span className="absolute bottom-1 right-1 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-gray-900 rounded-full" />
                                         </div>
@@ -683,7 +705,7 @@ const Dashboard = () => {
                         <div className="bg-white dark:bg-gray-900 rounded-3xl p-5 border border-gray-150 dark:border-gray-800 shadow-sm space-y-3">
                             <div className="flex items-center justify-between">
                                 <h3 className="text-xs font-extrabold text-gray-900 dark:text-white">Recent Activity</h3>
-                                <Link to="/profile" className="text-[11px] font-bold text-purple-600 hover:underline">View All</Link>
+                                <Link to="/activity" className="text-[11px] font-bold text-purple-600 hover:underline">View All</Link>
                             </div>
 
                             <div className="space-y-3">

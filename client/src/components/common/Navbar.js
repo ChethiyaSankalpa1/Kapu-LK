@@ -261,10 +261,21 @@ const Navbar = () => {
             >
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-400 to-purple-600 flex items-center justify-center overflow-hidden shrink-0">
                     {user?.profileImageUrl ? (
-                        <img src={user.profileImageUrl} alt={user.name} className="w-full h-full object-cover" />
-                    ) : (
-                        <span className="text-sm font-bold text-white">{user?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
-                    )}
+                        <img
+                            src={user.profileImageUrl}
+                            alt={user.name}
+                            onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.style.display = 'none';
+                                const fb = e.currentTarget.parentElement.querySelector('.avatar-fallback');
+                                if (fb) fb.style.display = 'flex';
+                            }}
+                            className="w-full h-full object-cover"
+                        />
+                    ) : null}
+                    <span className={`avatar-fallback text-sm font-bold text-white ${user?.profileImageUrl ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
+                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </span>
                 </div>
                 <span className="hidden lg:inline text-xs font-semibold text-gray-700 dark:text-gray-200 max-w-[90px] truncate">{firstName}</span>
                 <ChevronDown className={`w-3.5 h-3.5 text-gray-500 dark:text-gray-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
@@ -496,10 +507,22 @@ const Navbar = () => {
                     {user ? (
                         <div className="flex items-center gap-3.5">
                             <div className="w-14 h-14 rounded-2xl bg-white/25 border-2 border-white/40 flex items-center justify-center overflow-hidden shadow-lg shrink-0">
-                                {user.profileImageUrl
-                                    ? <img src={user.profileImageUrl} alt={user.name} className="w-full h-full object-cover" />
-                                    : <span className="text-2xl font-bold text-white">{user.name?.charAt(0)?.toUpperCase() || 'U'}</span>
-                                }
+                                {user.profileImageUrl ? (
+                                    <img
+                                        src={user.profileImageUrl}
+                                        alt={user.name}
+                                        onError={(e) => {
+                                            e.currentTarget.onerror = null;
+                                            e.currentTarget.style.display = 'none';
+                                            const fb = e.currentTarget.parentElement.querySelector('.drawer-avatar-fallback');
+                                            if (fb) fb.style.display = 'flex';
+                                        }}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : null}
+                                <span className={`drawer-avatar-fallback text-2xl font-bold text-white ${user.profileImageUrl ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
+                                    {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                                </span>
                             </div>
                             <div className="min-w-0">
                                 <p className="text-white font-bold text-lg truncate leading-tight">{user.name}</p>
