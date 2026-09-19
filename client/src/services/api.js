@@ -203,6 +203,7 @@ export const userAPI = {
     deletePhoto: (photoId) => api.delete(`/users/photos/${photoId}`),
     setMainPhoto: (photoId) => api.put(`/users/photos/${photoId}/main`),
     reorderPhotos: (photoIds) => api.put('/users/photos/reorder', { photoIds }),
+    getBlockedUsers: () => api.get('/users/blocked'),
 };
 
 // Premium API
@@ -240,6 +241,11 @@ export const adminAPI = {
     rejectPremium: (id, reason) => api.put(`/admin/premium-requests/${id}/reject`, { rejectionReason: reason }),
     deletePremiumRequest: (id) => api.delete(`/admin/premium-requests/${id}`),
     seedSriLankanContent: () => api.post('/admin/seed-sri-lankan-content'),
+    getReports: () => api.get('/admin/reports'),
+    updateReportStatus: (id, data) => api.put(`/admin/reports/${id}`, data),
+    deleteReport: (id) => api.delete(`/admin/reports/${id}`),
+    startMaintenanceTesting: () => api.post('/admin/maintenance/start-testing'),
+    stopMaintenanceTesting: () => api.post('/admin/maintenance/stop-testing'),
 };
 
 export const messageAPI = {

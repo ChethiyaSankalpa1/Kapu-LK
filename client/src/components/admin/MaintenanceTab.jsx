@@ -3,7 +3,9 @@ import {
   AlertTriangle, Shield, Clock, Power, 
   Sparkles, Bell, Users, Calendar, Save
 } from 'lucide-react';
-import { maintenanceAPI } from '../../services/api';
+import { maintenanceAPI, adminAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 const AVAILABLE_FEATURES = [
@@ -15,10 +17,25 @@ const AVAILABLE_FEATURES = [
 ];
 
 const MaintenanceTab = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
+
+  const handleStartMaintenanceTestMode = async () => {
+    try {
+      const res = await adminAPI.startMaintenanceTesting();
+      if (res.data?.token) {
+        login(res.data.token, res.data.user);
+        toast.success('Switched to Maintenance Test Mode as Demo Account!');
+        navigate('/browse');
+      }
+    } catch (err) {
+      toast.error('Failed to enter Maintenance Test Mode');
+    }
+  };
 
   const [formData, setFormData] = useState({
     isActive: false,
@@ -199,13 +216,23 @@ const MaintenanceTab = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleStartMaintenanceTestMode}
+            className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl transition shadow-md flex items-center space-x-1.5"
+            title="Securely switch session to demo tester account to preview client-side updates during maintenance"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Test Site in Maintenance Mode</span>
+          </button>
+
           {formData.isActive && (
             <button
               type="button"
               onClick={handleEndMaintenanceNow}
               disabled={saving}
-              className="px-4 py-2 bg-gray-900 hover:bg-black dark:bg-gray-700 dark:hover:bg-gray-600 text-white text-xs sm:text-sm font-bold rounded-xl transition shadow-sm"
+              className="px-4 py-2.5 bg-gray-900 hover:bg-black dark:bg-gray-700 dark:hover:bg-gray-600 text-white text-xs font-bold rounded-xl transition shadow-sm"
             >
               End Maintenance Now
             </button>

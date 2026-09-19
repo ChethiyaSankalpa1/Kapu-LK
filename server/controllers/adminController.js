@@ -4,8 +4,10 @@ const PremiumPaymentRequest = require('../models/PremiumPaymentRequest');
 const Event = require('../models/Event');
 const Blog = require('../models/Blog');
 const SuccessStory = require('../models/SuccessStory');
+const Report = require('../models/Report');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const generateToken = require('../utils/generateToken');
 const { logAuditEvent } = require('../middleware/auditLogger');
 
 // @desc    Get all users (admin)
@@ -768,6 +770,180 @@ exports.cancelUserInactivityDeletion = async (req, res) => {
   } catch (error) {
     console.error('Error canceling user inactivity deletion:', error);
     res.status(500).json({ message: error.message || 'Failed to cancel deletion' });
+  }
+};
+
+// @desc    Get all user reports/complaints (Admin)
+// @route   GET /api/admin/reports
+// @access  Private/Admin
+exports.getAllReports = async (req, res) => {
+  try {
+    const reports = await Report.find({})
+      .populate('reporter', 'name email profileImageUrl phoneNumber gender age')
+      .populate('reportedUser', 'name email profileImageUrl phoneNumber accountStatus isApproved gender age')
+      .populate('reviewedBy', 'name email')
+      .sort({ createdAt: -1 });
+
+    res.json(reports);
+  } catch (error) {
+    console.error('Error fetching reports:', error);
+    res.status(500).json({ message: error.message || 'Failed to fetch reports' });
+  }
+};
+
+// @desc    Update report status / resolve complaint (Admin)
+// @route   PUT /api/admin/reports/:id
+// @access  Private/Admin
+exports.updateReportStatus = async (req, res) => {
+  try {
+    const { status, resolutionNotes, action } = req.body;
+    const report = await Report.findById(req.params.id);
+
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+
+    if (status) report.status = status;
+    if (resolutionNotes !== undefined) report.resolutionNotes = resolutionNotes;
+    report.reviewedBy = req.user._id;
+
+    // Optional admin action on reported user
+    if (action === 'suspend_user' && report.reportedUser) {
+      await User.findByIdAndUpdate(report.reportedUser, { accountStatus: 'suspended' });
+    }
+
+    await report.save();
+
+    logAuditEvent({
+      userId: req.user._id,
+      action: 'ADMIN_REPORT_RESOLVED',
+      targetId: report._id,
+      targetType: 'Report',
+      details: { status: report.status, action },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    const updated = await Report.findById(report._id)
+      .populate('reporter', 'name email profileImageUrl')
+      .populate('reportedUser', 'name email profileImageUrl accountStatus')
+      .populate('reviewedBy', 'name email');
+
+    res.json({
+      success: true,
+      message: 'Report status updated successfully',
+      report: updated,
+    });
+  } catch (error) {
+    console.error('Error updating report status:', error);
+    res.status(500).json({ message: error.message || 'Failed to update report' });
+  }
+};
+
+// @desc    Delete a report (Admin)
+// @route   DELETE /api/admin/reports/:id
+// @access  Private/Admin
+exports.deleteReport = async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+
+    await Report.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Report deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting report:', error);
+    res.status(500).json({ message: error.message || 'Failed to delete report' });
+  }
+};
+
+// @desc    Start Maintenance Testing Mode (Switches session to secure demo account)
+// @route   POST /api/admin/maintenance/start-testing
+// @access  Private/Admin
+exports.startMaintenanceTesting = async (req, res) => {
+  try {
+    // Find or create dedicated hidden demo maintenance testing user
+    let demoUser = await User.findOne({ email: 'demo.tester@lovelk.com' });
+    if (!demoUser) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash('MaintTester#2026!SecureKey', salt);
+      demoUser = await User.create({
+        name: 'LoveLK Maintenance Tester',
+        email: 'demo.tester@lovelk.com',
+        password: hashedPassword,
+        gender: 'female',
+        age: 26,
+        location: 'Colombo',
+        role: 'user',
+        isApproved: true,
+        emailVerified: true,
+        isDemoAccount: true,
+        bio: 'Official LoveLK Maintenance Preview & Verification Account.',
+      });
+    } else if (!demoUser.isDemoAccount) {
+      demoUser.isDemoAccount = true;
+      await demoUser.save();
+    }
+
+    const token = generateToken(demoUser._id);
+
+    logAuditEvent({
+      userId: req.user._id,
+      action: 'ADMIN_MAINTENANCE_TEST_STARTED',
+      targetId: demoUser._id,
+      targetType: 'User',
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.json({
+      success: true,
+      message: 'Switched to Maintenance Testing Mode',
+      token,
+      user: {
+        _id: demoUser._id,
+        name: demoUser.name,
+        email: demoUser.email,
+        role: demoUser.role,
+        isDemoAccount: true,
+        isMaintenanceTesting: true,
+        originalAdminId: req.user._id,
+      },
+    });
+  } catch (error) {
+    console.error('Error starting maintenance test mode:', error);
+    res.status(500).json({ message: error.message || 'Failed to enter maintenance test mode' });
+  }
+};
+
+// @desc    Stop Maintenance Testing Mode (Returns to Admin session)
+// @route   POST /api/admin/maintenance/stop-testing
+// @access  Private/Admin (or authenticated tester)
+exports.stopMaintenanceTesting = async (req, res) => {
+  try {
+    // Find an active admin user or the requesting user's original admin account
+    let adminUser = await User.findOne({ role: 'admin' });
+    if (!adminUser) {
+      return res.status(404).json({ message: 'Admin account not found' });
+    }
+
+    const token = generateToken(adminUser._id);
+
+    res.json({
+      success: true,
+      message: 'Returned to Admin session successfully',
+      token,
+      user: {
+        _id: adminUser._id,
+        name: adminUser.name,
+        email: adminUser.email,
+        role: adminUser.role,
+      },
+    });
+  } catch (error) {
+    console.error('Error stopping maintenance test mode:', error);
+    res.status(500).json({ message: error.message || 'Failed to exit maintenance test mode' });
   }
 };
 

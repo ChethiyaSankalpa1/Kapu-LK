@@ -15,7 +15,12 @@ const {
   seedSriLankanContent,
   getInactivityStatus,
   triggerInactivityCleanup,
-  cancelUserInactivityDeletion
+  cancelUserInactivityDeletion,
+  getAllReports,
+  updateReportStatus,
+  deleteReport,
+  startMaintenanceTesting,
+  stopMaintenanceTesting
 } = require('../controllers/adminController');
 const { 
   getAllRequests, 
@@ -42,6 +47,15 @@ router.put('/premium-requests/:id/approve', protect, admin, approveRequest);
 router.put('/premium-requests/:id/reject', protect, admin, rejectRequest);
 router.delete('/premium-requests/:id', protect, admin, deletePremiumRequest);
 router.post('/seed-sri-lankan-content', protect, admin, seedSriLankanContent);
+
+// Reports / Complaints Management
+router.get('/reports', protect, admin, getAllReports);
+router.put('/reports/:id', protect, admin, updateReportStatus);
+router.delete('/reports/:id', protect, admin, deleteReport);
+
+// Maintenance Testing Controls
+router.post('/maintenance/start-testing', protect, admin, startMaintenanceTesting);
+router.post('/maintenance/stop-testing', protect, stopMaintenanceTesting);
 
 // Inactivity & Account Lifecycle Controls
 router.get('/inactivity/status', protect, admin, getInactivityStatus);

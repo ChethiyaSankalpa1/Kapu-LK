@@ -19,8 +19,10 @@ import Navbar from './components/common/Navbar';
 import MobileBottomNav from './components/common/MobileBottomNav';
 import PrivacyPolicyModal from './components/common/PrivacyPolicyModal';
 import SupportChatbot from './components/common/SupportChatbot';
+import AdRotatorModal from './components/ui/AdRotatorModal';
 import MaintenanceScreen from './components/common/MaintenanceScreen';
 import AdminMaintenanceBar from './components/admin/AdminMaintenanceBar';
+import MaintenanceTestModeBanner from './components/common/MaintenanceTestModeBanner';
 import Footer from './components/common/Footer';
 import { maintenanceAPI } from './services/api';
 
@@ -289,13 +291,13 @@ const MaintenanceGate = ({ children }) => {
   }, [checkMaintenance]);
 
   const isAdmin = (user?.role || '').toLowerCase() === 'admin';
+  const isMaintenanceTester = Boolean(user?.isMaintenanceTesting || user?.isDemoAccount);
   const isDirectStaffPath = 
     typeof window !== 'undefined' && 
     (window.location.pathname === '/login' || window.location.pathname === '/admin');
 
-  // If full maintenance is active and user is NOT an admin, display branded MaintenanceScreen
-  // (unless user is navigating to /login or /admin to authenticate)
-  if (maintenanceData?.isActive && maintenanceData?.scope === 'full' && !isAdmin && !isDirectStaffPath) {
+  // If full maintenance is active and user is NOT an admin or authorized maintenance tester, display branded MaintenanceScreen
+  if (maintenanceData?.isActive && maintenanceData?.scope === 'full' && !isAdmin && !isMaintenanceTester && !isDirectStaffPath) {
     return (
       <MaintenanceScreen 
         maintenanceData={maintenanceData} 
@@ -307,6 +309,9 @@ const MaintenanceGate = ({ children }) => {
 
   return (
     <>
+      {/* Floating banner when admin is testing in maintenance mode as demo user */}
+      <MaintenanceTestModeBanner />
+
       {/* Global Top Admin Bar when maintenance is active and admin is logged in */}
       {maintenanceData?.isActive && isAdmin && (
         <AdminMaintenanceBar 
@@ -335,6 +340,7 @@ const AppLayout = ({ children }) => {
       <GlobalRealtimeMonitor />
       <PrivacyPolicyModal />
       <SupportChatbot />
+      <AdRotatorModal />
       <main className={`flex-1 ${isChatRoute ? 'pb-0' : 'pb-20 md:pb-0'}`}>
         {children}
       </main>

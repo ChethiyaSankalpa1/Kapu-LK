@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
@@ -87,7 +87,34 @@ const Settings = () => {
     const [policyModalTab, setPolicyModalTab] = useState('privacy');
     
     // Blocked users state
-    const [blockedUsers] = useState([]);
+    const [blockedUsers, setBlockedUsers] = useState([]);
+    const [loadingBlocked, setLoadingBlocked] = useState(false);
+
+    const fetchBlockedUsers = useCallback(async () => {
+        try {
+            setLoadingBlocked(true);
+            const res = await userAPI.getBlockedUsers();
+            setBlockedUsers(res.data || []);
+        } catch (err) {
+            console.error('Error fetching blocked users:', err);
+        } finally {
+            setLoadingBlocked(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchBlockedUsers();
+    }, [fetchBlockedUsers]);
+
+    const handleUnblockUser = async (targetId) => {
+        try {
+            await userAPI.unblockUser(targetId);
+            toast.success('User unblocked successfully');
+            fetchBlockedUsers();
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to unblock user');
+        }
+    };
     
     const languages = [
         { code: 'en', flag: '🇬🇧', label: 'English' },
@@ -513,19 +540,36 @@ const Settings = () => {
                             title={t('settings.manageBlocked')}
                             description={t('settings.manageBlockedDesc')}
                         >
-                            {blockedUsers.length > 0 ? (
+                            {loadingBlocked ? (
+                                <p className="text-xs text-gray-400 animate-pulse">Loading blocked accounts...</p>
+                            ) : blockedUsers.length > 0 ? (
                                 <div className="space-y-2">
-                                    {blockedUsers.map((blockedUser, index) => (
-                                        <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-xl">
-                                            <span className="text-gray-700 dark:text-gray-300 break-words">{blockedUser.name}</span>
-                                            <button className="w-full sm:w-auto text-left sm:text-right text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 text-sm font-medium">
-                                                {t('settings.unblock')}
+                                    {blockedUsers.map((blockedUser) => (
+                                        <div key={blockedUser._id || blockedUser.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0">
+                                                    {blockedUser.profileImageUrl ? (
+                                                        <img src={blockedUser.profileImageUrl} alt={blockedUser.name} className="w-full h-full rounded-full object-cover" />
+                                                    ) : (
+                                                        <span className="font-bold text-xs text-purple-600 dark:text-purple-300">{(blockedUser.name || 'U').charAt(0)}</span>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <span className="text-sm font-bold text-gray-800 dark:text-gray-200 block">{blockedUser.name}</span>
+                                                    {blockedUser.location && <span className="text-xs text-gray-400 block">{blockedUser.location}</span>}
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => handleUnblockUser(blockedUser._id || blockedUser.id)}
+                                                className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 bg-purple-50 dark:bg-purple-950/40 px-3 py-1.5 rounded-lg transition"
+                                            >
+                                                {t('settings.unblock', { defaultValue: 'Unblock' })}
                                             </button>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-gray-500 dark:text-gray-400">{t('settings.noBlockedUsers')}</p>
+                                <p className="text-gray-500 dark:text-gray-400 text-sm">{t('settings.noBlockedUsers', { defaultValue: 'You have not blocked any accounts.' })}</p>
                             )}
                         </SettingCard>
                     </section>

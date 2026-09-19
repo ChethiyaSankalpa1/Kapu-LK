@@ -407,6 +407,16 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: '2.0',
   },
+  // Blocked users array & Demo account flag
+  blockedUsers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  }],
+  isDemoAccount: {
+    type: Boolean,
+    default: false,
+    index: true,
+  },
 }, {
   timestamps: true,
 });

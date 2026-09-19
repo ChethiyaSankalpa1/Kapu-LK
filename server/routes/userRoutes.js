@@ -10,6 +10,7 @@ const {
   getAdminUser,
   blockUser,
   unblockUser,
+  getBlockedUsers,
   acknowledgePrivacyPolicy,
   getConsentHistory,
   exportUserData,
@@ -53,6 +54,7 @@ router.get('/consent-history', protect, getConsentHistory);
 router.get('/export-data', protect, exportUserData);
 router.post('/request-deletion', protect, requestAccountDeletion);
 router.post('/acknowledge-privacy-policy', protect, acknowledgePrivacyPolicy);
+router.get('/blocked', protect, getBlockedUsers);
 router.post('/:id/block', protect, blockUser);
 router.post('/:id/unblock', protect, unblockUser);
 router.get('/:id', protect, approved, getUserById);

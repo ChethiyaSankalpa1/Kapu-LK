@@ -6,12 +6,14 @@ import PremiumBadge from '../../components/ui/PremiumBadge';
 import { toast } from 'react-toastify';
 import {
   Users, User, UserCheck, Activity,
-  CheckCircle, XCircle, Trash2, Shield, Crown, AlertTriangle, DollarSign, MessageSquare, MoreVertical,
-  Eye, X, Heart, Phone, Star, Clock, Gift, Trophy, Heart as HeartIcon, FileText, Calendar, Plus, Edit, LifeBuoy, Power
+  CheckCircle, XCircle, Trash2, Shield, ShieldCheck, Crown, AlertTriangle, DollarSign, MessageSquare, MoreVertical,
+  Eye, X, Heart, Phone, Star, Clock, Gift, Trophy, Heart as HeartIcon, FileText, Calendar, Plus, Edit, LifeBuoy, Power,
+  LayoutDashboard, Search, Bell, Globe, Sun, Moon, ChevronDown, LogOut, PieChart, BarChart3, Settings, ShieldAlert, Sparkles, ArrowUpRight
 } from 'lucide-react';
 import SupportInboxTab from '../../components/admin/SupportInboxTab';
 import InactivityTab from '../../components/admin/InactivityTab';
 import MaintenanceTab from '../../components/admin/MaintenanceTab';
+import AdminReportsTab from '../../components/admin/AdminReportsTab';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -21,7 +23,9 @@ const AdminDashboard = () => {
   const [premiumRequests, setPremiumRequests] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
-  const [activeTab, setActiveTab] = useState('users');
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [reportsList, setReportsList] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [inspectedUser, setInspectedUser] = useState(null);
@@ -142,7 +146,7 @@ const AdminDashboard = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [statsRes, usersRes, premiumRes, plansRes, conversationsRes, giftsRes, achievementsRes, storiesRes, blogRes, eventsRes, configsRes, walletReqsRes] = await Promise.all([
+      const [statsRes, usersRes, premiumRes, plansRes, conversationsRes, giftsRes, achievementsRes, storiesRes, blogRes, eventsRes, configsRes, walletReqsRes, reportsRes] = await Promise.all([
         adminAPI.getDashboardStats(),
         adminAPI.getAllUsers(),
         adminAPI.getAllRequests(),
@@ -154,7 +158,8 @@ const AdminDashboard = () => {
         blogAPI.getBlogPosts(),
         eventAPI.getEvents(),
         redemptionAPI.getConfigs(),
-        walletAPI.getAllPaymentRequests()
+        walletAPI.getAllPaymentRequests(),
+        adminAPI.getReports().catch(() => ({ data: [] }))
       ]);
       setStats(statsRes.data);
       setUsers(usersRes.data);
@@ -169,6 +174,7 @@ const AdminDashboard = () => {
       setEvents(eventsRes.data);
       setRedemptionConfigs(configsRes.data);
       setWalletPaymentRequests(walletReqsRes.data || []);
+      setReportsList(reportsRes.data || []);
     } catch (error) {
       console.error('Failed to fetch admin data', error);
       toast.error(t('admin.fetchFailed', { defaultValue: 'Failed to fetch data' }));
@@ -696,309 +702,581 @@ const AdminDashboard = () => {
     );
   }
 
+  const pendingPaymentReqs = walletPaymentRequests.filter(r => r.status === 'pending').length;
+  const pendingComplaints = reportsList.filter(r => r.status === 'pending').length;
+  const totalPendingBadges = pendingPaymentReqs + premiumRequests.length + pendingComplaints;
+
   return (
-    <div className="min-h-screen py-5 sm:py-8">
-      <div className="container mx-auto px-4 sm:px-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-5 sm:mb-8 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Shield className="w-7 h-7 sm:w-8 sm:h-8 text-purple-600" />
-            <span>{t('admin.title')}</span>
-          </div>
-          <button
-            onClick={handleSeedSriLankanContent}
-            className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg text-sm font-semibold hover:from-green-600 hover:to-emerald-700 transition-all flex items-center gap-2"
-          >
-            <FileText className="w-4 h-4" />
-            Seed Sri Lankan Content
-          </button>
-        </h1>
-
-        {/* Persistent Maintenance Active Warning Banner */}
-        {maintenanceStatus?.isActive && (
-          <div className="mb-6 p-4 sm:p-5 bg-gradient-to-r from-red-600 to-rose-700 text-white rounded-2xl shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pulse border-2 border-red-400">
-            <div className="flex items-start sm:items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-6 h-6 text-yellow-300" />
-              </div>
-              <div>
-                <span className="font-extrabold text-sm sm:text-base tracking-wide block">
-                  PLATFORM MAINTENANCE MODE IS ACTIVE ({maintenanceStatus.scope.toUpperCase()})
-                </span>
-                <p className="text-xs text-red-100 mt-0.5 leading-relaxed">
-                  Regular users receive HTTP 503 Service Unavailable responses. Administrators bypass maintenance automatically.
-                </p>
-              </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-gray-900 dark:text-gray-100 flex flex-col font-sans">
+      {/* 1. TOP HEADER BAR */}
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-gray-100 dark:border-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between gap-4 shadow-sm">
+        {/* Left: Brand */}
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setActiveTab('dashboard')}>
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-white shadow-md shadow-pink-500/20">
+              <Heart className="w-5 h-5 fill-current" />
             </div>
-            <div className="flex items-center gap-2.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => setActiveTab('maintenance')}
-                className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded-xl transition"
-              >
-                Configure
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    await maintenanceAPI.endMaintenanceNow();
-                    toast.success('Maintenance mode ended immediately!');
-                    checkMaintenanceStatus();
-                  } catch (e) {
-                    toast.error('Failed to end maintenance');
-                  }
-                }}
-                className="px-4 py-2 bg-white text-red-700 hover:bg-red-50 text-xs font-extrabold rounded-xl transition shadow-md"
-              >
-                End Maintenance Now
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4 mb-5 sm:mb-8">
-          <div className="glass-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">{t('admin.stats.totalUsers')}</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats?.totalUsers || 0}</p>
-              </div>
-              <Users className="w-8 h-8 text-blue-500" />
-            </div>
-          </div>
-
-          <div className="glass-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">{t('admin.stats.approved')}</p>
-                <p className="text-2xl font-bold text-green-600">{stats?.approvedUsers || 0}</p>
-              </div>
-              <UserCheck className="w-8 h-8 text-green-500" />
-            </div>
-          </div>
-
-          <div className="glass-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">{t('admin.stats.active')}</p>
-                <p className="text-2xl font-bold text-purple-600">{stats?.activeUsers || 0}</p>
-              </div>
-              <Activity className="w-8 h-8 text-purple-500" />
-            </div>
-          </div>
-
-          <div className="glass-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">{t('admin.stats.premium')}</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats?.premiumUsers || 0}</p>
-              </div>
-              <Crown className="w-8 h-8 text-yellow-500" />
-            </div>
-          </div>
-
-          <div className="glass-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">{t('admin.stats.premiumRequests')}</p>
-                <p className="text-2xl font-bold text-orange-600">{stats?.premiumRequests || 0}</p>
-              </div>
-              <DollarSign className="w-8 h-8 text-orange-500" />
-            </div>
-          </div>
-
-          <div className="glass-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">{t('admin.stats.messages')}</p>
-                <p className="text-2xl font-bold text-indigo-600">{stats?.totalMessages || 0}</p>
-              </div>
-              <MessageSquare className="w-8 h-8 text-indigo-500" />
-            </div>
-          </div>
-
-          <div className="glass-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">{t('admin.stats.complaints')}</p>
-                <p className="text-2xl font-bold text-red-600">{stats?.totalComplaints || 0}</p>
-              </div>
-              <AlertTriangle className="w-8 h-8 text-red-500" />
+            <div>
+              <span className="text-lg font-black bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent block leading-tight">LoveLK</span>
+              <span className="text-[10px] text-gray-400 font-semibold block leading-tight">Find Your Perfect Match</span>
             </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="glass-card p-2 mobile-tab-list mb-5 sm:mb-8">
+        {/* Center: Search */}
+        <div className="hidden md:flex items-center flex-1 max-w-md mx-4 relative">
+          <Search className="w-4 h-4 text-gray-400 absolute left-3.5" />
+          <input
+            type="text"
+            placeholder="Search users by name, email, location..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-12 py-2 rounded-full border border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/60 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+          />
+          <span className="absolute right-3 text-[10px] font-bold text-gray-400 bg-gray-200 dark:bg-slate-700 px-1.5 py-0.5 rounded">Ctrl K</span>
+        </div>
+
+        {/* Right: Quick actions, notifications, admin profile, status */}
+        <div className="flex items-center space-x-3">
           <button
-            onClick={() => setActiveTab('users')}
-            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'users'
-              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
+            onClick={() => navigate('/dashboard')}
+            className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 text-xs font-bold hover:bg-purple-100 transition"
           >
-            <Users className="w-4 h-4" />
-            <span>{t('admin.tabs.users')}</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
+            <span>View Site</span>
           </button>
-          <button
-            onClick={() => setActiveTab('premium')}
-            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'premium'
-              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-          >
-            <Crown className="w-4 h-4" />
-            <span>{t('admin.tabs.premiumRequests')}</span>
-            {premiumRequests.length > 0 && (
-              <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                {premiumRequests.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('plans')}
-            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'plans'
-              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-          >
-            <Crown className="w-4 h-4 text-yellow-500" />
-            <span>Premium Plans</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('wallet-requests')}
-            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'wallet-requests'
-              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-          >
-            <DollarSign className="w-4 h-4" />
-            <span>Wallet Topups</span>
-            {walletPaymentRequests.filter(r => r.status === 'pending').length > 0 && (
-              <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
-                {walletPaymentRequests.filter(r => r.status === 'pending').length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('messages')}
-            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'messages'
-              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>Messages</span>
-            {unreadMessagesCount > 0 && (
-              <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                {unreadMessagesCount}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('gifts')}
-            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'gifts'
-              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-          >
-            <Gift className="w-4 h-4" />
-            <span>Gifts</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('achievements')}
-            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'achievements'
-              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-          >
-            <Trophy className="w-4 h-4" />
-            <span>Achievements</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('stories')}
-            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'stories'
-              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-          >
-            <HeartIcon className="w-4 h-4" />
-            <span>Success Stories</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('blog')}
-            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'blog'
-              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-          >
-            <FileText className="w-4 h-4" />
-            <span>Blog</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('events')}
-            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'events'
-              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-          >
-            <Calendar className="w-4 h-4" />
-            <span>Events</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('redemption')}
-            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'redemption'
-              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-          >
-            <Star className="w-4 h-4" />
-            <span>Redemption</span>
-          </button>
+
           <button
             onClick={() => setActiveTab('support')}
-            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'support'
-              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
+            className="relative p-2 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 transition"
+            title="Notifications"
           >
-            <LifeBuoy className="w-4 h-4 text-pink-400" />
-            <span>Support Inbox</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('inactivity')}
-            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'inactivity'
-              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-          >
-            <Clock className="w-4 h-4 text-rose-500" />
-            <span>Inactivity Engine</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('maintenance')}
-            className={`px-3 sm:px-4 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 ${activeTab === 'maintenance'
-              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-          >
-            <Power className="w-4 h-4 text-amber-500" />
-            <span>Maintenance Mode</span>
-            {maintenanceStatus?.isActive && (
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+            <Bell className="w-4 h-4" />
+            {totalPendingBadges > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
+                {totalPendingBadges}
+              </span>
             )}
           </button>
+
+          <div className="hidden lg:flex items-center space-x-2 pl-2 border-l border-gray-200 dark:border-slate-800">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 text-white font-bold flex items-center justify-center text-xs">
+              A
+            </div>
+            <span className="text-xs font-bold text-gray-800 dark:text-gray-200">Admin</span>
+          </div>
+
+          <div className="flex items-center space-x-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-900">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
+            <span>System Online</span>
+          </div>
         </div>
+      </header>
 
-        {/* Support Inbox Tab */}
-        {activeTab === 'support' && <SupportInboxTab />}
+      {/* 2. BODY LAYOUT (SIDEBAR + MAIN CONTENT AREA) */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* LEFT SIDEBAR */}
+        <aside className="w-64 bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 p-4 shrink-0 hidden lg:flex flex-col justify-between overflow-y-auto max-h-[calc(100vh-61px)] sticky top-[61px]">
+          <div className="space-y-6">
+            {/* OVERVIEW */}
+            <div>
+              <p className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-gray-400 mb-2">Overview</p>
+              <div className="space-y-1">
+                <button
+                  onClick={() => setActiveTab('dashboard')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
+                    activeTab === 'dashboard'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <LayoutDashboard className="w-4 h-4" />
+                    <span>Dashboard</span>
+                  </div>
+                </button>
+              </div>
+            </div>
 
-        {/* Inactivity Tab */}
-        {activeTab === 'inactivity' && <InactivityTab />}
+            {/* USER MANAGEMENT */}
+            <div>
+              <p className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-gray-400 mb-2">User Management</p>
+              <div className="space-y-1">
+                <button
+                  onClick={() => setActiveTab('users')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
+                    activeTab === 'users'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <Users className="w-4 h-4" />
+                    <span>Users</span>
+                  </div>
+                </button>
 
-        {/* Maintenance Tab */}
-        {activeTab === 'maintenance' && <MaintenanceTab />}
+                <button
+                  onClick={() => setActiveTab('support')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
+                    activeTab === 'support'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <LifeBuoy className="w-4 h-4 text-pink-500" />
+                    <span>Support Inbox</span>
+                  </div>
+                  {unreadMessagesCount > 0 && (
+                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                      {unreadMessagesCount}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('reports')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
+                    activeTab === 'reports'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                    <span>Complaints</span>
+                  </div>
+                  {pendingComplaints > 0 && (
+                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                      {pendingComplaints}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('inactivity')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
+                    activeTab === 'inactivity'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <Clock className="w-4 h-4 text-rose-500" />
+                    <span>Inactivity Engine</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* MONETIZATION & PAYMENTS */}
+            <div>
+              <p className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-gray-400 mb-2">Monetization</p>
+              <div className="space-y-1">
+                <button
+                  onClick={() => setActiveTab('plans')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
+                    activeTab === 'plans'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <Crown className="w-4 h-4 text-yellow-500" />
+                    <span>Premium Plans</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('wallet-requests')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
+                    activeTab === 'wallet-requests'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <DollarSign className="w-4 h-4 text-emerald-500" />
+                    <span>Wallet & Payments</span>
+                  </div>
+                  {pendingPaymentReqs > 0 && (
+                    <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                      {pendingPaymentReqs}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* CONTENT & ENGAGEMENT */}
+            <div>
+              <p className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-gray-400 mb-2">Content & Media</p>
+              <div className="space-y-1">
+                <button
+                  onClick={() => setActiveTab('blog')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
+                    activeTab === 'blog'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <FileText className="w-4 h-4" />
+                    <span>Blog & Articles</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('events')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
+                    activeTab === 'events'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <Calendar className="w-4 h-4" />
+                    <span>Events</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('stories')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
+                    activeTab === 'stories'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <HeartIcon className="w-4 h-4 text-pink-500" />
+                    <span>Success Stories</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('gifts')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
+                    activeTab === 'gifts'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <Gift className="w-4 h-4 text-purple-400" />
+                    <span>Gifts & Rewards</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* SYSTEM & SECURITY */}
+            <div>
+              <p className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-gray-400 mb-2">System & Settings</p>
+              <div className="space-y-1">
+                <button
+                  onClick={() => setActiveTab('maintenance')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
+                    activeTab === 'maintenance'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <Power className="w-4 h-4 text-amber-500" />
+                    <span>Maintenance Mode</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('achievements')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
+                    activeTab === 'achievements'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <Trophy className="w-4 h-4 text-amber-400" />
+                    <span>Achievements</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('redemption')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
+                    activeTab === 'redemption'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <Star className="w-4 h-4 text-yellow-400" />
+                    <span>Redemptions</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Promo Card */}
+          <div className="mt-6 p-4 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-lg space-y-2">
+            <div className="flex items-center space-x-2 font-bold text-xs">
+              <Crown className="w-4 h-4 text-yellow-300" />
+              <span>Keep LoveLK Safe</span>
+            </div>
+            <p className="text-[11px] text-purple-100 leading-tight">
+              Your administrative moderation creates genuine Sri Lankan matchmaking connections.
+            </p>
+          </div>
+        </aside>
+
+        {/* MAIN CONTENT AREA */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-h-[calc(100vh-61px)] space-y-6">
+          {/* Mobile navigation tab list */}
+          <div className="lg:hidden flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
+            <button onClick={() => setActiveTab('dashboard')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'dashboard' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Dashboard</button>
+            <button onClick={() => setActiveTab('users')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'users' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Users</button>
+            <button onClick={() => setActiveTab('reports')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'reports' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Complaints ({pendingComplaints})</button>
+            <button onClick={() => setActiveTab('wallet-requests')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'wallet-requests' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Wallet Topups ({pendingPaymentReqs})</button>
+            <button onClick={() => setActiveTab('plans')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'plans' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Plans</button>
+            <button onClick={() => setActiveTab('support')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'support' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Support</button>
+            <button onClick={() => setActiveTab('maintenance')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'maintenance' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Maintenance</button>
+          </div>
+
+          {/* Maintenance Active Alert Banner */}
+          {maintenanceStatus?.isActive && (
+            <div className="p-4 bg-gradient-to-r from-red-600 to-rose-700 text-white rounded-2xl shadow-md flex items-center justify-between gap-4">
+              <div className="flex items-center space-x-3">
+                <AlertTriangle className="w-6 h-6 text-yellow-300 shrink-0" />
+                <div>
+                  <h4 className="font-bold text-xs sm:text-sm">Platform Maintenance Mode is Active ({maintenanceStatus.scope})</h4>
+                  <p className="text-[11px] text-red-100">Public visitors see the maintenance screen. Admins bypass automatically.</p>
+                </div>
+              </div>
+              <button onClick={() => setActiveTab('maintenance')} className="px-3 py-1.5 bg-white text-red-700 rounded-xl text-xs font-black hover:bg-red-50 transition">
+                Manage
+              </button>
+            </div>
+          )}
+
+          {/* TAB 1: OVERVIEW DASHBOARD */}
+          {activeTab === 'dashboard' && (
+            <div className="space-y-6">
+              {/* Header section */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                    <Shield className="w-6 h-6 text-purple-600" />
+                    <span>Admin Dashboard</span>
+                  </h1>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Manage users, payments, content and keep LoveLK safe, secure and active.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={handleSeedSriLankanContent}
+                    className="px-3.5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl text-xs font-bold hover:from-emerald-600 hover:to-teal-700 transition flex items-center gap-1.5 shadow-sm"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Seed Sri Lankan Content</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 7 Key Metric Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                <div className="glass-card p-4 rounded-2xl border border-gray-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <Users className="w-5 h-5 text-blue-500" />
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">↑ 12%</span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Total Users</p>
+                  <p className="text-xl font-black text-gray-900 dark:text-white">{stats?.totalUsers || users.length || 0}</p>
+                </div>
+
+                <div className="glass-card p-4 rounded-2xl border border-gray-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <UserCheck className="w-5 h-5 text-emerald-500" />
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">Verified</span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Approved Users</p>
+                  <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">{stats?.approvedUsers || users.filter(u => u.isApproved).length || 0}</p>
+                </div>
+
+                <div className="glass-card p-4 rounded-2xl border border-gray-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <Activity className="w-5 h-5 text-purple-500" />
+                    <span className="text-[10px] font-bold text-purple-600 bg-purple-50 dark:bg-purple-950/40 px-1.5 py-0.5 rounded">7 Days</span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Active Users</p>
+                  <p className="text-xl font-black text-purple-600 dark:text-purple-400">{stats?.activeUsers || 0}</p>
+                </div>
+
+                <div className="glass-card p-4 rounded-2xl border border-gray-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <Crown className="w-5 h-5 text-yellow-500" />
+                    <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded">VIP</span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Premium Members</p>
+                  <p className="text-xl font-black text-amber-500">{stats?.premiumUsers || users.filter(u => u.isPremium).length || 0}</p>
+                </div>
+
+                <div className="glass-card p-4 rounded-2xl border border-gray-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <DollarSign className="w-5 h-5 text-emerald-500" />
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">Topups</span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Pending Requests</p>
+                  <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">{pendingPaymentReqs + premiumRequests.length}</p>
+                </div>
+
+                <div className="glass-card p-4 rounded-2xl border border-gray-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <MessageSquare className="w-5 h-5 text-indigo-500" />
+                    <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded">Live</span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Messages Today</p>
+                  <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">{stats?.totalMessages || conversations.length || 0}</p>
+                </div>
+
+                <div className="glass-card p-4 rounded-2xl border border-gray-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <AlertTriangle className="w-5 h-5 text-red-500" />
+                    <span className="text-[10px] font-bold text-red-600 bg-red-50 dark:bg-red-950/40 px-1.5 py-0.5 rounded">Safety</span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Complaints</p>
+                  <p className="text-xl font-black text-red-600 dark:text-red-400">{pendingComplaints}</p>
+                </div>
+              </div>
+
+              {/* Quick Actions Grid */}
+              <div className="glass-card p-5 rounded-2xl border border-gray-100 dark:border-slate-800 space-y-3">
+                <h3 className="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-purple-600" />
+                  <span>Administrative Quick Actions</span>
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                  <button onClick={() => setActiveTab('users')} className="p-3 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 rounded-xl text-xs font-bold text-purple-700 dark:text-purple-300 transition text-center flex flex-col items-center gap-1.5">
+                    <UserCheck className="w-5 h-5 text-purple-600" />
+                    <span>Approve Users</span>
+                  </button>
+                  <button onClick={() => setActiveTab('wallet-requests')} className="p-3 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-300 transition text-center flex flex-col items-center gap-1.5">
+                    <DollarSign className="w-5 h-5 text-emerald-600" />
+                    <span>Verify Payments</span>
+                  </button>
+                  <button onClick={() => setActiveTab('plans')} className="p-3 bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 rounded-xl text-xs font-bold text-amber-700 dark:text-amber-300 transition text-center flex flex-col items-center gap-1.5">
+                    <Crown className="w-5 h-5 text-amber-600" />
+                    <span>Manage Plans</span>
+                  </button>
+                  <button onClick={() => setActiveTab('reports')} className="p-3 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 rounded-xl text-xs font-bold text-red-700 dark:text-red-300 transition text-center flex flex-col items-center gap-1.5">
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                    <span>Review Complaints</span>
+                  </button>
+                  <button onClick={() => setActiveTab('support')} className="p-3 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 transition text-center flex flex-col items-center gap-1.5">
+                    <LifeBuoy className="w-5 h-5 text-indigo-600" />
+                    <span>Support Tickets</span>
+                  </button>
+                  <button onClick={() => setActiveTab('maintenance')} className="p-3 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 transition text-center flex flex-col items-center gap-1.5">
+                    <Power className="w-5 h-5 text-amber-500" />
+                    <span>Maintenance</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Tables & Overview Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Recent Users Table */}
+                <div className="lg:col-span-2 glass-card p-5 rounded-2xl border border-gray-100 dark:border-slate-800 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                      <Users className="w-4 h-4 text-purple-600" />
+                      <span>Recent User Registrations</span>
+                    </h3>
+                    <button onClick={() => setActiveTab('users')} className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline">
+                      View All Users ➔
+                    </button>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-gray-50 dark:bg-slate-800/60 text-gray-500 uppercase font-bold text-[10px]">
+                        <tr>
+                          <th className="p-2.5 rounded-l-lg">User</th>
+                          <th className="p-2.5">Email</th>
+                          <th className="p-2.5">Location</th>
+                          <th className="p-2.5">Status</th>
+                          <th className="p-2.5 rounded-r-lg text-right">Joined</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+                        {users.slice(0, 5).map((u) => (
+                          <tr key={u._id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/40 transition">
+                            <td className="p-2.5 flex items-center space-x-2 font-semibold text-gray-900 dark:text-white">
+                              <div className="w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0">
+                                {u.profileImageUrl ? (
+                                  <img src={u.profileImageUrl} alt={u.name} className="w-full h-full rounded-full object-cover" />
+                                ) : (
+                                  <span className="font-bold text-purple-600 text-[10px]">{(u.name || 'U').charAt(0)}</span>
+                                )}
+                              </div>
+                              <span className="truncate max-w-[120px]">{u.name}</span>
+                            </td>
+                            <td className="p-2.5 text-gray-500 dark:text-gray-400 truncate max-w-[140px]">{u.email}</td>
+                            <td className="p-2.5 text-gray-700 dark:text-gray-300">{u.location || 'Sri Lanka'}</td>
+                            <td className="p-2.5">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${u.isApproved ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'}`}>
+                                {u.isApproved ? 'Active' : 'Pending'}
+                              </span>
+                            </td>
+                            <td className="p-2.5 text-right text-gray-400">{new Date(u.createdAt).toLocaleDateString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Right Side Column: System Status & Recent Payments */}
+                <div className="space-y-6">
+                  {/* System Status Checklist */}
+                  <div className="glass-card p-5 rounded-2xl border border-gray-100 dark:border-slate-800 space-y-3">
+                    <h3 className="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                      <span>System Operational Status</span>
+                    </h3>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex items-center justify-between p-2 rounded-xl bg-gray-50 dark:bg-slate-800/40">
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Website & Platform</span>
+                        <span className="text-emerald-600 font-bold flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Operational</span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 rounded-xl bg-gray-50 dark:bg-slate-800/40">
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Database Engine</span>
+                        <span className="text-emerald-600 font-bold flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Operational</span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 rounded-xl bg-gray-50 dark:bg-slate-800/40">
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Payment Verification</span>
+                        <span className="text-emerald-600 font-bold flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Operational</span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 rounded-xl bg-gray-50 dark:bg-slate-800/40">
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Cloudinary File Storage</span>
+                        <span className="text-emerald-600 font-bold flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Operational</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB CONTENTS */}
+          {activeTab === 'reports' && <AdminReportsTab />}
+          {activeTab === 'support' && <SupportInboxTab />}
+          {activeTab === 'inactivity' && <InactivityTab />}
+          {activeTab === 'maintenance' && <MaintenanceTab />}
 
         {/* Users Table */}
         {activeTab === 'users' && (
@@ -2035,6 +2313,7 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
+      </main>
       </div>
 
       {/* User Profile Inspector Modal */}

@@ -654,6 +654,21 @@ exports.unblockUser = async (req, res) => {
   }
 };
 
+// @desc    Get list of blocked users for the logged-in user
+// @route   GET /api/users/blocked
+// @access  Private
+exports.getBlockedUsers = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate({
+      path: 'blockedUsers',
+      select: USER_LIST_SELECT,
+    });
+    res.json(user.blockedUsers || []);
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Failed to fetch blocked users' });
+  }
+};
+
 // @desc    Acknowledge updated Privacy Policy and 10-day retention terms
 // @route   POST /api/users/acknowledge-privacy-policy
 // @access  Private
