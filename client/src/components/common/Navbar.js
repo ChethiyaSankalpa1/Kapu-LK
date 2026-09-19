@@ -22,7 +22,6 @@ const Navbar = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [notifOpen, setNotifOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
-    const [mobileNavVisible, setMobileNavVisible] = useState(true);
     const [walletBalance, setWalletBalance] = useState(0);
     const [achievementPoints, setAchievementPoints] = useState(0);
     const drawerRef = useRef(null);
@@ -51,7 +50,6 @@ const Navbar = () => {
     const searchRef = useRef(null);
     const notifRef = useRef(null);
     const profileRef = useRef(null);
-    const lastScrollYRef = useRef(0);
 
     // Auto-close on navigation
     useEffect(() => { setMobileOpen(false); }, [location.pathname]);
@@ -80,38 +78,6 @@ const Navbar = () => {
         window.addEventListener('keydown', handleKey);
         return () => window.removeEventListener('keydown', handleKey);
     }, []);
-
-    // Auto-hide mobile bottom navigation on scroll down and show on scroll up
-    useEffect(() => {
-        const handleScroll = () => {
-            const currentScrollY = window.scrollY || 0;
-            const scrollDelta = currentScrollY - lastScrollYRef.current;
-
-            if (Math.abs(scrollDelta) < 8) {
-                return;
-            }
-
-            if (currentScrollY <= 16) {
-                setMobileNavVisible(true);
-            } else if (scrollDelta > 0) {
-                setMobileNavVisible(false);
-            } else {
-                setMobileNavVisible(true);
-            }
-
-            lastScrollYRef.current = currentScrollY;
-        };
-
-        lastScrollYRef.current = window.scrollY || 0;
-        window.addEventListener('scroll', handleScroll, { passive: true });
-
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
-
-    useEffect(() => {
-        setMobileNavVisible(true);
-        lastScrollYRef.current = window.scrollY || 0;
-    }, [location.pathname]);
 
     // Close dropdowns on outside click
     useEffect(() => {
@@ -395,7 +361,7 @@ const Navbar = () => {
     return (
         <>
             {/* ===== TOPBAR ===== */}
-            <nav className="glass-nav">
+            <nav className="glass-nav sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-150 dark:border-gray-800">
                 <div className="container mx-auto px-4">
                     <div className="flex items-center justify-between h-14 sm:h-16">
                         {/* Logo */}
@@ -412,8 +378,8 @@ const Navbar = () => {
                             {premiumStatus?.isPremium && <PremiumBadge plan={user?.premiumPlan || premiumStatus?.premiumPlan} size="sm" />}
                         </Link>
 
-                        {/* Desktop nav */}
-                        <div className="hidden md:flex items-center gap-2">
+                        {/* Desktop right controls */}
+                        <div className="hidden md:flex items-center gap-3">
                             {user ? (
                                 <>
                                     {isAdmin ? (
@@ -422,33 +388,13 @@ const Navbar = () => {
                                             <span>{t('nav.admin')}</span>
                                         </Link>
                                     ) : (
-                                        <>
-                                            <Link to="/dashboard" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/dashboard') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                                                <LayoutDashboard className="w-4 h-4" />
-                                                <span>{t('nav.dashboard')}</span>
-                                            </Link>
-                                            <Link to="/users" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/users') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                                                <Users className="w-4 h-4" />
-                                                <span>{t('nav.browse')}</span>
-                                            </Link>
-                                            <Link to="/conversation" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/conversation') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                                                <MessageSquare className="w-4 h-4" />
-                                                <span>{t('nav.messages')}</span>
-                                            </Link>
-                                            <Link to="/wallet" className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/wallet') ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400' : 'text-gray-700 dark:text-gray-200 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                                                <Crown className="w-4 h-4" />
-                                                <span>Wallet & Achievements</span>
-                                            </Link>
-                                        </>
-                                    )}
-                                    {user && !isAdmin && (
-                                        <div className="flex items-center gap-2.5 bg-gradient-to-r from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20 px-3 py-1.5 rounded-xl border border-purple-200/50 dark:border-purple-800/50 text-purple-700 dark:text-purple-300 font-semibold text-xs transition duration-150 mr-2 shrink-0">
-                                            <Link to="/wallet" className="flex items-center gap-1 hover:opacity-85 transition" title="Wallet Balance">
+                                        <div className="flex items-center gap-2.5 bg-gradient-to-r from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20 px-3.5 py-1.5 rounded-xl border border-purple-200/50 dark:border-purple-800/50 text-purple-700 dark:text-purple-300 font-semibold text-xs transition duration-150 mr-2 shrink-0">
+                                            <Link to="/premium" className="flex items-center gap-1 hover:opacity-85 transition" title="Wallet Balance">
                                                 <Wallet className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400" />
                                                 <span>Rs. {walletBalance}</span>
                                             </Link>
                                             <span className="text-purple-300/70 dark:text-purple-700/70">|</span>
-                                            <Link to="/wallet" className="flex items-center gap-1 hover:opacity-85 transition" title="Achievement Points">
+                                            <Link to="/premium" className="flex items-center gap-1 hover:opacity-85 transition" title="Achievement Points">
                                                 <Trophy className="w-3.5 h-3.5 text-yellow-500" />
                                                 <span>{achievementPoints} pts</span>
                                             </Link>
@@ -482,7 +428,7 @@ const Navbar = () => {
                         {/* Mobile right controls */}
                         <div className="flex md:hidden items-center gap-2">
                             {user && !isAdmin && (
-                                <Link to="/wallet" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20 border border-purple-200/50 dark:border-purple-800/50 text-purple-700 dark:text-purple-300 font-bold text-[11px] mr-1" title="Wallet Balance">
+                                <Link to="/premium" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20 border border-purple-200/50 dark:border-purple-800/50 text-purple-700 dark:text-purple-300 font-bold text-[11px] mr-1" title="Wallet Balance">
                                     <Wallet className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400" />
                                     <span>Rs. {walletBalance}</span>
                                 </Link>
@@ -501,69 +447,6 @@ const Navbar = () => {
                     </div>
                 </div>
             </nav>
-
-            {/* ===== MOBILE BOTTOM NAVIGATION ===== */}
-            {user && !location.pathname.startsWith('/conversation') && (
-                <div className={`md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/60 dark:border-slate-800/60 shadow-2xl transition-transform duration-300 ease-out ${mobileNavVisible ? 'translate-y-0' : 'translate-y-full'}`}>
-                    <div className="flex items-center justify-around py-2 px-2">
-                        <Link
-                            to="/dashboard"
-                            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all ${
-                                isActive('/dashboard')
-                                    ? 'text-purple-600 dark:text-purple-400'
-                                    : 'text-slate-500 dark:text-slate-400'
-                            }`}
-                        >
-                            <LayoutDashboard className="w-6 h-6" />
-                            <span className="text-[10px] font-medium">{t('nav.dashboard')}</span>
-                        </Link>
-                        <Link
-                            to="/users"
-                            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all ${
-                                isActive('/users')
-                                    ? 'text-purple-600 dark:text-purple-400'
-                                    : 'text-slate-500 dark:text-slate-400'
-                            }`}
-                        >
-                            <Users className="w-6 h-6" />
-                            <span className="text-[10px] font-medium">{t('nav.browse')}</span>
-                        </Link>
-                        <Link
-                            to="/conversation"
-                            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all relative ${
-                                isActive('/conversation')
-                                    ? 'text-purple-600 dark:text-purple-400'
-                                    : 'text-slate-500 dark:text-slate-400'
-                            }`}
-                        >
-                            <MessageSquare className="w-6 h-6" />
-                            <span className="text-[10px] font-medium">{t('nav.messages')}</span>
-                        </Link>
-                        <Link
-                            to="/wallet"
-                            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all ${
-                                isActive('/wallet')
-                                    ? 'text-purple-600 dark:text-purple-400'
-                                    : 'text-slate-500 dark:text-slate-400'
-                            }`}
-                        >
-                            <Crown className="w-6 h-6" />
-                            <span className="text-[10px] font-medium text-center line-clamp-1">Wallet & Rewards</span>
-                        </Link>
-                        <Link
-                            to="/profile"
-                            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all ${
-                                isActive('/profile')
-                                    ? 'text-purple-600 dark:text-purple-400'
-                                    : 'text-slate-500 dark:text-slate-400'
-                            }`}
-                        >
-                            <User className="w-6 h-6" />
-                            <span className="text-[10px] font-medium">{t('nav.profile')}</span>
-                        </Link>
-                    </div>
-                </div>
-            )}
 
             {/* ===== MOBILE OVERLAY ===== */}
             <div
