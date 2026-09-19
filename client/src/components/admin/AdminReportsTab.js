@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { adminAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
-  AlertTriangle, CheckCircle, XCircle, Trash2, Eye, ShieldAlert, Filter, Clock, MessageSquare, UserCheck, ShieldOff
+  AlertTriangle, Trash2, Eye, ShieldAlert
 } from 'lucide-react';
 
 const AdminReportsTab = () => {

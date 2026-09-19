@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Notification = require('../models/Notification');
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
@@ -22,12 +23,12 @@ const startNotificationCleanup = ({ intervalMs = SIX_HOURS_MS } = {}) => {
       // Delete read notifications older than 6 hours
       const readResult = await Notification.deleteMany({
         isRead: true,
-        createdAt: { $lt: sixHoursAgo }
+        createdAt: mongoose.trusted({ $lt: sixHoursAgo })
       });
 
       // Delete all notifications older than 30 days
       const oldResult = await Notification.deleteMany({
-        createdAt: { $lt: thirtyDaysAgo }
+        createdAt: mongoose.trusted({ $lt: thirtyDaysAgo })
       });
 
       const deletedRead = readResult?.deletedCount ?? 0;

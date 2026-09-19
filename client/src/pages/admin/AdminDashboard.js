@@ -8,7 +8,7 @@ import {
   Users, User, UserCheck, Activity,
   CheckCircle, XCircle, Trash2, Shield, ShieldCheck, Crown, AlertTriangle, DollarSign, MessageSquare, MoreVertical,
   Eye, X, Heart, Phone, Star, Clock, Gift, Trophy, Heart as HeartIcon, FileText, Calendar, Plus, Edit, LifeBuoy, Power,
-  LayoutDashboard, Search, Bell, Globe, Sun, Moon, ChevronDown, LogOut, PieChart, BarChart3, Settings, ShieldAlert, Sparkles, ArrowUpRight
+  LayoutDashboard, Search, Bell, Sparkles, ArrowUpRight
 } from 'lucide-react';
 import SupportInboxTab from '../../components/admin/SupportInboxTab';
 import InactivityTab from '../../components/admin/InactivityTab';

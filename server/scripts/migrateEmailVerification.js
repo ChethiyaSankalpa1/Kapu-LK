@@ -48,7 +48,7 @@ async function migrateEmailVerification(existingMongoose = null) {
     // 2. Initialize non-admin existing members who don't have emailVerified set
     const userRes = await User.updateMany(
       {
-        role: { $ne: 'admin' },
+        role: mongoose.trusted({ $ne: 'admin' }),
         emailVerified: mongoose.trusted({ $exists: false }),
       },
       {

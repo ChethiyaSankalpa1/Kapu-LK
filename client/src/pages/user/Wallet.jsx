@@ -111,6 +111,7 @@ const Wallet = () => {
     const [pendingRequests, setPendingRequests] = useState([]);
     const [txFilter, setTxFilter] = useState('all');
     const [redemptionConfigs, setRedemptionConfigs] = useState(DEFAULT_REDEMPTION_OPTIONS);
+    // eslint-disable-next-line no-unused-vars
     const [redemptionHistory, setRedemptionHistory] = useState([]);
     const [loading, setLoading] = useState(true);
 

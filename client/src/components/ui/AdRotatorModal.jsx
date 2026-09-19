@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
-  Crown, X, Sparkles, Zap, Heart, MessageSquare, Users, Eye, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck, Flame, User
+  Crown, X, Sparkles, Zap, Heart, MessageSquare, Users, Eye, AlertCircle, ArrowRight, ShieldCheck, Flame, User
 } from 'lucide-react';
 
 /**

@@ -40,7 +40,7 @@ async function mergeProfileViewDuplicates(targetUser = null) {
       lastViewedAt: -1,
       createdAt: -1,
     };
-    const keeper = await Notification.findOne({ _id: { $in: allIds } })
+    const keeper = await Notification.findOne({ _id: mongoose.trusted({ $in: allIds }) })
       .sort(keeperSort)
       .select('_id viewCount lastViewedAt createdAt')
       .lean();
@@ -64,7 +64,7 @@ async function mergeProfileViewDuplicates(targetUser = null) {
     );
 
     if (otherIds.length > 0) {
-      const dr = await Notification.deleteMany({ _id: { $in: otherIds } });
+      const dr = await Notification.deleteMany({ _id: mongoose.trusted({ $in: otherIds }) });
       deletedDocs += dr.deletedCount || 0;
     }
 
