@@ -1,21 +1,22 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { userAPI, messageAPI, notificationAPI, achievementAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
     User, CheckCircle, MessageCircle, Search, Heart,
-    Crown, Flame, Calendar, Eye, MapPin, ChevronRight,
-    Settings, Users, Layers, Activity, Edit3, Sparkles
+    Crown, Flame, Calendar, Eye, MapPin, ChevronRight, ChevronLeft,
+    Settings, Users, Layers, Activity, Edit3, Sparkles,
+    BookOpen, Gift, UserPlus, HelpCircle
 } from 'lucide-react';
 import PremiumPopup from '../../components/ui/PremiumPopup';
 import PremiumBadge from '../../components/ui/PremiumBadge';
 import ProfileCard from '../../components/ui/ProfileCard';
-import SuccessStories from '../../components/ui/SuccessStories';
 
 const Dashboard = () => {
     const navigate = useNavigate();
     const { user, premiumStatus } = useAuth();
+    const suggestedRef = useRef(null);
 
     const [showPremiumPopup, setShowPremiumPopup] = useState(false);
 
@@ -26,6 +27,13 @@ const Dashboard = () => {
 
     const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
     const [userStats, setUserStats] = useState(null);
+
+    const scrollSuggested = (direction) => {
+        if (suggestedRef.current) {
+            const scrollAmount = direction === 'left' ? -300 : 300;
+            suggestedRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+    };
 
     // Profile completeness calculation
     const profileCompletenessItems = [
@@ -340,8 +348,9 @@ const Dashboard = () => {
                 <div className="grid grid-cols-12 gap-6">
 
                     {/* Left Sidebar Navigation (2 cols on lg) */}
-                    <div className="col-span-3 lg:col-span-2 space-y-4">
+                    <div className="col-span-3 lg:col-span-2 space-y-4 sticky top-20 max-h-[calc(100vh-5rem)] overflow-y-auto scrollbar-thin">
                         <div className="bg-white dark:bg-gray-900 rounded-3xl p-3.5 border border-gray-150 dark:border-gray-800 shadow-sm space-y-1">
+                            {/* Section 1: Main Platform Navigation */}
                             <Link to="/dashboard" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-bold text-sm">
                                 <Layers className="w-4.5 h-4.5 text-purple-600 shrink-0" />
                                 <span>Dashboard</span>
@@ -386,12 +395,44 @@ const Dashboard = () => {
                                 <Settings className="w-4.5 h-4.5 text-gray-400 shrink-0" />
                                 <span>Settings</span>
                             </Link>
+
+                            {/* Divider Line */}
+                            <div className="my-2 border-t border-gray-150 dark:border-gray-800" />
+
+                            {/* Section 2: Discover & Community */}
+                            <Link to="/stories" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm transition">
+                                <BookOpen className="w-4.5 h-4.5 text-purple-500 shrink-0" />
+                                <span>Stories</span>
+                            </Link>
+
+                            <Link to="/events" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm transition">
+                                <Calendar className="w-4.5 h-4.5 text-indigo-500 shrink-0" />
+                                <span>Events</span>
+                            </Link>
+
+                            <Link to="/gifts" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm transition">
+                                <Gift className="w-4.5 h-4.5 text-rose-500 shrink-0" />
+                                <span>Gifts</span>
+                            </Link>
+
+                            <Link to="/referrals" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm transition">
+                                <UserPlus className="w-4.5 h-4.5 text-amber-500 shrink-0" />
+                                <span>Referrals</span>
+                            </Link>
+
+                            <Link to="/contact-admin" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm transition">
+                                <HelpCircle className="w-4.5 h-4.5 text-cyan-500 shrink-0" />
+                                <span>Help & Support</span>
+                            </Link>
                         </div>
 
-                        {/* Promo Sidebar Card */}
-                        <div className="bg-gradient-to-br from-pink-500 to-purple-700 rounded-3xl p-5 text-white shadow-lg relative overflow-hidden">
-                            <h3 className="text-base font-extrabold leading-tight">Love Connect Belong</h3>
-                            <p className="text-xs text-pink-100 mt-1 leading-relaxed">Start your journey towards a lifelong meaningful relationship.</p>
+                        {/* Promotional Couple Image Card */}
+                        <div className="rounded-3xl overflow-hidden shadow-sm border border-gray-150 dark:border-gray-800">
+                            <img
+                                src="/images/love-connect-belong.jpg"
+                                alt="Love Connect Belong"
+                                className="w-full h-56 lg:h-64 object-cover"
+                            />
                         </div>
                     </div>
 
@@ -534,7 +575,7 @@ const Dashboard = () => {
                             </div>
                         </div>
 
-                        {/* Suggested for You Section */}
+                        {/* Suggested for You Section with Left/Right Carousel Controls */}
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -545,26 +586,43 @@ const Dashboard = () => {
                                     <p className="text-xs text-gray-500">Profiles you might be interested in</p>
                                 </div>
 
-                                <Link to="/users" className="text-xs font-bold text-purple-600 hover:underline flex items-center gap-0.5">
-                                    View All →
-                                </Link>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => scrollSuggested('left')}
+                                        className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-200 transition"
+                                        aria-label="Previous profiles"
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => scrollSuggested('right')}
+                                        className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-200 transition"
+                                        aria-label="Next profiles"
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                    <Link to="/users" className="text-xs font-bold text-purple-600 hover:underline ml-2">
+                                        View All →
+                                    </Link>
+                                </div>
                             </div>
 
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                {featuredUsers.slice(0, 4).map((u) => (
-                                    <ProfileCard
-                                        key={u._id}
-                                        user={u}
-                                        onView={() => navigate(`/users/${u._id}`)}
-                                        onMessage={() => navigate(`/conversation/${u._id}`)}
-                                        onLike={handleQuickLike}
-                                    />
+                            <div
+                                ref={suggestedRef}
+                                className="flex gap-4 overflow-x-auto pb-2 pt-1 scrollbar-none snap-x scroll-smooth"
+                            >
+                                {featuredUsers.map((u) => (
+                                    <div key={u._id} className="snap-start shrink-0 w-48 sm:w-52">
+                                        <ProfileCard
+                                            user={u}
+                                            onView={() => navigate(`/users/${u._id}`)}
+                                            onMessage={() => navigate(`/conversation/${u._id}`)}
+                                            onLike={handleQuickLike}
+                                        />
+                                    </div>
                                 ))}
                             </div>
                         </div>
-
-                        {/* Success Stories Section */}
-                        <SuccessStories />
                     </div>
 
                     {/* Right Panel (3 cols on lg) */}

@@ -111,6 +111,10 @@ const ContactAdmin = lazyWithRetry(() => import('./pages/user/ContactAdmin'));
 const Settings = lazyWithRetry(() => import('./pages/user/Settings'));
 const Wallet = lazyWithRetry(() => import('./pages/user/Wallet'));
 const ProfileVisitors = lazyWithRetry(() => import('./pages/user/ProfileVisitors'));
+const Stories = lazyWithRetry(() => import('./pages/user/Stories'));
+const EventsPage = lazyWithRetry(() => import('./pages/user/EventsPage'));
+const GiftsPage = lazyWithRetry(() => import('./pages/user/GiftsPage'));
+const ReferralsPage = lazyWithRetry(() => import('./pages/user/ReferralsPage'));
 
 const AdminDashboard = lazyWithRetry(() => import('./pages/admin/AdminDashboard'));
 
@@ -477,6 +481,38 @@ function App() {
                   element={
                     <UserRoute>
                       <ContactAdmin />
+                    </UserRoute>
+                  }
+                />
+                <Route
+                  path="/stories"
+                  element={
+                    <UserRoute>
+                      <Stories />
+                    </UserRoute>
+                  }
+                />
+                <Route
+                  path="/events"
+                  element={
+                    <UserRoute>
+                      <EventsPage />
+                    </UserRoute>
+                  }
+                />
+                <Route
+                  path="/gifts"
+                  element={
+                    <UserRoute>
+                      <GiftsPage />
+                    </UserRoute>
+                  }
+                />
+                <Route
+                  path="/referrals"
+                  element={
+                    <UserRoute>
+                      <ReferralsPage />
                     </UserRoute>
                   }
                 />
