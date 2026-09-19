@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { giftAPI } from '../../services/api';
 import { Heart, Calendar, User } from 'lucide-react';
 import moment from 'moment';
@@ -8,11 +8,7 @@ const GiftHistory = ({ userId }) => {
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all'); // all, sent, received
 
-  useEffect(() => {
-    fetchHistory();
-  }, [filter]);
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     setLoading(true);
     try {
       const response = await giftAPI.getGiftHistory(filter);
@@ -22,7 +18,11 @@ const GiftHistory = ({ userId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
   return (
     <div className="space-y-4">

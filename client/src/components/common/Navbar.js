@@ -51,7 +51,6 @@ const Navbar = () => {
             return () => clearInterval(interval);
         }
     }, [user, isAdmin]);
-    const searchRef = useRef(null);
     const notifRef = useRef(null);
     const profileRef = useRef(null);
 
@@ -73,7 +72,6 @@ const Navbar = () => {
         const handleKey = (e) => { 
             if (e.key === 'Escape') {
                 setMobileOpen(false);
-                setSearchOpen(false);
                 setNotifOpen(false);
                 setProfileOpen(false);
                 setLangOpen(false);
@@ -86,9 +84,6 @@ const Navbar = () => {
     // Close dropdowns on outside click
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (searchRef.current && !searchRef.current.contains(event.target)) {
-                setSearchOpen(false);
-            }
             if (notifRef.current && !notifRef.current.contains(event.target)) {
                 setNotifOpen(false);
             }
@@ -120,7 +115,6 @@ const Navbar = () => {
         if (searchQuery.trim()) {
             navigate('/users', { state: { searchQuery } });
             setSearchQuery('');
-            setSearchOpen(false);
         }
     };
 
