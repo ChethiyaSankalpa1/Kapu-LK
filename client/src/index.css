@@ -195,11 +195,20 @@
 
 /* ===== UTILITIES ===== */
 @layer utilities {
-  .hide-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  .hide-scrollbar,
+  .no-scrollbar,
+  .scrollbar-none {
+    -ms-overflow-style: none !important; /* IE and Edge */
+    scrollbar-width: none !important; /* Firefox */
   }
-  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar::-webkit-scrollbar,
+  .no-scrollbar::-webkit-scrollbar,
+  .scrollbar-none::-webkit-scrollbar {
+    display: none !important; /* Chrome, Safari, Edge, Opera */
+    width: 0px !important;
+    height: 0px !important;
+    background: transparent !important;
+  }
 
   /* Safe area insets for notched phones */
   .safe-top    { padding-top: env(safe-area-inset-top); }

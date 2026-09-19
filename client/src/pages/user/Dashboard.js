@@ -290,7 +290,7 @@ const Dashboard = () => {
                         </Link>
                     </div>
 
-                    <div className="flex gap-3 overflow-x-auto pb-2 pt-1 scrollbar-none snap-x">
+                    <div className="flex gap-3 overflow-x-auto pb-2 pt-1 hide-scrollbar scrollbar-none snap-x overscroll-x-contain">
                         {featuredUsers.slice(0, 8).map((u) => (
                             <div key={u._id} className="snap-start shrink-0 w-44">
                                 <ProfileCard
@@ -345,10 +345,10 @@ const Dashboard = () => {
             {/* ========================================================================= */}
             <div className="hidden md:block w-full max-w-[1550px] mx-auto px-4 lg:px-8 pt-6">
                 
-                <div className="grid grid-cols-12 gap-6">
+                <div className="grid grid-cols-12 gap-6 items-start">
 
                     {/* Left Sidebar Navigation (2 cols on lg) */}
-                    <div className="col-span-3 lg:col-span-2 space-y-4 sticky top-20 max-h-[calc(100vh-5rem)] overflow-y-auto scrollbar-thin">
+                    <div className="col-span-12 md:col-span-3 lg:col-span-2 space-y-4 sticky top-20 max-h-[calc(100vh-5.5rem)] overflow-y-auto hide-scrollbar scrollbar-none min-w-0">
                         <div className="bg-white dark:bg-gray-900 rounded-3xl p-3.5 border border-gray-150 dark:border-gray-800 shadow-sm space-y-1">
                             {/* Section 1: Main Platform Navigation */}
                             <Link to="/dashboard" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-bold text-sm">
@@ -367,12 +367,12 @@ const Dashboard = () => {
                             </Link>
 
                             <Link to="/conversation" className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm transition">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 min-w-0">
                                     <MessageCircle className="w-4.5 h-4.5 text-blue-500 shrink-0" />
-                                    <span>Messages</span>
+                                    <span className="truncate">Messages</span>
                                 </div>
                                 {unreadMessagesCount > 0 && (
-                                    <span className="px-2 py-0.5 bg-pink-600 text-white rounded-full text-xs font-bold">{unreadMessagesCount}</span>
+                                    <span className="px-2 py-0.5 bg-pink-600 text-white rounded-full text-xs font-bold shrink-0">{unreadMessagesCount}</span>
                                 )}
                             </Link>
 
@@ -437,7 +437,7 @@ const Dashboard = () => {
                     </div>
 
                     {/* Center Main Dashboard Area (7 cols on lg - wider and responsive) */}
-                    <div className="col-span-9 lg:col-span-7 space-y-6">
+                    <div className="col-span-12 md:col-span-9 lg:col-span-7 min-w-0 space-y-6">
 
                         {/* Scenic Hero Header Card */}
                         <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-150 dark:border-gray-800 shadow-sm overflow-hidden">
@@ -452,7 +452,7 @@ const Dashboard = () => {
                             {/* Clean Compact Profile Overview below Cover */}
                             <div className="px-6 pb-5 pt-0 relative">
                                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 -mt-12 sm:-mt-14 mb-3">
-                                    <div className="flex items-end gap-4">
+                                    <div className="flex items-end gap-4 min-w-0">
                                         <div className="relative shrink-0">
                                             <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-white dark:border-gray-900 shadow-xl bg-purple-100 dark:bg-purple-950">
                                                 {user?.profileImageUrl ? (
@@ -466,13 +466,13 @@ const Dashboard = () => {
                                             <span className="absolute bottom-1 right-1 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-gray-900 rounded-full" />
                                         </div>
 
-                                        <div className="pb-1">
+                                        <div className="pb-1 min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">
+                                                <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white truncate">
                                                     {user?.name || firstName}
                                                 </h2>
                                                 {user?.isApproved && (
-                                                    <span className="px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-bold rounded-full text-[11px] flex items-center gap-1">
+                                                    <span className="px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-bold rounded-full text-[11px] flex items-center gap-1 shrink-0">
                                                         <CheckCircle className="w-3 h-3 text-emerald-500" />
                                                         <span>Profile approved</span>
                                                     </span>
@@ -483,19 +483,19 @@ const Dashboard = () => {
                                             </div>
 
                                             <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                                <span className="flex items-center gap-1">
-                                                    <MapPin className="w-3.5 h-3.5 text-purple-600" />
+                                                <span className="flex items-center gap-1 truncate">
+                                                    <MapPin className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                                                     {user?.district || user?.location || 'Sri Lanka'}
                                                 </span>
-                                                <span className="flex items-center gap-1">
-                                                    <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                                                <span className="flex items-center gap-1 shrink-0">
+                                                    <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                                                     Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '2026'}
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <Link to="/profile" className="self-start sm:self-auto flex items-center gap-1.5 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-xs font-bold rounded-xl text-gray-700 dark:text-gray-200 shadow-xs transition">
+                                    <Link to="/profile" className="self-start sm:self-auto flex items-center gap-1.5 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-xs font-bold rounded-xl text-gray-700 dark:text-gray-200 shadow-xs transition shrink-0">
                                         <Edit3 className="w-3.5 h-3.5" />
                                         <span>Edit Profile</span>
                                     </Link>
@@ -503,34 +503,34 @@ const Dashboard = () => {
 
                                 {/* 5-Stat Counter Strip */}
                                 <div className="grid grid-cols-5 gap-2 sm:gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-                                    <div className="text-center">
+                                    <div className="text-center min-w-0">
                                         <Eye className="w-5 h-5 text-purple-600 mx-auto mb-1" />
-                                        <span className="block text-lg font-black text-gray-900 dark:text-white">{profileViewsCount}</span>
-                                        <span className="text-[10px] sm:text-xs text-gray-400 uppercase font-bold">Profile views</span>
+                                        <span className="block text-lg font-black text-gray-900 dark:text-white truncate">{profileViewsCount}</span>
+                                        <span className="text-[10px] sm:text-xs text-gray-400 uppercase font-bold truncate block">Profile views</span>
                                     </div>
 
-                                    <div className="text-center">
+                                    <div className="text-center min-w-0">
                                         <Heart className="w-5 h-5 text-pink-600 fill-pink-600 mx-auto mb-1" />
-                                        <span className="block text-lg font-black text-gray-900 dark:text-white">{matchesCount}</span>
-                                        <span className="text-[10px] sm:text-xs text-gray-400 uppercase font-bold">Matches</span>
+                                        <span className="block text-lg font-black text-gray-900 dark:text-white truncate">{matchesCount}</span>
+                                        <span className="text-[10px] sm:text-xs text-gray-400 uppercase font-bold truncate block">Matches</span>
                                     </div>
 
-                                    <div className="text-center">
+                                    <div className="text-center min-w-0">
                                         <MessageCircle className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-                                        <span className="block text-lg font-black text-gray-900 dark:text-white">{unreadMessagesCount}</span>
-                                        <span className="text-[10px] sm:text-xs text-gray-400 uppercase font-bold">Messages</span>
+                                        <span className="block text-lg font-black text-gray-900 dark:text-white truncate">{unreadMessagesCount}</span>
+                                        <span className="text-[10px] sm:text-xs text-gray-400 uppercase font-bold truncate block">Messages</span>
                                     </div>
 
-                                    <div className="text-center">
+                                    <div className="text-center min-w-0">
                                         <Users className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
-                                        <span className="block text-lg font-black text-gray-900 dark:text-white">{visitorCount}</span>
-                                        <span className="text-[10px] sm:text-xs text-gray-400 uppercase font-bold">Visitors (7 days)</span>
+                                        <span className="block text-lg font-black text-gray-900 dark:text-white truncate">{visitorCount}</span>
+                                        <span className="text-[10px] sm:text-xs text-gray-400 uppercase font-bold truncate block">Visitors (7d)</span>
                                     </div>
 
-                                    <div className="text-center">
+                                    <div className="text-center min-w-0">
                                         <Flame className="w-5 h-5 text-amber-500 fill-amber-500 mx-auto mb-1" />
-                                        <span className="block text-lg font-black text-gray-900 dark:text-white">{loginStreak}</span>
-                                        <span className="text-[10px] sm:text-xs text-gray-400 uppercase font-bold">Day streak</span>
+                                        <span className="block text-lg font-black text-gray-900 dark:text-white truncate">{loginStreak}</span>
+                                        <span className="text-[10px] sm:text-xs text-gray-400 uppercase font-bold truncate block">Day streak</span>
                                     </div>
                                 </div>
                             </div>
@@ -539,38 +539,38 @@ const Dashboard = () => {
                         {/* Quick Actions Grid */}
                         <div>
                             <h3 className="text-base font-extrabold text-gray-900 dark:text-white mb-3">Quick Actions</h3>
-                            <div className="grid grid-cols-5 gap-3">
-                                <Link to="/users" className="p-4 bg-purple-50 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900/40 rounded-2xl text-center hover:shadow-md transition">
-                                    <Search className="w-6 h-6 text-purple-600 mx-auto mb-1.5" />
-                                    <span className="block text-xs font-bold text-gray-900 dark:text-white">Browse Profiles</span>
-                                    <span className="text-[10px] text-gray-400">Find your match</span>
+                            <div className="grid grid-cols-5 gap-2 sm:gap-3">
+                                <Link to="/users" className="p-3 sm:p-4 bg-purple-50 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900/40 rounded-2xl text-center hover:shadow-md transition min-w-0">
+                                    <Search className="w-5 sm:w-6 h-5 sm:h-6 text-purple-600 mx-auto mb-1 sm:mb-1.5" />
+                                    <span className="block text-xs font-bold text-gray-900 dark:text-white truncate">Browse Profiles</span>
+                                    <span className="text-[10px] text-gray-400 truncate block">Find your match</span>
                                 </Link>
 
-                                <Link to="/matches" className="p-4 bg-pink-50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900/40 rounded-2xl text-center hover:shadow-md transition">
-                                    <Heart className="w-6 h-6 text-pink-600 fill-pink-600 mx-auto mb-1.5" />
-                                    <span className="block text-xs font-bold text-gray-900 dark:text-white">My Matches</span>
-                                    <span className="text-[10px] text-gray-400">See your matches</span>
+                                <Link to="/matches" className="p-3 sm:p-4 bg-pink-50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900/40 rounded-2xl text-center hover:shadow-md transition min-w-0">
+                                    <Heart className="w-5 sm:w-6 h-5 sm:h-6 text-pink-600 fill-pink-600 mx-auto mb-1 sm:mb-1.5" />
+                                    <span className="block text-xs font-bold text-gray-900 dark:text-white truncate">My Matches</span>
+                                    <span className="text-[10px] text-gray-400 truncate block">See matches</span>
                                 </Link>
 
-                                <Link to="/conversation" className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 rounded-2xl text-center hover:shadow-md transition relative">
+                                <Link to="/conversation" className="p-3 sm:p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 rounded-2xl text-center hover:shadow-md transition relative min-w-0">
                                     {unreadMessagesCount > 0 && (
-                                        <span className="absolute top-2.5 right-2.5 px-1.5 py-0.5 bg-pink-600 text-white rounded-full text-[9px] font-bold">{unreadMessagesCount}</span>
+                                        <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-pink-600 text-white rounded-full text-[9px] font-bold">{unreadMessagesCount}</span>
                                     )}
-                                    <MessageCircle className="w-6 h-6 text-blue-600 mx-auto mb-1.5" />
-                                    <span className="block text-xs font-bold text-gray-900 dark:text-white">Messages</span>
-                                    <span className="text-[10px] text-gray-400">Chat with matches</span>
+                                    <MessageCircle className="w-5 sm:w-6 h-5 sm:h-6 text-blue-600 mx-auto mb-1 sm:mb-1.5" />
+                                    <span className="block text-xs font-bold text-gray-900 dark:text-white truncate">Messages</span>
+                                    <span className="text-[10px] text-gray-400 truncate block">Chat now</span>
                                 </Link>
 
-                                <Link to="/visitors" className="p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 rounded-2xl text-center hover:shadow-md transition">
-                                    <Eye className="w-6 h-6 text-emerald-600 mx-auto mb-1.5" />
-                                    <span className="block text-xs font-bold text-gray-900 dark:text-white">Profile Visitors</span>
-                                    <span className="text-[10px] text-gray-400">See who viewed you</span>
+                                <Link to="/visitors" className="p-3 sm:p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 rounded-2xl text-center hover:shadow-md transition min-w-0">
+                                    <Eye className="w-5 sm:w-6 h-5 sm:h-6 text-emerald-600 mx-auto mb-1 sm:mb-1.5" />
+                                    <span className="block text-xs font-bold text-gray-900 dark:text-white truncate">Visitors</span>
+                                    <span className="text-[10px] text-gray-400 truncate block">Who viewed you</span>
                                 </Link>
 
-                                <Link to="/premium" className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/40 rounded-2xl text-center hover:shadow-md transition">
-                                    <Crown className="w-6 h-6 text-amber-500 fill-amber-500 mx-auto mb-1.5" />
-                                    <span className="block text-xs font-bold text-gray-900 dark:text-white">Go Premium</span>
-                                    <span className="text-[10px] text-gray-400">Unlock all features</span>
+                                <Link to="/premium" className="p-3 sm:p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/40 rounded-2xl text-center hover:shadow-md transition min-w-0">
+                                    <Crown className="w-5 sm:w-6 h-5 sm:h-6 text-amber-500 fill-amber-500 mx-auto mb-1 sm:mb-1.5" />
+                                    <span className="block text-xs font-bold text-gray-900 dark:text-white truncate">Go Premium</span>
+                                    <span className="text-[10px] text-gray-400 truncate block">Unlock features</span>
                                 </Link>
                             </div>
                         </div>
@@ -609,7 +609,7 @@ const Dashboard = () => {
 
                             <div
                                 ref={suggestedRef}
-                                className="flex gap-4 overflow-x-auto pb-2 pt-1 scrollbar-none snap-x scroll-smooth"
+                                className="flex gap-4 overflow-x-auto pb-2 pt-1 hide-scrollbar scrollbar-none snap-x scroll-smooth overscroll-x-contain"
                             >
                                 {featuredUsers.map((u) => (
                                     <div key={u._id} className="snap-start shrink-0 w-48 sm:w-52">
