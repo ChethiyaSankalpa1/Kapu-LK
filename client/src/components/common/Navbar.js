@@ -25,7 +25,7 @@ const Navbar = () => {
     const drawerRef = useRef(null);
 
     useEffect(() => {
-        if (user && !isAdmin && user.emailVerified) {
+        if (user && !isAdmin) {
             const fetchBalancesAndMessages = async () => {
                 try {
                     const [walletRes, msgRes] = await Promise.allSettled([
@@ -33,7 +33,9 @@ const Navbar = () => {
                         messageAPI.getConversations(),
                     ]);
                     if (walletRes.status === 'fulfilled') {
-                        setWalletBalance(walletRes.value.data?.balance || 0);
+                        const wData = walletRes.value.data;
+                        const bal = typeof wData?.balance === 'number' ? wData.balance : (wData?.wallet?.balance || 0);
+                        setWalletBalance(bal);
                     }
                     if (msgRes.status === 'fulfilled') {
                         const convs = msgRes.value.data || [];
@@ -390,6 +392,12 @@ const Navbar = () => {
                                         </Link>
                                     ) : (
                                         <>
+                                            {/* Wallet Cash Balance Badge */}
+                                            <Link to="/wallet" className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 dark:from-emerald-500/20 dark:to-teal-500/20 border border-emerald-200/60 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs font-bold hover:opacity-90 transition" title="Wallet Cash Balance">
+                                                <Wallet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                                <span>Rs. {walletBalance}</span>
+                                            </Link>
+
                                             {/* Go Premium button or Plan badge */}
                                             {isPremiumUser ? (
                                                 <Link to="/premium" className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500/15 to-yellow-500/15 border border-amber-300/40 dark:border-amber-700/40 text-amber-700 dark:text-amber-300 rounded-xl text-xs font-bold hover:opacity-90 transition">
@@ -461,7 +469,7 @@ const Navbar = () => {
                         {/* Mobile right controls */}
                         <div className="flex md:hidden items-center gap-2">
                             {user && !isAdmin && (
-                                <Link to="/premium" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20 border border-purple-200/50 dark:border-purple-800/50 text-purple-700 dark:text-purple-300 font-bold text-[11px] mr-1" title="Wallet Balance">
+                                <Link to="/wallet" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20 border border-purple-200/50 dark:border-purple-800/50 text-purple-700 dark:text-purple-300 font-bold text-[11px] mr-1" title="Wallet Balance">
                                     <Wallet className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400" />
                                     <span>Rs. {walletBalance}</span>
                                 </Link>

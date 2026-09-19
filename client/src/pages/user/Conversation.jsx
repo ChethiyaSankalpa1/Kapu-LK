@@ -607,11 +607,18 @@ const Conversation = () => {
                             <img
                               src={c.user.profileImageUrl}
                               alt={c.user.name}
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.style.display = 'none';
+                                const fb = e.currentTarget.parentElement.querySelector('.conv-avatar-fb');
+                                if (fb) fb.style.display = 'flex';
+                              }}
                               className="w-full h-full object-cover"
                             />
-                          ) : (
-                            <span className="text-lg font-bold text-white uppercase">{c.user.name.charAt(0)}</span>
-                          )}
+                          ) : null}
+                          <span className={`conv-avatar-fb text-lg font-bold text-white uppercase ${c.user.profileImageUrl ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
+                            {c.user.name.charAt(0)}
+                          </span>
                         </div>
                         {online && (
                           <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#25d366] border-2 border-white dark:border-[#111b21] rounded-full" />
@@ -683,11 +690,18 @@ const Conversation = () => {
                             <img
                               src={otherUser.profileImageUrl}
                               alt={otherUser.name}
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.style.display = 'none';
+                                const fb = e.currentTarget.parentElement.querySelector('.header-avatar-fb');
+                                if (fb) fb.style.display = 'flex';
+                              }}
                               className="w-full h-full object-cover"
                             />
-                          ) : (
+                          ) : null}
+                          <div className={`header-avatar-fb w-full h-full ${otherUser.profileImageUrl ? 'hidden' : 'flex'} items-center justify-center`}>
                             <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                          )}
+                          </div>
                         </div>
                         {isUserOnline(otherUser) && (
                           <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#25d366] border-2 border-white dark:border-[#111b21] rounded-full" />

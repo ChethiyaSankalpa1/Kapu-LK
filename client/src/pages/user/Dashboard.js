@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { userAPI, messageAPI, notificationAPI, achievementAPI } from '../../services/api';
+import { userAPI, messageAPI, notificationAPI, achievementAPI, walletAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
     User, CheckCircle, MessageCircle, Search, Heart,
     Crown, Flame, Calendar, Eye, MapPin, ChevronRight, ChevronLeft,
     Settings, Users, Layers, Activity, Edit3, Sparkles,
-    BookOpen, Gift, UserPlus, HelpCircle
+    BookOpen, Gift, UserPlus, HelpCircle, Wallet
 } from 'lucide-react';
 import PremiumPopup from '../../components/ui/PremiumPopup';
 import PremiumBadge from '../../components/ui/PremiumBadge';
@@ -27,6 +27,7 @@ const Dashboard = () => {
 
     const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
     const [userStats, setUserStats] = useState(null);
+    const [walletBalance, setWalletBalance] = useState(0);
 
     const scrollSuggested = (direction) => {
         if (suggestedRef.current) {
@@ -57,14 +58,16 @@ const Dashboard = () => {
                 statsRes,
                 usersRes,
                 matchesRes,
-                visitorsRes
+                visitorsRes,
+                walletRes
             ] = await Promise.allSettled([
                 messageAPI.getConversations(),
                 notificationAPI.getNotifications(),
                 achievementAPI.getMyStats(),
                 userAPI.getAllUsers({ limit: 12 }),
                 userAPI.getMatches(),
-                isVisitorsAllowed ? userAPI.getProfileVisitors() : Promise.resolve({ data: { count: 0, visitors: [] } })
+                isVisitorsAllowed ? userAPI.getProfileVisitors() : Promise.resolve({ data: { count: 0, visitors: [] } }),
+                walletAPI.getWallet()
             ]);
 
             if (convsRes.status === 'fulfilled') {
@@ -94,6 +97,12 @@ const Dashboard = () => {
 
             if (visitorsRes.status === 'fulfilled') {
                 setVisitorCount(visitorsRes.value.data?.count || visitorsRes.value.data?.visitors?.length || 0);
+            }
+
+            if (walletRes.status === 'fulfilled') {
+                const wData = walletRes.value.data;
+                const bal = typeof wData?.balance === 'number' ? wData.balance : (wData?.wallet?.balance || 0);
+                setWalletBalance(bal);
             }
         } catch (error) {
             console.error('Dashboard data load error:', error);
@@ -178,6 +187,10 @@ const Dashboard = () => {
                                         <CheckCircle className="w-3 h-3 text-emerald-600" />
                                         Profile approved
                                     </span>
+                                    <Link to="/wallet" className="inline-flex items-center gap-1 px-2 py-0.5 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/40 text-[10px] font-bold text-teal-700 dark:text-teal-300 rounded-full">
+                                        <Wallet className="w-3 h-3 text-teal-600" />
+                                        Rs. {walletBalance}
+                                    </Link>
                                     {isPremium ? (
                                         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 text-[10px] font-bold text-amber-700 dark:text-amber-300 rounded-full capitalize">
                                             <Crown className="w-3 h-3 text-amber-500 fill-amber-500" />
