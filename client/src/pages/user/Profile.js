@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { userAPI } from '../../services/api';
 import { toast } from 'react-toastify';
-import { User, Upload, ArrowRight, Save } from 'lucide-react';
+import { User, Upload, ArrowLeft, ArrowRight, Save } from 'lucide-react';
 import PremiumBadge from '../../components/ui/PremiumBadge';
 import PhotoGalleryManager from '../../components/ui/PhotoGalleryManager';
 import BackButton from '../../components/common/BackButton';
