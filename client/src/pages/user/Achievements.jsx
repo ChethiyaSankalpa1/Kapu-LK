@@ -4,9 +4,10 @@ import { useAuth } from '../../context/AuthContext';
 import { achievementAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
-    Trophy, Flame, Star, Crown, ArrowLeft, Gift, Sparkles, Lock, CheckCircle2
+    Trophy, Flame, Star, Crown, Gift, Sparkles, Lock, CheckCircle2
 } from 'lucide-react';
 import { WalletSkeleton } from '../../components/ui/SkeletonLoader';
+import BackButton from '../../components/common/BackButton';
 
 const Achievements = () => {
     const navigate = useNavigate();
@@ -83,13 +84,9 @@ const Achievements = () => {
             <div className="glass-card rounded-3xl p-6 sm:p-8 mb-8 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
                     <div>
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 mb-3 hover:text-purple-600 dark:hover:text-purple-400 transition"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            <span>Go Back</span>
-                        </button>
+                        <div className="mb-3">
+                            <BackButton variant="ghost" label="Go Back" iconClassName="w-4 h-4" />
+                        </div>
                         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 font-bold text-xs uppercase tracking-wider mb-2">
                             <Trophy className="w-3.5 h-3.5" />
                             <span>Milestones & Rewards</span>

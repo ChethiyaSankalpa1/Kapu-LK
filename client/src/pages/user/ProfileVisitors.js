@@ -6,10 +6,11 @@ import { userAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 import {
-    Eye, Crown, ArrowLeft, RefreshCw, Sparkles,
+    Eye, Crown, RefreshCw, Sparkles,
     MessageCircle
 } from 'lucide-react';
 import ProfileCard from '../../components/ui/ProfileCard';
+import BackButton from '../../components/common/BackButton';
 
 const ProfileVisitors = () => {
     const { t } = useTranslation();
@@ -68,13 +69,7 @@ const ProfileVisitors = () => {
                 {/* Header Row */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => navigate('/dashboard')}
-                            className="p-2 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/60 shadow-xs transition"
-                            title="Back to Dashboard"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
+                        <BackButton label="Back" />
                         <div>
                             <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-2.5">
                                 <Eye className="w-7 h-7 text-emerald-500" />

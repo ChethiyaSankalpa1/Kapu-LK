@@ -7,6 +7,7 @@ import ProfileCard from '../../components/ui/ProfileCard';
 import CustomSelect from '../../components/ui/CustomSelect';
 import { Search, Filter, RefreshCw, Heart, Sparkles } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import BackButton from '../../components/common/BackButton';
 
 const Users = ({ isMatchesOnly = false }) => {
     const { t } = useTranslation();
@@ -220,6 +221,9 @@ const Users = ({ isMatchesOnly = false }) => {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-6 pb-24 md:py-8 transition-colors duration-300">
             <div className="container mx-auto px-4 max-w-7xl">
                 <div className="mb-6 sm:mb-8">
+                    <div className="mb-4">
+                        <BackButton label="Back" />
+                    </div>
                     <div className="flex items-center justify-between gap-3 mb-4">
                         <div className="flex items-center gap-3">
                             {isMatchesMode ? (

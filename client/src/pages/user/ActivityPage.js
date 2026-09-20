@@ -5,10 +5,11 @@ import { notificationAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 import {
-    Activity, ArrowLeft, RefreshCw, Eye, Heart, MessageCircle,
+    Activity, RefreshCw, Eye, Heart, MessageCircle,
     Gift, Sparkles, Trophy, ChevronRight, Crown
 } from 'lucide-react';
 import PremiumBadge from '../../components/ui/PremiumBadge';
+import BackButton from '../../components/common/BackButton';
 
 const ActivityPage = () => {
     const { t } = useTranslation();
@@ -137,13 +138,7 @@ const ActivityPage = () => {
             <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition"
-                            aria-label="Back"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
+                        <BackButton variant="soft" />
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-white shadow-sm">
                                 <Activity className="w-4 h-4" />

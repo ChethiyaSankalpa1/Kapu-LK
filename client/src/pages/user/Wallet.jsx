@@ -9,6 +9,7 @@ import {
     Building, Smartphone, Zap, AlertCircle, ShieldCheck, ArrowDownLeft, Clock
 } from 'lucide-react';
 import { WalletSkeleton } from '../../components/ui/SkeletonLoader';
+import BackButton from '../../components/common/BackButton';
 
 const TOPUP_METHODS = [
     { id: 'bank_transfer', label: 'Bank Transfer', icon: Building },
@@ -326,7 +327,11 @@ const Wallet = () => {
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/30 dark:from-slate-950 dark:via-purple-950/20 dark:to-slate-900 py-6 px-4 sm:px-6">
             <div className="max-w-7xl mx-auto">
                 {/* Header with Title & Action CTAs */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                <div className="flex flex-col gap-4 mb-8">
+                    <div className="sm:mb-0">
+                        <BackButton label="Back" />
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-bold text-xs uppercase tracking-wider mb-2">
                             <WalletIcon className="w-3.5 h-3.5" />
@@ -356,6 +361,7 @@ const Wallet = () => {
                             <Crown className="w-4 h-4 text-yellow-300" />
                             <span>Buy Premium</span>
                         </button>
+                    </div>
                     </div>
                 </div>
 

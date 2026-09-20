@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { userAPI, messageAPI } from '../../services/api';
 import { toast } from 'react-toastify';
-import { Shield, Send, ArrowLeft, Clock, CheckCircle, X, Image as ImageIcon, AlertCircle, HelpCircle, CreditCard, User as UserIcon, Settings, Bug, FileText, Mail } from 'lucide-react';
+import { Shield, Send, Clock, CheckCircle, X, Image as ImageIcon, AlertCircle, HelpCircle, CreditCard, User as UserIcon, Settings, Bug, FileText, Mail } from 'lucide-react';
+import BackButton from '../../components/common/BackButton';
 
 const ContactAdmin = () => {
     const { t } = useTranslation();
@@ -166,13 +167,9 @@ const ContactAdmin = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 pt-8 pb-24 md:py-8">
             <div className="container mx-auto px-4 max-w-5xl">
-                <button
-                    onClick={() => navigate(-1)}
-                    className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-purple-600 mb-8 transition-colors"
-                >
-                    <ArrowLeft className="w-6 h-6" />
-                    <span className="text-lg font-medium">{t('common.back')}</span>
-                </button>
+                <div className="mb-6">
+                    <BackButton variant="ghost" label={t('common.back')} iconClassName="w-6 h-6" className="text-lg font-medium" />
+                </div>
 
                 {/* Header */}
                 <div className="text-center mb-8">

@@ -4,9 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { userAPI } from '../../services/api';
 import { toast } from 'react-toastify';
-import { User, Upload, ArrowLeft, ArrowRight, Save } from 'lucide-react';
+import { User, Upload, ArrowRight, Save } from 'lucide-react';
 import PremiumBadge from '../../components/ui/PremiumBadge';
 import PhotoGalleryManager from '../../components/ui/PhotoGalleryManager';
+import BackButton from '../../components/common/BackButton';
 
 const Profile = () => {
     const { t } = useTranslation();
@@ -181,6 +182,9 @@ const Profile = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 pt-4 pb-24 md:py-8 page-transition">
             <div className="container mx-auto px-3 sm:px-4 max-w-5xl">
+                <div className="mb-4 sm:mb-6">
+                    <BackButton label="Back" />
+                </div>
                 {/* Warning banner if profile image is missing */}
                 {!user?.profileImageUrl && (
                     <div className="mb-4 sm:mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-700 rounded-2xl flex items-start gap-3">

@@ -4,10 +4,11 @@ import { useAuth } from '../../context/AuthContext';
 import { premiumAPI, walletAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import {
-  CheckCircle, ArrowLeft, Upload, Building, Sparkles, Wallet, Clock,
+  CheckCircle, Upload, Building, Sparkles, Wallet, Clock,
   Copy, Check, ShieldCheck, Zap, AlertCircle, ArrowRight, Smartphone, RefreshCw
 } from 'lucide-react';
 import PremiumBadge from '../../components/ui/PremiumBadge';
+import BackButton from '../../components/common/BackButton';
 
 const PAYMENT_METHODS = [
   { id: 'bank_transfer', label: 'Bank Transfer', icon: Building },
@@ -228,13 +229,7 @@ const PremiumPayment = () => {
       <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
         {/* Navigation bar */}
         <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 font-semibold text-sm transition"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back</span>
-          </button>
+          <BackButton variant="ghost" label="Back" iconClassName="w-4 h-4" />
 
           <button
             onClick={() => navigate('/wallet')}

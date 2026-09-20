@@ -1,11 +1,15 @@
 import React from 'react';
 import { Shield, Lock, Cookie, Eye, AlertCircle, Mail, Clock, FileText } from 'lucide-react';
+import BackButton from '../../components/common/BackButton';
 
 const PrivacyPolicy = () => {
 
   return (
     <div className="w-full flex-1 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8 sm:py-12">
       <div className="container mx-auto px-4 sm:px-6 max-w-4xl">
+        <div className="mb-6 sm:mb-8">
+          <BackButton label="Back" fallback="/" />
+        </div>
         {/* Header */}
         <div className="text-center mb-8 sm:mb-12">
           <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl mb-4 sm:mb-6 shadow-lg">

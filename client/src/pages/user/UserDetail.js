@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 import {
-    ArrowLeft, ChevronLeft, ChevronRight, Heart, MessageSquare,
+    ChevronLeft, ChevronRight, Heart, MessageSquare,
     Bookmark, Share2, MoreHorizontal, Shield, Phone, Mail,
     Crown, CheckCircle2, Calendar, Clock,
     Flag, Ban, Headphones, Lightbulb, User,
@@ -14,6 +14,7 @@ import {
     Check, X, Target, Compass, Award
 } from 'lucide-react';
 import PremiumBadge from '../../components/ui/PremiumBadge';
+import BackButton from '../../components/common/BackButton';
 
 const UserDetail = () => {
     const { t } = useTranslation();
@@ -273,13 +274,7 @@ const UserDetail = () => {
                 
                 {/* Top Navigation Row: Back to Browse */}
                 <div className="flex items-center justify-between mb-4 sm:mb-6">
-                    <button
-                        onClick={() => navigate('/users')}
-                        className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 transition"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span>Back to Browse</span>
-                    </button>
+                    <BackButton variant="ghost" fallback="/users" label="Back to Browse" iconClassName="w-4 h-4" className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200" />
                 </div>
 
                 {/* Main 3-Column Responsive Grid */}

@@ -6,13 +6,14 @@ import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 import {
-  ArrowLeft, Send, User, MessageSquare,
+  Send, User, MessageSquare,
   Check, CheckCheck, Smile, Paperclip,
   Image, Search, X, Edit2, Trash2, MoreVertical, Gift,
   CornerUpLeft, Copy
 } from 'lucide-react';
 import GiftModal from '../../components/ui/GiftModal';
 import PremiumBadge from '../../components/ui/PremiumBadge';
+import BackButton from '../../components/common/BackButton';
 
 const Conversation = () => {
   const { t } = useTranslation();
@@ -534,13 +535,7 @@ const Conversation = () => {
           {/* Sidebar Header */}
           <div className="p-4 border-b border-[#d1d7db] dark:border-[#222d34] bg-[#f0f2f5] dark:bg-[#202c33] shrink-0">
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="p-2 -ml-2 bg-white dark:bg-[#111b21] hover:bg-slate-100 dark:hover:bg-[#0b141a] rounded-full transition-all"
-                aria-label="Back to dashboard"
-              >
-                <ArrowLeft className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-              </button>
+              <BackButton fallback="/dashboard" showLabel={false} className="!bg-white dark:!bg-[#111b21] !border-0 dark:!border-0 !p-2 !rounded-full -ml-2 hover:!bg-slate-100 dark:hover:!bg-[#0b141a] shadow-none" iconClassName="w-5 h-5 text-slate-700 dark:text-slate-300" />
               <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-[#128c7e]" />
                 <span>Messages</span>
@@ -673,13 +668,7 @@ const Conversation = () => {
               {/* Header */}
               <div className="py-2.5 sm:py-3 px-3 sm:px-4 flex items-center justify-between bg-[#f0f2f5] dark:bg-[#202c33] border-b border-[#d1d7db] dark:border-[#222d34] shrink-0 z-10">
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <button
-                    onClick={() => navigate('/conversation')}
-                    className="p-2 -ml-1 sm:-ml-2 bg-white dark:bg-[#111b21] hover:bg-slate-100 dark:hover:bg-[#0b141a] rounded-full transition-all md:hidden"
-                    aria-label="Back to conversations list"
-                  >
-                    <ArrowLeft className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-                  </button>
+                  <BackButton fallback="/conversation" showLabel={false} className="md:hidden !bg-white dark:!bg-[#111b21] !border-0 !p-2 !rounded-full -ml-1 sm:-ml-2 hover:!bg-slate-100 dark:hover:!bg-[#0b141a] shadow-none" iconClassName="w-5 h-5 text-slate-700 dark:text-slate-300" />
                   
                   {otherUser && (
                     <div className="flex items-center gap-2 sm:gap-3">
@@ -1201,9 +1190,12 @@ const Conversation = () => {
                 <Link to="/users" className="text-xs bg-[#dcf8c6] hover:bg-[#cdebb8] text-[#103529] dark:bg-[#103529] dark:text-[#dcf8c6] font-bold px-4 py-2 rounded-full transition-colors">
                   Find matches
                 </Link>
-                <Link to="/dashboard" className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-bold px-4 py-2 rounded-full transition-colors">
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-bold px-4 py-2 rounded-full transition-colors"
+                >
                   Back to Dashboard
-                </Link>
+                </button>
               </div>
             </div>
           )}
