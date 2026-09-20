@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../context/AuthContext';
 import { adminAPI, messageAPI, userAPI, giftAPI, achievementAPI, successStoryAPI, blogAPI, eventAPI, redemptionAPI, walletAPI, premiumAPI, maintenanceAPI } from '../../services/api';
 import PremiumBadge from '../../components/ui/PremiumBadge';
 import { toast } from 'react-toastify';
 import {
   Users, User, UserCheck, Activity,
   CheckCircle, XCircle, Trash2, Shield, ShieldCheck, Crown, AlertTriangle, DollarSign, MessageSquare, MoreVertical,
-  Eye, X, Heart, Phone, Star, Clock, Gift, Trophy, Heart as HeartIcon, FileText, Calendar, Plus, Edit, LifeBuoy, Power,
+  Eye, X, Heart, Phone, Star, Clock, Gift, Trophy, Heart as HeartIcon, FileText, Calendar, Plus, Edit, LifeBuoy, Power, LogOut,
   LayoutDashboard, Search, Bell, Sparkles, ArrowUpRight
 } from 'lucide-react';
 import SupportInboxTab from '../../components/admin/SupportInboxTab';
@@ -17,6 +18,7 @@ import AdminReportsTab from '../../components/admin/AdminReportsTab';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
+  const { logout } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
@@ -44,6 +46,11 @@ const AdminDashboard = () => {
   useEffect(() => {
     checkMaintenanceStatus();
   }, [checkMaintenanceStatus]);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   // New feature states
   const [gifts, setGifts] = useState([]);
@@ -799,7 +806,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Right: Quick actions, notifications, admin profile, status */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 sm:space-x-3">
           <button
             onClick={() => navigate('/dashboard')}
             className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 text-xs font-bold hover:bg-purple-100 transition"
@@ -821,14 +828,22 @@ const AdminDashboard = () => {
             )}
           </button>
 
-          <div className="hidden lg:flex items-center space-x-2 pl-2 border-l border-gray-200 dark:border-slate-800">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 text-white font-bold flex items-center justify-center text-xs">
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-xl bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition group"
+            title="Logout"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+
+          <div className="hidden sm:flex items-center space-x-2 pl-1 sm:pl-2 border-l border-gray-200 dark:border-slate-800">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 text-white font-bold flex items-center justify-center text-xs shadow-sm shadow-purple-500/30">
               A
             </div>
-            <span className="text-xs font-bold text-gray-800 dark:text-gray-200">Admin</span>
+            <span className="hidden md:block text-xs font-bold text-gray-800 dark:text-gray-200">Admin</span>
           </div>
 
-          <div className="flex items-center space-x-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-900">
+          <div className="hidden md:flex items-center space-x-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-900">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
             <span>System Online</span>
           </div>
@@ -1082,8 +1097,30 @@ const AdminDashboard = () => {
             </div>
           </div>
 
+          {/* Sidebar Footer Actions */}
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-800 space-y-2">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition"
+            >
+              <div className="flex items-center space-x-2.5">
+                <ArrowUpRight className="w-4 h-4" />
+                <span>View Public Site</span>
+              </div>
+            </button>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 transition"
+            >
+              <div className="flex items-center space-x-2.5">
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </div>
+            </button>
+          </div>
+
           {/* Bottom Promo Card */}
-          <div className="mt-6 p-4 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-lg space-y-2">
+          <div className="mt-4 p-4 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-lg space-y-2">
             <div className="flex items-center space-x-2 font-bold text-xs">
               <Crown className="w-4 h-4 text-yellow-300" />
               <span>Keep LoveLK Safe</span>
@@ -1105,6 +1142,13 @@ const AdminDashboard = () => {
             <button onClick={() => setActiveTab('plans')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'plans' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Plans</button>
             <button onClick={() => setActiveTab('support')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'support' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Support</button>
             <button onClick={() => setActiveTab('maintenance')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'maintenance' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Maintenance</button>
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-100 transition flex items-center gap-1.5"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Logout
+            </button>
           </div>
 
           {/* Maintenance Active Alert Banner */}
