@@ -351,7 +351,7 @@ const Navbar = () => {
     return (
         <>
             {/* ===== TOPBAR ===== */}
-            <nav className={`glass-nav sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-150 dark:border-gray-800 ${isMobileChatActive || isAdminRoute ? 'hidden md:block' : ''}`}>
+            <nav className={`glass-nav sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-150 dark:border-gray-800 ${isAdminRoute ? 'hidden' : isMobileChatActive ? 'hidden md:block' : ''}`}>
                 <div className="w-full max-w-[1550px] mx-auto px-4 lg:px-8">
                     <div className="flex items-center justify-between h-14 sm:h-16 gap-3">
                         {/* Logo with Tagline */}
@@ -510,21 +510,23 @@ const Navbar = () => {
                 </div>
             </nav>
 
-            {/* ===== MOBILE OVERLAY ===== */}
-            <div
-                aria-hidden="true"
-                onClick={() => setMobileOpen(false)}
-                className={`fixed inset-0 bg-black/50 backdrop-blur-[2px] z-[100] md:hidden transition-opacity duration-300 ${mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-            />
+            {!isAdminRoute && (
+                <>
+                    {/* ===== MOBILE OVERLAY ===== */}
+                    <div
+                        aria-hidden="true"
+                        onClick={() => setMobileOpen(false)}
+                        className={`fixed inset-0 bg-black/50 backdrop-blur-[2px] z-[100] md:hidden transition-opacity duration-300 ${mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                    />
 
-            {/* ===== MOBILE DRAWER ===== */}
-            <aside
-                ref={drawerRef}
-                className={`fixed top-0 right-0 z-[110] h-full mobile-drawer w-[85vw] max-w-[320px] flex flex-col md:hidden
-                  bg-white dark:bg-gray-950 shadow-2xl
-                  transform transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]
-                  ${mobileOpen ? 'translate-x-0' : 'translate-x-full'}`}
-            >
+                    {/* ===== MOBILE DRAWER ===== */}
+                    <aside
+                        ref={drawerRef}
+                        className={`fixed top-0 right-0 z-[110] h-full mobile-drawer w-[85vw] max-w-[320px] flex flex-col md:hidden
+                          bg-white dark:bg-gray-950 shadow-2xl
+                          transform transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]
+                          ${mobileOpen ? 'translate-x-0' : 'translate-x-full'}`}
+                    >
                 {/* === DRAWER HEADER (gradient) === */}
                 <div className="relative bg-gradient-to-br from-purple-600 via-pink-500 to-indigo-600 px-5 pt-12 pb-6 overflow-hidden shrink-0">
                     {/* deco blobs */}
@@ -712,6 +714,8 @@ const Navbar = () => {
                     )}
                 </div>
             </aside>
+                </>
+            )}
         </>
     );
 };
