@@ -112,12 +112,14 @@ const Conversation = lazyWithRetry(() => import('./pages/user/Conversation'));
 const ContactAdmin = lazyWithRetry(() => import('./pages/user/ContactAdmin'));
 const Settings = lazyWithRetry(() => import('./pages/user/Settings'));
 const Wallet = lazyWithRetry(() => import('./pages/user/Wallet'));
+const Achievements = lazyWithRetry(() => import('./pages/user/Achievements'));
 const ProfileVisitors = lazyWithRetry(() => import('./pages/user/ProfileVisitors'));
 const Stories = lazyWithRetry(() => import('./pages/user/Stories'));
 const EventsPage = lazyWithRetry(() => import('./pages/user/EventsPage'));
 const GiftsPage = lazyWithRetry(() => import('./pages/user/GiftsPage'));
 const ReferralsPage = lazyWithRetry(() => import('./pages/user/ReferralsPage'));
 const ActivityPage = lazyWithRetry(() => import('./pages/user/ActivityPage'));
+const BlogPage = lazyWithRetry(() => import('./pages/user/BlogPage'));
 
 const AdminDashboard = lazyWithRetry(() => import('./pages/admin/AdminDashboard'));
 
@@ -517,6 +519,22 @@ function App() {
                   }
                 />
                 <Route
+                  path="/blogs"
+                  element={
+                    <UserRoute>
+                      <BlogPage />
+                    </UserRoute>
+                  }
+                />
+                <Route
+                  path="/blog"
+                  element={
+                    <UserRoute>
+                      <BlogPage />
+                    </UserRoute>
+                  }
+                />
+                <Route
                   path="/gifts"
                   element={
                     <UserRoute>
@@ -545,6 +563,14 @@ function App() {
                   element={
                     <UserRoute>
                       <Wallet />
+                    </UserRoute>
+                  }
+                />
+                <Route
+                  path="/achievements"
+                  element={
+                    <UserRoute>
+                      <Achievements />
                     </UserRoute>
                   }
                 />

@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { walletAPI, messageAPI } from '../../services/api';
+import { walletAPI, messageAPI, achievementAPI } from '../../services/api';
 import moment from 'moment';
 import {
     Heart, LogOut, User, Users, LayoutDashboard, Menu, X,
     Sun, Moon, Crown, Globe, ChevronRight, Sparkles, MessageSquare,
-    Shield, FileText, Search, Bell, Settings, ChevronDown, BellRing, Wallet, Eye
+    Shield, FileText, Search, Bell, Settings, ChevronDown, BellRing, Wallet, Eye, BookOpen, Trophy, Star
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -21,6 +21,7 @@ const Navbar = () => {
     const [notifOpen, setNotifOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
     const [walletBalance, setWalletBalance] = useState(0);
+    const [rewardPoints, setRewardPoints] = useState(0);
     const [unreadMessages, setUnreadMessages] = useState(0);
     const drawerRef = useRef(null);
 
@@ -28,9 +29,10 @@ const Navbar = () => {
         if (user && !isAdmin) {
             const fetchBalancesAndMessages = async () => {
                 try {
-                    const [walletRes, msgRes] = await Promise.allSettled([
+                    const [walletRes, msgRes, statsRes] = await Promise.allSettled([
                         walletAPI.getWallet(),
                         messageAPI.getConversations(),
+                        achievementAPI.getMyStats(),
                     ]);
                     if (walletRes.status === 'fulfilled') {
                         const wData = walletRes.value.data;
@@ -41,6 +43,11 @@ const Navbar = () => {
                         const convs = msgRes.value.data || [];
                         const unread = convs.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
                         setUnreadMessages(unread);
+                    }
+                    if (statsRes.status === 'fulfilled') {
+                        const sData = statsRes.value.data;
+                        const pts = sData?.stats?.points ?? sData?.userStats?.points ?? sData?.points ?? 0;
+                        setRewardPoints(pts);
                     }
                 } catch (error) {
                     console.error('Failed to fetch header stats', error);
@@ -339,10 +346,12 @@ const Navbar = () => {
         (location.pathname.startsWith('/conversation/') && location.pathname.length > '/conversation/'.length) ||
         (location.pathname.startsWith('/messages/') && location.pathname.length > '/messages/'.length);
 
+    const isAdminRoute = location.pathname.startsWith('/admin');
+
     return (
         <>
             {/* ===== TOPBAR ===== */}
-            <nav className={`glass-nav sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-150 dark:border-gray-800 ${isMobileChatActive ? 'hidden md:block' : ''}`}>
+            <nav className={`glass-nav sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-150 dark:border-gray-800 ${isMobileChatActive || isAdminRoute ? 'hidden md:block' : ''}`}>
                 <div className="w-full max-w-[1550px] mx-auto px-4 lg:px-8">
                     <div className="flex items-center justify-between h-14 sm:h-16 gap-3">
                         {/* Logo with Tagline */}
@@ -396,6 +405,12 @@ const Navbar = () => {
                                             <Link to="/wallet" className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 dark:from-emerald-500/20 dark:to-teal-500/20 border border-emerald-200/60 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs font-bold hover:opacity-90 transition" title="Wallet Cash Balance">
                                                 <Wallet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                                 <span>Rs. {walletBalance}</span>
+                                            </Link>
+
+                                            {/* Reward Points Badge */}
+                                            <Link to="/wallet" className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 dark:from-indigo-500/20 dark:via-purple-500/20 dark:to-pink-500/20 border border-purple-200/60 dark:border-purple-800/60 text-purple-700 dark:text-purple-300 rounded-xl text-xs font-bold hover:opacity-90 transition" title="Reward Points - Earn & Redeem">
+                                                <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-400" />
+                                                <span>{rewardPoints} pts</span>
                                             </Link>
 
                                             {/* Go Premium button or Plan badge */}
@@ -469,10 +484,16 @@ const Navbar = () => {
                         {/* Mobile right controls */}
                         <div className="flex md:hidden items-center gap-2">
                             {user && !isAdmin && (
-                                <Link to="/wallet" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20 border border-purple-200/50 dark:border-purple-800/50 text-purple-700 dark:text-purple-300 font-bold text-[11px] mr-1" title="Wallet Balance">
-                                    <Wallet className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400" />
-                                    <span>Rs. {walletBalance}</span>
-                                </Link>
+                                <>
+                                    <Link to="/wallet" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 dark:from-emerald-500/20 dark:to-teal-500/20 border border-emerald-200/50 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-300 font-bold text-[11px]" title="Wallet Cash Balance">
+                                        <Wallet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                        <span>Rs. {walletBalance}</span>
+                                    </Link>
+                                    <Link to="/wallet" className="flex items-center gap-1 px-2 py-1.5 rounded-xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 dark:from-indigo-500/20 dark:via-purple-500/20 dark:to-pink-500/20 border border-purple-200/50 dark:border-purple-800/50 text-purple-700 dark:text-purple-300 font-bold text-[11px]" title="Reward Points">
+                                        <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-400" />
+                                        <span>{rewardPoints}</span>
+                                    </Link>
+                                </>
                             )}
                             <button onClick={() => setDarkMode(!darkMode)} className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
                                 {darkMode ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5" />}
@@ -576,7 +597,10 @@ const Navbar = () => {
                                         <NavItem to="/matches" icon={Heart} label={t('nav.matches', { defaultValue: 'Matches' })} />
                                         <NavItem to="/conversation" icon={MessageSquare} label={t('nav.messages')} />
                                         <NavItem to="/visitors" icon={Eye} label={t('visitors.title', { defaultValue: 'Profile Visitors' })} />
+                                        <NavItem to="/blogs" icon={BookOpen} label="Blogs & Articles" />
+                                        <NavItem to="/wallet" icon={Wallet} label="Wallet" />
                                         <NavItem to="/premium" icon={Crown} label="Wallet & Premium" />
+                                        <NavItem to="/achievements" icon={Trophy} label="Achievements" />
                                         <NavItem to="/profile" icon={User} label={t('nav.profile')} />
                                         <NavItem to="/settings" icon={Settings} label={t('nav.settings')} />
                                         <NavItem to="/contact-admin" icon={Shield} label={t('nav.contactAdmin')} />

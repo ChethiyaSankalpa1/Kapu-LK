@@ -7,7 +7,7 @@ import {
     User, CheckCircle, MessageCircle, Search, Heart,
     Crown, Flame, Calendar, Eye, MapPin, ChevronRight, ChevronLeft,
     Settings, Users, Layers, Activity, Edit3, Sparkles,
-    BookOpen, Gift, UserPlus, HelpCircle, Wallet
+    BookOpen, Gift, UserPlus, HelpCircle, Wallet, Trophy, FileText
 } from 'lucide-react';
 import PremiumPopup from '../../components/ui/PremiumPopup';
 import PremiumBadge from '../../components/ui/PremiumBadge';
@@ -412,9 +412,19 @@ const Dashboard = () => {
                                 <span>My Profile</span>
                             </Link>
 
+                            <Link to="/wallet" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm transition">
+                                <Wallet className="w-4.5 h-4.5 text-emerald-500 shrink-0" />
+                                <span>Wallet</span>
+                            </Link>
+
                             <Link to="/premium" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm transition">
                                 <Crown className="w-4.5 h-4.5 text-amber-500 shrink-0" />
                                 <span>Wallet & Premium</span>
+                            </Link>
+
+                            <Link to="/achievements" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm transition">
+                                <Trophy className="w-4.5 h-4.5 text-yellow-500 shrink-0" />
+                                <span>Achievements</span>
                             </Link>
 
                             <Link to="/settings" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm transition">
@@ -429,6 +439,11 @@ const Dashboard = () => {
                             <Link to="/stories" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm transition">
                                 <BookOpen className="w-4.5 h-4.5 text-purple-500 shrink-0" />
                                 <span>Stories</span>
+                            </Link>
+
+                            <Link to="/blogs" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm transition">
+                                <BookOpen className="w-4.5 h-4.5 text-purple-500 shrink-0" />
+                                <span>Blogs & Articles</span>
                             </Link>
 
                             <Link to="/events" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm transition">
@@ -449,6 +464,15 @@ const Dashboard = () => {
                             <Link to="/contact-admin" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm transition">
                                 <HelpCircle className="w-4.5 h-4.5 text-cyan-500 shrink-0" />
                                 <span>Help & Support</span>
+                            </Link>
+
+                            {/* Divider Line */}
+                            <div className="my-2 border-t border-gray-150 dark:border-gray-800" />
+
+                            {/* Section 3: Legal */}
+                            <Link to="/privacy-policy" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm transition">
+                                <FileText className="w-4.5 h-4.5 text-slate-500 shrink-0" />
+                                <span>Privacy Policy</span>
                             </Link>
                         </div>
 
@@ -574,7 +598,7 @@ const Dashboard = () => {
                         {/* Quick Actions Grid */}
                         <div>
                             <h3 className="text-base font-extrabold text-gray-900 dark:text-white mb-3">Quick Actions</h3>
-                            <div className="grid grid-cols-5 gap-2 sm:gap-3">
+                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
                                 <Link to="/users" className="p-3 sm:p-4 bg-purple-50 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900/40 rounded-2xl text-center hover:shadow-md transition min-w-0">
                                     <Search className="w-5 sm:w-6 h-5 sm:h-6 text-purple-600 mx-auto mb-1 sm:mb-1.5" />
                                     <span className="block text-xs font-bold text-gray-900 dark:text-white truncate">Browse Profiles</span>
@@ -600,6 +624,12 @@ const Dashboard = () => {
                                     <Eye className="w-5 sm:w-6 h-5 sm:h-6 text-emerald-600 mx-auto mb-1 sm:mb-1.5" />
                                     <span className="block text-xs font-bold text-gray-900 dark:text-white truncate">Visitors</span>
                                     <span className="text-[10px] text-gray-400 truncate block">Who viewed you</span>
+                                </Link>
+
+                                <Link to="/blogs" className="p-3 sm:p-4 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl text-center hover:shadow-md transition min-w-0">
+                                    <BookOpen className="w-5 sm:w-6 h-5 sm:h-6 text-indigo-600 mx-auto mb-1 sm:mb-1.5" />
+                                    <span className="block text-xs font-bold text-gray-900 dark:text-white truncate">Blogs & Articles</span>
+                                    <span className="text-[10px] text-gray-400 truncate block">Read advice</span>
                                 </Link>
 
                                 <Link to="/premium" className="p-3 sm:p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/40 rounded-2xl text-center hover:shadow-md transition min-w-0">

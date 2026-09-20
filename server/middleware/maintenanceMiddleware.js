@@ -37,9 +37,9 @@ const invalidateMaintenanceCache = () => {
   lastCacheTime = 0;
 };
 
-// Check if request is authenticated as admin
-const isAdminUser = (req) => {
-  if (req.user && req.user.role === 'admin') {
+// Check if request is authenticated as admin or authorized maintenance tester
+const isAdminUser = async (req) => {
+  if (req.user && (req.user.role === 'admin' || req.user.isDemoAccount || req.user.isMaintenanceTesting)) {
     return true;
   }
 
@@ -54,9 +54,13 @@ const isAdminUser = (req) => {
 
   try {
     const decoded = jwt.verify(token, getJwtSecret());
-    if (decoded && decoded.role === 'admin') {
-      req.isAdmin = true;
-      return true;
+    if (decoded && decoded.id) {
+      const User = require('../models/User');
+      const u = await User.findById(decoded.id).select('role isDemoAccount isMaintenanceTesting');
+      if (u && (u.role === 'admin' || u.isDemoAccount || u.isMaintenanceTesting)) {
+        req.isAdmin = u.role === 'admin';
+        return true;
+      }
     }
   } catch (err) {
     return false;
@@ -117,7 +121,7 @@ const maintenanceMiddleware = async (req, res, next) => {
     }
 
     // 2. Check admin bypass
-    if (isAdminUser(req)) {
+    if (await isAdminUser(req)) {
       return next();
     }
 

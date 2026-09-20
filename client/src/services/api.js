@@ -307,6 +307,7 @@ export const referralAPI = {
 // Success Story API
 export const successStoryAPI = {
     getSuccessStories: (params = {}) => api.get('/success-stories', { params }),
+    getAdminSuccessStories: () => api.get('/success-stories/admin/all'),
     getSuccessStory: (id) => api.get(`/success-stories/${id}`),
     createSuccessStory: (data) => api.post('/success-stories', data),
     likeSuccessStory: (id) => api.post(`/success-stories/${id}/like`),
@@ -319,6 +320,7 @@ export const successStoryAPI = {
 // Blog API
 export const blogAPI = {
     getBlogPosts: (params = {}) => api.get('/blog', { params }),
+    getAdminBlogPosts: () => api.get('/blog/admin/all'),
     getBlogPost: (slug) => api.get(`/blog/${slug}`),
     createBlogPost: (data) => api.post('/blog', data),
     updateBlogPost: (id, data) => api.put(`/blog/${id}`, data),

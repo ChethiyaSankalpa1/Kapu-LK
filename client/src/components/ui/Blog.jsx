@@ -18,6 +18,8 @@ const Blog = ({ isAdmin = false }) => {
     coverImage: ''
   });
 
+  const DEFAULT_COVER = 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=800&h=400&fit=crop';
+
   useEffect(() => {
     fetchPosts();
   }, []);
@@ -25,8 +27,10 @@ const Blog = ({ isAdmin = false }) => {
   const fetchPosts = async () => {
     setLoading(true);
     try {
-      const response = await blogAPI.getBlogPosts({ published: true });
-      setPosts(response.data);
+      const response = await blogAPI.getBlogPosts();
+      const raw = response.data?.data || response.data || [];
+      const publishedOnly = Array.isArray(raw) ? raw.filter(p => p.isPublished !== false) : [];
+      setPosts(publishedOnly);
     } catch (error) {
       console.error('Error fetching blog posts:', error);
     } finally {
@@ -139,6 +143,7 @@ const Blog = ({ isAdmin = false }) => {
             <img
               src={postImg}
               alt={selectedPost.title}
+              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = DEFAULT_COVER; }}
               className="w-full h-64 md:h-96 object-cover"
             />
           )}
@@ -293,6 +298,7 @@ const Blog = ({ isAdmin = false }) => {
                 <img
                   src={cardImg}
                   alt={post.title}
+                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = DEFAULT_COVER; }}
                   className="w-full h-48 object-cover"
                 />
               )}

@@ -105,7 +105,7 @@ const Wallet = () => {
     const { user } = useAuth();
     const [wallet, setWallet] = useState(null);
     const [userStats, setUserStats] = useState(null);
-    const [achievements, setAchievements] = useState(DEFAULT_ACHIEVEMENTS_LIST);
+    const [achievements, setAchievements] = useState(null);
     const [gifts, setGifts] = useState([]);
     const [transactions, setTransactions] = useState([]);
     const [pendingRequests, setPendingRequests] = useState([]);
@@ -154,8 +154,9 @@ const Wallet = () => {
             // Load secondary items in background
             Promise.all([
                 achievementAPI.getMyStats().then(res => {
-                    if (res.data?.achievements && res.data.achievements.length > 0) {
-                        setAchievements(res.data.achievements);
+                    const apiAchievements = res.data?.achievements;
+                    if (apiAchievements && Array.isArray(apiAchievements)) {
+                        setAchievements(apiAchievements);
                     }
                 }),
                 giftAPI.getGifts().then(res => setGifts(res.data || [])),
@@ -587,51 +588,104 @@ const Wallet = () => {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                        {((achievements && achievements.length > 0) ? achievements : DEFAULT_ACHIEVEMENTS_LIST).map((achievement) => {
-                            const target = achievement.target || achievement.condition?.target || 1;
-                            const progress = achievement.progress || 0;
-                            const percent = Math.min(100, Math.round((progress / target) * 100));
-                            return (
-                                <div
-                                    key={achievement._id || achievement.name}
-                                    className={`rounded-2xl p-4 border transition-all flex flex-col justify-between ${
-                                        achievement.earned 
-                                            ? 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-300 dark:border-amber-700 shadow-sm'
-                                            : 'bg-slate-50/80 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800'
-                                    }`}
-                                >
-                                    <div>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-3xl">{achievement.icon || '🏆'}</span>
-                                            <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded-md">
-                                                +{achievement.points || 10} pts
-                                            </span>
+                        {achievements === null
+                            ? DEFAULT_ACHIEVEMENTS_LIST.map((achievement) => {
+                                const target = achievement.target || achievement.condition?.target || 1;
+                                const progress = achievement.progress || 0;
+                                const percent = Math.min(100, Math.round((progress / target) * 100));
+                                return (
+                                    <div
+                                        key={achievement._id || achievement.name}
+                                        className={`rounded-2xl p-4 border transition-all flex flex-col justify-between ${
+                                            achievement.earned
+                                                ? 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-300 dark:border-amber-700 shadow-sm'
+                                                : 'bg-slate-50/80 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800'
+                                        }`}
+                                    >
+                                        <div>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-3xl">{achievement.icon || '🏆'}</span>
+                                                <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded-md">
+                                                    +{achievement.points || 10} pts
+                                                </span>
+                                            </div>
+                                            <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                                {achievement.name}
+                                            </h3>
+                                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+                                                {achievement.description}
+                                            </p>
                                         </div>
-                                        <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
-                                            {achievement.name}
-                                        </h3>
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
-                                            {achievement.description}
-                                        </p>
-                                    </div>
 
-                                    <div className="mt-4">
-                                        <div className="flex justify-between items-center text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                            <span>{achievement.earned ? 'Unlocked 🏆' : 'Progress'}</span>
-                                            <span>{achievement.earned ? 'Completed' : `${progress} / ${target}`}</span>
-                                        </div>
-                                        <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
-                                            <div 
-                                                className={`h-full transition-all duration-500 ${
-                                                    achievement.earned ? 'bg-gradient-to-r from-amber-400 to-yellow-500' : 'bg-purple-600'
-                                                }`} 
-                                                style={{ width: `${achievement.earned ? 100 : percent}%` }}
-                                            />
+                                        <div className="mt-4">
+                                            <div className="flex justify-between items-center text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                                <span>{achievement.earned ? 'Unlocked 🏆' : 'Progress'}</span>
+                                                <span>{achievement.earned ? 'Completed' : `${progress} / ${target}`}</span>
+                                            </div>
+                                            <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full transition-all duration-500 ${
+                                                        achievement.earned ? 'bg-gradient-to-r from-amber-400 to-yellow-500' : 'bg-purple-600'
+                                                    }`}
+                                                    style={{ width: `${achievement.earned ? 100 : percent}%` }}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })
+                            : achievements.length === 0
+                                ? (
+                                    <div className="col-span-full text-center py-10 text-slate-500 dark:text-slate-400">
+                                        <Trophy className="w-10 h-10 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
+                                        <p className="text-xs sm:text-sm font-semibold">Achievements are being loaded for your account.</p>
+                                    </div>
+                                )
+                                : achievements.map((achievement) => {
+                                    const target = achievement.target || achievement.condition?.target || 1;
+                                    const progress = achievement.progress || 0;
+                                    const percent = Math.min(100, Math.round((progress / target) * 100));
+                                    return (
+                                        <div
+                                            key={achievement._id || achievement.name}
+                                            className={`rounded-2xl p-4 border transition-all flex flex-col justify-between ${
+                                                achievement.earned
+                                                    ? 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-300 dark:border-amber-700 shadow-sm'
+                                                    : 'bg-slate-50/80 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800'
+                                            }`}
+                                        >
+                                            <div>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-3xl">{achievement.icon || '🏆'}</span>
+                                                    <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded-md">
+                                                        +{achievement.points || 10} pts
+                                                    </span>
+                                                </div>
+                                                <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                                    {achievement.name}
+                                                </h3>
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+                                                    {achievement.description}
+                                                </p>
+                                            </div>
+
+                                            <div className="mt-4">
+                                                <div className="flex justify-between items-center text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                                    <span>{achievement.earned ? 'Unlocked 🏆' : 'Progress'}</span>
+                                                    <span>{achievement.earned ? 'Completed' : `${progress} / ${target}`}</span>
+                                                </div>
+                                                <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full transition-all duration-500 ${
+                                                            achievement.earned ? 'bg-gradient-to-r from-amber-400 to-yellow-500' : 'bg-purple-600'
+                                                        }`}
+                                                        style={{ width: `${achievement.earned ? 100 : percent}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                     </div>
                 </div>
 

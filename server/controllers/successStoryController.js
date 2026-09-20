@@ -53,6 +53,24 @@ exports.getSuccessStory = async (req, res) => {
   }
 };
 
+// @desc    Get all success stories (Admin view - includes unapproved)
+// @route   GET /api/success-stories/admin/all
+// @access  Private/Admin
+exports.getAdminSuccessStories = async (req, res) => {
+  try {
+    const stories = await SuccessStory.find({})
+      .populate('user1', 'name profileImageUrl')
+      .populate('user2', 'name profileImageUrl')
+      .populate('submittedBy', 'name email profileImageUrl')
+      .sort({ createdAt: -1 });
+
+    res.json(stories);
+  } catch (error) {
+    console.error('Error fetching admin success stories:', error);
+    res.status(500).json({ message: 'Failed to fetch success stories for admin' });
+  }
+};
+
 // @desc    Create success story
 // @route   POST /api/success-stories
 // @access  Private
@@ -69,24 +87,19 @@ exports.createSuccessStory = async (req, res) => {
       advice
     } = req.body;
 
-    // Verify both users exist
-    const user1 = await User.findById(user1Id);
-    const user2 = await User.findById(user2Id);
-
-    if (!user1 || !user2) {
-      return res.status(404).json({ message: 'One or both users not found' });
-    }
+    const user1 = user1Id ? await User.findById(user1Id) : null;
+    const user2 = user2Id ? await User.findById(user2Id) : null;
 
     const successStory = await SuccessStory.create({
-      coupleName,
-      user1: user1Id,
-      user2: user2Id,
-      story,
-      photos: photos || [],
-      weddingDate,
+      coupleName: String(coupleName).trim(),
+      user1: user1 ? user1._id : (req.user ? req.user._id : null),
+      user2: user2 ? user2._id : null,
+      story: String(story).trim(),
+      photos: Array.isArray(photos) ? photos : [],
+      weddingDate: weddingDate ? new Date(weddingDate) : null,
       howWeMet,
       advice,
-      submittedBy: req.user._id,
+      submittedBy: req.user ? req.user._id : null,
       isApproved: false // Requires admin approval
     });
 

@@ -9,12 +9,12 @@ const SuccessStorySchema = new mongoose.Schema({
   user1: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false
   },
   user2: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false
   },
   story: {
     type: String,

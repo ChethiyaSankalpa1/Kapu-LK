@@ -59,29 +59,55 @@ exports.getBlogPost = async (req, res) => {
   }
 };
 
+// @desc    Get all blog posts (Admin view - includes drafts)
+// @route   GET /api/blog/admin/all
+// @access  Private/Admin
+exports.getAdminBlogPosts = async (req, res) => {
+  try {
+    const posts = await Blog.find({})
+      .populate('author', 'name profileImageUrl')
+      .sort({ createdAt: -1 });
+
+    res.json(posts);
+  } catch (error) {
+    console.error('Error fetching admin blog posts:', error);
+    res.status(500).json({ message: 'Failed to fetch blog posts for admin' });
+  }
+};
+
 // @desc    Create blog post
 // @route   POST /api/blog
 // @access  Private
 exports.createBlogPost = async (req, res) => {
   try {
-    const { title, slug, excerpt, content, coverImage, category, tags } = req.body;
+    const { title, slug, excerpt, content, coverImage, category, tags, isPublished, isFeatured } = req.body;
 
-    // Check if slug already exists
-    const existingPost = await Blog.findOne({ slug });
-    if (existingPost) {
-      return res.status(400).json({ message: 'Slug already exists' });
+    if (!title || !content) {
+      return res.status(400).json({ message: 'Title and content are required' });
     }
 
+    let postSlug = slug ? String(slug).trim() : title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    if (!postSlug) postSlug = `post-${Date.now()}`;
+
+    const existingPost = await Blog.findOne({ slug: postSlug });
+    if (existingPost) {
+      postSlug = `${postSlug}-${Date.now()}`;
+    }
+
+    const shouldPublish = isPublished === undefined ? true : Boolean(isPublished);
+
     const blogPost = await Blog.create({
-      title,
-      slug,
-      excerpt,
+      title: String(title).trim(),
+      slug: postSlug,
+      excerpt: excerpt || (content ? String(content).substring(0, 200) : ''),
       content,
-      coverImage,
+      coverImage: coverImage || '',
       author: req.user._id,
-      category,
-      tags: tags || [],
-      isPublished: false
+      category: category || 'dating',
+      tags: Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : []),
+      isPublished: shouldPublish,
+      publishedAt: shouldPublish ? new Date() : null,
+      featured: Boolean(isFeatured)
     });
 
     const populatedPost = await Blog.findById(blogPost._id)
@@ -90,7 +116,7 @@ exports.createBlogPost = async (req, res) => {
     res.status(201).json(populatedPost);
   } catch (error) {
     console.error('Error creating blog post:', error);
-    res.status(500).json({ message: 'Failed to create blog post' });
+    res.status(500).json({ message: error.message || 'Failed to create blog post' });
   }
 };
 
@@ -110,16 +136,22 @@ exports.updateBlogPost = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
-    const { title, content, summary, category, tags, coverImage } = req.body;
+    const { title, content, excerpt, category, tags, coverImage, isPublished, isFeatured } = req.body;
     const allowedUpdates = {};
     if (title !== undefined) allowedUpdates.title = String(title).trim();
     if (content !== undefined) allowedUpdates.content = content;
-    if (summary !== undefined) allowedUpdates.summary = summary;
+    if (excerpt !== undefined) allowedUpdates.excerpt = excerpt;
     if (category !== undefined) allowedUpdates.category = category;
-    if (tags !== undefined) allowedUpdates.tags = tags;
+    if (tags !== undefined) allowedUpdates.tags = Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : []);
     if (coverImage !== undefined) allowedUpdates.coverImage = coverImage;
-    if (req.user.role === 'admin' && req.body.isFeatured !== undefined) {
-      allowedUpdates.isFeatured = !!req.body.isFeatured;
+    if (isPublished !== undefined) {
+      allowedUpdates.isPublished = Boolean(isPublished);
+      if (Boolean(isPublished) && !post.publishedAt) {
+        allowedUpdates.publishedAt = new Date();
+      }
+    }
+    if (isFeatured !== undefined) {
+      allowedUpdates.featured = Boolean(isFeatured);
     }
 
     const updatedPost = await Blog.findByIdAndUpdate(
@@ -131,11 +163,11 @@ exports.updateBlogPost = async (req, res) => {
     res.json(updatedPost);
   } catch (error) {
     console.error('Error updating blog post:', error);
-    res.status(500).json({ message: 'Failed to update blog post' });
+    res.status(500).json({ message: error.message || 'Failed to update blog post' });
   }
 };
 
-// @desc    Publish blog post
+// @desc    Publish/Unpublish blog post
 // @route   PUT /api/blog/:id/publish
 // @access  Private
 exports.publishBlogPost = async (req, res) => {
@@ -151,8 +183,10 @@ exports.publishBlogPost = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
-    post.isPublished = true;
-    post.publishedAt = new Date();
+    post.isPublished = !post.isPublished;
+    if (post.isPublished && !post.publishedAt) {
+      post.publishedAt = new Date();
+    }
     await post.save();
 
     const populatedPost = await Blog.findById(post._id)
@@ -161,7 +195,7 @@ exports.publishBlogPost = async (req, res) => {
     res.json(populatedPost);
   } catch (error) {
     console.error('Error publishing blog post:', error);
-    res.status(500).json({ message: 'Failed to publish blog post' });
+    res.status(500).json({ message: 'Failed to toggle blog post publish status' });
   }
 };
 

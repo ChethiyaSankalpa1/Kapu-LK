@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   getSuccessStories,
+  getAdminSuccessStories,
   getSuccessStory,
   createSuccessStory,
   likeSuccessStory,
@@ -13,6 +14,7 @@ const {
 const { protect, admin } = require('../middleware/auth');
 
 router.route('/').get(getSuccessStories).post(protect, createSuccessStory);
+router.route('/admin/all').get(protect, admin, getAdminSuccessStories);
 router.route('/:id').get(getSuccessStory).put(protect, admin, updateSuccessStory);
 router.route('/:id/like').post(protect, likeSuccessStory);
 router.route('/:id/approve').put(protect, admin, approveSuccessStory);
