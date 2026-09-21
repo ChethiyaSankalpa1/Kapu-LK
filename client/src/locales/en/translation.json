@@ -486,5 +486,15 @@
     "en": "English",
     "si": "සිංහල",
     "ta": "தமிழ்"
+  },
+  "photos": {
+    "uploadSuccess": "Photo uploaded successfully!",
+    "replaceSuccess": "Photo updated successfully!",
+    "uploadFailed": "Failed to upload photo.",
+    "mainUpdated": "Primary profile photo updated!",
+    "mainFailed": "Failed to update main photo.",
+    "deleted": "Photo deleted successfully.",
+    "deleteFailed": "Failed to delete photo.",
+    "deleteConfirm": "Are you sure you want to delete this photo?"
   }
 }

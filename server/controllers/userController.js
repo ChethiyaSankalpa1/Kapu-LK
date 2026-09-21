@@ -9,7 +9,7 @@ const cloudinary = require('../config/cloudinary');
 const { purgeUserPermanently } = require('../services/inactivityCleanupService');
 const { checkAndSendWelcomeEmail } = require('../services/welcomeEmailService');
 const { logAuditEvent } = require('../middleware/auditLogger');
-const { hasPremiumFeature } = require('../utils/entitlements');
+const { hasPremiumFeature, getUserPremiumDetails, syncUserPremiumStatus } = require('../utils/entitlements');
 
 const extractCloudinaryPublicId = (url) => {
   if (!url || typeof url !== 'string' || !url.includes('cloudinary.com')) return null;
@@ -372,6 +372,15 @@ exports.getUserById = async (req, res) => {
         if (!a.isMain && b.isMain) return 1;
         return (a.order || 0) - (b.order || 0);
       });
+    }
+
+    // For other members viewing this profile, if user is not active Premium, only display the main photo publicly
+    if (!isSelfOrAdmin) {
+      const targetPremium = getUserPremiumDetails(user);
+      if (!targetPremium.isPremium && userObj.photos.length > 1) {
+        const mainPhoto = userObj.photos.find(p => p.isMain) || userObj.photos[0];
+        userObj.photos = mainPhoto ? [mainPhoto] : [];
+      }
     }
 
     // Check if viewer has already expressed interest in this user
@@ -974,7 +983,7 @@ exports.getSpotlightUsers = async (req, res) => {
   }
 };
 
-// @desc    Upload photo to user's gallery (max 4 photos total)
+// @desc    Upload or replace photo in user's gallery (max 1 for free, max 4 for premium)
 // @route   POST /api/users/photos
 // @access  Private
 exports.uploadGalleryPhoto = async (req, res) => {
@@ -987,6 +996,12 @@ exports.uploadGalleryPhoto = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+
+    // Synchronize premium status if expired
+    await syncUserPremiumStatus(user);
+    const premiumDetails = getUserPremiumDetails(user);
+    const isPremium = premiumDetails.isPremium;
+    const maxPhotos = isPremium ? 4 : 1;
 
     // Initialize photos array if empty
     if (!Array.isArray(user.photos)) {
@@ -1003,9 +1018,78 @@ exports.uploadGalleryPhoto = async (req, res) => {
       });
     }
 
-    // Enforce max 4 photos constraint
-    if (user.photos.length >= 4) {
-      return res.status(400).json({ message: 'You can upload a maximum of 4 profile photos.' });
+    const { replacePhotoId } = req.body;
+    let existingPhotoIndex = -1;
+
+    if (replacePhotoId) {
+      existingPhotoIndex = user.photos.findIndex(
+        p => (p._id && p._id.toString() === replacePhotoId) || p.publicId === replacePhotoId
+      );
+    }
+
+    // If replacing an existing photo
+    if (existingPhotoIndex !== -1) {
+      // If user is non-premium/expired, allow replacing only if it's their 1 allowed/main photo
+      if (!isPremium && existingPhotoIndex > 0 && user.photos.length > 1) {
+        return res.status(403).json({
+          message: 'Premium membership required to replace additional photos.',
+        });
+      }
+
+      // Convert buffer to base64 for Cloudinary upload
+      const b64 = Buffer.from(req.file.buffer).toString('base64');
+      const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+      const result = await cloudinary.uploader.upload(dataURI, {
+        folder: 'matrimonial_profiles',
+        resource_type: 'image',
+        transformation: [
+          { width: 1000, height: 1000, crop: 'limit' },
+          { quality: 'auto' },
+        ],
+      });
+
+      // Cleanup old Cloudinary asset
+      const oldPubId = user.photos[existingPhotoIndex].publicId || extractCloudinaryPublicId(user.photos[existingPhotoIndex].url);
+      if (oldPubId) {
+        try {
+          await cloudinary.uploader.destroy(oldPubId);
+        } catch (cErr) {
+          console.warn('Could not destroy old Cloudinary image during replace:', cErr.message);
+        }
+      }
+
+      // Update existing photo
+      user.photos[existingPhotoIndex].url = result.secure_url;
+      user.photos[existingPhotoIndex].publicId = result.public_id;
+
+      if (user.photos[existingPhotoIndex].isMain || user.photos.length === 1) {
+        user.photos[existingPhotoIndex].isMain = true;
+        user.profileImageUrl = result.secure_url;
+      }
+
+      await user.save();
+
+      return res.json({
+        success: true,
+        message: 'Photo updated successfully.',
+        photos: user.photos,
+        profileImageUrl: user.profileImageUrl,
+      });
+    }
+
+    // New photo upload (not replacing): enforce quota
+    if (!isPremium && user.photos.length >= 1) {
+      return res.status(403).json({
+        message: 'Free accounts are limited to 1 profile photo. Upgrade to Premium to upload up to 4 photos.',
+        requiresPremium: true,
+      });
+    }
+
+    if (user.photos.length >= maxPhotos) {
+      return res.status(400).json({
+        message: `You can upload a maximum of ${maxPhotos} profile ${maxPhotos === 1 ? 'photo' : 'photos'}.`,
+      });
     }
 
     // Convert buffer to base64 for Cloudinary upload
@@ -1058,7 +1142,7 @@ exports.uploadGalleryPhoto = async (req, res) => {
   }
 };
 
-// @desc    Delete photo from gallery (min 1 photo required)
+// @desc    Delete photo from gallery
 // @route   DELETE /api/users/photos/:photoId
 // @access  Private
 exports.deleteGalleryPhoto = async (req, res) => {
@@ -1070,16 +1154,34 @@ exports.deleteGalleryPhoto = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Initialize photos array if empty but profileImageUrl exists
+    if ((!Array.isArray(user.photos) || user.photos.length === 0) && user.profileImageUrl) {
+      const pubId = extractCloudinaryPublicId(user.profileImageUrl);
+      if (pubId) {
+        try {
+          await cloudinary.uploader.destroy(pubId);
+        } catch (cErr) {
+          console.warn('Could not destroy Cloudinary image:', cErr.message);
+        }
+      }
+      user.profileImageUrl = '';
+      user.photos = [];
+      await user.save();
+      return res.json({
+        success: true,
+        message: 'Photo deleted successfully.',
+        photos: [],
+        profileImageUrl: '',
+      });
+    }
+
     if (!Array.isArray(user.photos) || user.photos.length === 0) {
       return res.status(400).json({ message: 'No photos to delete.' });
     }
 
-    // Enforce minimum 1 photo constraint
-    if (user.photos.length <= 1) {
-      return res.status(400).json({ message: 'You must maintain at least 1 profile photo.' });
-    }
-
-    const photoIndex = user.photos.findIndex(p => p._id.toString() === photoId || p.publicId === photoId);
+    const photoIndex = user.photos.findIndex(
+      p => (p._id && p._id.toString() === photoId) || p.publicId === photoId
+    );
     if (photoIndex === -1) {
       return res.status(404).json({ message: 'Photo not found in your profile.' });
     }
@@ -1096,16 +1198,21 @@ exports.deleteGalleryPhoto = async (req, res) => {
       }
     }
 
-    // If the deleted photo was the main photo, promote the first remaining photo to main
-    if (deletedPhoto.isMain || !user.photos.some(p => p.isMain)) {
-      user.photos[0].isMain = true;
-      user.profileImageUrl = user.photos[0].url;
-    }
+    // If no photos left, clear profileImageUrl
+    if (user.photos.length === 0) {
+      user.profileImageUrl = '';
+    } else {
+      // If the deleted photo was the main photo or no photo is marked main, promote first remaining photo
+      if (deletedPhoto.isMain || !user.photos.some(p => p.isMain)) {
+        user.photos[0].isMain = true;
+        user.profileImageUrl = user.photos[0].url;
+      }
 
-    // Re-index photo order
-    user.photos.forEach((p, idx) => {
-      p.order = idx;
-    });
+      // Re-index photo order
+      user.photos.forEach((p, idx) => {
+        p.order = idx;
+      });
+    }
 
     await user.save();
 
@@ -1133,13 +1240,13 @@ exports.setMainGalleryPhoto = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const targetPhoto = (user.photos || []).find(p => p._id.toString() === photoId || p.publicId === photoId);
+    const targetPhoto = (user.photos || []).find(p => (p._id && p._id.toString() === photoId) || p.publicId === photoId);
     if (!targetPhoto) {
       return res.status(404).json({ message: 'Photo not found.' });
     }
 
     user.photos.forEach(p => {
-      p.isMain = (p._id.toString() === photoId || p.publicId === photoId);
+      p.isMain = ((p._id && p._id.toString() === photoId) || p.publicId === photoId);
     });
 
     user.profileImageUrl = targetPhoto.url;

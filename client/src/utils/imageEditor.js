@@ -9,6 +9,14 @@ const createImage = (url) =>
 
 const getRadianAngle = (degreeValue) => (degreeValue * Math.PI) / 180;
 
+const calculateRotatedBoxSize = (width, height, rotation) => {
+    const rotRad = getRadianAngle(rotation);
+    return {
+        width: Math.abs(Math.cos(rotRad) * width) + Math.abs(Math.sin(rotRad) * height),
+        height: Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height),
+    };
+};
+
 export const createEditedImage = async ({
     imageSrc,
     croppedAreaPixels,
@@ -24,30 +32,52 @@ export const createEditedImage = async ({
     }
 
     const rotRad = getRadianAngle(rotation);
-    const maxSize = Math.max(image.width, image.height);
-    const safeArea = Math.ceil(2 * ((maxSize / 2) * Math.sqrt(2)));
+    const { width: bBoxWidth, height: bBoxHeight } = calculateRotatedBoxSize(
+        image.width,
+        image.height,
+        rotation
+    );
 
-    canvas.width = safeArea;
-    canvas.height = safeArea;
+    // Set canvas size to the rotated image's bounding box
+    canvas.width = Math.ceil(bBoxWidth);
+    canvas.height = Math.ceil(bBoxHeight);
 
-    ctx.translate(safeArea / 2, safeArea / 2);
+    // Translate context to center, rotate, and draw
+    ctx.translate(canvas.width / 2, canvas.height / 2);
     ctx.rotate(rotRad);
-    ctx.filter = `brightness(${brightness}%)`;
-    ctx.drawImage(image, -image.width / 2, -image.height / 2);
+    ctx.translate(-image.width / 2, -image.height / 2);
 
-    const imageData = ctx.getImageData(0, 0, safeArea, safeArea);
+    if (brightness !== 100) {
+        ctx.filter = `brightness(${brightness}%)`;
+    }
 
-    canvas.width = Math.round(croppedAreaPixels.width);
-    canvas.height = Math.round(croppedAreaPixels.height);
+    ctx.drawImage(image, 0, 0);
 
-    ctx.putImageData(
-        imageData,
-        Math.round(-safeArea / 2 + image.width / 2 - croppedAreaPixels.x),
-        Math.round(-safeArea / 2 + image.height / 2 - croppedAreaPixels.y)
+    // Create final cropped canvas
+    const croppedCanvas = document.createElement('canvas');
+    const croppedCtx = croppedCanvas.getContext('2d');
+
+    if (!croppedCtx) {
+        throw new Error('Canvas context not available');
+    }
+
+    croppedCanvas.width = Math.round(croppedAreaPixels.width);
+    croppedCanvas.height = Math.round(croppedAreaPixels.height);
+
+    croppedCtx.drawImage(
+        canvas,
+        Math.round(croppedAreaPixels.x),
+        Math.round(croppedAreaPixels.y),
+        Math.round(croppedAreaPixels.width),
+        Math.round(croppedAreaPixels.height),
+        0,
+        0,
+        Math.round(croppedAreaPixels.width),
+        Math.round(croppedAreaPixels.height)
     );
 
     return new Promise((resolve, reject) => {
-        canvas.toBlob(
+        croppedCanvas.toBlob(
             (file) => {
                 if (!file) {
                     reject(new Error('Failed to create edited image'));
