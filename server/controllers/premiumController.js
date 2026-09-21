@@ -263,7 +263,15 @@ exports.createPaymentRequest = async (req, res) => {
     }
 
     if (user.pendingPremiumRequest) {
-      return res.status(400).json({ message: 'You already have a pending premium request' });
+      // Check if the pending request actually exists and is still pending
+      const existingReq = await PremiumPaymentRequest.findById(user.pendingPremiumRequest);
+      if (existingReq && existingReq.status === 'pending') {
+        return res.status(400).json({ message: 'You already have a pending premium request under review' });
+      } else {
+        // Stale or processed reference, clear it so user can submit new request
+        user.pendingPremiumRequest = null;
+        user.premiumRequested = false;
+      }
     }
 
     const { bank, accountHolderName, email, phoneNumber, paymentDate, paymentAmount, planId, planBadge, transactionReference, paymentMethod, notes } = req.body;
@@ -370,7 +378,7 @@ exports.getPremiumStatus = async (req, res) => {
 exports.getAllRequests = async (req, res) => {
   try {
     const requests = await PremiumPaymentRequest.find({})
-      .populate('user', 'name email phoneNumber profileImageUrl')
+      .populate('user', 'name profileName username email phoneNumber profileImageUrl')
       .populate('plan')
       .sort({ createdAt: -1 });
     res.json(requests);

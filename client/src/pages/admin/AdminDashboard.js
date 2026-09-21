@@ -153,6 +153,9 @@ const AdminDashboard = () => {
     plan: 'gold',
     durationDays: 28
   });
+  const [viewingSlipUrl, setViewingSlipUrl] = useState(null);
+  const [premiumFilterStatus, setPremiumFilterStatus] = useState('all');
+  const [premiumSearchTerm, setPremiumSearchTerm] = useState('');
 
   const fetchConversations = async () => {
     try {
@@ -681,23 +684,24 @@ const AdminDashboard = () => {
   const handleApprovePremium = async (requestId) => {
     try {
       await adminAPI.approvePremium(requestId);
-      toast.success(t('admin.premiumApproved', { defaultValue: 'Premium approved' }));
+      toast.success(t('admin.premiumApproved', { defaultValue: '🎉 Premium membership activated successfully!' }));
       fetchData();
     } catch (error) {
-      toast.error(t('admin.approvePremiumFailed', { defaultValue: 'Failed to approve premium' }));
+      toast.error(error.response?.data?.message || t('admin.approvePremiumFailed', { defaultValue: 'Failed to approve premium' }));
     }
   };
 
   const handleRejectPremium = async (requestId) => {
     try {
-      const reason = prompt(t('admin.premium.rejectReason'));
+      const defaultMsg = 'Please enter a rejection reason (e.g. Invalid slip, Payment not received, Mismatched amount):';
+      const reason = prompt(t('admin.premium.rejectReason', { defaultValue: defaultMsg }));
       if (reason !== null) {
         await adminAPI.rejectPremium(requestId, reason);
-        toast.success(t('admin.premiumRejected', { defaultValue: 'Premium rejected' }));
+        toast.success(t('admin.premiumRejected', { defaultValue: 'Premium request rejected' }));
         fetchData();
       }
     } catch (error) {
-      toast.error(t('admin.rejectPremiumFailed', { defaultValue: 'Failed to reject premium' }));
+      toast.error(error.response?.data?.message || t('admin.rejectPremiumFailed', { defaultValue: 'Failed to reject premium' }));
     }
   };
 
@@ -771,9 +775,10 @@ const AdminDashboard = () => {
     );
   }
 
+  const pendingPremiumReqs = premiumRequests.filter(r => r.status === 'pending').length;
   const pendingPaymentReqs = walletPaymentRequests.filter(r => r.status === 'pending').length;
   const pendingComplaints = reportsList.filter(r => r.status === 'pending').length;
-  const totalPendingBadges = pendingPaymentReqs + premiumRequests.length + pendingComplaints;
+  const totalPendingBadges = pendingPaymentReqs + pendingPremiumReqs + pendingComplaints;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-gray-900 dark:text-gray-100 flex flex-col font-sans">
@@ -952,6 +957,25 @@ const AdminDashboard = () => {
               <p className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-gray-400 mb-2">Monetization</p>
               <div className="space-y-1">
                 <button
+                  onClick={() => setActiveTab('premium')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
+                    activeTab === 'premium'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <Crown className="w-4 h-4 text-amber-500" />
+                    <span>Premium Requests</span>
+                  </div>
+                  {pendingPremiumReqs > 0 && (
+                    <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                      {pendingPremiumReqs}
+                    </span>
+                  )}
+                </button>
+
+                <button
                   onClick={() => setActiveTab('plans')}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
                     activeTab === 'plans'
@@ -960,7 +984,7 @@ const AdminDashboard = () => {
                   }`}
                 >
                   <div className="flex items-center space-x-2.5">
-                    <Crown className="w-4 h-4 text-yellow-500" />
+                    <Sparkles className="w-4 h-4 text-purple-500" />
                     <span>Premium Plans</span>
                   </div>
                 </button>
@@ -1136,6 +1160,7 @@ const AdminDashboard = () => {
           {/* Mobile navigation tab list */}
           <div className="lg:hidden flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
             <button onClick={() => setActiveTab('dashboard')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'dashboard' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Dashboard</button>
+            <button onClick={() => setActiveTab('premium')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'premium' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Premium Requests ({pendingPremiumReqs})</button>
             <button onClick={() => setActiveTab('users')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'users' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Users</button>
             <button onClick={() => setActiveTab('reports')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'reports' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Complaints ({pendingComplaints})</button>
             <button onClick={() => setActiveTab('wallet-requests')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'wallet-requests' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Wallet Topups ({pendingPaymentReqs})</button>
@@ -1265,7 +1290,16 @@ const AdminDashboard = () => {
                   <Sparkles className="w-4 h-4 text-purple-600" />
                   <span>Administrative Quick Actions</span>
                 </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+                  <button onClick={() => setActiveTab('premium')} className="p-3 bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 rounded-xl text-xs font-bold text-amber-700 dark:text-amber-300 transition text-center flex flex-col items-center gap-1.5 relative">
+                    <Crown className="w-5 h-5 text-amber-600" />
+                    <span>Premium Slips</span>
+                    {pendingPremiumReqs > 0 && (
+                      <span className="absolute top-1.5 right-1.5 bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                        {pendingPremiumReqs}
+                      </span>
+                    )}
+                  </button>
                   <button onClick={() => setActiveTab('users')} className="p-3 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 rounded-xl text-xs font-bold text-purple-700 dark:text-purple-300 transition text-center flex flex-col items-center gap-1.5">
                     <UserCheck className="w-5 h-5 text-purple-600" />
                     <span>Approve Users</span>
@@ -1274,8 +1308,8 @@ const AdminDashboard = () => {
                     <DollarSign className="w-5 h-5 text-emerald-600" />
                     <span>Verify Payments</span>
                   </button>
-                  <button onClick={() => setActiveTab('plans')} className="p-3 bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 rounded-xl text-xs font-bold text-amber-700 dark:text-amber-300 transition text-center flex flex-col items-center gap-1.5">
-                    <Crown className="w-5 h-5 text-amber-600" />
+                  <button onClick={() => setActiveTab('plans')} className="p-3 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 rounded-xl text-xs font-bold text-purple-700 dark:text-purple-300 transition text-center flex flex-col items-center gap-1.5">
+                    <Sparkles className="w-5 h-5 text-purple-600" />
                     <span>Manage Plans</span>
                   </button>
                   <button onClick={() => setActiveTab('reports')} className="p-3 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 rounded-xl text-xs font-bold text-red-700 dark:text-red-300 transition text-center flex flex-col items-center gap-1.5">
@@ -1581,134 +1615,314 @@ const AdminDashboard = () => {
 
         {/* Premium Requests */}
         {activeTab === 'premium' && (
-          <div className="space-y-4">
-            {premiumRequests.length === 0 ? (
-              <div className="glass-card p-8 text-center">
-                <Crown className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-gray-600 dark:text-gray-300">No premium requests yet</p>
+          <div className="space-y-6">
+            {/* Header & Filter Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                  <Crown className="w-6 h-6 text-amber-500" />
+                  <span>Premium Payment Requests</span>
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                  Review user manual payment slips, verify bank/eZ Cash transfers, and approve memberships.
+                </p>
               </div>
-            ) : (
-              premiumRequests.map((request) => {
-                const userObj = request.user || {};
-                const slipUrl = request.paymentSlipUrl?.startsWith('http')
-                  ? request.paymentSlipUrl
-                  : request.paymentSlipUrl ? `${(typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app')) ? '' : (process.env.REACT_APP_API_URL || 'https://kapu-lk-2.onrender.com').replace('/api', '')}${request.paymentSlipUrl.startsWith('/') ? '' : '/'}${request.paymentSlipUrl.replace(/\\/g, '/')}` : null;
 
+              {/* Status Filter Tabs */}
+              <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-800/80 p-1 rounded-2xl shrink-0 self-start sm:self-auto overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => setPremiumFilterStatus('all')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                    premiumFilterStatus === 'all'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-purple-600'
+                  }`}
+                >
+                  All ({premiumRequests.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPremiumFilterStatus('pending')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                    premiumFilterStatus === 'pending'
+                      ? 'bg-amber-500 text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-amber-500'
+                  }`}
+                >
+                  <span>Pending</span>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                    premiumFilterStatus === 'pending' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                  }`}>
+                    {pendingPremiumReqs}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPremiumFilterStatus('approved')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                    premiumFilterStatus === 'approved'
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-emerald-600'
+                  }`}
+                >
+                  Approved ({premiumRequests.filter(r => r.status === 'approved').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPremiumFilterStatus('rejected')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                    premiumFilterStatus === 'rejected'
+                      ? 'bg-red-600 text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-red-600'
+                  }`}
+                >
+                  Rejected ({premiumRequests.filter(r => r.status === 'rejected').length})
+                </button>
+              </div>
+            </div>
+
+            {/* Search filter input */}
+            <div className="relative max-w-md">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search requests by name, email, phone, ref, bank..."
+                value={premiumSearchTerm}
+                onChange={(e) => setPremiumSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              {premiumSearchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setPremiumSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-bold"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {/* Request Cards List */}
+            {(() => {
+              const filteredRequests = premiumRequests.filter((req) => {
+                if (premiumFilterStatus !== 'all' && req.status !== premiumFilterStatus) {
+                  return false;
+                }
+                if (!premiumSearchTerm.trim()) return true;
+                const term = premiumSearchTerm.toLowerCase();
+                const userName = req.user?.name || req.accountHolderName || '';
+                const userEmail = req.user?.email || req.email || '';
+                const userPhone = req.user?.phoneNumber || req.phoneNumber || '';
+                const bank = req.bank || '';
+                const ref = req.transactionReference || '';
                 return (
-                  <div key={request._id} className="glass-card p-6 rounded-2xl border border-gray-100 dark:border-slate-800">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                      <div className="flex items-start space-x-4">
-                        <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                          {userObj.profileImageUrl ? (
-                            <img
-                              src={userObj.profileImageUrl}
-                              alt={userObj.name || 'User'}
-                              className="w-full h-full rounded-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-purple-600 dark:text-purple-400 font-bold text-lg">
-                              {(userObj.name || 'U').charAt(0)}
-                            </span>
-                          )}
-                        </div>
+                  userName.toLowerCase().includes(term) ||
+                  userEmail.toLowerCase().includes(term) ||
+                  userPhone.toLowerCase().includes(term) ||
+                  bank.toLowerCase().includes(term) ||
+                  ref.toLowerCase().includes(term)
+                );
+              });
 
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-bold text-gray-900 dark:text-white">{userObj.name || 'User'}</h3>
-                            {request.planName && (
-                              <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-sm">
-                                {request.planName}
-                              </span>
-                            )}
-                            <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 uppercase">
-                              {request.paymentMethod ? request.paymentMethod.replace('_', ' ') : 'Bank Transfer'}
-                            </span>
-                          </div>
-                          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{userObj.email} {userObj.phoneNumber ? `• ${userObj.phoneNumber}` : ''}</p>
-                          
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 pt-1 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                            <p><strong>Bank / Channel:</strong> {request.bank || 'Direct Transfer'}</p>
-                            <p><strong>Account / Payer:</strong> {request.accountHolderName || request.payerName || 'N/A'}</p>
-                            {request.payerPhone && <p><strong>Payer Phone:</strong> {request.payerPhone}</p>}
-                            <p><strong>Amount:</strong> <span className="text-purple-600 dark:text-purple-400 font-bold">Rs. {request.paymentAmount} LKR</span></p>
-                            {request.transactionReference && (
-                              <p className="sm:col-span-2"><strong>Transaction Ref:</strong> <code className="bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-mono text-xs text-purple-600 dark:text-purple-400 font-semibold">{request.transactionReference}</code></p>
-                            )}
-                            {request.notes && (
-                              <p className="sm:col-span-2 text-xs text-gray-500 italic"><strong>Remark:</strong> {request.notes}</p>
-                            )}
-                            <p className="text-xs text-gray-400"><strong>Date:</strong> {new Date(request.paymentDate || request.createdAt).toLocaleString()}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col space-y-3 min-w-[200px]">
-                        {slipUrl && (
-                          <a
-                            href={slipUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn-secondary text-center flex items-center justify-center space-x-1 py-2 text-xs font-bold"
-                          >
-                            <Eye className="w-4 h-4" />
-                            <span>View Payment Slip</span>
-                          </a>
-                        )}
-
-                        {request.status === 'pending' && (
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleApprovePremium(request._id)}
-                              className="flex-1 btn-primary flex items-center justify-center space-x-1 py-2 text-xs font-bold"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                              <span>Approve</span>
-                            </button>
-                            <button
-                              onClick={() => handleRejectPremium(request._id)}
-                              className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-lg font-semibold flex items-center justify-center space-x-1 text-xs transition"
-                            >
-                              <XCircle className="w-4 h-4" />
-                              <span>Reject</span>
-                            </button>
-                          </div>
-                        )}
-
-                        {request.status === 'approved' && (
-                          <div className="flex items-center space-x-2">
-                            <span className="flex-1 text-center text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/20 py-2 rounded-lg text-xs">
-                              ✓ Approved & Active
-                            </span>
-                            <button
-                              onClick={() => handleDeletePremiumRequest(request._id)}
-                              className="bg-red-50 hover:bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 py-2 px-3 rounded-lg transition"
-                              title="Delete Request"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        )}
-
-                        {request.status === 'rejected' && (
-                          <div className="flex items-center space-x-2">
-                            <span className="flex-1 text-center text-red-600 dark:text-red-400 font-bold bg-red-50 dark:bg-red-900/20 py-2 rounded-lg text-xs">
-                              ✗ Rejected
-                            </span>
-                            <button
-                              onClick={() => handleDeletePremiumRequest(request._id)}
-                              className="bg-red-50 hover:bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 py-2 px-3 rounded-lg transition"
-                              title="Delete Request"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+              if (filteredRequests.length === 0) {
+                return (
+                  <div className="glass-card p-12 text-center rounded-3xl border border-gray-100 dark:border-slate-800">
+                    <Crown className="w-14 h-14 mx-auto mb-3 text-amber-400 opacity-60" />
+                    <h3 className="text-base font-bold text-gray-900 dark:text-white">No Premium Requests Found</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto">
+                      {premiumSearchTerm
+                        ? 'No payment requests match your search query.'
+                        : premiumFilterStatus === 'pending'
+                        ? 'There are currently no pending premium payment requests awaiting moderation.'
+                        : 'No premium requests in this category.'}
+                    </p>
                   </div>
                 );
-              })
-            )}
+              }
+
+              return (
+                <div className="space-y-4">
+                  {filteredRequests.map((request) => {
+                    const userObj = request.user || {};
+                    const slipUrl = request.paymentSlipUrl?.startsWith('http')
+                      ? request.paymentSlipUrl
+                      : request.paymentSlipUrl
+                      ? `${(typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app')) ? '' : (process.env.REACT_APP_API_URL || 'https://kapu-lk-2.onrender.com').replace('/api', '')}${request.paymentSlipUrl.startsWith('/') ? '' : '/'}${request.paymentSlipUrl.replace(/\\/g, '/')}`
+                      : null;
+
+                    const planBadge = request.planBadge || (request.paymentAmount >= 3000 ? 'gold' : request.paymentAmount >= 1300 ? 'silver' : 'bronze');
+                    const badgeIcon = planBadge === 'gold' ? '🥇' : planBadge === 'silver' ? '🥈' : '🥉';
+
+                    return (
+                      <div
+                        key={request._id}
+                        className={`glass-card p-6 rounded-3xl border-2 transition ${
+                          request.status === 'pending'
+                            ? 'border-amber-300 dark:border-amber-700/60 bg-white dark:bg-slate-900 shadow-md'
+                            : request.status === 'approved'
+                            ? 'border-emerald-200 dark:border-emerald-800/40 bg-white/80 dark:bg-slate-900/80'
+                            : 'border-slate-200 dark:border-slate-800 opacity-80'
+                        }`}
+                      >
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                          {/* Left: User & Payment Details */}
+                          <div className="flex items-start space-x-4">
+                            <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                              {userObj.profileImageUrl ? (
+                                <img
+                                  src={userObj.profileImageUrl}
+                                  alt={userObj.name || 'User'}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-purple-600 dark:text-purple-400 font-bold text-xl">
+                                  {(userObj.name || request.accountHolderName || 'U').charAt(0)}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="space-y-2 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-extrabold text-base text-gray-900 dark:text-white">
+                                  {userObj.name || request.accountHolderName || 'User'}
+                                </h3>
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-sm flex items-center gap-1">
+                                  <span>{badgeIcon}</span>
+                                  <span>{planBadge.toUpperCase()} PLAN ({request.durationDays || (planBadge === 'gold' ? 60 : planBadge === 'silver' ? 21 : 10)} DAYS)</span>
+                                </span>
+                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 uppercase">
+                                  {request.paymentMethod ? request.paymentMethod.replace('_', ' ') : 'Bank Transfer'}
+                                </span>
+                                <span
+                                  className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                    request.status === 'pending'
+                                      ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 animate-pulse'
+                                      : request.status === 'approved'
+                                      ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+                                      : 'bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300'
+                                  }`}
+                                >
+                                  {request.status.toUpperCase()}
+                                </span>
+                              </div>
+
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {userObj.email || request.email} {userObj.phoneNumber || request.phoneNumber ? `• 📞 ${userObj.phoneNumber || request.phoneNumber}` : ''}
+                              </p>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1.5 pt-2 text-xs text-gray-700 dark:text-gray-300">
+                                <div>
+                                  <span className="text-gray-400 block text-[10px] font-bold uppercase">Bank / Channel</span>
+                                  <span className="font-semibold text-slate-900 dark:text-white">{request.bank || 'Direct Transfer'}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400 block text-[10px] font-bold uppercase">Payer / Account Name</span>
+                                  <span className="font-semibold text-slate-900 dark:text-white">{request.accountHolderName || 'N/A'}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400 block text-[10px] font-bold uppercase">Payment Amount</span>
+                                  <span className="font-black text-purple-600 dark:text-purple-400 text-sm">LKR {Number(request.paymentAmount).toLocaleString()}</span>
+                                </div>
+                                {request.transactionReference && (
+                                  <div className="sm:col-span-2">
+                                    <span className="text-gray-400 block text-[10px] font-bold uppercase">Transaction / Slip Ref</span>
+                                    <code className="bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded font-mono text-xs font-bold border border-purple-200 dark:border-purple-800">
+                                      {request.transactionReference}
+                                    </code>
+                                  </div>
+                                )}
+                                <div>
+                                  <span className="text-gray-400 block text-[10px] font-bold uppercase">Submitted Date</span>
+                                  <span>{new Date(request.paymentDate || request.createdAt).toLocaleString()}</span>
+                                </div>
+                                {request.notes && (
+                                  <div className="sm:col-span-2 lg:col-span-3 text-xs text-gray-500 italic bg-gray-50 dark:bg-slate-800/50 p-2 rounded-xl border border-gray-100 dark:border-slate-800">
+                                    <strong>User Note:</strong> {request.notes}
+                                  </div>
+                                )}
+                                {request.rejectionReason && (
+                                  <div className="sm:col-span-2 lg:col-span-3 text-xs text-red-600 dark:text-red-400 font-medium bg-red-50 dark:bg-red-950/30 p-2 rounded-xl border border-red-200 dark:border-red-900">
+                                    <strong>Rejection Reason:</strong> {request.rejectionReason}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right: Actions & Slip Preview Button */}
+                          <div className="flex flex-col space-y-2.5 min-w-[200px] shrink-0">
+                            {slipUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setViewingSlipUrl(slipUrl)}
+                                className="w-full py-2.5 px-4 rounded-xl bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-sm"
+                              >
+                                <Eye className="w-4 h-4 text-purple-600" />
+                                <span>Inspect Payment Slip</span>
+                              </button>
+                            )}
+
+                            {request.status === 'pending' && (
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleApprovePremium(request._id)}
+                                  className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 transition"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                  <span>Approve</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRejectPremium(request._id)}
+                                  className="flex-1 py-2.5 px-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-red-500/20 transition"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                  <span>Reject</span>
+                                </button>
+                              </div>
+                            )}
+
+                            {request.status === 'approved' && (
+                              <div className="flex items-center gap-2">
+                                <span className="flex-1 text-center text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 py-2 rounded-xl text-xs">
+                                  ✓ Approved & Active
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeletePremiumRequest(request._id)}
+                                  className="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl transition"
+                                  title="Delete Request"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+
+                            {request.status === 'rejected' && (
+                              <div className="flex items-center gap-2">
+                                <span className="flex-1 text-center text-red-700 dark:text-red-300 font-bold bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 py-2 rounded-xl text-xs">
+                                  ✗ Rejected
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeletePremiumRequest(request._id)}
+                                  className="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl transition"
+                                  title="Delete Request"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -3540,6 +3754,58 @@ const AdminDashboard = () => {
                 className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Slip Lightbox Modal */}
+      {viewingSlipUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="relative max-w-4xl w-full max-h-[90vh] bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Eye className="w-5 h-5 text-purple-600" />
+                <h3 className="font-extrabold text-base text-gray-900 dark:text-white">
+                  Payment Transfer Slip
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={viewingSlipUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300 hover:bg-purple-100 font-bold text-xs flex items-center gap-1 transition"
+                >
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                  <span>Open Full Size</span>
+                </a>
+                <button
+                  onClick={() => setViewingSlipUrl(null)}
+                  className="p-1.5 rounded-xl bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400 transition"
+                  title="Close Preview"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto flex items-center justify-center p-4 bg-slate-950/5 dark:bg-slate-950/40 rounded-2xl my-4">
+              <img
+                src={viewingSlipUrl}
+                alt="Payment Slip Proof"
+                className="max-h-[65vh] w-auto max-w-full object-contain rounded-xl shadow-md"
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setViewingSlipUrl(null)}
+                className="px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl text-xs hover:opacity-90 transition"
+              >
+                Close Preview
               </button>
             </div>
           </div>

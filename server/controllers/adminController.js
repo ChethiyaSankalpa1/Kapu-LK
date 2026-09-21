@@ -408,6 +408,15 @@ exports.deletePremiumRequest = async (req, res) => {
       return res.status(404).json({ message: 'Premium request not found' });
     }
 
+    if (request.user) {
+      await User.findByIdAndUpdate(request.user, {
+        $set: {
+          premiumRequested: false,
+          pendingPremiumRequest: null,
+        }
+      });
+    }
+
     await PremiumPaymentRequest.findByIdAndDelete(req.params.id);
 
     res.json({ message: 'Premium request deleted successfully' });
