@@ -1,6 +1,10 @@
 import React, { useCallback, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Cropper from 'react-easy-crop';
-import { Crop, RotateCw, SunMedium, X, Check, ZoomIn, ZoomOut, RotateCcw, RotateCcw as ResetIcon, Loader2 } from 'lucide-react';
+import {
+    Crop, RotateCw, SunMedium, X, Check,
+    ZoomIn, ZoomOut, RotateCcw, RotateCcw as ResetIcon, Loader2
+} from 'lucide-react';
 import { createEditedImage } from '../../utils/imageEditor';
 
 const ProfileImageEditor = ({ imageSrc, open, onClose, onSave, saving = false }) => {
@@ -11,7 +15,7 @@ const ProfileImageEditor = ({ imageSrc, open, onClose, onSave, saving = false })
     const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
     const [processing, setProcessing] = useState(false);
 
-    // Prevent body scrolling while modal is active
+    // Prevent body scrolling while modal is open
     useEffect(() => {
         if (!open) return;
         const originalOverflow = document.body.style.overflow;
@@ -87,9 +91,9 @@ const ProfileImageEditor = ({ imageSrc, open, onClose, onSave, saving = false })
 
     const isBusy = processing || saving;
 
-    return (
+    const modalContent = (
         <div
-            className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4 overflow-y-auto"
+            className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-2.5 sm:p-4 select-none"
             onClick={(e) => {
                 if (e.target === e.currentTarget && !isBusy) {
                     handleClose();
@@ -97,20 +101,20 @@ const ProfileImageEditor = ({ imageSrc, open, onClose, onSave, saving = false })
             }}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="image-editor-title"
+            aria-labelledby="image-editor-modal-title"
         >
-            <div className="w-full max-w-4xl bg-slate-900 border border-purple-500/30 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[94vh] lg:max-h-[88vh]">
+            <div className="w-[min(900px,96vw)] max-h-[min(88vh,720px)] bg-slate-900 border border-purple-500/30 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 bg-slate-950/80 border-b border-purple-500/20 shrink-0">
+                <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-3.5 bg-slate-950 border-b border-purple-500/20 shrink-0">
                     <div className="flex items-center gap-2.5 sm:gap-3">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shrink-0 shadow-md">
-                            <Crop className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shrink-0 shadow-md">
+                            <Crop className="w-4 h-4 text-white" />
                         </div>
                         <div>
-                            <h3 id="image-editor-title" className="text-base sm:text-lg font-bold text-white leading-tight">
+                            <h3 id="image-editor-modal-title" className="text-sm sm:text-base font-bold text-white leading-tight">
                                 Edit Profile Picture
                             </h3>
-                            <p className="text-[11px] sm:text-xs text-purple-300">
+                            <p className="text-[11px] text-purple-300 hidden sm:block">
                                 Crop, rotate, and adjust brightness
                             </p>
                         </div>
@@ -120,93 +124,95 @@ const ProfileImageEditor = ({ imageSrc, open, onClose, onSave, saving = false })
                         onClick={handleClose}
                         disabled={isBusy}
                         aria-label="Close image editor"
-                        className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all disabled:opacity-40 cursor-pointer"
+                        className="p-1.5 sm:p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all disabled:opacity-40 cursor-pointer"
                     >
                         <X className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                 </div>
 
-                {/* Main Body */}
-                <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-y-auto">
-                    {/* Cropper Container */}
-                    <div className="relative bg-slate-950 flex-1 min-h-[240px] sm:min-h-[300px] lg:min-h-[420px] max-h-[38vh] sm:max-h-[45vh] lg:max-h-none overflow-hidden shrink-0 lg:shrink flex items-center justify-center">
-                        <Cropper
-                            image={imageSrc}
-                            crop={crop}
-                            zoom={zoom}
-                            rotation={rotation}
-                            aspect={1}
-                            cropShape="round"
-                            showGrid={false}
-                            objectFit="contain"
-                            onCropChange={setCrop}
-                            onZoomChange={setZoom}
-                            onRotationChange={setRotation}
-                            onCropComplete={handleCropComplete}
-                            style={{
-                                containerStyle: {
-                                    width: '100%',
-                                    height: '100%',
-                                    position: 'relative',
-                                },
-                            }}
-                        />
-                        {/* Overlay vignette */}
-                        <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/40 via-transparent to-black/30" />
+                {/* Modal Body: 2-Column on Desktop (lg), 1-Column on Mobile */}
+                <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-y-auto lg:overflow-hidden">
+                    {/* Left: Controlled Cropper Preview */}
+                    <div className="bg-slate-950 flex items-center justify-center p-3 sm:p-4 relative shrink-0 lg:w-[420px] xl:w-[460px] min-h-[260px] sm:min-h-[300px] lg:min-h-full">
+                        <div className="relative w-full max-w-[270px] sm:max-w-[310px] lg:max-w-[340px] aspect-square rounded-2xl overflow-hidden border border-purple-500/20 bg-black/60 shadow-inner flex items-center justify-center">
+                            <Cropper
+                                image={imageSrc}
+                                crop={crop}
+                                zoom={zoom}
+                                rotation={rotation}
+                                aspect={1}
+                                cropShape="round"
+                                showGrid={false}
+                                objectFit="contain"
+                                onCropChange={setCrop}
+                                onZoomChange={setZoom}
+                                onRotationChange={setRotation}
+                                onCropComplete={handleCropComplete}
+                                style={{
+                                    containerStyle: {
+                                        width: '100%',
+                                        height: '100%',
+                                        position: 'relative',
+                                    },
+                                }}
+                            />
+                            {/* Subtle circular indicator border */}
+                            <div className="absolute inset-0 pointer-events-none rounded-2xl border border-white/10" />
+                        </div>
                     </div>
 
-                    {/* Controls Panel */}
-                    <div className="w-full lg:w-84 xl:w-96 bg-slate-900/95 p-4 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 border-t lg:border-t-0 lg:border-l border-purple-500/20 overflow-y-auto flex flex-col justify-between">
-                        <div className="space-y-4">
+                    {/* Right: Editing Controls */}
+                    <div className="flex-1 bg-slate-900 p-4 sm:p-5 lg:p-6 space-y-4 border-t lg:border-t-0 lg:border-l border-purple-500/20 overflow-y-auto flex flex-col justify-between">
+                        <div className="space-y-3.5">
                             {/* Quick Action Buttons */}
                             <div className="grid grid-cols-4 gap-2">
                                 <button
                                     type="button"
                                     onClick={handleZoomOut}
                                     disabled={isBusy || zoom <= 1}
-                                    className="min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all flex flex-col items-center justify-center gap-0.5 disabled:opacity-40 cursor-pointer"
+                                    className="min-h-[42px] sm:min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all flex flex-col items-center justify-center gap-0.5 disabled:opacity-40 cursor-pointer"
                                     title="Zoom Out"
                                 >
-                                    <ZoomOut className="w-4 h-4 sm:w-5 sm:h-5" />
-                                    <span className="text-[10px] text-purple-200">Zoom -</span>
+                                    <ZoomOut className="w-4 h-4 text-purple-300" />
+                                    <span className="text-[10px] text-purple-200">Zoom −</span>
                                 </button>
                                 <button
                                     type="button"
                                     onClick={handleZoomIn}
                                     disabled={isBusy || zoom >= 3}
-                                    className="min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all flex flex-col items-center justify-center gap-0.5 disabled:opacity-40 cursor-pointer"
+                                    className="min-h-[42px] sm:min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all flex flex-col items-center justify-center gap-0.5 disabled:opacity-40 cursor-pointer"
                                     title="Zoom In"
                                 >
-                                    <ZoomIn className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <ZoomIn className="w-4 h-4 text-purple-300" />
                                     <span className="text-[10px] text-purple-200">Zoom +</span>
                                 </button>
                                 <button
                                     type="button"
                                     onClick={handleRotateLeft}
                                     disabled={isBusy}
-                                    className="min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all flex flex-col items-center justify-center gap-0.5 disabled:opacity-40 cursor-pointer"
+                                    className="min-h-[42px] sm:min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all flex flex-col items-center justify-center gap-0.5 disabled:opacity-40 cursor-pointer"
                                     title="Rotate Left (-90°)"
                                 >
-                                    <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
-                                    <span className="text-[10px] text-purple-200">-90°</span>
+                                    <RotateCcw className="w-4 h-4 text-purple-300" />
+                                    <span className="text-[10px] text-purple-200">−90°</span>
                                 </button>
                                 <button
                                     type="button"
                                     onClick={handleRotateRight}
                                     disabled={isBusy}
-                                    className="min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all flex flex-col items-center justify-center gap-0.5 disabled:opacity-40 cursor-pointer"
+                                    className="min-h-[42px] sm:min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all flex flex-col items-center justify-center gap-0.5 disabled:opacity-40 cursor-pointer"
                                     title="Rotate Right (+90°)"
                                 >
-                                    <RotateCw className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <RotateCw className="w-4 h-4 text-purple-300" />
                                     <span className="text-[10px] text-purple-200">+90°</span>
                                 </button>
                             </div>
 
-                            {/* Sliders Section */}
-                            <div className="space-y-3.5 bg-white/5 p-3.5 rounded-2xl border border-purple-500/15">
+                            {/* Sliders Container */}
+                            <div className="space-y-3 bg-white/5 p-3 sm:p-3.5 rounded-2xl border border-purple-500/15">
                                 {/* Zoom Slider */}
                                 <div>
-                                    <div className="flex items-center justify-between mb-1.5">
+                                    <div className="flex items-center justify-between mb-1">
                                         <label className="text-xs font-semibold text-purple-200 flex items-center gap-1.5">
                                             <ZoomIn className="w-3.5 h-3.5 text-purple-400" />
                                             <span>Zoom</span>
@@ -227,7 +233,7 @@ const ProfileImageEditor = ({ imageSrc, open, onClose, onSave, saving = false })
 
                                 {/* Rotation Slider */}
                                 <div>
-                                    <div className="flex items-center justify-between mb-1.5">
+                                    <div className="flex items-center justify-between mb-1">
                                         <label className="text-xs font-semibold text-purple-200 flex items-center gap-1.5">
                                             <RotateCw className="w-3.5 h-3.5 text-purple-400" />
                                             <span>Rotation</span>
@@ -248,7 +254,7 @@ const ProfileImageEditor = ({ imageSrc, open, onClose, onSave, saving = false })
 
                                 {/* Brightness Slider */}
                                 <div>
-                                    <div className="flex items-center justify-between mb-1.5">
+                                    <div className="flex items-center justify-between mb-1">
                                         <label className="text-xs font-semibold text-purple-200 flex items-center gap-1.5">
                                             <SunMedium className="w-3.5 h-3.5 text-amber-400" />
                                             <span>Brightness</span>
@@ -286,7 +292,7 @@ const ProfileImageEditor = ({ imageSrc, open, onClose, onSave, saving = false })
                                 type="button"
                                 onClick={handleClose}
                                 disabled={isBusy}
-                                className="min-h-[44px] py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-semibold transition-all disabled:opacity-40 cursor-pointer"
+                                className="min-h-[42px] sm:min-h-[44px] py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-semibold transition-all disabled:opacity-40 cursor-pointer"
                             >
                                 Cancel
                             </button>
@@ -294,7 +300,7 @@ const ProfileImageEditor = ({ imageSrc, open, onClose, onSave, saving = false })
                                 type="button"
                                 onClick={handleSave}
                                 disabled={isBusy || !croppedAreaPixels}
-                                className="min-h-[44px] py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-xs sm:text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-purple-600/30 cursor-pointer"
+                                className="min-h-[42px] sm:min-h-[44px] py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-xs sm:text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-purple-600/30 cursor-pointer"
                             >
                                 {isBusy ? (
                                     <>
@@ -314,6 +320,9 @@ const ProfileImageEditor = ({ imageSrc, open, onClose, onSave, saving = false })
             </div>
         </div>
     );
+
+    // Render directly into document.body to break out of any container transform/glass-card stacking contexts
+    return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };
 
 export default ProfileImageEditor;

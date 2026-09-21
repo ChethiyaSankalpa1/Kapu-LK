@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { userAPI } from '../../services/api';
@@ -465,9 +466,9 @@ const PhotoGalleryManager = ({ user, onPhotosUpdated }) => {
             )}
 
             {/* Custom Delete Confirmation Modal */}
-            {deleteModalPhoto && (
+            {deleteModalPhoto && typeof document !== 'undefined' && createPortal(
                 <div
-                    className="fixed inset-0 z-[10000] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4"
+                    className="fixed inset-0 z-[99999] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4"
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="delete-dialog-title"
@@ -501,7 +502,8 @@ const PhotoGalleryManager = ({ user, onPhotosUpdated }) => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
