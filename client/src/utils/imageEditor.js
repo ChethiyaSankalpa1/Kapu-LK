@@ -47,10 +47,6 @@ export const createEditedImage = async ({
     ctx.rotate(rotRad);
     ctx.translate(-image.width / 2, -image.height / 2);
 
-    if (brightness !== 100) {
-        ctx.filter = `brightness(${brightness}%)`;
-    }
-
     ctx.drawImage(image, 0, 0);
 
     // Create final cropped canvas
@@ -75,6 +71,21 @@ export const createEditedImage = async ({
         Math.round(croppedAreaPixels.width),
         Math.round(croppedAreaPixels.height)
     );
+
+    // Apply pixel-level brightness adjustment for universal browser fidelity
+    if (brightness !== 100) {
+        const imgData = croppedCtx.getImageData(0, 0, croppedCanvas.width, croppedCanvas.height);
+        const data = imgData.data;
+        const factor = brightness / 100;
+
+        for (let i = 0; i < data.length; i += 4) {
+            data[i] = Math.min(255, Math.max(0, Math.round(data[i] * factor)));         // Red
+            data[i + 1] = Math.min(255, Math.max(0, Math.round(data[i + 1] * factor))); // Green
+            data[i + 2] = Math.min(255, Math.max(0, Math.round(data[i + 2] * factor))); // Blue
+        }
+
+        croppedCtx.putImageData(imgData, 0, 0);
+    }
 
     return new Promise((resolve, reject) => {
         croppedCanvas.toBlob(
