@@ -156,6 +156,8 @@ const AdminDashboard = () => {
   const [viewingSlipUrl, setViewingSlipUrl] = useState(null);
   const [premiumFilterStatus, setPremiumFilterStatus] = useState('all');
   const [premiumSearchTerm, setPremiumSearchTerm] = useState('');
+  const [walletFilterStatus, setWalletFilterStatus] = useState('all');
+  const [walletSearchTerm, setWalletSearchTerm] = useState('');
 
   const fetchConversations = async () => {
     try {
@@ -300,30 +302,32 @@ const AdminDashboard = () => {
   const handleApproveWalletPayment = async (id) => {
     try {
       await walletAPI.approvePaymentRequest(id);
-      toast.success('Wallet top-up approved & points added to user!');
+      toast.success('🎉 Wallet top-up approved & balance credited successfully!');
       fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to approve payment request');
+      toast.error(error.response?.data?.message || 'Failed to approve wallet payment request');
     }
   };
 
   const handleRejectWalletPayment = async (id) => {
-    const reason = window.prompt('Enter rejection reason (optional):', '');
+    const defaultMsg = 'Please enter a rejection reason (e.g. Invalid transfer slip, Amount mismatch, Payment not received):';
+    const reason = window.prompt(defaultMsg, '');
     if (reason !== null) {
       try {
         await walletAPI.rejectPaymentRequest(id, reason);
         toast.success('Wallet payment request rejected');
         fetchData();
       } catch (error) {
-        toast.error(error.response?.data?.message || 'Failed to reject payment request');
+        toast.error(error.response?.data?.message || 'Failed to reject wallet payment request');
       }
     }
   };
 
   const handleDeleteWalletPayment = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this wallet payment request record?')) return;
     try {
       await walletAPI.deletePaymentRequest(id);
-      toast.success('Wallet payment request deleted');
+      toast.success('Wallet payment request record deleted');
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete payment request');
@@ -2025,147 +2029,313 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Wallet Top-up Payment Requests */}
         {activeTab === 'wallet-requests' && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
+          <div className="space-y-6">
+            {/* Header & Filter Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Wallet Top-up Payment Requests</h2>
+                <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                  <DollarSign className="w-6 h-6 text-emerald-500" />
+                  <span>Wallet Top-up Payment Requests</span>
+                </h2>
                 <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                  Review payment slips & verify bank/eZ Cash/Binance transfers before crediting wallet balance.
+                  Review user payment slips, verify bank/eZ Cash/Binance transfers, and credit wallet balances.
                 </p>
+              </div>
+
+              {/* Status Filter Tabs */}
+              <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-800/80 p-1 rounded-2xl shrink-0 self-start sm:self-auto overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => setWalletFilterStatus('all')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                    walletFilterStatus === 'all'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-purple-600'
+                  }`}
+                >
+                  All ({walletPaymentRequests.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWalletFilterStatus('pending')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                    walletFilterStatus === 'pending'
+                      ? 'bg-amber-500 text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-amber-500'
+                  }`}
+                >
+                  <span>Pending</span>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                    walletFilterStatus === 'pending' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                  }`}>
+                    {pendingPaymentReqs}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWalletFilterStatus('approved')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                    walletFilterStatus === 'approved'
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-emerald-600'
+                  }`}
+                >
+                  Approved ({walletPaymentRequests.filter(r => r.status === 'approved').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWalletFilterStatus('rejected')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                    walletFilterStatus === 'rejected'
+                      ? 'bg-red-600 text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-red-600'
+                  }`}
+                >
+                  Rejected ({walletPaymentRequests.filter(r => r.status === 'rejected').length})
+                </button>
               </div>
             </div>
 
-            {walletPaymentRequests.length === 0 ? (
-              <div className="glass-card p-8 text-center">
-                <DollarSign className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-gray-600 dark:text-gray-300">No wallet payment requests yet</p>
-              </div>
-            ) : (
-              walletPaymentRequests.map((request) => {
-                const userObj = request.user || {};
-                const slipUrl = request.slipImageUrl?.startsWith('http')
-                  ? request.slipImageUrl
-                  : request.slipImageUrl ? `${(typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app')) ? '' : (process.env.REACT_APP_API_URL || 'https://kapu-lk-2.onrender.com').replace('/api', '')}${request.slipImageUrl.startsWith('/') ? '' : '/'}${request.slipImageUrl.replace(/\\/g, '/')}` : null;
+            {/* Search filter input */}
+            <div className="relative max-w-md">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search wallet requests by name, email, phone, ref, bank..."
+                value={walletSearchTerm}
+                onChange={(e) => setWalletSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              {walletSearchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setWalletSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-bold"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
 
+            {/* Request Cards List */}
+            {(() => {
+              const filteredRequests = walletPaymentRequests.filter((req) => {
+                if (walletFilterStatus !== 'all' && req.status !== walletFilterStatus) {
+                  return false;
+                }
+                if (!walletSearchTerm.trim()) return true;
+                const term = walletSearchTerm.toLowerCase();
+                const userName = req.user?.name || req.payerName || '';
+                const userEmail = req.user?.email || '';
+                const userPhone = req.user?.phoneNumber || req.payerPhone || '';
+                const bank = req.bankName || '';
+                const ref = req.transactionReference || '';
                 return (
-                  <div key={request._id} className="glass-card p-6 rounded-2xl border border-gray-100 dark:border-slate-800">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                      <div className="flex items-start space-x-4">
-                        <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
-                          {userObj.profileImageUrl ? (
-                            <img
-                              src={userObj.profileImageUrl}
-                              alt={userObj.name || 'User'}
-                              className="w-full h-full rounded-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-green-600 dark:text-green-400 font-bold text-lg">
-                              {(userObj.name || 'U').charAt(0)}
-                            </span>
-                          )}
-                        </div>
+                  userName.toLowerCase().includes(term) ||
+                  userEmail.toLowerCase().includes(term) ||
+                  userPhone.toLowerCase().includes(term) ||
+                  bank.toLowerCase().includes(term) ||
+                  ref.toLowerCase().includes(term)
+                );
+              });
 
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-bold text-gray-900 dark:text-white">{userObj.name || 'User'}</h3>
-                            <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800 uppercase">
-                              {request.paymentMethod ? request.paymentMethod.replace('_', ' ') : 'Bank Transfer'}
-                            </span>
-                          </div>
-                          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{userObj.email} {userObj.phoneNumber ? `• ${userObj.phoneNumber}` : ''}</p>
-                          
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 pt-1 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                            <p><strong>Bank / Gateway:</strong> {request.bankName || 'Direct'}</p>
-                            <p><strong>Account / Payer:</strong> {request.accountHolder || request.payerName || 'N/A'}</p>
-                            {request.payerPhone && <p><strong>Payer Phone:</strong> {request.payerPhone}</p>}
-                            <p><strong>Amount:</strong> <span className="text-green-600 dark:text-green-400 font-bold">Rs. {request.amount} LKR</span></p>
-                            {request.transactionReference && (
-                              <p className="sm:col-span-2"><strong>Transaction Ref:</strong> <code className="bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-mono text-xs text-green-600 dark:text-green-400 font-semibold">{request.transactionReference}</code></p>
-                            )}
-                            {request.notes && (
-                              <p className="sm:col-span-2 text-xs text-gray-500 italic"><strong>Remark:</strong> {request.notes}</p>
-                            )}
-                            <p className="text-xs text-gray-400"><strong>Date:</strong> {new Date(request.createdAt).toLocaleString()}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col space-y-3 min-w-[200px]">
-                        {slipUrl && (
-                          <a
-                            href={slipUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn-secondary text-center flex items-center justify-center space-x-1 py-2 text-xs font-bold"
-                          >
-                            <Eye className="w-4 h-4" />
-                            <span>View Payment Slip</span>
-                          </a>
-                        )}
-
-                        {request.status === 'pending' && (
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleApproveWalletPayment(request._id)}
-                              className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg font-semibold flex items-center justify-center space-x-1 transition text-xs shadow-md shadow-green-600/20"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                              <span>Approve & Credit</span>
-                            </button>
-                            <button
-                              onClick={() => handleRejectWalletPayment(request._id)}
-                              className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-lg font-semibold flex items-center justify-center space-x-1 transition text-xs"
-                            >
-                              <XCircle className="w-4 h-4" />
-                              <span>Reject</span>
-                            </button>
-                          </div>
-                        )}
-
-                        {request.status === 'approved' && (
-                          <div className="flex items-center space-x-2">
-                            <span className="flex-1 text-center text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/20 py-2 rounded-lg text-xs">
-                              ✓ Approved & Credited
-                            </span>
-                            <button
-                              onClick={() => {
-                                if (window.confirm('Are you sure you want to delete this payment request?')) {
-                                  handleDeleteWalletPayment(request._id);
-                                }
-                              }}
-                              className="bg-red-50 hover:bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 py-2 px-3 rounded-lg transition"
-                              title="Delete Record"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        )}
-
-                        {request.status === 'rejected' && (
-                          <div className="flex items-center space-x-2">
-                            <span className="flex-1 text-center text-red-600 dark:text-red-400 font-bold bg-red-50 dark:bg-red-900/20 py-2 rounded-lg text-xs">
-                              ✗ Rejected
-                            </span>
-                            <button
-                              onClick={() => {
-                                if (window.confirm('Are you sure you want to delete this payment request?')) {
-                                  handleDeleteWalletPayment(request._id);
-                                }
-                              }}
-                              className="bg-red-50 hover:bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 py-2 px-3 rounded-lg transition"
-                              title="Delete Record"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+              if (filteredRequests.length === 0) {
+                return (
+                  <div className="glass-card p-12 text-center rounded-3xl border border-gray-100 dark:border-slate-800">
+                    <DollarSign className="w-14 h-14 mx-auto mb-3 text-emerald-500 opacity-60" />
+                    <h3 className="text-base font-bold text-gray-900 dark:text-white">No Wallet Top-up Requests Found</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto">
+                      {walletSearchTerm
+                        ? 'No wallet top-up requests match your search query.'
+                        : walletFilterStatus === 'pending'
+                        ? 'There are currently no pending wallet top-up requests awaiting verification.'
+                        : 'No wallet top-up requests in this category.'}
+                    </p>
                   </div>
                 );
-              })
-            )}
+              }
+
+              return (
+                <div className="space-y-4">
+                  {filteredRequests.map((request) => {
+                    const userObj = request.user || {};
+                    const slipUrl = request.slipImageUrl?.startsWith('http')
+                      ? request.slipImageUrl
+                      : request.slipImageUrl
+                      ? `${(typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app')) ? '' : (process.env.REACT_APP_API_URL || 'https://kapu-lk-2.onrender.com').replace('/api', '')}${request.slipImageUrl.startsWith('/') ? '' : '/'}${request.slipImageUrl.replace(/\\/g, '/')}`
+                      : null;
+
+                    return (
+                      <div
+                        key={request._id}
+                        className={`glass-card p-6 rounded-3xl border-2 transition ${
+                          request.status === 'pending'
+                            ? 'border-amber-300 dark:border-amber-700/60 bg-white dark:bg-slate-900 shadow-md'
+                            : request.status === 'approved'
+                            ? 'border-emerald-200 dark:border-emerald-800/40 bg-white/80 dark:bg-slate-900/80'
+                            : 'border-slate-200 dark:border-slate-800 opacity-80'
+                        }`}
+                      >
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                          {/* Left: User & Payment Details */}
+                          <div className="flex items-start space-x-4">
+                            <div className="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                              {userObj.profileImageUrl ? (
+                                <img
+                                  src={userObj.profileImageUrl}
+                                  alt={userObj.name || 'User'}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-emerald-600 dark:text-emerald-400 font-bold text-xl">
+                                  {(userObj.name || request.payerName || 'U').charAt(0)}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="space-y-2 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-extrabold text-base text-gray-900 dark:text-white">
+                                  {userObj.name || request.payerName || 'User'}
+                                </h3>
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm flex items-center gap-1">
+                                  <DollarSign className="w-3.5 h-3.5" />
+                                  <span>+LKR {Number(request.amount).toLocaleString()} TOP-UP</span>
+                                </span>
+                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 uppercase">
+                                  {request.paymentMethod ? request.paymentMethod.replace('_', ' ') : 'Bank Transfer'}
+                                </span>
+                                <span
+                                  className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                    request.status === 'pending'
+                                      ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 animate-pulse'
+                                      : request.status === 'approved'
+                                      ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+                                      : 'bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300'
+                                  }`}
+                                >
+                                  {request.status.toUpperCase()}
+                                </span>
+                              </div>
+
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {userObj.email} {userObj.phoneNumber || request.payerPhone ? `• 📞 ${userObj.phoneNumber || request.payerPhone}` : ''}
+                              </p>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1.5 pt-2 text-xs text-gray-700 dark:text-gray-300">
+                                <div>
+                                  <span className="text-gray-400 block text-[10px] font-bold uppercase">Bank / Gateway</span>
+                                  <span className="font-semibold text-slate-900 dark:text-white">{request.bankName || 'Direct'}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400 block text-[10px] font-bold uppercase">Payer / Account Name</span>
+                                  <span className="font-semibold text-slate-900 dark:text-white">{request.accountHolder || request.payerName || 'N/A'}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400 block text-[10px] font-bold uppercase">Top-up Amount</span>
+                                  <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">LKR {Number(request.amount).toLocaleString()}</span>
+                                </div>
+                                {request.transactionReference && (
+                                  <div className="sm:col-span-2">
+                                    <span className="text-gray-400 block text-[10px] font-bold uppercase">Transaction / Slip Ref</span>
+                                    <code className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded font-mono text-xs font-bold border border-emerald-200 dark:border-emerald-800">
+                                      {request.transactionReference}
+                                    </code>
+                                  </div>
+                                )}
+                                <div>
+                                  <span className="text-gray-400 block text-[10px] font-bold uppercase">Submitted Date</span>
+                                  <span>{new Date(request.createdAt).toLocaleString()}</span>
+                                </div>
+                                {request.notes && (
+                                  <div className="sm:col-span-2 lg:col-span-3 text-xs text-gray-500 italic bg-gray-50 dark:bg-slate-800/50 p-2 rounded-xl border border-gray-100 dark:border-slate-800">
+                                    <strong>User Note:</strong> {request.notes}
+                                  </div>
+                                )}
+                                {request.rejectionReason && (
+                                  <div className="sm:col-span-2 lg:col-span-3 text-xs text-red-600 dark:text-red-400 font-medium bg-red-50 dark:bg-red-950/30 p-2 rounded-xl border border-red-200 dark:border-red-900">
+                                    <strong>Rejection Reason:</strong> {request.rejectionReason}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right: Actions & Slip Preview Button */}
+                          <div className="flex flex-col space-y-2.5 min-w-[200px] shrink-0">
+                            {slipUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setViewingSlipUrl(slipUrl)}
+                                className="w-full py-2.5 px-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-sm"
+                              >
+                                <Eye className="w-4 h-4 text-emerald-600" />
+                                <span>Inspect Payment Slip</span>
+                              </button>
+                            )}
+
+                            {request.status === 'pending' && (
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleApproveWalletPayment(request._id)}
+                                  className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 transition"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                  <span>Approve & Credit</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRejectWalletPayment(request._id)}
+                                  className="flex-1 py-2.5 px-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-red-500/20 transition"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                  <span>Reject</span>
+                                </button>
+                              </div>
+                            )}
+
+                            {request.status === 'approved' && (
+                              <div className="flex items-center gap-2">
+                                <span className="flex-1 text-center text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 py-2 rounded-xl text-xs">
+                                  ✓ Approved & Credited
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteWalletPayment(request._id)}
+                                  className="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl transition"
+                                  title="Delete Record"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+
+                            {request.status === 'rejected' && (
+                              <div className="flex items-center gap-2">
+                                <span className="flex-1 text-center text-red-700 dark:text-red-300 font-bold bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 py-2 rounded-xl text-xs">
+                                  ✗ Rejected
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteWalletPayment(request._id)}
+                                  className="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl transition"
+                                  title="Delete Record"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         )}
 

@@ -250,7 +250,7 @@ exports.getAllPaymentRequests = async (req, res) => {
     }
     
     const requests = await PaymentRequest.find(query)
-      .populate('user', 'name email phoneNumber profileImageUrl profileName')
+      .populate('user', 'name email phoneNumber profileImageUrl profileName username')
       .populate('reviewedBy', 'name email')
       .sort({ createdAt: -1 })
       .lean();
