@@ -280,6 +280,7 @@ exports.togglePremiumStatus = async (req, res) => {
 // @access  Private/Admin
 exports.getDashboardStats = async (req, res) => {
   try {
+    const { getInactivityStatus } = require('../services/inactivityCleanupService');
     const totalUsers = await User.countDocuments({});
     const approvedUsers = await User.countDocuments({ isApproved: true });
     const pendingUsers = await User.countDocuments({ isApproved: false });
@@ -294,6 +295,7 @@ exports.getDashboardStats = async (req, res) => {
       { $group: { _id: null, total: { $sum: { $ifNull: ['$complaints', 0] } } } }
     ]);
     const totalComplaints = (complaintsAgg[0] && complaintsAgg[0].total) || 0;
+    const inactivityStatus = await getInactivityStatus();
 
     // Get monthly registrations for last 6 months
     const now = new Date();
@@ -330,6 +332,7 @@ exports.getDashboardStats = async (req, res) => {
       premiumRequests,
       totalMessages,
       totalComplaints,
+      inactiveUsers: inactivityStatus.inactiveUsersCount,
       monthlyRegistrations,
     });
   } catch (error) {

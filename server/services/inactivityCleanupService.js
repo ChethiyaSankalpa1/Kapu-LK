@@ -7,9 +7,9 @@ const { Wallet, WalletTransaction, PaymentRequest } = require('../models/Wallet'
 const PremiumPaymentRequest = require('../models/PremiumPaymentRequest');
 const { UserStats } = require('../models/Achievement');
 const { Redemption } = require('../models/Redemption');
-const Referral = require('../models/Referral');
+const { Referral } = require('../models/Referral');
 const Report = require('../models/Report');
-const Gift = require('../models/Gift');
+const { GiftTransaction } = require('../models/Gift');
 const cloudinary = require('../config/cloudinary');
 const { logAuditEvent } = require('../middleware/auditLogger');
 
@@ -19,6 +19,21 @@ const INACTIVITY_LIMIT_DAYS = 10;
 const WARNING_5D_DAYS = 5; // 5 days remaining (after 5 days of inactivity)
 const WARNING_2D_DAYS = 8; // 2 days remaining (after 8 days of inactivity)
 const WARNING_1D_DAYS = 9; // 1 day remaining (after 9 days of inactivity)
+
+const eligibleUserFilter = () => ({
+  role: mongoose.trusted({ $ne: 'admin' }),
+  isDemoAccount: mongoose.trusted({ $ne: true }),
+  accountStatus: 'active',
+  isActive: mongoose.trusted({ $ne: false }),
+});
+
+const inactivityWindow = (minimumDays, maximumDays = null, now = Date.now()) => {
+  const filter = { $lte: new Date(now - minimumDays * DAY_MS) };
+  if (maximumDays !== null) {
+    filter.$gt = new Date(now - maximumDays * DAY_MS);
+  }
+  return filter;
+};
 
 /**
  * Extracts Cloudinary public ID from an image URL
@@ -121,8 +136,8 @@ const purgeUserPermanently = async (userId, reason = 'INACTIVITY_10_DAYS') => {
   await Report.deleteMany({
     $or: [{ reporter: userId }, { reportedUser: userId }],
   });
-  await Gift.deleteMany({
-    $or: [{ sender: userId }, { recipient: userId }],
+  await GiftTransaction.deleteMany({
+    $or: [{ from: userId }, { to: userId }],
   });
 
   // 4. Remove user from blocked lists across other users
@@ -160,84 +175,117 @@ const runInactivityChecks = async () => {
     warnings2d: 0,
     warnings1d: 0,
     purged: 0,
+    skipped: 0,
+    errors: 0,
     checkedAt: new Date(),
   };
 
   try {
-    // 1. Process 1-Day Remaining Warning (inactive >= 9 days, < 10 days)
-    const threshold1d = new Date(now - WARNING_1D_DAYS * DAY_MS);
-    const thresholdPurge = new Date(now - INACTIVITY_LIMIT_DAYS * DAY_MS);
-
     const users1d = await User.find({
-      role: mongoose.trusted({ $ne: 'admin' }),
-      lastActiveAt: mongoose.trusted({ $lte: threshold1d, $gt: thresholdPurge }),
+      ...eligibleUserFilter(),
+      lastActiveAt: mongoose.trusted(inactivityWindow(WARNING_1D_DAYS, INACTIVITY_LIMIT_DAYS, now)),
       'inactivityWarningsSent.d1': mongoose.trusted({ $ne: true }),
     });
 
     for (const user of users1d) {
-      await Notification.create({
-        user: user._id,
-        type: 'system',
-        message: 'Final 24-Hour Notice: Your account will be permanently deleted in 24 hours due to inactivity. Log in or browse to cancel deletion.',
-      });
-      user.inactivityWarningsSent = user.inactivityWarningsSent || {};
-      user.inactivityWarningsSent.d1 = true;
-      user.inactivityWarningsSent.d2 = true;
-      user.inactivityWarningsSent.d5 = true;
-      await user.save();
-      summary.warnings1d += 1;
+      const claimed = await User.findOneAndUpdate(
+        { _id: user._id, ...eligibleUserFilter(), lastActiveAt: mongoose.trusted(inactivityWindow(WARNING_1D_DAYS, INACTIVITY_LIMIT_DAYS, now)), 'inactivityWarningsSent.d1': mongoose.trusted({ $ne: true }) },
+        { $set: { 'inactivityWarningsSent.d1': true } },
+        { new: true }
+      );
+      if (!claimed) {
+        summary.skipped += 1;
+        console.log(`[InactivityCleanup] Skipped final warning for ${user._id}: activity or another run changed the record.`);
+        continue;
+      }
+      try {
+        await Notification.create({ user: user._id, type: 'system', message: 'Final 24-Hour Notice: Your account will be permanently deleted in 24 hours due to inactivity. Log in or browse to cancel deletion.' });
+        summary.warnings1d += 1;
+        console.log(`[InactivityCleanup] Sent final warning to ${user._id}.`);
+      } catch (error) {
+        summary.errors += 1;
+        console.error(`[InactivityCleanup] Final warning failed for ${user._id}:`, error.message);
+      }
     }
 
-    // 2. Process 2-Days Remaining Warning (inactive >= 8 days, < 9 days)
-    const threshold2d = new Date(now - WARNING_2D_DAYS * DAY_MS);
     const users2d = await User.find({
-      role: mongoose.trusted({ $ne: 'admin' }),
-      lastActiveAt: mongoose.trusted({ $lte: threshold2d, $gt: threshold1d }),
+      ...eligibleUserFilter(),
+      lastActiveAt: mongoose.trusted(inactivityWindow(WARNING_2D_DAYS, WARNING_1D_DAYS, now)),
       'inactivityWarningsSent.d2': mongoose.trusted({ $ne: true }),
     });
 
     for (const user of users2d) {
-      await Notification.create({
-        user: user._id,
-        type: 'system',
-        message: 'Urgent Warning: Your account has been inactive for 8 days and will be permanently deleted in 2 days. Any login or browsing will immediately cancel deletion.',
-      });
-      user.inactivityWarningsSent = user.inactivityWarningsSent || {};
-      user.inactivityWarningsSent.d2 = true;
-      user.inactivityWarningsSent.d5 = true;
-      await user.save();
-      summary.warnings2d += 1;
+      const claimed = await User.findOneAndUpdate(
+        { _id: user._id, ...eligibleUserFilter(), lastActiveAt: mongoose.trusted(inactivityWindow(WARNING_2D_DAYS, WARNING_1D_DAYS, now)), 'inactivityWarningsSent.d2': mongoose.trusted({ $ne: true }) },
+        { $set: { 'inactivityWarningsSent.d2': true } },
+        { new: true }
+      );
+      if (!claimed) {
+        summary.skipped += 1;
+        console.log(`[InactivityCleanup] Skipped 2-day warning for ${user._id}: activity or another run changed the record.`);
+        continue;
+      }
+      try {
+        await Notification.create({ user: user._id, type: 'system', message: 'Urgent Warning: Your account has been inactive for 8 days and will be permanently deleted in 2 days. Any login or browsing will immediately cancel deletion.' });
+        summary.warnings2d += 1;
+        console.log(`[InactivityCleanup] Sent 2-day warning to ${user._id}.`);
+      } catch (error) {
+        summary.errors += 1;
+        console.error(`[InactivityCleanup] 2-day warning failed for ${user._id}:`, error.message);
+      }
     }
 
-    // 3. Process 5-Days Remaining Warning (inactive >= 5 days, < 8 days)
-    const threshold5d = new Date(now - WARNING_5D_DAYS * DAY_MS);
     const users5d = await User.find({
-      role: mongoose.trusted({ $ne: 'admin' }),
-      lastActiveAt: mongoose.trusted({ $lte: threshold5d, $gt: threshold2d }),
+      ...eligibleUserFilter(),
+      lastActiveAt: mongoose.trusted(inactivityWindow(WARNING_5D_DAYS, WARNING_2D_DAYS, now)),
       'inactivityWarningsSent.d5': mongoose.trusted({ $ne: true }),
     });
 
     for (const user of users5d) {
-      await Notification.create({
-        user: user._id,
-        type: 'system',
-        message: 'Notice: Your account has been inactive for 5 days. Due to our 10-day inactivity policy, accounts inactive for 10 days are permanently deleted. Log in to keep your account active (5 days remaining).',
-      });
-      user.inactivityWarningsSent = user.inactivityWarningsSent || {};
-      user.inactivityWarningsSent.d5 = true;
-      await user.save();
-      summary.warnings5d += 1;
+      const claimed = await User.findOneAndUpdate(
+        { _id: user._id, ...eligibleUserFilter(), lastActiveAt: mongoose.trusted(inactivityWindow(WARNING_5D_DAYS, WARNING_2D_DAYS, now)), 'inactivityWarningsSent.d5': mongoose.trusted({ $ne: true }) },
+        { $set: { 'inactivityWarningsSent.d5': true } },
+        { new: true }
+      );
+      if (!claimed) {
+        summary.skipped += 1;
+        console.log(`[InactivityCleanup] Skipped 5-day warning for ${user._id}: activity or another run changed the record.`);
+        continue;
+      }
+      try {
+        await Notification.create({ user: user._id, type: 'system', message: 'Notice: Your account has been inactive for 5 days. Due to our 10-day inactivity policy, accounts inactive for 10 days are permanently deleted. Log in to keep your account active (5 days remaining).' });
+        summary.warnings5d += 1;
+        console.log(`[InactivityCleanup] Sent 5-day warning to ${user._id}.`);
+      } catch (error) {
+        summary.errors += 1;
+        console.error(`[InactivityCleanup] 5-day warning failed for ${user._id}:`, error.message);
+      }
     }
 
-    // 4. Execute Permanent Cascade Purge (inactive >= 10 days)
     const expiredUsers = await User.find({
-      role: mongoose.trusted({ $ne: 'admin' }),
-      lastActiveAt: mongoose.trusted({ $lte: thresholdPurge }),
+      ...eligibleUserFilter(),
+      lastActiveAt: mongoose.trusted(inactivityWindow(INACTIVITY_LIMIT_DAYS, null, now)),
     });
 
     for (const user of expiredUsers) {
-      await purgeUserPermanently(user._id, 'INACTIVITY_10_DAYS');
-      summary.purged += 1;
+      const latestUser = await User.findOne({
+        _id: user._id,
+        ...eligibleUserFilter(),
+        lastActiveAt: mongoose.trusted(inactivityWindow(INACTIVITY_LIMIT_DAYS, null)),
+      }).select('_id');
+      if (!latestUser) {
+        summary.skipped += 1;
+        console.log(`[InactivityCleanup] Skipped purge for ${user._id}: user became active or is no longer eligible.`);
+        continue;
+      }
+      try {
+        const result = await purgeUserPermanently(user._id, 'INACTIVITY_10_DAYS');
+        if (result.success) summary.purged += 1;
+        else summary.skipped += 1;
+      } catch (error) {
+        summary.errors += 1;
+        console.error(`[InactivityCleanup] Purge failed for ${user._id}:`, error.message);
+      }
     }
 
     console.log('[InactivityCleanup] Cycle completed:', summary);
@@ -253,29 +301,12 @@ const runInactivityChecks = async () => {
  */
 const getInactivityStatus = async () => {
   const now = Date.now();
-  const threshold5d = new Date(now - WARNING_5D_DAYS * DAY_MS);
-  const threshold2d = new Date(now - WARNING_2D_DAYS * DAY_MS);
-  const threshold1d = new Date(now - WARNING_1D_DAYS * DAY_MS);
-  const thresholdPurge = new Date(now - INACTIVITY_LIMIT_DAYS * DAY_MS);
-
   const [count5d, count2d, count1d, countPendingPurge, totalUsers] = await Promise.all([
-    User.countDocuments({
-      role: mongoose.trusted({ $ne: 'admin' }),
-      lastActiveAt: mongoose.trusted({ $lte: threshold5d, $gt: threshold2d }),
-    }),
-    User.countDocuments({
-      role: mongoose.trusted({ $ne: 'admin' }),
-      lastActiveAt: mongoose.trusted({ $lte: threshold2d, $gt: threshold1d }),
-    }),
-    User.countDocuments({
-      role: mongoose.trusted({ $ne: 'admin' }),
-      lastActiveAt: mongoose.trusted({ $lte: threshold1d, $gt: thresholdPurge }),
-    }),
-    User.countDocuments({
-      role: mongoose.trusted({ $ne: 'admin' }),
-      lastActiveAt: mongoose.trusted({ $lte: thresholdPurge }),
-    }),
-    User.countDocuments({ role: mongoose.trusted({ $ne: 'admin' }) }),
+    User.countDocuments({ ...eligibleUserFilter(), lastActiveAt: mongoose.trusted(inactivityWindow(WARNING_5D_DAYS, WARNING_2D_DAYS, now)) }),
+    User.countDocuments({ ...eligibleUserFilter(), lastActiveAt: mongoose.trusted(inactivityWindow(WARNING_2D_DAYS, WARNING_1D_DAYS, now)) }),
+    User.countDocuments({ ...eligibleUserFilter(), lastActiveAt: mongoose.trusted(inactivityWindow(WARNING_1D_DAYS, INACTIVITY_LIMIT_DAYS, now)) }),
+    User.countDocuments({ ...eligibleUserFilter(), lastActiveAt: mongoose.trusted(inactivityWindow(INACTIVITY_LIMIT_DAYS, null, now)) }),
+    User.countDocuments(eligibleUserFilter()),
   ]);
 
   return {
@@ -285,6 +316,11 @@ const getInactivityStatus = async () => {
     usersInWarningTier2d: count2d,
     usersInWarningTier1d: count1d,
     usersPendingPurge: countPendingPurge,
+    pendingPurgeCount: countPendingPurge,
+    warning1dCount: count1d,
+    warning2dCount: count2d,
+    warning5dCount: count5d,
+    inactiveUsersCount: count5d + count2d + count1d + countPendingPurge,
     totalActiveUsersTracked: totalUsers,
     lastChecked: new Date(),
   };
@@ -312,5 +348,7 @@ module.exports = {
   purgeUserPermanently,
   runInactivityChecks,
   getInactivityStatus,
+  eligibleUserFilter,
+  inactivityWindow,
   startInactivityScheduler,
 };

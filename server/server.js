@@ -11,8 +11,6 @@ const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
 const { seedUsers, seedAchievements, seedGifts } = require('./utils/seeder');
 const { migrateEmailVerification } = require('./scripts/migrateEmailVerification');
-const { startInactivityScheduler } = require('./services/inactivityScheduler');
-
 const { startMessageCleanup } = require('./utils/messageCleanup');
 const { startNotificationCleanup } = require('./utils/notificationCleanup');
 
@@ -135,13 +133,6 @@ let dbConnected = false;
       await migrateEmailVerification(true);
     } catch (e) {
       console.warn('[Migration] Boot email verification migration skipped:', e.message);
-    }
-
-    // Start inactivity reminder and deactivation scheduler
-    try {
-      startInactivityScheduler();
-    } catch (e) {
-      console.warn('[InactivityScheduler] Failed to start scheduler on boot:', e.message);
     }
 
     const allowDupMerge = process.env.ENABLE_NOTIFICATION_DUP_MERGE !== 'false';

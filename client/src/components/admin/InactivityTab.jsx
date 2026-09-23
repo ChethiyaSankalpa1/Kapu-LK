@@ -51,7 +51,7 @@ export default function InactivityTab() {
       const res = await inactivityAPI.runCleanup();
       if (res.data?.success) {
         toast.success(
-          `Cleanup finished! Purged: ${res.data.summary?.purgedUsers || 0} users. Warnings sent: 1d (${res.data.summary?.warnings1d || 0}), 2d (${res.data.summary?.warnings2d || 0}), 5d (${res.data.summary?.warnings5d || 0})`
+          `Cleanup finished! Purged: ${res.data.result?.purged || 0} users. Warnings sent: 1d (${res.data.result?.warnings1d || 0}), 2d (${res.data.result?.warnings2d || 0}), 5d (${res.data.result?.warnings5d || 0})`
         );
         fetchStatus();
       }
