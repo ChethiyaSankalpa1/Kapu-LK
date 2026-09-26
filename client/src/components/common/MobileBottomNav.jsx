@@ -13,7 +13,7 @@ const MobileBottomNav = () => {
 
     const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
-    // Detect virtual keyboard and input focus on mobile to prevent bottom dock jumping up
+    // Detect virtual keyboard via input focus to prevent false hiding on initial page load
     useEffect(() => {
         const handleFocusIn = (e) => {
             const tag = e.target?.tagName?.toLowerCase();
@@ -23,7 +23,6 @@ const MobileBottomNav = () => {
         };
 
         const handleFocusOut = () => {
-            // Small timeout to prevent flickering between input focus changes
             setTimeout(() => {
                 const activeTag = document.activeElement?.tagName?.toLowerCase();
                 if (activeTag !== 'input' && activeTag !== 'textarea' && !document.activeElement?.isContentEditable) {
@@ -35,31 +34,16 @@ const MobileBottomNav = () => {
         window.addEventListener('focusin', handleFocusIn);
         window.addEventListener('focusout', handleFocusOut);
 
-        const handleResize = () => {
-            if (window.visualViewport) {
-                const isKeyboard = (window.innerHeight - window.visualViewport.height) > 60;
-                if (isKeyboard) {
-                    setIsKeyboardOpen(true);
-                }
-            }
-        };
-
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', handleResize);
-            window.visualViewport.addEventListener('scroll', handleResize);
-        }
-        window.addEventListener('resize', handleResize);
-
         return () => {
             window.removeEventListener('focusin', handleFocusIn);
             window.removeEventListener('focusout', handleFocusOut);
-            if (window.visualViewport) {
-                window.visualViewport.removeEventListener('resize', handleResize);
-                window.visualViewport.removeEventListener('scroll', handleResize);
-            }
-            window.removeEventListener('resize', handleResize);
         };
     }, []);
+
+    // Reset keyboard state when location changes so nav appears instantly on navigation
+    useEffect(() => {
+        setIsKeyboardOpen(false);
+    }, [location.pathname]);
 
     // Fetch unread count for conversations if logged in
     useEffect(() => {
