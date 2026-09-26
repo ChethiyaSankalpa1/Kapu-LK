@@ -2,14 +2,23 @@ import axios from 'axios';
 
 const getApiBaseUrl = () => {
     const envUrl = process.env.REACT_APP_API_URL;
-    // In production, never let localhost sneak in from dev env files
+
     if (process.env.NODE_ENV === 'production') {
-        if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+        // Always use the relative /api path in production so requests go through
+        // Vercel's own same-origin proxy (vercel.json rewrites /api/* → render.com).
+        // This prevents browsers (Edge/Safari Tracking Prevention) from blocking
+        // cross-site cookie/storage access that causes 401 loops when hitting
+        // render.com directly from a different Vercel domain.
+        //
+        // Only use REACT_APP_API_URL if it is explicitly a relative path (starts with /).
+        // Never use it if it is an absolute cross-origin URL in production.
+        if (envUrl && envUrl.startsWith('/')) {
             return envUrl;
         }
-        return 'https://kapu-lk-2.onrender.com/api';
+        return '/api';
     }
-    // In local development
+
+    // In local development — allow the env var or fall back to localhost
     return envUrl || 'http://localhost:5000/api';
 };
 
