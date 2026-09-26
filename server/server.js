@@ -434,6 +434,7 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+
   // Initialize inactivity monitoring and permanent cascade cleanup scheduler
   try {
     const { startInactivityScheduler } = require('./services/inactivityCleanupService');
@@ -441,4 +442,47 @@ app.listen(PORT, () => {
   } catch (e) {
     console.warn('Failed to start inactivity scheduler:', e.message);
   }
+
+  // ── Render free-tier keep-alive ──────────────────────────────────────────
+  // Render spins down free services after 15 min of inactivity, causing the
+  // next request to wait 30-60s for a cold start (Vercel returns 502 during
+  // that window). We ping our own /health endpoint every 14 minutes so the
+  // server never idles long enough to sleep.
+  // RENDER_EXTERNAL_URL is injected automatically by Render in production.
+  // In local dev this block is skipped entirely.
+  const renderUrl = process.env.RENDER_EXTERNAL_URL;
+  if (renderUrl && process.env.NODE_ENV === 'production') {
+    const https = require('https');
+    const http  = require('http');
+    const pingUrl = `${renderUrl}/health`;
+    const PING_INTERVAL_MS = 14 * 60 * 1000; // 14 minutes
+
+    const doPing = () => {
+      try {
+        const lib = pingUrl.startsWith('https') ? https : http;
+        const req = lib.get(pingUrl, { timeout: 10000 }, (res) => {
+          console.log(`[KeepAlive] Ping ${pingUrl} → ${res.statusCode}`);
+          res.resume(); // drain response body
+        });
+        req.on('error', (err) => {
+          console.warn('[KeepAlive] Ping error (non-fatal):', err.message);
+        });
+        req.on('timeout', () => {
+          req.destroy();
+          console.warn('[KeepAlive] Ping timed out (non-fatal)');
+        });
+      } catch (e) {
+        console.warn('[KeepAlive] Unexpected ping error (non-fatal):', e.message);
+      }
+    };
+
+    // First ping after 1 minute (let the server fully start), then every 14 min
+    setTimeout(() => {
+      doPing();
+      setInterval(doPing, PING_INTERVAL_MS);
+    }, 60 * 1000);
+
+    console.log(`[KeepAlive] Self-ping scheduled every 14 min → ${pingUrl}`);
+  }
+  // ────────────────────────────────────────────────────────────────────────
 });
