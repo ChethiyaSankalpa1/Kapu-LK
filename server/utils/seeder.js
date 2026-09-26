@@ -340,9 +340,6 @@ const seedPremiumPlans = async () => {
       if (!existing) {
         await PremiumPlan.create(plan);
         console.log(`✅ Premium Plan Created: ${plan.name} - ${plan.price} ${plan.currency} (${plan.durationDays} Days)`);
-      } else {
-        await PremiumPlan.updateOne({ _id: existing._id }, { $set: plan });
-        console.log(`✅ Premium Plan Updated: ${plan.name} - ${plan.price} ${plan.currency} (${plan.durationDays} Days)`);
       }
     }
   } catch (error) {

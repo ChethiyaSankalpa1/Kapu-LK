@@ -26,7 +26,7 @@ const GiftSchema = new mongoose.Schema({
   },
   currency: {
     type: String,
-    enum: ['LKR', 'USD'],
+    enum: ['LKR', 'USD', 'POINTS'],
     default: 'LKR'
   },
   isPremium: {
@@ -75,10 +75,28 @@ const GiftTransactionSchema = new mongoose.Schema({
   isAnonymous: {
     type: Boolean,
     default: false
+  },
+  paymentAmount: {
+    type: Number,
+    min: 0
+  },
+  paymentCurrency: {
+    type: String,
+    enum: ['LKR', 'USD', 'POINTS'],
+    default: 'LKR'
+  },
+  idempotencyKey: {
+    type: String,
+    maxlength: 100
   }
 }, {
   timestamps: true
 });
+
+GiftTransactionSchema.index(
+  { from: 1, idempotencyKey: 1 },
+  { unique: true, partialFilterExpression: { idempotencyKey: { $type: 'string' } } }
+);
 
 const Gift = mongoose.model('Gift', GiftSchema);
 const GiftTransaction = mongoose.model('GiftTransaction', GiftTransactionSchema);

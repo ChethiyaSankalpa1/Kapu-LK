@@ -14,39 +14,51 @@ const { checkAchievements } = require('./achievementController');
 // @desc    Get all available gifts
 // @route   GET /api/gifts
 // @access  Private
-exports.getGifts = async (req, res) => {
+exports.getGifts = async (_req, res) => {
   try {
-    // Fetch only regular (non-premium) active gifts
-    const query = { isActive: true, isPremium: { $ne: true } };
+    // Use $ne filters that are compatible with Mongoose Boolean Schema casting,
+    // while also tolerating legacy documents where isActive / isPremium fields
+    // don't exist at all (MongoDB treats missing fields as undefined, which is
+    // neither equal to true nor equal to false).
+    // - $ne:false  → true OR missing
+    // - $ne:true   → false OR missing
+    const query = {
+      isActive: mongoose.trusted({ $ne: false }),
+      isPremium: mongoose.trusted({ $ne: true }),
+    };
+
     let gifts = await Gift.find(query).sort({ category: 1, price: 1 });
 
     if (!gifts || gifts.length === 0) {
-      // Seed default gifts if the collection is empty.
-      // ordered:false means Mongo continues inserting even if one doc hits a duplicate key,
-      // preventing a 500 when the server-boot seeder already inserted some of them.
       const defaultGifts = [
-        { name: 'Red Rose', emoji: '🌹', category: 'flowers', price: 50, isRecommended: true },
-        { name: 'Love Heart', emoji: '❤️', category: 'hearts', price: 100, isRecommended: true },
-        { name: 'Coffee Cup', emoji: '☕', category: 'drinks', price: 150 },
-        { name: 'Box of Chocolates', emoji: '🍫', category: 'food', price: 200 },
-        { name: 'Special Gift Box', emoji: '🎁', category: 'gifts', price: 300 },
+        { name: 'Red Rose', emoji: '🌹', category: 'flowers', price: 50, currency: 'LKR', isActive: true, isPremium: false, isRecommended: true },
+        { name: 'Love Heart', emoji: '❤️', category: 'hearts', price: 100, currency: 'LKR', isActive: true, isPremium: false, isRecommended: true },
+        { name: 'Coffee Cup', emoji: '☕', category: 'drinks', price: 150, currency: 'LKR', isActive: true, isPremium: false },
+        { name: 'Box of Chocolates', emoji: '🍫', category: 'food', price: 200, currency: 'LKR', isActive: true, isPremium: false },
+        { name: 'Love Letter', emoji: '💌', category: 'gifts', price: 250, currency: 'LKR', isActive: true, isPremium: false },
+        { name: 'Teddy Bear', emoji: '🧸', category: 'gifts', price: 300, currency: 'LKR', isActive: true, isPremium: false },
+        { name: 'Bouquet', emoji: '💐', category: 'flowers', price: 500, currency: 'LKR', isActive: true, isPremium: false },
+        { name: 'Starry Night', emoji: '⭐', category: 'special', price: 50, currency: 'POINTS', isActive: true, isPremium: false },
+        { name: 'Sparkle Heart', emoji: '💖', category: 'hearts', price: 100, currency: 'POINTS', isActive: true, isPremium: false, isRecommended: true },
+        { name: 'Fireworks', emoji: '🎆', category: 'special', price: 200, currency: 'POINTS', isActive: true, isPremium: false },
       ];
       try {
         await Gift.insertMany(defaultGifts, { ordered: false });
       } catch (seedErr) {
-        // E11000 = duplicate key — some gifts already exist; safe to ignore
-        if (seedErr.code !== 11000 && !(seedErr.writeErrors && seedErr.writeErrors.every(e => e.code === 11000))) {
-          throw seedErr;
+        const isOnlyDuplicates =
+          seedErr.code === 11000 ||
+          (seedErr.writeErrors && seedErr.writeErrors.length > 0 && seedErr.writeErrors.every((e) => e.code === 11000));
+        if (!isOnlyDuplicates) {
+          console.warn('[giftController.getGifts] Non-duplicate seeding warning:', seedErr && seedErr.message ? seedErr.message : seedErr);
         }
       }
-      // Re-query after seeding so we always return what is actually in the DB
       gifts = await Gift.find(query).sort({ category: 1, price: 1 });
     }
 
     res.json(gifts);
   } catch (error) {
     console.error('Error fetching gifts:', error);
-    res.status(500).json({ message: 'Failed to fetch gifts' });
+    res.status(500).json({ message: error.message || 'Failed to fetch gifts' });
   }
 };
 
@@ -55,161 +67,196 @@ exports.getGifts = async (req, res) => {
 // @route   POST /api/gifts/send
 // @access  Private
 exports.sendGift = async (req, res) => {
+  const { to, giftId, message, isAnonymous, idempotencyKey } = req.body;
+  const sender = req.user._id;
+  if (!to || !mongoose.isValidObjectId(to) || !giftId || !mongoose.isValidObjectId(giftId) ||
+      typeof idempotencyKey !== 'string' || !idempotencyKey.trim() || idempotencyKey.length > 100) {
+    return res.status(400).json({ message: 'Recipient, gift, and payment request key are required.' });
+  }
+  if (String(to) === String(sender)) {
+    return res.status(400).json({ message: 'Cannot send gift to yourself' });
+  }
+
+  const requestKey = idempotencyKey.trim();
+  const findExisting = () => GiftTransaction.findOne({ from: sender, idempotencyKey: requestKey });
+  const existing = await findExisting();
+  if (existing) {
+    if (String(existing.to) !== String(to) || String(existing.gift) !== String(giftId) ||
+      (existing.message || '') !== (message || '') || existing.isAnonymous !== Boolean(isAnonymous)) {
+      return res.status(409).json({ message: 'This payment request key was already used for another gift.' });
+    }
+    const populated = await existing.populate([
+      { path: 'gift' },
+      { path: 'from', select: 'name profileImageUrl' },
+      { path: 'to', select: 'name profileImageUrl' },
+    ]);
+    return res.status(200).json(populated);
+  }
+
+  const session = await mongoose.startSession();
+  let transactionId;
+  let senderStatsAfter;
   try {
-    const { to, giftId, message, isAnonymous } = req.body;
-    const sender = req.user._id;
-
-    if (!to || !giftId) {
-      return res.status(400).json({ message: 'Recipient and gift are required' });
-    }
-
-    if (to === sender.toString()) {
-      return res.status(400).json({ message: 'Cannot send gift to yourself' });
-    }
-
-    const gift = await Gift.findById(giftId);
-    if (!gift || !gift.isActive) {
-      return res.status(404).json({ message: 'Gift not found' });
-    }
-    if (gift.isPremium || /premium/i.test(gift.name)) {
-      return res.status(400).json({ message: 'Choose a Bronze, Silver, or Gold plan to gift Premium.' });
-    }
-
-    const recipient = await User.findById(to);
-    if (!recipient) {
-      return res.status(404).json({ message: 'Recipient not found' });
-    }
-
-    // Check if recipient has opted out of receiving gifts
-    if (recipient.giftingOptIn === false) {
-      return res.status(400).json({ message: `${recipient.name} has opted out of receiving gifts.` });
-    }
-
-    let walletBefore = 0;
-    let walletAfter = 0;
-
-    // Secure payment atomically BEFORE granting any benefits
-    if (gift.price > 0) {
-      const updatedWallet = await Wallet.findOneAndUpdate(
-        { user: sender, balance: mongoose.trusted({ $gte: gift.price }) },
-        { $inc: { balance: -gift.price, totalSpent: gift.price } },
-        { new: true }
-      );
-
-      if (!updatedWallet) {
-        const wallet = await Wallet.findOne({ user: sender });
-        const available = wallet ? wallet.balance : 0;
-        return res.status(400).json({
-          message: 'Insufficient wallet balance',
-          required: gift.price,
-          available,
-        });
+    await session.withTransaction(async () => {
+      const gift = await Gift.findOne({ _id: giftId, isActive: true }).session(session);
+      if (!gift) {
+        const error = new Error('Gift not found');
+        error.statusCode = 404;
+        throw error;
+      }
+      if (gift.isPremium || /premium/i.test(gift.name)) {
+        const error = new Error('Choose a Bronze, Silver, or Gold plan to gift Premium.');
+        error.statusCode = 400;
+        throw error;
       }
 
-      walletAfter = updatedWallet.balance;
-      walletBefore = updatedWallet.balance + gift.price;
-    }
-
-    // Create gift transaction
-    const transaction = await GiftTransaction.create({
-      from: sender,
-      to,
-      gift: giftId,
-      message,
-      isAnonymous
-    });
-
-    // Create wallet transaction record after gift transaction is created
-    if (gift.price > 0) {
-      let wallet = await Wallet.findOne({ user: sender });
-      await WalletTransaction.create({
-        wallet: wallet._id,
-        user: sender,
-        type: 'purchase',
-        amount: gift.price,
-        currency: gift.currency || 'LKR',
-        description: `Gift sent: ${gift.name}`,
-        relatedId: transaction._id,
-        relatedType: 'gift',
-        balanceBefore: wallet.balance + gift.price,
-        balanceAfter: wallet.balance,
-        status: 'completed'
-      });
-    }
-
-    // Update user stats
-    let userStats = await UserStats.findOne({ user: sender });
-    if (!userStats) {
-      userStats = new UserStats({ user: sender });
-    }
-    
-    // Track daily gifts
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (userStats.lastGiftDate) {
-      const lastGift = new Date(userStats.lastGiftDate);
-      lastGift.setHours(0, 0, 0, 0);
-      if (lastGift.getTime() !== today.getTime()) {
-        userStats.dailyGiftsSent = 0; // Reset daily counter
+      const recipient = await User.findById(to).session(session);
+      if (!recipient) {
+        const error = new Error('Recipient not found');
+        error.statusCode = 404;
+        throw error;
       }
-    }
-    userStats.dailyGiftsSent = (userStats.dailyGiftsSent || 0) + 1;
-    userStats.lastGiftDate = today;
-    
-    userStats.totalGiftsSent += 1;
-    userStats.points += 5; // Bonus points for sending gift
-    await userStats.save();
+      if (recipient.giftingOptIn === false) {
+        const error = new Error(`${recipient.name} has opted out of receiving gifts.`);
+        error.statusCode = 400;
+        throw error;
+      }
 
-    // Check for gift-related achievements
-    await checkAchievements(sender, userStats);
+      const paymentCurrency = gift.currency || 'LKR';
+      let updatedWallet;
+      let balanceBefore = 0;
+      if (gift.price > 0 && paymentCurrency === 'POINTS') {
+        const statsAfterPayment = await UserStats.findOneAndUpdate(
+          { user: sender, points: mongoose.trusted({ $gte: gift.price }) },
+          { $inc: { points: -gift.price } },
+          { new: true, session }
+        );
+        if (!statsAfterPayment) {
+          const stats = await UserStats.findOne({ user: sender }).session(session);
+          const error = new Error('Insufficient reward points.');
+          error.statusCode = 400;
+          error.required = gift.price;
+          error.available = stats?.points || 0;
+          throw error;
+        }
+      } else if (gift.price > 0) {
+        updatedWallet = await Wallet.findOneAndUpdate(
+          { user: sender, currency: paymentCurrency, balance: mongoose.trusted({ $gte: gift.price }) },
+          { $inc: { balance: -gift.price, totalSpent: gift.price } },
+          { new: true, session }
+        );
+        if (!updatedWallet) {
+          const wallet = await Wallet.findOne({ user: sender, currency: paymentCurrency }).session(session);
+          const error = new Error('Insufficient wallet balance');
+          error.statusCode = 400;
+          error.required = gift.price;
+          error.available = wallet?.balance || 0;
+          throw error;
+        }
+        balanceBefore = updatedWallet.balance + gift.price;
+      }
 
-    // Update recipient stats and convert gift to points
-    let recipientStats = await UserStats.findOne({ user: to });
-    if (!recipientStats) {
-      recipientStats = new UserStats({ user: to });
-    }
-    recipientStats.totalGiftsReceived += 1;
-    
-    // Convert received gift to reward points (10% of gift value or minimum 5 points)
-    const pointsEarned = Math.max(5, Math.floor(gift.price * 0.1));
-    recipientStats.points += pointsEarned;
-    await recipientStats.save();
+      const [transaction] = await GiftTransaction.create([{
+        from: sender,
+        to,
+        gift: giftId,
+        message,
+        isAnonymous,
+        paymentAmount: gift.price,
+        paymentCurrency,
+        idempotencyKey: requestKey,
+      }], { session });
+      transactionId = transaction._id;
 
-    console.log(`Gift received: User ${to} earned ${pointsEarned} points from gift ${gift.name}`);
+      if (updatedWallet) {
+        await WalletTransaction.create([{
+          wallet: updatedWallet._id,
+          user: sender,
+          type: 'purchase',
+          amount: gift.price,
+          currency: paymentCurrency,
+          description: `Gift sent: ${gift.name}`,
+          relatedId: transaction._id,
+          relatedType: 'gift',
+          balanceBefore,
+          balanceAfter: updatedWallet.balance,
+          status: 'completed',
+        }], { session });
+      }
 
-    // Create notification with points earned info
-    await Notification.create({
-      user: to,
-      type: 'gift_received',
-      message: isAnonymous 
-        ? `Someone sent you a gift (${gift.name} ${gift.emoji})! You earned ${pointsEarned} points!` 
-        : `${req.user.name} sent you a gift (${gift.name} ${gift.emoji})! You earned ${pointsEarned} points!`,
-      relatedUser: sender,
-      relatedGift: transaction._id
+      let userStats = await UserStats.findOne({ user: sender }).session(session);
+      if (!userStats) userStats = new UserStats({ user: sender });
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (userStats.lastGiftDate) {
+        const lastGift = new Date(userStats.lastGiftDate);
+        lastGift.setHours(0, 0, 0, 0);
+        if (lastGift.getTime() !== today.getTime()) userStats.dailyGiftsSent = 0;
+      }
+      userStats.dailyGiftsSent = (userStats.dailyGiftsSent || 0) + 1;
+      userStats.lastGiftDate = today;
+      userStats.totalGiftsSent += 1;
+      userStats.points += 5;
+      await userStats.save({ session });
+      senderStatsAfter = userStats;
+
+      let recipientStats = await UserStats.findOne({ user: to }).session(session);
+      if (!recipientStats) recipientStats = new UserStats({ user: to });
+      recipientStats.totalGiftsReceived += 1;
+      const pointsEarned = Math.max(5, Math.floor(gift.price * 0.1));
+      recipientStats.points += pointsEarned;
+      await recipientStats.save({ session });
+
+      await Notification.create([{
+        user: to,
+        type: 'gift_received',
+        message: isAnonymous
+          ? `Someone sent you a gift (${gift.name} ${gift.emoji})! You earned ${pointsEarned} points!`
+          : `${req.user.name} sent you a gift (${gift.name} ${gift.emoji})! You earned ${pointsEarned} points!`,
+        relatedUser: sender,
+        relatedGift: transaction._id,
+      }], { session });
+
+      const giftMessage = isAnonymous
+        ? (message ? `🎁 Received an anonymous gift: ${gift.name} ${gift.emoji}\n"${message}"` : `🎁 Received an anonymous gift: ${gift.name} ${gift.emoji}`)
+        : (message ? `🎁 Sent a gift: ${gift.name} ${gift.emoji}\n"${message}"` : `🎁 Sent a gift: ${gift.name} ${gift.emoji}`);
+      await Message.create([{
+        from: sender,
+        to,
+        content: giftMessage,
+        type: 'gift',
+      }], { session });
     });
 
-    // Create a message in chat so it appears in the conversation feed immediately
-    const giftMsgContent = isAnonymous
-      ? (message ? `🎁 Received an anonymous gift: ${gift.name} ${gift.emoji}\n"${message}"` : `🎁 Received an anonymous gift: ${gift.name} ${gift.emoji}`)
-      : (message ? `🎁 Sent a gift: ${gift.name} ${gift.emoji}\n"${message}"` : `🎁 Sent a gift: ${gift.name} ${gift.emoji}`);
-
-    await Message.create({
-      from: sender,
-      to: to,
-      content: giftMsgContent,
-      type: 'gift'
-    });
-
-    // Populate and return
-    const populatedTransaction = await GiftTransaction.findById(transaction._id)
+    try {
+      await checkAchievements(sender, senderStatsAfter);
+    } catch (achievementError) {
+      console.error('Gift sent, but achievement update failed:', achievementError);
+    }
+    const populatedTransaction = await GiftTransaction.findById(transactionId)
       .populate('gift')
       .populate('from', 'name profileImageUrl')
       .populate('to', 'name profileImageUrl');
-
-    res.status(201).json(populatedTransaction);
+    return res.status(201).json(populatedTransaction);
   } catch (error) {
-    console.error('Error sending gift:', error);
-    res.status(500).json({ message: 'Failed to send gift' });
+    if (error.code === 11000) {
+      const duplicate = await findExisting();
+      if (duplicate && String(duplicate.to) === String(to) && String(duplicate.gift) === String(giftId)) {
+        const populated = await duplicate.populate([
+          { path: 'gift' },
+          { path: 'from', select: 'name profileImageUrl' },
+          { path: 'to', select: 'name profileImageUrl' },
+        ]);
+        return res.status(200).json(populated);
+      }
+      return res.status(409).json({ message: 'This payment request has already been processed.' });
+    }
+    return res.status(error.statusCode || 500).json({
+      message: error.message || 'Failed to send gift',
+      ...(error.required !== undefined ? { required: error.required, available: error.available } : {}),
+    });
+  } finally {
+    await session.endSession();
   }
 };
 
@@ -287,13 +334,14 @@ exports.sendPremiumGift = async (req, res) => {
         expiresAt,
       }], { session });
 
+      const paymentCurrency = plan.currency || 'LKR';
       const updatedWallet = await Wallet.findOneAndUpdate(
-        { user: senderId, balance: mongoose.trusted({ $gte: plan.price }) },
+        { user: senderId, currency: paymentCurrency, balance: mongoose.trusted({ $gte: plan.price }) },
         { $inc: { balance: -plan.price, totalSpent: plan.price } },
         { new: true, session }
       );
       if (!updatedWallet) {
-        const wallet = await Wallet.findOne({ user: senderId }).session(session);
+        const wallet = await Wallet.findOne({ user: senderId, currency: paymentCurrency }).session(session);
         const error = new Error('Insufficient wallet balance.');
         error.statusCode = 400;
         error.required = plan.price;

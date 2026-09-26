@@ -9,7 +9,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
-const { seedUsers, seedAchievements, seedGifts } = require('./utils/seeder');
+const { seedUsers, seedAchievements, seedGifts, seedPremiumPlans } = require('./utils/seeder');
 const { migrateEmailVerification } = require('./scripts/migrateEmailVerification');
 const { startMessageCleanup } = require('./utils/messageCleanup');
 const { startNotificationCleanup } = require('./utils/notificationCleanup');
@@ -120,6 +120,7 @@ let dbConnected = false;
       await seedUsers();
       await seedAchievements();
       await seedGifts();
+      await seedPremiumPlans();
     }
     if (allowCleanup) {
       startMessageCleanup();

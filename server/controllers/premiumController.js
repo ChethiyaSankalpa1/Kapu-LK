@@ -52,11 +52,11 @@ const OFFICIAL_PLANS = [
 // @access  Public / Private
 exports.getPlans = async (req, res) => {
   try {
-    // Ensure official plans are always up-to-date with consistent specifications
+    // Create defaults only when missing; admin-configured prices and durations are authoritative.
     for (const official of OFFICIAL_PLANS) {
       await PremiumPlan.findOneAndUpdate(
         { badge: official.badge },
-        { $set: official },
+        { $setOnInsert: official },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
     }

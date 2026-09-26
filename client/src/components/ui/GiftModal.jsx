@@ -2,15 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { giftAPI, walletAPI, premiumAPI, redemptionAPI } from '../../services/api';
 import { X, Heart, Crown, Plus, Wallet, Star, Gift } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../context/AuthContext';
 
 const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) => {
+  const { user } = useAuth();
   const [gifts, setGifts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [giftLoadError, setGiftLoadError] = useState('');
   const [selectedGift, setSelectedGift] = useState(null);
+  const [giftRequestKey, setGiftRequestKey] = useState('');
   const [message, setMessage] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [sending, setSending] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
+  const [walletCurrency, setWalletCurrency] = useState('LKR');
   const [showTopUp, setShowTopUp] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState('');
   const [transactionReference, setTransactionReference] = useState('');
@@ -21,28 +26,38 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
   const [userPoints, setUserPoints] = useState(0);
   const [selectedPremiumPlan, setSelectedPremiumPlan] = useState(null);
   const [premiumPlans, setPremiumPlans] = useState([]);
+  const [premiumPlansLoading, setPremiumPlansLoading] = useState(false);
+  const [premiumPlansError, setPremiumPlansError] = useState('');
   const [redeemingPremium, setRedeemingPremium] = useState(false);
   const [showPremiumGift, setShowPremiumGift] = useState(false);
   const [selectedPremiumGiftPlan, setSelectedPremiumGiftPlan] = useState(null);
   const [premiumGiftRequestKey, setPremiumGiftRequestKey] = useState('');
   const [sendingPremiumGift, setSendingPremiumGift] = useState(false);
+  const [premiumRedemptionPointsCost, setPremiumRedemptionPointsCost] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
       fetchGifts();
       fetchWallet();
-      fetchUserPoints();
       fetchPremiumPlans();
     }
   }, [isOpen]);
 
   const fetchGifts = async () => {
     setLoading(true);
+    setGiftLoadError('');
     try {
       const response = await giftAPI.getGifts();
-      setGifts(response.data);
+      const data = response.data;
+      const availableGifts = Array.isArray(data) ? data : data?.gifts;
+      if (!Array.isArray(availableGifts)) {
+        throw new Error('The gifts service returned an unexpected response.');
+      }
+      setGifts(availableGifts);
     } catch (error) {
-      toast.error('Failed to load gifts');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to load gifts';
+      setGiftLoadError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -50,56 +65,81 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
 
   const fetchWallet = async () => {
     try {
-      const response = await walletAPI.getWallet();
-      setWalletBalance(response.data.balance || 0);
+      const response = await walletAPI.getWalletSummary();
+      setWalletBalance(response.data.wallet?.balance || 0);
+      setWalletCurrency(response.data.wallet?.currency || 'LKR');
+      setUserPoints(response.data.userStats?.points || 0);
     } catch (error) {
-      console.error('Failed to fetch wallet balance');
-    }
-  };
-
-  const fetchUserPoints = async () => {
-    try {
-      const response = await walletAPI.getWallet();
-      setUserPoints(response.data.points || 0);
-    } catch (error) {
-      console.error('Failed to fetch user points');
+      console.error('Failed to fetch wallet and points');
     }
   };
 
   const fetchPremiumPlans = async () => {
+    setPremiumPlansLoading(true);
+    setPremiumPlansError('');
     try {
       const response = await premiumAPI.getPlans();
-      setPremiumPlans(response.data || []);
+      const plans = Array.isArray(response.data) ? response.data : [];
+      setPremiumPlans(plans);
+      try {
+        const res = await redemptionAPI.getConfigs();
+        const configs = Array.isArray(res.data) ? res.data : [];
+        const premiumConfig = configs.find(c => c.rewardType === 'premium' && c.isActive);
+        setPremiumRedemptionPointsCost(premiumConfig?.pointsCost ?? null);
+      } catch (_redemptionErr) {
+        setPremiumRedemptionPointsCost(null);
+      }
     } catch (error) {
-      console.error('Failed to fetch premium plans');
+      const errorMessage = error.response?.data?.message || 'Failed to load Premium plans';
+      setPremiumPlansError(errorMessage);
+      console.error(errorMessage, error);
+    } finally {
+      setPremiumPlansLoading(false);
     }
   };
+
+  const giftCurrency = (gift) => gift.currency === 'POINTS' ? 'points' : (gift.currency || 'LKR');
+  const canAffordGift = (gift) => gift.currency === 'POINTS'
+    ? gift.price <= userPoints
+    : gift.price <= walletBalance;
 
   const handleSendGift = async () => {
     if (!selectedGift) {
       toast.error('Please select a gift');
       return;
     }
+    if (String(recipientId) === String(user?._id)) {
+      toast.error('Cannot send a gift to yourself.');
+      return;
+    }
 
-    if (selectedGift.price > walletBalance) {
-      toast.error('Not enough balance! Please top up your wallet.');
-      setShowTopUp(true);
+    if (!canAffordGift(selectedGift)) {
+      if (selectedGift.currency === 'POINTS') {
+        toast.error('Not enough reward points to send this gift.');
+      } else {
+        toast.error('Not enough balance! Please top up your wallet.');
+        setShowTopUp(true);
+      }
       return;
     }
 
     setSending(true);
+    const requestKey = giftRequestKey || newRequestKey();
+    setGiftRequestKey(requestKey);
     try {
       await giftAPI.sendGift({
         to: recipientId,
         giftId: selectedGift._id,
         message,
-        isAnonymous
+        isAnonymous,
+        idempotencyKey: requestKey,
       });
       toast.success('Gift sent successfully!');
       setSelectedGift(null);
+      setGiftRequestKey('');
       setMessage('');
       setIsAnonymous(false);
-      setWalletBalance(prev => prev - selectedGift.price);
+      await fetchWallet();
       if (onGiftSent) onGiftSent();
       onClose();
     } catch (error) {
@@ -155,7 +195,12 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
       toast.error('Choose a recipient and Premium plan');
       return;
     }
+    if (String(recipientId) === String(user?._id)) {
+      toast.error('Cannot gift Premium to yourself.');
+      return;
+    }
     if (selectedPremiumGiftPlan.price > walletBalance) {
+      toast.error(`Not enough balance! You need ${selectedPremiumGiftPlan.price} ${selectedPremiumGiftPlan.currency || 'LKR'} to gift ${selectedPremiumGiftPlan.name}.`);
       setShowTopUp(true);
       return;
     }
@@ -170,7 +215,7 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
         idempotencyKey: requestKey,
       });
       toast.success(`${selectedPremiumGiftPlan.name} gifted to ${recipientName}`);
-      setWalletBalance((balance) => balance - selectedPremiumGiftPlan.price);
+      await fetchWallet();
       setShowPremiumGift(false);
       setSelectedPremiumGiftPlan(null);
       setPremiumGiftRequestKey('');
@@ -238,7 +283,7 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 px-2.5 py-1 rounded-full">
               <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-600 dark:text-green-400" />
-              <span className="text-xs sm:text-sm font-semibold text-green-600 dark:text-green-400">{walletBalance} LKR</span>
+              <span className="text-xs sm:text-sm font-semibold text-green-600 dark:text-green-400">{walletBalance} {walletCurrency}</span>
             </div>
             <div className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900/30 px-2.5 py-1 rounded-full">
               <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600 dark:text-purple-400" />
@@ -279,13 +324,35 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500" />
+              <span className="sr-only">Loading gifts</span>
+            </div>
+          ) : giftLoadError ? (
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <Gift className="w-10 h-10 text-gray-400 dark:text-gray-500 mb-3" />
+              <p role="alert" className="text-sm text-gray-700 dark:text-gray-300">{giftLoadError}</p>
+              <button
+                type="button"
+                onClick={fetchGifts}
+                className="mt-3 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition"
+              >
+                Retry
+              </button>
+            </div>
+          ) : gifts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <Gift className="w-10 h-10 text-gray-400 dark:text-gray-500 mb-3" />
+              <p className="font-semibold text-gray-800 dark:text-gray-200">No gifts are available right now</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Please check back soon.</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 sm:gap-3">
               {gifts.map((gift) => (
                 <button
                   key={gift._id}
-                  onClick={() => setSelectedGift(gift)}
+                  onClick={() => {
+                    setSelectedGift(gift);
+                    setGiftRequestKey('');
+                  }}
                   className={`p-2.5 sm:p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center text-center ${
                     selectedGift?._id === gift._id
                       ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
@@ -295,7 +362,7 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
                   <div className="text-3xl sm:text-4xl mb-1 sm:mb-2">{gift.emoji}</div>
                   <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate w-full">{gift.name}</div>
                   <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {gift.price > 0 ? `${gift.price} LKR` : 'Free'}
+                    {gift.price > 0 ? `${gift.price} ${giftCurrency(gift)}` : 'Free'}
                   </div>
                   {gift.isRecommended && (
                     <div className="flex items-center gap-1 mt-1 text-[10px] sm:text-xs text-pink-600 dark:text-pink-400">
@@ -309,9 +376,9 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
                       Premium
                     </div>
                   )}
-                  {gift.price > walletBalance && (
+                  {!canAffordGift(gift) && (
                     <div className="mt-1 text-[10px] sm:text-xs text-red-500 dark:text-red-400">
-                      Need {gift.price - walletBalance} more LKR
+                      Need {gift.price - (gift.currency === 'POINTS' ? userPoints : walletBalance)} more {giftCurrency(gift)}
                     </div>
                   )}
                 </button>
@@ -330,7 +397,10 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
                 </label>
                 <textarea
                   value={message}
-                  onChange={(e) => setMessage(e.target.value)}
+                  onChange={(e) => {
+                    setMessage(e.target.value);
+                    setGiftRequestKey('');
+                  }}
                   placeholder="Add a personal message..."
                   className="w-full px-3 py-1.5 sm:py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-xs sm:text-sm resize-none"
                   rows={2}
@@ -343,7 +413,10 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
                   <input
                     type="checkbox"
                     checked={isAnonymous}
-                    onChange={(e) => setIsAnonymous(e.target.checked)}
+                    onChange={(e) => {
+                      setIsAnonymous(e.target.checked);
+                      setGiftRequestKey('');
+                    }}
                     className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
                   />
                   <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Send anonymously</span>
@@ -351,8 +424,12 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
 
                 <button
                   onClick={() => {
-                    if (selectedGift.price > walletBalance) {
-                      setShowTopUp(true);
+                    if (!canAffordGift(selectedGift)) {
+                      if (selectedGift.currency === 'POINTS') {
+                        toast.error('Not enough reward points to send this gift.');
+                      } else {
+                        setShowTopUp(true);
+                      }
                     } else {
                       handleSendGift();
                     }
@@ -365,7 +442,7 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
                       <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-b-2 border-white" />
                       Sending...
                     </>
-                  ) : selectedGift.price > walletBalance ? (
+                  ) : !canAffordGift(selectedGift) && selectedGift.currency !== 'POINTS' ? (
                     <>
                       <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       Top Up to Send
@@ -373,7 +450,7 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
                   ) : (
                     <>
                       <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      Send Gift ({selectedGift.price} LKR)
+                      Send Gift ({selectedGift.price} {giftCurrency(selectedGift)})
                     </>
                   )}
                 </button>
@@ -541,7 +618,18 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">To <span className="font-semibold text-gray-900 dark:text-white">{recipientName || 'selected member'}</span></p>
             <div className="space-y-2.5">
-              {premiumPlans.filter((plan) => plan.isActive && ['bronze', 'silver', 'gold'].includes(plan.badge)).map((plan) => (
+              {premiumPlansLoading ? (
+                <div className="flex items-center justify-center py-8" role="status" aria-label="Loading Premium plans">
+                  <div className="animate-spin rounded-full h-7 w-7 border-t-2 border-b-2 border-amber-500" />
+                </div>
+              ) : premiumPlansError ? (
+                <div className="py-6 text-center" role="alert">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">{premiumPlansError}</p>
+                  <button type="button" onClick={fetchPremiumPlans} className="mt-3 px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600">Retry</button>
+                </div>
+              ) : premiumPlans.filter((plan) => plan.isActive && ['bronze', 'silver', 'gold'].includes(plan.badge)).length === 0 ? (
+                <p className="py-6 text-center text-sm text-gray-600 dark:text-gray-300">No Premium plans are available right now.</p>
+              ) : premiumPlans.filter((plan) => plan.isActive && ['bronze', 'silver', 'gold'].includes(plan.badge)).map((plan) => (
                 <button
                   key={plan._id}
                   type="button"
@@ -633,7 +721,9 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">Points Required</p>
-                    <p className="text-2xl font-bold text-gray-600 dark:text-gray-300">150</p>
+                    <p className="text-2xl font-bold text-gray-600 dark:text-gray-300">
+                      {typeof premiumRedemptionPointsCost === 'number' ? premiumRedemptionPointsCost : '—'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -641,7 +731,13 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
 
             <button
               onClick={handleRedeemPremium}
-              disabled={!selectedPremiumPlan || redeemingPremium || userPoints < 150}
+              disabled={
+                !selectedPremiumPlan ||
+                redeemingPremium ||
+                (typeof premiumRedemptionPointsCost === 'number'
+                  ? userPoints < premiumRedemptionPointsCost
+                  : true)
+              }
               className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {redeemingPremium ? 'Redeeming...' : 'Redeem Premium'}
