@@ -3,11 +3,6 @@
   "outputDirectory": "client/build",
   "installCommand": "cd client && npm install",
   "framework": "create-react-app",
-  "functions": {
-    "api/**": {
-      "maxDuration": 60
-    }
-  },
   "headers": [
     {
       "source": "/manifest.json",
