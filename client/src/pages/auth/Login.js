@@ -92,7 +92,18 @@ const Login = () => {
 
     return (
         <div className="w-full flex-1 relative flex items-center justify-center py-8 sm:py-12 px-4 overflow-hidden">
-            <img src="/couple-hero.png" className="absolute inset-0 w-full h-full object-cover object-center" alt="" aria-hidden="true" />
+            <video
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                poster="/couple-hero.png"
+                className="absolute inset-0 w-full h-full object-cover object-center opacity-90"
+            >
+                <source src="/video/PixVerse_V6_Image_Text_540P_Create_a_beautiful.mp4" type="video/mp4" />
+                <img src="/couple-hero.png" className="w-full h-full object-cover object-center" alt="" aria-hidden="true" />
+            </video>
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/90 via-purple-950/85 to-rose-950/80" aria-hidden="true" />
             <div className="absolute inset-0 bg-gray-50/30 dark:bg-gray-900/40" aria-hidden="true" />
 

@@ -515,16 +515,15 @@ const Conversation = () => {
 
   return (
     <div
-      className={`fixed left-0 right-0 bg-[#d1dbd4] dark:bg-[#111b21] transition-colors duration-300 overflow-hidden ${
+      className={`fixed left-0 right-0 bg-[#efeae2] dark:bg-[#0b141a] transition-colors duration-150 overflow-hidden ${
         userId
-          ? 'top-0 md:top-16 bottom-0 z-40'
+          ? 'top-0 z-40 md:top-16 md:bottom-0'
           : 'top-14 sm:top-16 bottom-0 z-30'
       }`}
       style={{
-        height: viewportHeight && window.innerWidth < 768
-          ? (userId ? `${viewportHeight}px` : `${Math.max(viewportHeight - 56, 200)}px`)
+        height: window.innerWidth < 768
+          ? (viewportHeight ? `${viewportHeight}px` : '100dvh')
           : undefined,
-        maxHeight: viewportHeight && window.innerWidth < 768 ? `${viewportHeight}px` : undefined,
       }}
     >
       <div className="h-full flex w-full max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden min-h-0">
@@ -975,7 +974,7 @@ const Conversation = () => {
               </div>
 
               {/* Input Area */}
-              <div className="p-2 sm:p-3 pb-16 md:pb-3 focus-within:pb-2 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#d1d7db] dark:border-[#222d34] shrink-0 relative z-30 transition-all duration-150">
+              <div className="p-2 sm:p-3 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] md:pb-3 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#d1d7db] dark:border-[#222d34] shrink-0 relative z-30">
                 {/* Emoji Picker dropdown */}
                 {showEmojiPicker && (
                   <div

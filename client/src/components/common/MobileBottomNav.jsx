@@ -81,8 +81,12 @@ const MobileBottomNav = () => {
         return () => clearInterval(timer);
     }, [user]);
 
-    // Hide on admin portal, or when mobile keyboard is open
-    if (isAdmin || location.pathname.startsWith('/admin') || isKeyboardOpen) {
+    // Hide on admin portal, active individual chat room, or when mobile keyboard is open
+    const isIndividualChat = 
+        location.pathname.startsWith('/conversation/') || 
+        location.pathname.startsWith('/messages/');
+
+    if (isAdmin || location.pathname.startsWith('/admin') || isIndividualChat || isKeyboardOpen) {
         return null;
     }
 
