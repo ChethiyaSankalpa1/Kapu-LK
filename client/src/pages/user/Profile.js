@@ -53,6 +53,7 @@ const Profile = () => {
         partnerPreferences: user?.partnerPreferences || {},
     });
     const [loading, setLoading] = useState(false);
+    const [avatarSaving, setAvatarSaving] = useState(false);
     const [tab, setTab] = useState('about');
     const steps = ['about', 'religion', 'family', 'lifestyle', 'partner'];
     const currentIndex = steps.indexOf(tab);
@@ -70,6 +71,26 @@ const Profile = () => {
             [name]: name === 'phoneNumber' ? value.replace(/\D/g, '') : value,
         });
     };
+
+    // Instantly saves the selected avatar (or "use uploaded photo") to the database
+    // without needing the user to press the main Save button.
+    const selectAvatar = async (avatarId) => {
+        if (avatarSaving) return;
+        setAvatarSaving(true);
+        setFormData((prev) => ({ ...prev, profileAvatar: avatarId }));
+        try {
+            const response = await userAPI.updateProfile({ ...formData, profileAvatar: avatarId });
+            updateUser({ ...user, ...response.data });
+            toast.success(avatarId ? '✅ Avatar saved!' : '✅ Using uploaded photo!');
+        } catch (err) {
+            toast.error('Could not save avatar. Please try again.');
+            // Revert local state on error
+            setFormData((prev) => ({ ...prev, profileAvatar: user?.profileAvatar || '' }));
+        } finally {
+            setAvatarSaving(false);
+        }
+    };
+
 
     const onPrefChange = (e) => {
         setFormData({
@@ -220,36 +241,55 @@ const Profile = () => {
                     />
                 </div>
 
+
                 <section className="glass-card mb-4 sm:mb-6 p-4 sm:p-6 rounded-3xl bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 shadow-sm">
-                    <div className="mb-4">
-                        <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Profile Picture Choice</h2>
-                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Choose an uploaded photo or a default avatar. Your gallery stays unchanged.</p>
+                    <div className="mb-4 flex items-center justify-between">
+                        <div>
+                            <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Profile Picture Choice</h2>
+                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Tap an avatar to set it instantly. Your photo gallery stays unchanged.</p>
+                        </div>
+                        {avatarSaving && (
+                            <span className="flex items-center gap-1.5 text-xs text-purple-600 dark:text-purple-400 font-semibold animate-pulse">
+                                <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                                Saving…
+                            </span>
+                        )}
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-3">
+                        {/* Option: use uploaded photo */}
                         <button
                             type="button"
-                            disabled={!user?.profileImageUrl}
+                            disabled={!user?.profileImageUrl || avatarSaving}
                             aria-pressed={!formData.profileAvatar && Boolean(user?.profileImageUrl)}
-                            onClick={() => setFormData({ ...formData, profileAvatar: '' })}
-                            className={`flex flex-col items-center gap-2 rounded-xl border-2 p-2.5 transition disabled:cursor-not-allowed disabled:opacity-50 ${!formData.profileAvatar && user?.profileImageUrl ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/30' : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
+                            onClick={() => selectAvatar('')}
+                            className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-2.5 transition disabled:cursor-not-allowed disabled:opacity-50 ${!formData.profileAvatar && user?.profileImageUrl ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/30 ring-2 ring-purple-300 dark:ring-purple-700' : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
                         >
                             <ProfileAvatar user={{ ...user, profileAvatar: '' }} className="h-16 w-16 rounded-full bg-slate-200 dark:bg-slate-700" avatarClassName="text-3xl" fallbackClassName="text-xl font-bold text-white bg-slate-500" />
                             <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Uploaded photo</span>
+                            {!formData.profileAvatar && user?.profileImageUrl && (
+                                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center text-white text-xs">✓</span>
+                            )}
                         </button>
+                        {/* Default emoji avatars */}
                         {PROFILE_AVATARS.map((avatar) => (
                             <button
                                 key={avatar.id}
                                 type="button"
+                                disabled={avatarSaving}
                                 aria-pressed={formData.profileAvatar === avatar.id}
-                                onClick={() => setFormData({ ...formData, profileAvatar: avatar.id })}
-                                className={`flex flex-col items-center gap-2 rounded-xl border-2 p-2.5 transition ${formData.profileAvatar === avatar.id ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/30' : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
+                                onClick={() => selectAvatar(avatar.id)}
+                                className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-2.5 transition disabled:cursor-not-allowed disabled:opacity-60 ${formData.profileAvatar === avatar.id ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/30 ring-2 ring-purple-300 dark:ring-purple-700' : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
                             >
                                 <ProfileAvatar user={{ ...user, profileAvatar: avatar.id }} className="h-16 w-16 rounded-full" avatarClassName="text-3xl" />
                                 <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{avatar.label} {avatar.id.slice(-1)}</span>
+                                {formData.profileAvatar === avatar.id && (
+                                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center text-white text-xs">✓</span>
+                                )}
                             </button>
                         ))}
                     </div>
                 </section>
+
 
                 {/* Profile Form */}
                 <div className="glass-card">
