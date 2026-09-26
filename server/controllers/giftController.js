@@ -16,25 +16,40 @@ const { checkAchievements } = require('./achievementController');
 // @access  Private
 exports.getGifts = async (req, res) => {
   try {
-    let gifts = await Gift.find({ isActive: true, isPremium: { $ne: true }, name: { $not: /premium/i } }).sort({ category: 1, price: 1 });
+    // Fetch only regular (non-premium) active gifts
+    const query = { isActive: true, isPremium: { $ne: true } };
+    let gifts = await Gift.find(query).sort({ category: 1, price: 1 });
+
     if (!gifts || gifts.length === 0) {
-      // Seed default gifts if database is empty
+      // Seed default gifts if the collection is empty.
+      // ordered:false means Mongo continues inserting even if one doc hits a duplicate key,
+      // preventing a 500 when the server-boot seeder already inserted some of them.
       const defaultGifts = [
         { name: 'Red Rose', emoji: '🌹', category: 'flowers', price: 50, isRecommended: true },
         { name: 'Love Heart', emoji: '❤️', category: 'hearts', price: 100, isRecommended: true },
         { name: 'Coffee Cup', emoji: '☕', category: 'drinks', price: 150 },
         { name: 'Box of Chocolates', emoji: '🍫', category: 'food', price: 200 },
         { name: 'Special Gift Box', emoji: '🎁', category: 'gifts', price: 300 },
-        { name: '1-Month Premium Pass', emoji: '👑', category: 'special', price: 500, isPremium: true, description: 'Grants 30 days Premium membership to recipient!' }
       ];
-      gifts = await Gift.insertMany(defaultGifts);
+      try {
+        await Gift.insertMany(defaultGifts, { ordered: false });
+      } catch (seedErr) {
+        // E11000 = duplicate key — some gifts already exist; safe to ignore
+        if (seedErr.code !== 11000 && !(seedErr.writeErrors && seedErr.writeErrors.every(e => e.code === 11000))) {
+          throw seedErr;
+        }
+      }
+      // Re-query after seeding so we always return what is actually in the DB
+      gifts = await Gift.find(query).sort({ category: 1, price: 1 });
     }
+
     res.json(gifts);
   } catch (error) {
     console.error('Error fetching gifts:', error);
     res.status(500).json({ message: 'Failed to fetch gifts' });
   }
 };
+
 
 // @desc    Send a gift to a user
 // @route   POST /api/gifts/send
