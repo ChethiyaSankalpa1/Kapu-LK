@@ -70,8 +70,19 @@ const Home = () => {
         <div className="w-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-300">
             {/* Hero Section */}
             <div className="relative overflow-hidden pt-6 pb-10 sm:pt-8 sm:pb-12 md:pt-10 md:pb-14 text-white">
-                {/* Background Image */}
-                <img src="/couple-hero.png" className="absolute inset-0 w-full h-full object-cover object-[70%_center]" alt="" aria-hidden="true" />
+                {/* Background Video with Fallback Image */}
+                <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                    poster="/couple-hero.png"
+                    className="absolute inset-0 w-full h-full object-cover object-[70%_center] opacity-90"
+                >
+                    <source src="/video/PixVerse_V6_Image_Text_540P_Create_a_beautiful.mp4" type="video/mp4" />
+                    <img src="/couple-hero.png" className="w-full h-full object-cover object-[70%_center]" alt="" aria-hidden="true" />
+                </video>
 
                 {/* Overlay: darker left, lighter right */}
                 <div className="absolute inset-0 bg-gradient-to-r from-indigo-950/95 via-purple-950/80 to-purple-900/30" aria-hidden="true" />
