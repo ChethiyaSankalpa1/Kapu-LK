@@ -151,54 +151,74 @@ const Dashboard = () => {
             {/* ========================================================================= */}
             <div className="md:hidden px-4 pt-3 space-y-4 max-w-lg mx-auto">
 
-                {/* Mobile Welcome Card (~150-200px height) */}
-                <div className="relative bg-white dark:bg-gray-900 rounded-3xl p-4 border border-gray-150 dark:border-gray-800 shadow-sm overflow-hidden">
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                            <div className="relative">
-                                <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-purple-500 p-0.5 bg-purple-50 shrink-0">
-                                    <ProfileAvatar user={user} className="w-full h-full rounded-full" avatarClassName="text-3xl" fallbackClassName="font-bold text-white bg-gradient-to-tr from-purple-600 to-pink-500" />
-                                </div>
-                                <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-gray-900 rounded-full" />
-                            </div>
-
-                            <div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Welcome back,</p>
-                                <h2 className="text-lg font-extrabold text-gray-900 dark:text-white flex items-center gap-1">
-                                    {firstName}! <span className="inline-block animate-bounce">👋</span>
-                                </h2>
-
-                                <div className="flex flex-wrap gap-1.5 mt-1">
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 rounded-full">
-                                        <CheckCircle className="w-3 h-3 text-emerald-600" />
-                                        Profile approved
-                                    </span>
-                                    <Link to="/wallet" className="inline-flex items-center gap-1 px-2 py-0.5 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/40 text-[10px] font-bold text-teal-700 dark:text-teal-300 rounded-full">
-                                        <Wallet className="w-3 h-3 text-teal-600" />
-                                        Rs. {walletBalance}
-                                    </Link>
-                                    {isPremium ? (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 text-[10px] font-bold text-amber-700 dark:text-amber-300 rounded-full capitalize">
-                                            <Crown className="w-3 h-3 text-amber-500 fill-amber-500" />
-                                            {planName} Member
-                                        </span>
-                                    ) : (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/40 text-[10px] font-bold text-purple-700 dark:text-purple-300 rounded-full">
-                                            Free Member
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
+                {/* Mobile Welcome Card with Tasteful LoveLK Cover Header */}
+                <div className="relative bg-white dark:bg-gray-900 rounded-3xl border border-gray-150 dark:border-gray-800 shadow-sm overflow-hidden">
+                    {/* Cover Banner Area */}
+                    <div className="relative h-20 w-full overflow-hidden bg-gradient-to-r from-purple-700 via-pink-600 to-purple-800">
+                        <img
+                            src="/images/love-connect-belong.jpg"
+                            alt="LoveLK Cover"
+                            className="w-full h-full object-cover object-center opacity-85"
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = '/images/lovelk-hero-cover.png';
+                            }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                        <div className="absolute top-2.5 right-3 px-2 py-0.5 bg-black/40 backdrop-blur-md rounded-full text-[9px] font-extrabold text-white/90 tracking-wider uppercase border border-white/20">
+                            LoveLK
                         </div>
-
-                        <Link to="/profile" className="p-2 text-gray-400 hover:text-purple-600">
-                            <ChevronRight className="w-5 h-5" />
-                        </Link>
                     </div>
 
-                    <p className="text-xs italic text-gray-500 dark:text-gray-400 mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-800">
-                        "Good things happen when you keep going!"
-                    </p>
+                    {/* Card Content overlapping cover */}
+                    <div className="px-4 pb-3.5 pt-0">
+                        <div className="flex items-end justify-between -mt-7 mb-2">
+                            <div className="flex items-end gap-3">
+                                <div className="relative shrink-0">
+                                    <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white dark:border-gray-900 shadow-md p-0.5 bg-purple-50">
+                                        <ProfileAvatar user={user} className="w-full h-full rounded-full" avatarClassName="text-3xl" fallbackClassName="font-bold text-white bg-gradient-to-tr from-purple-600 to-pink-500" />
+                                    </div>
+                                    <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-gray-900 rounded-full shadow-sm" />
+                                </div>
+
+                                <div className="pb-0.5">
+                                    <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium leading-tight">Welcome back,</p>
+                                    <h2 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white flex items-center gap-1 leading-snug">
+                                        {firstName}! <span className="inline-block animate-bounce">👋</span>
+                                    </h2>
+                                </div>
+                            </div>
+
+                            <Link to="/profile" className="p-2 -mr-1 text-gray-400 hover:text-purple-600 transition-colors">
+                                <ChevronRight className="w-5 h-5" />
+                            </Link>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/50 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 rounded-full">
+                                <CheckCircle className="w-3 h-3 text-emerald-600" />
+                                Profile approved
+                            </span>
+                            <Link to="/wallet" className="inline-flex items-center gap-1 px-2 py-0.5 bg-teal-50 dark:bg-teal-950/50 border border-teal-200/80 dark:border-teal-800/50 text-[10px] font-bold text-teal-700 dark:text-teal-300 rounded-full hover:bg-teal-100 transition-colors">
+                                <Wallet className="w-3 h-3 text-teal-600" />
+                                Rs. {walletBalance}
+                            </Link>
+                            {isPremium ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-800/50 text-[10px] font-bold text-amber-700 dark:text-amber-300 rounded-full capitalize">
+                                    <Crown className="w-3 h-3 text-amber-500 fill-amber-500" />
+                                    {planName} Member
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 dark:bg-purple-950/50 border border-purple-200/80 dark:border-purple-800/50 text-[10px] font-bold text-purple-700 dark:text-purple-300 rounded-full">
+                                    Free Member
+                                </span>
+                            )}
+                        </div>
+
+                        <p className="text-[11px] italic text-gray-500 dark:text-gray-400 mt-2.5 pt-2 border-t border-gray-100 dark:border-gray-800">
+                            "Good things happen when you keep going!"
+                        </p>
+                    </div>
                 </div>
 
                 {/* Mobile 4 Stat Boxes (2x2 on small, 4-col on wide mobile) */}

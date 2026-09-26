@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { messageAPI } from '../../services/api';
-import { Heart, Search, Users, MessageSquare, User, LogIn, Crown } from 'lucide-react';
+import { LayoutDashboard, Search, Heart, MessageSquare, User, LogIn, Users } from 'lucide-react';
 
 const MobileBottomNav = () => {
     const { t } = useTranslation();
@@ -81,22 +81,36 @@ const MobileBottomNav = () => {
         return () => clearInterval(timer);
     }, [user]);
 
-    // Hide on admin portal, all chat/conversation routes, or when mobile keyboard is open
-    const isChatRoute =
-        location.pathname.startsWith('/conversation') ||
-        location.pathname.startsWith('/messages');
-
-    if (isAdmin || location.pathname.startsWith('/admin') || isChatRoute || isKeyboardOpen) {
+    // Hide on admin portal, or when mobile keyboard is open
+    if (isAdmin || location.pathname.startsWith('/admin') || isKeyboardOpen) {
         return null;
     }
+
+    const checkIsActive = (to) => {
+        if (to === '/dashboard') {
+            return location.pathname === '/dashboard' || location.pathname === '/';
+        }
+        if (to === '/users') {
+            return (location.pathname === '/users' || location.pathname === '/browse') && location.pathname !== '/matches';
+        }
+        if (to === '/matches') {
+            return location.pathname.startsWith('/matches');
+        }
+        if (to === '/conversation') {
+            return location.pathname.startsWith('/conversation') || location.pathname.startsWith('/messages');
+        }
+        if (to === '/profile') {
+            return location.pathname.startsWith('/profile') || location.pathname.startsWith('/settings');
+        }
+        return false;
+    };
 
     const navItems = user
         ? [
               {
                   to: '/dashboard',
                   label: t('nav.dashboard', { defaultValue: 'Dashboard' }),
-                  icon: Heart,
-                  matchExact: true,
+                  icon: LayoutDashboard,
               },
               {
                   to: '/users',
@@ -104,15 +118,15 @@ const MobileBottomNav = () => {
                   icon: Search,
               },
               {
+                  to: '/matches',
+                  label: t('nav.matches', { defaultValue: 'Matches' }),
+                  icon: Heart,
+              },
+              {
                   to: '/conversation',
                   label: t('nav.messages', { defaultValue: 'Messages' }),
                   icon: MessageSquare,
                   badge: unreadMessages,
-              },
-              {
-                  to: '/premium',
-                  label: t('nav.walletRewards', { defaultValue: 'Wallet & Rewards' }),
-                  icon: Crown,
               },
               {
                   to: '/profile',
@@ -124,7 +138,7 @@ const MobileBottomNav = () => {
               {
                   to: '/',
                   label: t('nav.home', { defaultValue: 'Home' }),
-                  icon: Heart,
+                  icon: LayoutDashboard,
                   matchExact: true,
               },
               {
@@ -143,42 +157,44 @@ const MobileBottomNav = () => {
     return (
         <aside 
             aria-label="Mobile Navigation Dock"
-            className="fixed bottom-3 inset-x-3 sm:left-1/2 sm:-translate-x-1/2 z-40 sm:max-w-md md:hidden pointer-events-auto"
+            className="fixed bottom-0 inset-x-0 z-40 md:hidden pointer-events-none"
         >
-            <nav className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-gray-250/70 dark:border-gray-800/80 shadow-[0_12px_32px_rgba(0,0,0,0.15)] dark:shadow-[0_12px_32px_rgba(0,0,0,0.4)] rounded-2xl px-2 py-1.5 flex items-center justify-around">
-                {navItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = item.matchExact
-                        ? location.pathname === item.to
-                        : location.pathname.startsWith(item.to);
+            <div className="max-w-lg mx-auto px-2 sm:px-4 pb-[calc(0.375rem+env(safe-area-inset-bottom,0px))] pt-1 pointer-events-auto">
+                <nav className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-gray-200/80 dark:border-gray-800/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.5)] rounded-2xl px-1 py-1 flex items-center justify-around">
+                    {navItems.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = user 
+                            ? checkIsActive(item.to) 
+                            : (item.matchExact ? location.pathname === item.to : location.pathname.startsWith(item.to));
 
-                    return (
-                        <NavLink
-                            key={item.to}
-                            to={item.to}
-                            className={`relative flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition-all duration-200 active:scale-90 ${
-                                item.highlight
-                                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md shadow-purple-500/30'
-                                    : isActive
-                                    ? 'text-purple-600 dark:text-purple-400 font-bold bg-purple-50 dark:bg-purple-950/40'
-                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                            }`}
-                        >
-                            <div className="relative">
-                                <Icon className={`w-5 h-5 ${isActive && !item.highlight ? 'stroke-[2.5]' : 'stroke-2'}`} />
-                                {Boolean(item.badge && item.badge > 0) && (
-                                    <span className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-[10px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center shadow-sm animate-pulse">
-                                        {item.badge > 9 ? '9+' : item.badge}
-                                    </span>
-                                )}
-                            </div>
-                            <span className="text-[10px] mt-0.5 tracking-tight font-medium">
-                                {item.label}
-                            </span>
-                        </NavLink>
-                    );
-                })}
-            </nav>
+                        return (
+                            <NavLink
+                                key={item.to}
+                                to={item.to}
+                                className={`relative flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all duration-150 active:scale-95 min-w-[54px] ${
+                                    item.highlight
+                                        ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md shadow-purple-500/30 font-bold'
+                                        : isActive
+                                        ? 'text-purple-600 dark:text-purple-400 font-bold bg-purple-50/90 dark:bg-purple-950/60'
+                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium'
+                                }`}
+                            >
+                                <div className="relative">
+                                    <Icon className={`w-4.5 h-4.5 ${isActive && !item.highlight ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
+                                    {Boolean(item.badge && item.badge > 0) && (
+                                        <span className="absolute -top-1 -right-2 bg-rose-500 text-white text-[9px] font-extrabold px-1 min-w-[15px] h-3.5 rounded-full flex items-center justify-center shadow-xs animate-pulse">
+                                            {item.badge > 9 ? '9+' : item.badge}
+                                        </span>
+                                    )}
+                                </div>
+                                <span className="text-[10px] mt-0.5 tracking-tight leading-none">
+                                    {item.label}
+                                </span>
+                            </NavLink>
+                        );
+                    })}
+                </nav>
+            </div>
         </aside>
     );
 };

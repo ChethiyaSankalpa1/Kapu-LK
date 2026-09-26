@@ -530,7 +530,7 @@ const Conversation = () => {
       <div className="h-full flex w-full max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden min-h-0">
         
         {/* ================= SIDEBAR: Conversation List ================= */}
-        <div className={`w-full md:w-[360px] lg:w-[400px] flex flex-col h-full border-r border-[#d1d7db] dark:border-[#222d34] shrink-0 bg-white dark:bg-[#111b21] ${
+        <div className={`w-full md:w-[360px] lg:w-[400px] flex flex-col h-full border-r border-[#d1d7db] dark:border-[#222d34] shrink-0 bg-white dark:bg-[#111b21] pb-16 md:pb-0 ${
           userId ? 'hidden md:flex' : 'flex'
         }`}>
           {/* Sidebar Header */}
@@ -975,7 +975,7 @@ const Conversation = () => {
               </div>
 
               {/* Input Area */}
-              <div className="p-2 sm:p-3 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#d1d7db] dark:border-[#222d34] shrink-0 relative z-50">
+              <div className="p-2 sm:p-3 pb-16 md:pb-3 focus-within:pb-2 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#d1d7db] dark:border-[#222d34] shrink-0 relative z-30 transition-all duration-150">
                 {/* Emoji Picker dropdown */}
                 {showEmojiPicker && (
                   <div
