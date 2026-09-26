@@ -151,10 +151,10 @@ const Dashboard = () => {
             {/* ========================================================================= */}
             <div className="md:hidden px-4 pt-3 space-y-4 max-w-lg mx-auto">
 
-                {/* Mobile Welcome Card with Tasteful LoveLK Cover Header */}
+                {/* Mobile Welcome Card with Large 180-220px Responsive Cover Video */}
                 <div className="relative bg-white dark:bg-gray-900 rounded-3xl border border-gray-150 dark:border-gray-800 shadow-sm overflow-hidden">
-                    {/* Cover Banner Area */}
-                    <div className="relative h-20 w-full overflow-hidden bg-purple-950">
+                    {/* Dedicated Cover Video Header (192px / h-48 height on mobile) */}
+                    <div className="relative h-48 sm:h-52 w-full overflow-hidden bg-purple-950">
                         <video
                             autoPlay
                             muted
@@ -162,7 +162,7 @@ const Dashboard = () => {
                             playsInline
                             preload="metadata"
                             poster="/images/love-connect-belong.jpg"
-                            className="w-full h-full object-cover object-center opacity-90"
+                            className="w-full h-full object-cover object-center opacity-95"
                         >
                             <source src="/video/PixVerse_V6_Image_Text_540P_Create_a_beautiful.mp4" type="video/mp4" />
                             <img
@@ -171,58 +171,70 @@ const Dashboard = () => {
                                 className="w-full h-full object-cover object-center"
                             />
                         </video>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-purple-950/20 to-transparent pointer-events-none" />
-                        <div className="absolute top-2.5 right-3 px-2 py-0.5 bg-black/40 backdrop-blur-md rounded-full text-[9px] font-extrabold text-white/90 tracking-wider uppercase border border-white/20 z-10">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-purple-950/20 to-black/10 pointer-events-none" />
+                        <div className="absolute top-3 right-3 px-2.5 py-0.5 bg-black/40 backdrop-blur-md rounded-full text-[9px] font-extrabold text-white/90 tracking-wider uppercase border border-white/20 z-10 shadow-xs">
                             LoveLK
                         </div>
                     </div>
 
-                    {/* Card Content overlapping cover */}
-                    <div className="px-4 pb-3.5 pt-0">
-                        <div className="flex items-end justify-between -mt-7 mb-2">
-                            <div className="flex items-end gap-3">
-                                <div className="relative shrink-0">
-                                    <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white dark:border-gray-900 shadow-md p-0.5 bg-purple-50">
-                                        <ProfileAvatar user={user} className="w-full h-full rounded-full" avatarClassName="text-3xl" fallbackClassName="font-bold text-white bg-gradient-to-tr from-purple-600 to-pink-500" />
-                                    </div>
-                                    <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-gray-900 rounded-full shadow-sm" />
+                    {/* Dynamic User Profile Info & Content (Positioned below cover video) */}
+                    <div className="px-4 pb-4 pt-0">
+                        {/* Avatar overlapping cover by ~28px (-mt-8) */}
+                        <div className="flex items-end justify-between -mt-8 mb-3">
+                            <div className="relative shrink-0">
+                                <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full overflow-hidden border-4 border-white dark:border-gray-900 shadow-lg p-0.5 bg-purple-50 dark:bg-purple-950">
+                                    <ProfileAvatar user={user} className="w-full h-full rounded-full" avatarClassName="text-3xl sm:text-4xl" fallbackClassName="font-bold text-white bg-gradient-to-tr from-purple-600 to-pink-500" />
                                 </div>
-
-                                <div className="pb-0.5">
-                                    <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium leading-tight">Welcome back,</p>
-                                    <h2 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white flex items-center gap-1 leading-snug">
-                                        {firstName}! <span className="inline-block animate-bounce">👋</span>
-                                    </h2>
-                                </div>
+                                <span className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-gray-900 rounded-full shadow-sm" />
                             </div>
 
-                            <Link to="/profile" className="p-2 -mr-1 text-gray-400 hover:text-purple-600 transition-colors">
+                            <Link to="/profile" className="p-2 -mr-1 text-gray-400 hover:text-purple-600 transition-colors" title="View Profile">
                                 <ChevronRight className="w-5 h-5" />
                             </Link>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/50 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 rounded-full">
-                                <CheckCircle className="w-3 h-3 text-emerald-600" />
-                                Profile approved
-                            </span>
-                            <Link to="/wallet" className="inline-flex items-center gap-1 px-2 py-0.5 bg-teal-50 dark:bg-teal-950/50 border border-teal-200/80 dark:border-teal-800/50 text-[10px] font-bold text-teal-700 dark:text-teal-300 rounded-full hover:bg-teal-100 transition-colors">
+                        {/* Dynamic User Name & Greeting */}
+                        <div className="space-y-1">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium leading-none">Welcome back,</p>
+                            <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white flex items-center gap-1.5 leading-snug">
+                                <span>{firstName}!</span>
+                                <span className="inline-block animate-bounce">👋</span>
+                            </h2>
+                        </div>
+
+                        {/* Badges Row (Profile Approved, Wallet Balance, Premium Member) */}
+                        <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                            {user?.isApproved !== false ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/50 text-[10px] sm:text-[11px] font-bold text-emerald-700 dark:text-emerald-300 rounded-full">
+                                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                                    Profile approved
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-800/50 text-[10px] sm:text-[11px] font-bold text-amber-700 dark:text-amber-300 rounded-full">
+                                    <CheckCircle className="w-3 h-3 text-amber-500" />
+                                    Pending Approval
+                                </span>
+                            )}
+
+                            <Link to="/wallet" className="inline-flex items-center gap-1 px-2.5 py-1 bg-teal-50 dark:bg-teal-950/50 border border-teal-200/80 dark:border-teal-800/50 text-[10px] sm:text-[11px] font-bold text-teal-700 dark:text-teal-300 rounded-full hover:bg-teal-100 transition-colors">
                                 <Wallet className="w-3 h-3 text-teal-600" />
                                 Rs. {walletBalance}
                             </Link>
+
                             {isPremium ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-800/50 text-[10px] font-bold text-amber-700 dark:text-amber-300 rounded-full capitalize">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-800/50 text-[10px] sm:text-[11px] font-bold text-amber-700 dark:text-amber-300 rounded-full capitalize">
                                     <Crown className="w-3 h-3 text-amber-500 fill-amber-500" />
                                     {planName} Member
                                 </span>
                             ) : (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 dark:bg-purple-950/50 border border-purple-200/80 dark:border-purple-800/50 text-[10px] font-bold text-purple-700 dark:text-purple-300 rounded-full">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-50 dark:bg-purple-950/50 border border-purple-200/80 dark:border-purple-800/50 text-[10px] sm:text-[11px] font-bold text-purple-700 dark:text-purple-300 rounded-full">
                                     Free Member
                                 </span>
                             )}
                         </div>
 
-                        <p className="text-[11px] italic text-gray-500 dark:text-gray-400 mt-2.5 pt-2 border-t border-gray-100 dark:border-gray-800">
+                        {/* Quote Footer */}
+                        <p className="text-[11px] italic text-gray-500 dark:text-gray-400 mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-800">
                             "Good things happen when you keep going!"
                         </p>
                     </div>
