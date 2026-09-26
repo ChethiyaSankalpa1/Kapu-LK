@@ -39,6 +39,7 @@ const USER_LIST_SELECT = [
   'education',
   'maritalStatus',
   'profileImageUrl',
+  'profileAvatar',
   'isPremium',
   'premiumPlan',
   'isApproved',
@@ -62,6 +63,11 @@ exports.updateProfile = async (req, res) => {
       return res.status(400).json({ message: 'Phone number must contain only numbers' });
     }
 
+    const allowedProfileAvatars = ['', 'male-1', 'male-2', 'male-3', 'female-1', 'female-2', 'female-3', 'neutral-1', 'neutral-2', 'neutral-3'];
+    if (Object.prototype.hasOwnProperty.call(req.body, 'profileAvatar') && !allowedProfileAvatars.includes(req.body.profileAvatar)) {
+      return res.status(400).json({ message: 'Invalid profile avatar selection' });
+    }
+
     const assignIfDefined = (field) => {
       if (Object.prototype.hasOwnProperty.call(req.body, field)) {
         user[field] = req.body[field];
@@ -71,6 +77,7 @@ exports.updateProfile = async (req, res) => {
     [
       'name',
       'profileName',
+      'profileAvatar',
       'phoneNumber',
       'age',
       'gender',
@@ -183,6 +190,7 @@ exports.updateProfile = async (req, res) => {
       workplace: updatedUser.workplace,
       partnerPreferences: updatedUser.partnerPreferences,
       profileImageUrl: updatedUser.profileImageUrl,
+      profileAvatar: updatedUser.profileAvatar,
       giftingOptIn: updatedUser.giftingOptIn,
     });
   } catch (error) {
@@ -251,6 +259,7 @@ const getDiscoveryUsers = async (matchQuery, skip, limit, isAdmin = false) => {
         education: 1,
         maritalStatus: 1,
         profileImageUrl: 1,
+        profileAvatar: 1,
         isPremium: 1,
         premiumPlan: 1,
         isApproved: 1,
@@ -932,7 +941,7 @@ exports.getProfileVisitors = async (req, res) => {
     })
       .sort({ lastViewedAt: -1, createdAt: -1 })
       .limit(50)
-      .populate('relatedUser', 'name profileImageUrl age gender location district occupation isPremium premiumPlan')
+      .populate('relatedUser', 'name profileImageUrl profileAvatar age gender location district occupation isPremium premiumPlan')
       .lean();
 
     const visitorList = visitors

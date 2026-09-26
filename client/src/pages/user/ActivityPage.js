@@ -9,6 +9,7 @@ import {
     Gift, Sparkles, Trophy, ChevronRight, Crown
 } from 'lucide-react';
 import PremiumBadge from '../../components/ui/PremiumBadge';
+import ProfileAvatar from '../../components/ui/ProfileAvatar';
 import BackButton from '../../components/common/BackButton';
 
 const ActivityPage = () => {
@@ -18,7 +19,6 @@ const ActivityPage = () => {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // all, views, matches, messages, gifts, system
-    const [imgErrors, setImgErrors] = useState({});
 
     const fetchActivities = useCallback(async () => {
         setLoading(true);
@@ -54,10 +54,6 @@ const ActivityPage = () => {
             // Fallback optimistic update
             setNotifications(prev => prev.map(n => ({ ...n, read: true, isRead: true })));
         }
-    };
-
-    const handleImageError = (id) => {
-        setImgErrors(prev => ({ ...prev, [id]: true }));
     };
 
     const getActivityIcon = (type) => {
@@ -240,8 +236,6 @@ const ActivityPage = () => {
                         {filteredNotifications.map((n) => {
                             const isRead = n.read || n.isRead;
                             const relUser = n.relatedUser && typeof n.relatedUser === 'object' ? n.relatedUser : null;
-                            const photoUrl = relUser?.profileImageUrl || relUser?.photo || relUser?.photos?.[0];
-                            const hasPhoto = photoUrl && !imgErrors[n._id];
                             const userName = relUser?.name || 'A user';
 
                             return (
@@ -254,18 +248,7 @@ const ActivityPage = () => {
                                 >
                                     {/* Avatar / Icon */}
                                     <div className="relative shrink-0">
-                                        {hasPhoto ? (
-                                            <img
-                                                src={photoUrl}
-                                                alt={userName}
-                                                onError={() => handleImageError(n._id)}
-                                                className="w-11 h-11 rounded-full object-cover border border-purple-100 dark:border-purple-900/50"
-                                            />
-                                        ) : (
-                                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center font-bold text-sm shadow-sm">
-                                                {userName.charAt(0).toUpperCase()}
-                                            </div>
-                                        )}
+                                        <ProfileAvatar user={relUser || { name: userName }} className="w-11 h-11 rounded-full border border-purple-100 dark:border-purple-900/50 bg-gradient-to-br from-purple-500 to-pink-500 shadow-sm" avatarClassName="text-2xl" fallbackClassName="text-sm font-bold text-white bg-gradient-to-br from-purple-500 to-pink-500" />
                                         <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center shadow border-2 border-white dark:border-gray-900 ${getActivityBadgeBg(n.type)}`}>
                                             {getActivityIcon(n.type)}
                                         </div>

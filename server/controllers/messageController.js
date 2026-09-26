@@ -163,11 +163,11 @@ exports.sendMessage = async (req, res) => {
     }
 
     const populatedMsg = await Message.findById(message._id)
-      .populate('from to', 'name profileImageUrl age location isOnline lastLogin')
+      .populate('from to', 'name profileImageUrl profileAvatar age location isOnline lastLogin')
       .populate({
         path: 'replyTo',
         select: 'content contentIv from type isDeletedForEveryone',
-        populate: { path: 'from', select: 'name profileImageUrl' },
+        populate: { path: 'from', select: 'name profileImageUrl profileAvatar' },
       });
 
     let decryptedReplyTo = null;
@@ -215,7 +215,7 @@ exports.getConversations = async (req, res) => {
       ],
     })
       .sort({ createdAt: -1 })
-      .populate('from to', 'name profileImageUrl age location isOnline lastLogin');
+      .populate('from to', 'name profileImageUrl profileAvatar age location isOnline lastLogin');
 
     const conversationsMap = new Map();
 

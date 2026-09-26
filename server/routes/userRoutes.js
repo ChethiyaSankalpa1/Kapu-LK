@@ -39,6 +39,7 @@ router.put(
     body('phoneNumber').optional().matches(/^[0-9]+$/).withMessage('Phone number must contain only numbers'),
     body('age').optional().isInt({ min: 18, max: 100 }).withMessage('Age must be between 18 and 100'),
     body('gender').optional().isIn(['male', 'female', 'other']).withMessage('Gender must be male, female, or other'),
+    body('profileAvatar').optional().isIn(['', 'male-1', 'male-2', 'male-3', 'female-1', 'female-2', 'female-3', 'neutral-1', 'neutral-2', 'neutral-3']).withMessage('Invalid profile avatar selection'),
     body('language').optional().isIn(['en', 'si', 'ta']).withMessage('Language must be en, si, or ta'),
   ],
   validate,

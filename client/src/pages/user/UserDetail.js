@@ -14,6 +14,7 @@ import {
     Check, X, Target, Compass, Award
 } from 'lucide-react';
 import PremiumBadge from '../../components/ui/PremiumBadge';
+import ProfileAvatar from '../../components/ui/ProfileAvatar';
 import BackButton from '../../components/common/BackButton';
 
 const UserDetail = () => {
@@ -104,15 +105,16 @@ const UserDetail = () => {
         : (user?.profileImageUrl ? [{ url: user.profileImageUrl, isMain: true, order: 0 }] : []);
 
     const photos = rawPhotos.filter(p => p && p.url);
+    const profileSlides = user?.profileAvatar ? [{ isAvatar: true }, ...photos] : photos;
 
     const handlePrevPhoto = () => {
-        if (photos.length <= 1) return;
-        setCurrentPhotoIndex(prev => (prev === 0 ? photos.length - 1 : prev - 1));
+        if (profileSlides.length <= 1) return;
+        setCurrentPhotoIndex(prev => (prev === 0 ? profileSlides.length - 1 : prev - 1));
     };
 
     const handleNextPhoto = () => {
-        if (photos.length <= 1) return;
-        setCurrentPhotoIndex(prev => (prev === photos.length - 1 ? 0 : prev + 1));
+        if (profileSlides.length <= 1) return;
+        setCurrentPhotoIndex(prev => (prev === profileSlides.length - 1 ? 0 : prev + 1));
     };
 
     const handleExpressInterest = async () => {
@@ -260,7 +262,8 @@ const UserDetail = () => {
     };
 
     const interestsList = parseInterests();
-    const activePhoto = photos[currentPhotoIndex] || null;
+    const activeSlide = profileSlides[currentPhotoIndex] || null;
+    const activePhoto = activeSlide && !activeSlide.isAvatar ? activeSlide : null;
     const isPhotoError = activePhoto ? imgErrors[currentPhotoIndex] : true;
 
     const partnerPrefs = user.partnerPreferences || {};
@@ -286,7 +289,9 @@ const UserDetail = () => {
                         {/* Main Photo Card */}
                         <div className="bg-white dark:bg-[#131d27] rounded-3xl p-3 border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden">
                             <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-gradient-to-br from-purple-100 via-pink-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 shadow-inner group">
-                                {activePhoto && !isPhotoError ? (
+                                {activeSlide?.isAvatar ? (
+                                    <ProfileAvatar user={user} className="h-full w-full" avatarClassName="text-9xl" fallbackClassName="text-8xl font-extrabold text-white bg-gradient-to-br from-purple-600 via-pink-600 to-indigo-700" />
+                                ) : activePhoto && !isPhotoError ? (
                                     <img
                                         src={activePhoto.url}
                                         alt={user.name}
@@ -311,7 +316,7 @@ const UserDetail = () => {
                                 </div>
 
                                 {/* Carousel Navigation Arrows (Only if > 1 photo) */}
-                                {photos.length > 1 && (
+                                {profileSlides.length > 1 && (
                                     <>
                                         <button
                                             onClick={handlePrevPhoto}
@@ -331,24 +336,24 @@ const UserDetail = () => {
                                 )}
 
                                 {/* Photo Count Indicator (Bottom-Right) */}
-                                {photos.length > 0 && (
+                                {profileSlides.length > 0 && (
                                     <div className="absolute bottom-3 right-3 z-10">
                                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/65 backdrop-blur-md text-white text-[11px] font-bold shadow">
                                             <span>📷</span>
-                                            <span>{currentPhotoIndex + 1}/{photos.length}</span>
+                                            <span>{currentPhotoIndex + 1}/{profileSlides.length}</span>
                                         </span>
                                     </div>
                                 )}
                             </div>
 
                             {/* Additional Thumbnails Row (Desktop / Mobile if multiple photos) */}
-                            {photos.length > 1 && (
+                            {profileSlides.length > 1 && (
                                 <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1">
-                                    {photos.slice(0, 4).map((p, idx) => {
+                                    {profileSlides.map((p, idx) => {
                                         const isSelected = idx === currentPhotoIndex;
                                         return (
                                             <button
-                                                key={p._id || idx}
+                                                key={p._id || (p.isAvatar ? 'profile-avatar' : idx)}
                                                 onClick={() => setCurrentPhotoIndex(idx)}
                                                 className={`relative rounded-xl overflow-hidden aspect-square flex-1 h-14 sm:h-16 border-2 transition-all duration-200 ${
                                                     isSelected
@@ -356,11 +361,11 @@ const UserDetail = () => {
                                                         : 'border-transparent opacity-70 hover:opacity-100 hover:border-purple-300'
                                                 }`}
                                             >
-                                                <img
-                                                    src={p.url}
-                                                    alt={`Thumbnail ${idx + 1}`}
-                                                    className="w-full h-full object-cover"
-                                                />
+                                                {p.isAvatar ? (
+                                                    <ProfileAvatar user={user} className="h-full w-full" avatarClassName="text-3xl" />
+                                                ) : (
+                                                    <img src={p.url} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                                                )}
                                             </button>
                                         );
                                     })}

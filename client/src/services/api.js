@@ -279,7 +279,9 @@ export const notificationAPI = {
 export const giftAPI = {
     getGifts: () => api.get('/gifts'),
     sendGift: (data) => api.post('/gifts/send', data),
+    sendPremiumGift: (data) => api.post('/gifts/premium', data),
     getGiftHistory: (type = 'all') => api.get('/gifts/history', { params: { type } }),
+    getPremiumGiftTransactions: () => api.get('/gifts/admin/premium-transactions'),
     createGift: (data) => api.post('/gifts/admin', data),
     updateGift: (id, data) => api.put(`/gifts/admin/${id}`, data),
     deleteGift: (id) => api.delete(`/gifts/admin/${id}`),

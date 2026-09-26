@@ -725,6 +725,7 @@ exports.login = async (req, res) => {
       emailVerified: user.role === 'admin' ? true : !!user.emailVerified,
       requiresEmailVerification: isUnverifiedMember,
       profileImageUrl: user.profileImageUrl,
+      profileAvatar: user.profileAvatar,
       language: user.language,
       giftingOptIn: user.giftingOptIn,
       token: accessToken,

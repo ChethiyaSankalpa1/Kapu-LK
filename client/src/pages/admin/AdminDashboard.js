@@ -23,6 +23,7 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [premiumRequests, setPremiumRequests] = useState([]);
+  const [premiumGiftTransactions, setPremiumGiftTransactions] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -172,7 +173,7 @@ const AdminDashboard = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [statsRes, usersRes, premiumRes, plansRes, conversationsRes, giftsRes, achievementsRes, storiesRes, blogRes, eventsRes, configsRes, walletReqsRes, reportsRes] = await Promise.all([
+      const [statsRes, usersRes, premiumRes, plansRes, conversationsRes, giftsRes, achievementsRes, storiesRes, blogRes, eventsRes, configsRes, walletReqsRes, reportsRes, premiumGiftsRes] = await Promise.all([
         adminAPI.getDashboardStats(),
         adminAPI.getAllUsers(),
         adminAPI.getAllRequests(),
@@ -185,11 +186,13 @@ const AdminDashboard = () => {
         eventAPI.getEvents(),
         redemptionAPI.getConfigs(),
         walletAPI.getAllPaymentRequests(),
-        adminAPI.getReports().catch(() => ({ data: [] }))
+        adminAPI.getReports().catch(() => ({ data: [] })),
+        giftAPI.getPremiumGiftTransactions().catch(() => ({ data: [] }))
       ]);
       setStats(statsRes.data);
       setUsers(usersRes.data);
       setPremiumRequests(premiumRes.data);
+      setPremiumGiftTransactions(premiumGiftsRes.data || []);
       setPremiumPlans(plansRes.data || []);
       setConversations(conversationsRes.data);
       setUnreadMessagesCount(conversationsRes.data.reduce((sum, convo) => sum + (convo.unreadCount || 0), 0));
@@ -980,6 +983,21 @@ const AdminDashboard = () => {
                 </button>
 
                 <button
+                  onClick={() => setActiveTab('premium-gifts')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
+                    activeTab === 'premium-gifts'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <Gift className="w-4 h-4 text-amber-500" />
+                    <span>Premium Gift History</span>
+                  </div>
+                  <span className="text-[10px] font-black">{premiumGiftTransactions.length}</span>
+                </button>
+
+                <button
                   onClick={() => setActiveTab('plans')}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition ${
                     activeTab === 'plans'
@@ -1165,6 +1183,7 @@ const AdminDashboard = () => {
           <div className="lg:hidden flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
             <button onClick={() => setActiveTab('dashboard')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'dashboard' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Dashboard</button>
             <button onClick={() => setActiveTab('premium')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'premium' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Premium Requests ({pendingPremiumReqs})</button>
+            <button onClick={() => setActiveTab('premium-gifts')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'premium-gifts' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Premium Gifts ({premiumGiftTransactions.length})</button>
             <button onClick={() => setActiveTab('users')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'users' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Users</button>
             <button onClick={() => setActiveTab('reports')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'reports' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Complaints ({pendingComplaints})</button>
             <button onClick={() => setActiveTab('wallet-requests')} className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 ${activeTab === 'wallet-requests' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300'}`}>Wallet Topups ({pendingPaymentReqs})</button>
@@ -1927,6 +1946,49 @@ const AdminDashboard = () => {
                 </div>
               );
             })()}
+          </div>
+        )}
+
+        {activeTab === 'premium-gifts' && (
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                <Gift className="w-6 h-6 text-amber-500" />
+                <span>Gifted Premium History</span>
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Completed wallet payments and Premium activations, including plan, amount, and validity dates.</p>
+            </div>
+            {premiumGiftTransactions.length === 0 ? (
+              <div className="glass-card p-10 text-center rounded-3xl border border-gray-100 dark:border-slate-800">
+                <Gift className="w-12 h-12 mx-auto mb-3 text-amber-400 opacity-60" />
+                <h3 className="font-bold text-gray-900 dark:text-white">No Premium gifts yet</h3>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {premiumGiftTransactions.map((transaction) => (
+                  <article key={transaction._id} className="glass-card rounded-2xl border border-gray-200 dark:border-slate-800 p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-gray-900 dark:text-white">{transaction.planName || transaction.plan?.name || `${transaction.planBadge} Premium`}</h3>
+                          <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/50 px-2.5 py-1 text-[10px] font-bold uppercase text-emerald-700 dark:text-emerald-300">{transaction.status}</span>
+                        </div>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                          {transaction.sender?.name || 'Unknown sender'} gifted {transaction.recipient?.name || 'Unknown recipient'}
+                        </p>
+                      </div>
+                      <p className="text-lg font-black text-purple-700 dark:text-purple-300">{transaction.currency || 'LKR'} {Number(transaction.amount).toLocaleString()}</p>
+                    </div>
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-gray-600 dark:text-gray-400">
+                      <span>Validity: <strong className="text-gray-900 dark:text-white">{transaction.durationDays} days</strong></span>
+                      <span>Activated: <strong className="text-gray-900 dark:text-white">{transaction.activatedAt ? new Date(transaction.activatedAt).toLocaleString() : 'N/A'}</strong></span>
+                      <span>Expires: <strong className="text-gray-900 dark:text-white">{transaction.expiresAt ? new Date(transaction.expiresAt).toLocaleString() : 'N/A'}</strong></span>
+                      <span>Payment reference: <code className="font-mono">{transaction.walletTransaction?._id || transaction._id}</code></span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

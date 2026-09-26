@@ -93,7 +93,7 @@ exports.getNotifications = async (req, res) => {
       const notifications = await Notification.find(baseQuery)
         .sort({ createdAt: -1 })
         .limit(30)
-        .populate('relatedUser', 'name profileImageUrl');
+        .populate('relatedUser', 'name profileImageUrl profileAvatar');
       return res.json(notifications);
     }
 
@@ -106,7 +106,7 @@ exports.getNotifications = async (req, res) => {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .populate('relatedUser', 'name profileImageUrl')
+        .populate('relatedUser', 'name profileImageUrl profileAvatar')
         .lean(),
       Notification.countDocuments(baseQuery),
     ]);

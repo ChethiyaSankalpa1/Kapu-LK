@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import PremiumPopup from '../../components/ui/PremiumPopup';
 import PremiumBadge from '../../components/ui/PremiumBadge';
+import ProfileAvatar from '../../components/ui/ProfileAvatar';
 import ProfileCard from '../../components/ui/ProfileCard';
 
 const Dashboard = () => {
@@ -38,7 +39,7 @@ const Dashboard = () => {
 
     // Profile completeness calculation
     const profileCompletenessItems = [
-        { key: 'photo', label: 'Profile photo', done: Boolean(user?.profileImageUrl) },
+        { key: 'photo', label: 'Profile photo', done: Boolean(user?.profileImageUrl || user?.profileAvatar) },
         { key: 'basic', label: 'Basic information', done: Boolean(user?.age && user?.gender && (user?.district || user?.location)) },
         { key: 'about', label: 'About you', done: Boolean(user?.bio && user.bio.trim().length > 0) },
         { key: 'interests', label: 'Interests', done: Boolean(user?.interests || user?.hobbies) },
@@ -156,22 +157,7 @@ const Dashboard = () => {
                         <div className="flex items-center gap-3">
                             <div className="relative">
                                 <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-purple-500 p-0.5 bg-purple-50 shrink-0">
-                                    {user?.profileImageUrl ? (
-                                        <img
-                                            src={user.profileImageUrl}
-                                            alt={firstName}
-                                            onError={(e) => {
-                                                e.currentTarget.onerror = null;
-                                                e.currentTarget.style.display = 'none';
-                                                const fb = e.currentTarget.parentElement.querySelector('.dash-avatar-fb');
-                                                if (fb) fb.style.display = 'flex';
-                                            }}
-                                            className="w-full h-full object-cover rounded-full"
-                                        />
-                                    ) : null}
-                                    <div className={`dash-avatar-fb w-full h-full ${user?.profileImageUrl ? 'hidden' : 'flex'} items-center justify-center bg-gradient-to-tr from-purple-600 to-pink-500 text-white font-bold rounded-full`}>
-                                        {firstName.charAt(0).toUpperCase()}
-                                    </div>
+                                    <ProfileAvatar user={user} className="w-full h-full rounded-full" avatarClassName="text-3xl" fallbackClassName="font-bold text-white bg-gradient-to-tr from-purple-600 to-pink-500" />
                                 </div>
                                 <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-gray-900 rounded-full" />
                             </div>
@@ -505,22 +491,7 @@ const Dashboard = () => {
                                     <div className="flex items-end gap-4 min-w-0">
                                         <div className="relative shrink-0">
                                             <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-white dark:border-gray-900 shadow-xl bg-purple-100 dark:bg-purple-950">
-                                                {user?.profileImageUrl ? (
-                                                    <img
-                                                        src={user.profileImageUrl}
-                                                        alt={user?.name || firstName}
-                                                        onError={(e) => {
-                                                            e.currentTarget.onerror = null;
-                                                            e.currentTarget.style.display = 'none';
-                                                            const fb = e.currentTarget.parentElement.querySelector('.desktop-avatar-fb');
-                                                            if (fb) fb.style.display = 'flex';
-                                                        }}
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                ) : null}
-                                                <div className={`desktop-avatar-fb w-full h-full ${user?.profileImageUrl ? 'hidden' : 'flex'} items-center justify-center bg-gradient-to-tr from-purple-600 to-pink-500 text-white text-3xl font-black`}>
-                                                    {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                                                </div>
+                                                <ProfileAvatar user={user} className="w-full h-full" avatarClassName="text-5xl" fallbackClassName="text-3xl font-black text-white bg-gradient-to-tr from-purple-600 to-pink-500" />
                                             </div>
                                             <span className="absolute bottom-1 right-1 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-gray-900 rounded-full" />
                                         </div>

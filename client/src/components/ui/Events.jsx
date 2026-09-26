@@ -3,6 +3,7 @@ import { eventAPI } from '../../services/api';
 import { Calendar, MapPin, Users, Heart, Share2, Plus, Check, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import moment from 'moment';
+import ProfileAvatar from './ProfileAvatar';
 
 const Events = ({ isAdmin = false }) => {
   const [events, setEvents] = useState([]);
@@ -272,19 +273,7 @@ const Events = ({ isAdmin = false }) => {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {selectedEvent.attendees.map((attendee, idx) => (
                 <div key={idx} className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-500/20 flex items-center justify-center mb-2">
-                    {attendee.user?.profileImageUrl || attendee.profileImageUrl ? (
-                      <img
-                        src={attendee.user?.profileImageUrl || attendee.profileImageUrl}
-                        alt={attendee.user?.name || attendee.name}
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-purple-600 dark:text-purple-400 font-semibold">
-                        {(attendee.user?.name || attendee.name)?.charAt(0) || 'U'}
-                      </span>
-                    )}
-                  </div>
+                  <ProfileAvatar user={{ ...(attendee.user || attendee), profileImageUrl: attendee.user?.profileImageUrl || attendee.profileImageUrl }} className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-500/20 mb-2" avatarClassName="text-3xl" fallbackClassName="font-semibold text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-500/20" />
                   <span className="text-sm text-gray-700 dark:text-gray-300 truncate w-full">
                     {attendee.user?.name || attendee.name}
                   </span>

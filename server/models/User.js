@@ -69,6 +69,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  profileAvatar: {
+    type: String,
+    enum: ['', 'male-1', 'male-2', 'male-3', 'female-1', 'female-2', 'female-3', 'neutral-1', 'neutral-2', 'neutral-3'],
+    default: '',
+  },
   photos: [{
     url: { type: String, required: true },
     publicId: { type: String, default: '' },

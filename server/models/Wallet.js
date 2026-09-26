@@ -64,7 +64,7 @@ const WalletTransactionSchema = new mongoose.Schema({
   },
   relatedType: {
     type: String,
-    enum: ['gift', 'premium', 'payment', 'referral', 'achievement', 'daily_checkin']
+    enum: ['gift', 'premium', 'premium_gift', 'payment', 'referral', 'achievement', 'daily_checkin']
   },
   balanceBefore: {
     type: Number,

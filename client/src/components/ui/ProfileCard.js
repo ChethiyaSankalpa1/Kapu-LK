@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MapPin, MessageCircle, Heart, CheckCircle, Briefcase, Eye } from 'lucide-react';
 import PremiumBadge from './PremiumBadge';
+import ProfileAvatar from './ProfileAvatar';
 
 const ProfileCard = ({
     user,
@@ -15,15 +16,12 @@ const ProfileCard = ({
     showViewedInfo = false,
 }) => {
     const { t } = useTranslation();
-    const [imgError, setImgError] = useState(false);
     const [isLiked, setIsLiked] = useState(liked);
 
     if (!user) return null;
 
     const firstName = user.name ? user.name.split(' ')[0] : t('common.member', { defaultValue: 'Member' });
     const location = user.district || user.location || 'Sri Lanka';
-    const hasPhoto = Boolean(user.profileImageUrl) && !imgError;
-    const initial = user.name ? user.name.charAt(0).toUpperCase() : 'U';
 
     const handleLikeClick = (e) => {
         e.stopPropagation();
@@ -54,21 +52,13 @@ const ProfileCard = ({
         >
             {/* Top Photo Area */}
             <div className="relative h-48 sm:h-56 w-full bg-gradient-to-br from-purple-100 via-pink-50 to-purple-200 dark:from-purple-950/40 dark:via-gray-900 dark:to-pink-950/30 overflow-hidden">
-                {hasPhoto ? (
-                    <img
-                        src={user.profileImageUrl}
-                        alt={user.name || 'User Profile'}
-                        onError={() => setImgError(true)}
-                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
-                        loading="lazy"
-                    />
-                ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-indigo-500/10 dark:from-purple-900/30 dark:to-pink-900/20">
-                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr from-purple-600 to-pink-500 text-white flex items-center justify-center font-black text-3xl sm:text-4xl shadow-md border-4 border-white dark:border-gray-800">
-                            {initial}
-                        </div>
-                    </div>
-                )}
+                <ProfileAvatar
+                    user={user}
+                    className="h-full w-full bg-gradient-to-br from-purple-100 via-pink-50 to-purple-200 dark:from-purple-950/40 dark:via-gray-900 dark:to-pink-950/30"
+                    imageClassName="h-full w-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-105"
+                    avatarClassName="text-8xl"
+                    fallbackClassName="text-4xl font-black text-white bg-gradient-to-tr from-purple-600 to-pink-500"
+                />
 
                 {/* Subtle dark gradient overlay on bottom of image for readability */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />

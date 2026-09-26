@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { giftAPI, walletAPI, premiumAPI, redemptionAPI } from '../../services/api';
-import { X, Heart, Crown, Plus, Wallet, Star } from 'lucide-react';
+import { X, Heart, Crown, Plus, Wallet, Star, Gift } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) => {
@@ -13,6 +13,7 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
   const [walletBalance, setWalletBalance] = useState(0);
   const [showTopUp, setShowTopUp] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState('');
+  const [transactionReference, setTransactionReference] = useState('');
   const [selectedBank, setSelectedBank] = useState('HNB');
   const [paymentSlip, setPaymentSlip] = useState(null);
   const [submittingPayment, setSubmittingPayment] = useState(false);
@@ -21,6 +22,10 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
   const [selectedPremiumPlan, setSelectedPremiumPlan] = useState(null);
   const [premiumPlans, setPremiumPlans] = useState([]);
   const [redeemingPremium, setRedeemingPremium] = useState(false);
+  const [showPremiumGift, setShowPremiumGift] = useState(false);
+  const [selectedPremiumGiftPlan, setSelectedPremiumGiftPlan] = useState(null);
+  const [premiumGiftRequestKey, setPremiumGiftRequestKey] = useState('');
+  const [sendingPremiumGift, setSendingPremiumGift] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -113,18 +118,24 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
       toast.error('Please upload your payment slip');
       return;
     }
+    if (!transactionReference.trim()) {
+      toast.error('Please enter the bank transaction reference');
+      return;
+    }
 
     setSubmittingPayment(true);
     try {
       const formData = new FormData();
       formData.append('amount', parseFloat(topUpAmount));
       formData.append('bankName', selectedBank);
+      formData.append('transactionReference', transactionReference.trim());
       formData.append('paymentSlip', paymentSlip);
 
       await walletAPI.createPaymentRequest(formData);
       toast.success('Payment request submitted! Admin will approve within 24 hours.');
       setShowTopUp(false);
       setTopUpAmount('');
+      setTransactionReference('');
       setPaymentSlip(null);
       setSelectedBank('HNB');
       fetchWallet(); // Refresh wallet balance
@@ -132,6 +143,43 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
       toast.error(error.response?.data?.message || 'Failed to submit payment request');
     } finally {
       setSubmittingPayment(false);
+    }
+  };
+
+  const newRequestKey = () => (
+    window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
+
+  const handlePremiumGift = async () => {
+    if (!recipientId || !selectedPremiumGiftPlan) {
+      toast.error('Choose a recipient and Premium plan');
+      return;
+    }
+    if (selectedPremiumGiftPlan.price > walletBalance) {
+      setShowTopUp(true);
+      return;
+    }
+
+    const requestKey = premiumGiftRequestKey || newRequestKey();
+    setPremiumGiftRequestKey(requestKey);
+    setSendingPremiumGift(true);
+    try {
+      await giftAPI.sendPremiumGift({
+        to: recipientId,
+        planBadge: selectedPremiumGiftPlan.badge,
+        idempotencyKey: requestKey,
+      });
+      toast.success(`${selectedPremiumGiftPlan.name} gifted to ${recipientName}`);
+      setWalletBalance((balance) => balance - selectedPremiumGiftPlan.price);
+      setShowPremiumGift(false);
+      setSelectedPremiumGiftPlan(null);
+      setPremiumGiftRequestKey('');
+      if (onGiftSent) onGiftSent();
+      onClose();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to gift Premium');
+    } finally {
+      setSendingPremiumGift(false);
     }
   };
 
@@ -209,6 +257,13 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
               title="Redeem premium"
             >
               <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </button>
+            <button
+              onClick={() => setShowPremiumGift(true)}
+              className="p-1.5 sm:p-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 transition"
+              title="Gift Premium"
+            >
+              <Gift className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={onClose}
@@ -372,6 +427,18 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
                   className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bank transaction reference</label>
+                <input
+                  type="text"
+                  required
+                  value={transactionReference}
+                  onChange={(e) => setTransactionReference(e.target.value)}
+                  placeholder="Enter the reference from your transfer"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
+                />
+              </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Upload Payment Slip</label>
@@ -458,6 +525,55 @@ const GiftModal = ({ isOpen, onClose, recipientId, recipientName, onGiftSent }) 
             >
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Redeem Premium Modal */}
+      {showPremiumGift && (
+        <div className="fixed inset-0 z-[350] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Gift Premium</h3>
+              <button onClick={() => setShowPremiumGift(false)} aria-label="Close Premium gift" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition">
+                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">To <span className="font-semibold text-gray-900 dark:text-white">{recipientName || 'selected member'}</span></p>
+            <div className="space-y-2.5">
+              {premiumPlans.filter((plan) => plan.isActive && ['bronze', 'silver', 'gold'].includes(plan.badge)).map((plan) => (
+                <button
+                  key={plan._id}
+                  type="button"
+                  aria-pressed={selectedPremiumGiftPlan?._id === plan._id}
+                  onClick={() => {
+                    setSelectedPremiumGiftPlan(plan);
+                    setPremiumGiftRequestKey('');
+                  }}
+                  className={`w-full rounded-xl border-2 p-3.5 text-left transition ${selectedPremiumGiftPlan?._id === plan._id ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/20' : 'border-gray-200 dark:border-slate-700 hover:border-amber-300'}`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-bold text-gray-900 dark:text-white">{plan.name}</span>
+                    <span className="font-bold text-amber-700 dark:text-amber-400">{plan.price} {plan.currency || 'LKR'}</span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{plan.durationDays} days of Premium validity</p>
+                </button>
+              ))}
+            </div>
+            {selectedPremiumGiftPlan && (
+              <div className="mt-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 p-3.5 text-sm text-amber-900 dark:text-amber-200">
+                Confirm: gift {selectedPremiumGiftPlan.name} to {recipientName || 'this member'} for {selectedPremiumGiftPlan.price} {selectedPremiumGiftPlan.currency || 'LKR'} ({selectedPremiumGiftPlan.durationDays} days). Any active Premium validity will be extended.
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handlePremiumGift}
+              disabled={!selectedPremiumGiftPlan || sendingPremiumGift}
+              className="w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold hover:from-amber-600 hover:to-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {sendingPremiumGift ? 'Processing payment...' : selectedPremiumGiftPlan && selectedPremiumGiftPlan.price > walletBalance ? 'Top Up Wallet' : selectedPremiumGiftPlan ? `Confirm Gift · ${selectedPremiumGiftPlan.price} ${selectedPremiumGiftPlan.currency || 'LKR'}` : 'Select a plan'}
+            </button>
+            <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-2">Wallet balance: {walletBalance} LKR</p>
           </div>
         </div>
       )}

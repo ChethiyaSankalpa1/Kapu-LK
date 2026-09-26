@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AlertTriangle, X, ShieldAlert, CheckCircle } from 'lucide-react';
 import { messageAPI } from '../../services/api';
 import { toast } from 'react-toastify';
+import ProfileAvatar from '../ui/ProfileAvatar';
 
 const REPORT_REASONS = [
   { id: 'Inappropriate Content or Messages', label: 'Inappropriate Content or Messages' },
@@ -78,17 +79,7 @@ const ReportUserModal = ({ isOpen, onClose, reportedUser }) => {
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-slate-800/50 rounded-2xl">
               <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0">
-                {reportedUser.profileImageUrl ? (
-                  <img
-                    src={reportedUser.profileImageUrl}
-                    alt={reportedUser.name}
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="font-bold text-purple-600 dark:text-purple-400">
-                    {(reportedUser.name || 'U').charAt(0)}
-                  </span>
-                )}
+                <ProfileAvatar user={reportedUser} className="w-full h-full rounded-full bg-purple-100 dark:bg-purple-900/40" avatarClassName="text-2xl" fallbackClassName="font-bold text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/40" />
               </div>
               <div>
                 <h4 className="font-bold text-sm text-gray-900 dark:text-white">{reportedUser.name}</h4>

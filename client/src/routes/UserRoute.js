@@ -38,7 +38,7 @@ const UserRoute = ({ children }) => {
 
     // Step 3: Profile completeness check — only after email is verified.
     const isProfileComplete = Boolean(
-        user?.profileImageUrl &&
+        (user?.profileImageUrl || user?.profileAvatar) &&
         user?.age &&
         user?.gender &&
         (user?.district || user?.location) &&

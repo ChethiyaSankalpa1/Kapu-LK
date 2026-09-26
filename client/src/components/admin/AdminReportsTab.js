@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { adminAPI } from '../../services/api';
 import { toast } from 'react-toastify';
+import ProfileAvatar from '../ui/ProfileAvatar';
 import {
   AlertTriangle, Trash2, Eye, ShieldAlert
 } from 'lucide-react';
@@ -165,11 +166,7 @@ const AdminReportsTab = () => {
                     {/* Reporter */}
                     <div className="flex items-center space-x-3 bg-gray-50 dark:bg-slate-800/60 p-2.5 rounded-xl border border-gray-100 dark:border-slate-700/50 min-w-[200px]">
                       <div className="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0">
-                        {reporter.profileImageUrl ? (
-                          <img src={reporter.profileImageUrl} alt={reporter.name} className="w-full h-full rounded-full object-cover" />
-                        ) : (
-                          <span className="font-bold text-purple-600 dark:text-purple-300 text-xs">{(reporter.name || 'R').charAt(0)}</span>
-                        )}
+                          <ProfileAvatar user={reporter} className="w-full h-full rounded-full bg-purple-100" avatarClassName="text-2xl" fallbackClassName="font-bold text-purple-600 bg-purple-100" />
                       </div>
                       <div>
                         <span className="text-[10px] uppercase font-bold text-gray-400 block">Reporter</span>
@@ -183,11 +180,7 @@ const AdminReportsTab = () => {
                     {/* Reported User */}
                     <div className="flex items-center space-x-3 bg-red-50/60 dark:bg-red-950/30 p-2.5 rounded-xl border border-red-100 dark:border-red-900/40 min-w-[220px]">
                       <div className="w-9 h-9 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center shrink-0">
-                        {reported.profileImageUrl ? (
-                          <img src={reported.profileImageUrl} alt={reported.name} className="w-full h-full rounded-full object-cover" />
-                        ) : (
-                          <span className="font-bold text-red-600 dark:text-red-300 text-xs">{(reported.name || 'U').charAt(0)}</span>
-                        )}
+                          <ProfileAvatar user={reported} className="w-full h-full rounded-full bg-red-100" avatarClassName="text-2xl" fallbackClassName="font-bold text-red-600 bg-red-100" />
                       </div>
                       <div>
                         <span className="text-[10px] uppercase font-bold text-red-500 block">Reported Account</span>

@@ -6,13 +6,14 @@ import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 import {
-  Send, User, MessageSquare,
+  Send, MessageSquare,
   Check, CheckCheck, Smile, Paperclip,
   Image, Search, X, Edit2, Trash2, MoreVertical, Gift,
   CornerUpLeft, Copy
 } from 'lucide-react';
 import GiftModal from '../../components/ui/GiftModal';
 import PremiumBadge from '../../components/ui/PremiumBadge';
+import ProfileAvatar from '../../components/ui/ProfileAvatar';
 import BackButton from '../../components/common/BackButton';
 
 const Conversation = () => {
@@ -597,24 +598,7 @@ const Conversation = () => {
                     >
                       {/* Avatar */}
                       <div className="relative shrink-0">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#25d366] to-[#128c7e] flex items-center justify-center overflow-hidden border border-white dark:border-[#2a3942] shadow-sm">
-                          {c.user.profileImageUrl ? (
-                            <img
-                              src={c.user.profileImageUrl}
-                              alt={c.user.name}
-                              onError={(e) => {
-                                e.currentTarget.onerror = null;
-                                e.currentTarget.style.display = 'none';
-                                const fb = e.currentTarget.parentElement.querySelector('.conv-avatar-fb');
-                                if (fb) fb.style.display = 'flex';
-                              }}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : null}
-                          <span className={`conv-avatar-fb text-lg font-bold text-white uppercase ${c.user.profileImageUrl ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
-                            {c.user.name.charAt(0)}
-                          </span>
-                        </div>
+                        <ProfileAvatar user={c.user} className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#25d366] to-[#128c7e] border border-white dark:border-[#2a3942] shadow-sm" avatarClassName="text-2xl" fallbackClassName="text-lg font-bold text-white uppercase bg-gradient-to-tr from-[#25d366] to-[#128c7e]" />
                         {online && (
                           <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#25d366] border-2 border-white dark:border-[#111b21] rounded-full" />
                         )}
@@ -674,24 +658,7 @@ const Conversation = () => {
                     <div className="flex items-center gap-2 sm:gap-3">
                       {/* Avatar */}
                       <Link to={`/users/${otherUser._id}`} className="relative block group">
-                        <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full bg-gradient-to-tr from-[#25d366] to-[#128c7e] flex items-center justify-center overflow-hidden border-2 border-white dark:border-[#2a3942] shadow-sm group-hover:scale-105 transition-transform">
-                          {otherUser.profileImageUrl ? (
-                            <img
-                              src={otherUser.profileImageUrl}
-                              alt={otherUser.name}
-                              onError={(e) => {
-                                e.currentTarget.onerror = null;
-                                e.currentTarget.style.display = 'none';
-                                const fb = e.currentTarget.parentElement.querySelector('.header-avatar-fb');
-                                if (fb) fb.style.display = 'flex';
-                              }}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : null}
-                          <div className={`header-avatar-fb w-full h-full ${otherUser.profileImageUrl ? 'hidden' : 'flex'} items-center justify-center`}>
-                            <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                          </div>
-                        </div>
+                        <ProfileAvatar user={otherUser} className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full bg-gradient-to-tr from-[#25d366] to-[#128c7e] border-2 border-white dark:border-[#2a3942] shadow-sm group-hover:scale-105 transition-transform" avatarClassName="text-xl" fallbackClassName="text-lg text-white bg-gradient-to-tr from-[#25d366] to-[#128c7e]" />
                         {isUserOnline(otherUser) && (
                           <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#25d366] border-2 border-white dark:border-[#111b21] rounded-full" />
                         )}

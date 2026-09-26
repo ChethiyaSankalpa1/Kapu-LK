@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import PolicyViewerModal from '../../components/common/PolicyViewerModal';
 import BackButton from '../../components/common/BackButton';
+import ProfileAvatar from '../../components/ui/ProfileAvatar';
 
 const Settings = () => {
     const { t } = useTranslation();
@@ -543,13 +544,7 @@ const Settings = () => {
                                     {blockedUsers.map((blockedUser) => (
                                         <div key={blockedUser._id || blockedUser.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800">
                                             <div className="flex items-center space-x-3">
-                                                <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0">
-                                                    {blockedUser.profileImageUrl ? (
-                                                        <img src={blockedUser.profileImageUrl} alt={blockedUser.name} className="w-full h-full rounded-full object-cover" />
-                                                    ) : (
-                                                        <span className="font-bold text-xs text-purple-600 dark:text-purple-300">{(blockedUser.name || 'U').charAt(0)}</span>
-                                                    )}
-                                                </div>
+                                                <ProfileAvatar user={blockedUser} className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/40 shrink-0" avatarClassName="text-xl" fallbackClassName="text-xs font-bold text-purple-600 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40" />
                                                 <div>
                                                     <span className="text-sm font-bold text-gray-800 dark:text-gray-200 block">{blockedUser.name}</span>
                                                     {blockedUser.location && <span className="text-xs text-gray-400 block">{blockedUser.location}</span>}

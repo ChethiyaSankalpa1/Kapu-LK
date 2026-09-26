@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import { User, Upload, ArrowLeft, ArrowRight, Save } from 'lucide-react';
 import PremiumBadge from '../../components/ui/PremiumBadge';
 import PhotoGalleryManager from '../../components/ui/PhotoGalleryManager';
+import ProfileAvatar, { PROFILE_AVATARS } from '../../components/ui/ProfileAvatar';
 import BackButton from '../../components/common/BackButton';
 
 const Profile = () => {
@@ -17,6 +18,7 @@ const Profile = () => {
     const [formData, setFormData] = useState({
         name: user?.name || '',
         profileName: user?.profileName || '',
+        profileAvatar: user?.profileAvatar || '',
         phoneNumber: user?.phoneNumber || '',
         age: user?.age || '',
         gender: user?.gender || 'male',
@@ -80,7 +82,7 @@ const Profile = () => {
     };
 
     const missing = {
-        profileImage: !user?.profileImageUrl,
+        profileImage: !user?.profileImageUrl && !formData.profileAvatar,
         age: !formData.age,
         gender: !formData.gender,
         locOrDistrict: !(formData.district || formData.location),
@@ -118,8 +120,8 @@ const Profile = () => {
     const onSubmit = async (e) => {
         e.preventDefault();
 
-        if (!user?.profileImageUrl) {
-            toast.error('Profile picture is required before saving your profile. Please upload a photo first.');
+        if (!user?.profileImageUrl && !formData.profileAvatar) {
+            toast.error('Choose an avatar or upload a profile photo before saving your profile.');
             return;
         }
 
@@ -186,14 +188,14 @@ const Profile = () => {
                     <BackButton label="Back" />
                 </div>
                 {/* Warning banner if profile image is missing */}
-                {!user?.profileImageUrl && (
+                {!user?.profileImageUrl && !formData.profileAvatar && (
                     <div className="mb-4 sm:mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-700 rounded-2xl flex items-start gap-3">
                         <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-800 flex items-center justify-center shrink-0">
                             <Upload className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                         </div>
                         <div className="flex-1">
-                            <h3 className="font-bold text-amber-900 dark:text-amber-100 text-sm sm:text-base mb-1">Profile Image Required</h3>
-                            <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-300">You must upload a profile picture to access all features including browsing users, messaging, and other premium features.</p>
+                            <h3 className="font-bold text-amber-900 dark:text-amber-100 text-sm sm:text-base mb-1">Choose a Profile Picture</h3>
+                            <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-300">Upload a photo or select a default avatar below.</p>
                         </div>
                     </div>
                 )}
@@ -217,6 +219,37 @@ const Profile = () => {
                         }}
                     />
                 </div>
+
+                <section className="glass-card mb-4 sm:mb-6 p-4 sm:p-6 rounded-3xl bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 shadow-sm">
+                    <div className="mb-4">
+                        <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Profile Picture Choice</h2>
+                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Choose an uploaded photo or a default avatar. Your gallery stays unchanged.</p>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-3">
+                        <button
+                            type="button"
+                            disabled={!user?.profileImageUrl}
+                            aria-pressed={!formData.profileAvatar && Boolean(user?.profileImageUrl)}
+                            onClick={() => setFormData({ ...formData, profileAvatar: '' })}
+                            className={`flex flex-col items-center gap-2 rounded-xl border-2 p-2.5 transition disabled:cursor-not-allowed disabled:opacity-50 ${!formData.profileAvatar && user?.profileImageUrl ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/30' : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
+                        >
+                            <ProfileAvatar user={{ ...user, profileAvatar: '' }} className="h-16 w-16 rounded-full bg-slate-200 dark:bg-slate-700" avatarClassName="text-3xl" fallbackClassName="text-xl font-bold text-white bg-slate-500" />
+                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Uploaded photo</span>
+                        </button>
+                        {PROFILE_AVATARS.map((avatar) => (
+                            <button
+                                key={avatar.id}
+                                type="button"
+                                aria-pressed={formData.profileAvatar === avatar.id}
+                                onClick={() => setFormData({ ...formData, profileAvatar: avatar.id })}
+                                className={`flex flex-col items-center gap-2 rounded-xl border-2 p-2.5 transition ${formData.profileAvatar === avatar.id ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/30' : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
+                            >
+                                <ProfileAvatar user={{ ...user, profileAvatar: avatar.id }} className="h-16 w-16 rounded-full" avatarClassName="text-3xl" />
+                                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{avatar.label} {avatar.id.slice(-1)}</span>
+                            </button>
+                        ))}
+                    </div>
+                </section>
 
                 {/* Profile Form */}
                 <div className="glass-card">
@@ -547,11 +580,11 @@ const Profile = () => {
                             ) : (
                                 <button
                                     type="submit"
-                                    disabled={loading || !user?.profileImageUrl}
+                                    disabled={loading || (!user?.profileImageUrl && !formData.profileAvatar)}
                                     className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all font-semibold shadow-md disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm w-full sm:w-auto"
                                 >
                                     <Save className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                    <span>{loading ? 'Saving...' : !user?.profileImageUrl ? 'Upload Picture First' : 'Save'}</span>
+                                    <span>{loading ? 'Saving...' : (!user?.profileImageUrl && !formData.profileAvatar) ? 'Choose a Profile Picture' : 'Save'}</span>
                                 </button>
                             )}
                         </div>
