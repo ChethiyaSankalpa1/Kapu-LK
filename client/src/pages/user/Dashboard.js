@@ -154,18 +154,25 @@ const Dashboard = () => {
                 {/* Mobile Welcome Card with Tasteful LoveLK Cover Header */}
                 <div className="relative bg-white dark:bg-gray-900 rounded-3xl border border-gray-150 dark:border-gray-800 shadow-sm overflow-hidden">
                     {/* Cover Banner Area */}
-                    <div className="relative h-20 w-full overflow-hidden bg-gradient-to-r from-purple-700 via-pink-600 to-purple-800">
-                        <img
-                            src="/images/love-connect-belong.jpg"
-                            alt="LoveLK Cover"
-                            className="w-full h-full object-cover object-center opacity-85"
-                            onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = '/images/lovelk-hero-cover.png';
-                            }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                        <div className="absolute top-2.5 right-3 px-2 py-0.5 bg-black/40 backdrop-blur-md rounded-full text-[9px] font-extrabold text-white/90 tracking-wider uppercase border border-white/20">
+                    <div className="relative h-20 w-full overflow-hidden bg-purple-950">
+                        <video
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            preload="metadata"
+                            poster="/images/love-connect-belong.jpg"
+                            className="w-full h-full object-cover object-center opacity-90"
+                        >
+                            <source src="/video/PixVerse_V6_Image_Text_540P_Create_a_beautiful.mp4" type="video/mp4" />
+                            <img
+                                src="/images/love-connect-belong.jpg"
+                                alt="LoveLK Cover"
+                                className="w-full h-full object-cover object-center"
+                            />
+                        </video>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-purple-950/20 to-transparent pointer-events-none" />
+                        <div className="absolute top-2.5 right-3 px-2 py-0.5 bg-black/40 backdrop-blur-md rounded-full text-[9px] font-extrabold text-white/90 tracking-wider uppercase border border-white/20 z-10">
                             LoveLK
                         </div>
                     </div>
@@ -482,13 +489,25 @@ const Dashboard = () => {
                             </Link>
                         </div>
 
-                        {/* Promotional Couple Image Card */}
-                        <div className="rounded-3xl overflow-hidden shadow-sm border border-gray-150 dark:border-gray-800">
-                            <img
-                                src="/images/love-connect-belong.jpg"
-                                alt="Love Connect Belong"
-                                className="w-full h-56 lg:h-64 object-cover"
-                            />
+                        {/* Promotional Couple Video Card */}
+                        <div className="rounded-3xl overflow-hidden shadow-sm border border-gray-150 dark:border-gray-800 relative bg-purple-950">
+                            <video
+                                autoPlay
+                                muted
+                                loop
+                                playsInline
+                                preload="metadata"
+                                poster="/images/love-connect-belong.jpg"
+                                className="w-full h-56 lg:h-64 object-cover object-center opacity-95"
+                            >
+                                <source src="/video/PixVerse_V6_Image_Text_540P_Create_a_beautiful.mp4" type="video/mp4" />
+                                <img
+                                    src="/images/love-connect-belong.jpg"
+                                    alt="Love Connect Belong"
+                                    className="w-full h-56 lg:h-64 object-cover"
+                                />
+                            </video>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
                         </div>
                     </div>
 
@@ -497,12 +516,25 @@ const Dashboard = () => {
 
                         {/* Scenic Hero Header Card */}
                         <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-150 dark:border-gray-800 shadow-sm overflow-hidden">
-                            {/* Scenic Banner Cover with custom LoveLK hero cover image */}
-                            <div 
-                                className="h-44 sm:h-52 md:h-60 relative overflow-hidden bg-cover bg-center"
-                                style={{ backgroundImage: "url('/images/lovelk-hero-cover.png')" }}
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10" />
+                            {/* Scenic Banner Cover with custom LoveLK hero cover video */}
+                            <div className="h-44 sm:h-52 md:h-60 relative overflow-hidden bg-purple-950">
+                                <video
+                                    autoPlay
+                                    muted
+                                    loop
+                                    playsInline
+                                    preload="metadata"
+                                    poster="/images/lovelk-hero-cover.png"
+                                    className="w-full h-full object-cover object-center opacity-90"
+                                >
+                                    <source src="/video/PixVerse_V6_Image_Text_540P_Create_a_beautiful.mp4" type="video/mp4" />
+                                    <img
+                                        src="/images/lovelk-hero-cover.png"
+                                        alt="LoveLK Cover"
+                                        className="w-full h-full object-cover object-center"
+                                    />
+                                </video>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-purple-950/20 to-black/20 pointer-events-none" />
                             </div>
 
                             {/* Clean Compact Profile Overview below Cover */}
