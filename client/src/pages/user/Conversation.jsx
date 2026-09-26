@@ -44,7 +44,9 @@ const Conversation = () => {
   const [showReactionPicker, setShowReactionPicker] = useState(null);
   const [showGiftModal, setShowGiftModal] = useState(false);
   const [replyingToMessage, setReplyingToMessage] = useState(null);
-  const [viewportHeight, setViewportHeight] = useState(null);
+  // Tracks the visual viewport rectangle on mobile so the chat container
+  // is pinned exactly to what the user can see (accounts for keyboard offsetTop gap).
+  const [vp, setVp] = useState({ top: 0, height: null });
 
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -133,23 +135,25 @@ const Conversation = () => {
     }
   }, [userId, scrollToBottom]);
 
-  // Track visual viewport dynamically on mobile (handles Android & iOS keyboard open/close seamlessly)
+  // Track visual viewport on mobile — both offsetTop and height.
+  // offsetTop is the Y distance the visual viewport has scrolled within the layout viewport.
+  // On Android when the keyboard opens, the page may scroll down (offsetTop > 0).
+  // By matching our container to offsetTop + height we fill the exact visible area — no gap.
   useEffect(() => {
     fetchConversationsList();
 
     const handleViewport = () => {
       if (window.innerWidth < 768) {
         if (window.visualViewport) {
-          setViewportHeight(window.visualViewport.height);
-          // Prevent browser from scrolling the body/page when keyboard pops up
-          if (window.scrollY !== 0) {
-            window.scrollTo(0, 0);
-          }
+          setVp({
+            top: Math.round(window.visualViewport.offsetTop),
+            height: Math.round(window.visualViewport.height),
+          });
         } else {
-          setViewportHeight(window.innerHeight);
+          setVp({ top: 0, height: window.innerHeight });
         }
       } else {
-        setViewportHeight(null);
+        setVp({ top: 0, height: null });
       }
     };
 
@@ -209,10 +213,10 @@ const Conversation = () => {
 
   // When visual viewport shrinks (e.g. keyboard opens), keep conversation pinned to latest message if near bottom
   useEffect(() => {
-    if (viewportHeight && isNearBottomRef.current) {
+    if (vp.height && isNearBottomRef.current) {
       scrollToBottom('smooth');
     }
-  }, [viewportHeight, scrollToBottom]);
+  }, [vp.height, scrollToBottom]);
 
   // Check typing status
   const checkTypingStatus = useCallback(async () => {
@@ -517,14 +521,21 @@ const Conversation = () => {
     <div
       className={`fixed left-0 right-0 bg-[#efeae2] dark:bg-[#0b141a] transition-colors duration-150 overflow-hidden ${
         userId
-          ? 'top-0 z-40 md:top-16 md:bottom-0'
-          : 'top-14 sm:top-16 bottom-0 z-30'
+          ? 'z-40 md:top-16 md:bottom-0'
+          : 'z-30 md:top-16 md:bottom-0'
       }`}
-      style={{
-        height: window.innerWidth < 768
-          ? (viewportHeight ? `${viewportHeight}px` : '100dvh')
-          : undefined,
-      }}
+      style={
+        window.innerWidth < 768 && vp.height
+          ? {
+              // Pin the container to the *visual* viewport — accounts for
+              // offsetTop (page scrolled by keyboard) so there is zero gap.
+              top: `${vp.top}px`,
+              height: `${vp.height}px`,
+            }
+          : window.innerWidth >= 768
+          ? undefined
+          : { top: userId ? 0 : '3.5rem', bottom: 0 }
+      }
     >
       <div className="h-full flex w-full max-w-7xl mx-auto bg-[#f0f2f5] dark:bg-[#111b21] shadow-2xl overflow-hidden min-h-0">
         
