@@ -330,12 +330,18 @@ exports.getUserById = async (req, res) => {
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const viewerName = req.user.name || 'A member';
 
-        const existingWindow = await Notification.findOne({
+        // Fetch recent profile_view notification for this user pair, then filter in JS
+        // to avoid { $gte: date } CastError on Node 26 + Mongoose.
+        const recentNotif = await Notification.findOne({
           user: user._id,
           relatedUser: req.user._id,
           type: 'profile_view',
-          lastViewedAt: { $gte: twentyFourHoursAgo },
-        }).select('_id').lean();
+        }).select('_id lastViewedAt').sort({ lastViewedAt: -1 }).lean();
+
+        const existingWindow = recentNotif && recentNotif.lastViewedAt
+          && new Date(recentNotif.lastViewedAt) >= twentyFourHoursAgo
+          ? recentNotif
+          : null;
 
         if (existingWindow) {
           await Notification.updateOne(

@@ -85,19 +85,18 @@ exports.sendMessage = async (req, res) => {
     }
 
     // Rolling 24-hour message count check for free users
+    // NOTE: No expiresAt filter — TTL index auto-deletes expired docs.
+    // Using { $gt: now } on expiresAt causes CastError on Node 26 + Mongoose.
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const now = new Date();
     const messagesSentInLast24h = await Message.countDocuments({
       from: sender._id,
       createdAt: { $gte: twentyFourHoursAgo },
-      $or: [{ expiresAt: { $gt: now } }, { expiresAt: null }],
     });
 
     if (!hasUnlimitedMessages && !isAdminConversation && messagesSentInLast24h >= FREE_MESSAGE_LIMIT) {
       const oldestInWindow = await Message.find({
         from: sender._id,
         createdAt: { $gte: twentyFourHoursAgo },
-        $or: [{ expiresAt: { $gt: now } }, { expiresAt: null }],
       })
         .sort({ createdAt: 1 })
         .limit(1);
@@ -163,12 +162,17 @@ exports.sendMessage = async (req, res) => {
     // Check if a similar notification already exists in the last 5 minutes
     try {
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-      const existingNotification = await Notification.findOne({
+      // Sort by createdAt desc, then filter in JS to avoid { $gte: date } CastError on Node 26
+      const recentNotif = await Notification.findOne({
         user: to,
         type: 'message',
         relatedUser: req.user._id,
-        createdAt: mongoose.trusted({ $gte: fiveMinutesAgo }),
-      });
+      }).sort({ createdAt: -1 }).select('_id createdAt');
+
+      const existingNotification = recentNotif && recentNotif.createdAt
+        && new Date(recentNotif.createdAt) >= fiveMinutesAgo
+        ? recentNotif
+        : null;
 
       if (!existingNotification) {
         await Notification.create({
@@ -242,7 +246,6 @@ exports.getMessageLimits = async (req, res) => {
     const FREE_MESSAGE_LIMIT = 10;
     const MESSAGE_COOLDOWN_MS = 60 * 1000;
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const now = new Date();
 
     if (hasUnlimitedMessages) {
       return res.json({
@@ -263,7 +266,6 @@ exports.getMessageLimits = async (req, res) => {
     const sentIn24h = await Message.countDocuments({
       from: user._id,
       createdAt: { $gte: twentyFourHoursAgo },
-      $or: [{ expiresAt: { $gt: now } }, { expiresAt: null }],
     });
 
     const messagesRemaining = Math.max(0, FREE_MESSAGE_LIMIT - sentIn24h);
@@ -281,7 +283,6 @@ exports.getMessageLimits = async (req, res) => {
       const oldestInWindow = await Message.find({
         from: user._id,
         createdAt: { $gte: twentyFourHoursAgo },
-        $or: [{ expiresAt: { $gt: now } }, { expiresAt: null }],
       })
         .sort({ createdAt: 1 })
         .limit(1);
@@ -318,13 +319,11 @@ exports.getMessageLimits = async (req, res) => {
 exports.getConversations = async (req, res) => {
   try {
     const userId = req.user._id;
-    const now = new Date();
 
     const messages = await Message.find({
       $and: [
         { $or: [{ from: userId }, { to: userId }] },
         { deletedFor: mongoose.trusted({ $ne: userId }) },
-        { $or: [{ expiresAt: { $gt: now } }, { expiresAt: null }] },
       ],
     })
       .sort({ createdAt: -1 })
@@ -394,7 +393,6 @@ exports.getConversationWithUser = async (req, res) => {
   try {
     const userId = req.user._id;
     const otherUserId = req.params.userId;
-    const now = new Date();
 
     if (!otherUserId || !mongoose.isValidObjectId(otherUserId)) {
       return res.status(400).json({ message: 'Invalid user ID' });
@@ -418,9 +416,6 @@ exports.getConversationWithUser = async (req, res) => {
         },
         {
           deletedFor: mongoose.trusted({ $ne: userId }),
-        },
-        {
-          $or: [{ expiresAt: { $gt: now } }, { expiresAt: null }],
         },
       ],
     })

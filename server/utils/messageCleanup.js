@@ -1,4 +1,3 @@
-const mongoose = require('mongoose');
 const Message = require('../models/Message');
 const User = require('../models/User');
 const cloudinary = require('../config/cloudinary');
@@ -30,9 +29,9 @@ const extractCloudinaryPublicId = (url) => {
  */
 const backfillMessageExpiresAt = async () => {
   try {
-    const messagesWithoutExpiry = await Message.find(mongoose.trusted({
-      $or: [{ expiresAt: { $exists: false } }, { expiresAt: null }],
-    }))
+    // Use { expiresAt: null } which matches both null and missing field.
+    // Avoids { $exists: false } which causes CastError on Node 26 + Mongoose.
+    const messagesWithoutExpiry = await Message.find({ expiresAt: null })
       .limit(1000)
       .select('_id from to createdAt');
 
@@ -93,10 +92,17 @@ const backfillMessageExpiresAt = async () => {
 const cleanupExpiredMessageMedia = async () => {
   try {
     const now = new Date();
-    const expiredImageMessages = await Message.find(mongoose.trusted({
-      expiresAt: { $lte: now },
+
+    // Fetch messages that have an expiresAt set (not null), then filter in JS.
+    // Avoids { $lte: now } date-operator CastError on Node 26 + Mongoose.
+    const allImageMessages = await Message.find({
       type: 'image',
-    })).select('_id content');
+      expiresAt: { $exists: true, $ne: null },
+    }).select('_id content expiresAt');
+
+    const expiredImageMessages = allImageMessages.filter(
+      (m) => m.expiresAt && m.expiresAt <= now
+    );
 
     if (expiredImageMessages.length === 0) return 0;
 
@@ -129,11 +135,24 @@ const cleanupExpiredMessageMedia = async () => {
       console.log(`[messageCleanup] Cleaned up ${destroyedCount} Cloudinary chat media attachment(s) for expired messages.`);
     }
 
-    // Explicitly delete expired messages from MongoDB (complements MongoDB TTL index)
-    const deleteResult = await Message.deleteMany({ expiresAt: { $lte: now } });
-    const deletedDocs = deleteResult?.deletedCount ?? 0;
-    if (deletedDocs > 0) {
-      console.log(`[messageCleanup] Purged ${deletedDocs} expired message(s) from MongoDB.`);
+    // Explicitly delete all expired messages (those where expiresAt has passed)
+    const expiredIds = allImageMessages
+      .concat(
+        await Message.find({
+          type: { $ne: 'image' },
+          expiresAt: { $exists: true, $ne: null },
+        }).select('_id expiresAt')
+      )
+      .filter((m) => m.expiresAt && m.expiresAt <= now)
+      .map((m) => m._id);
+
+    let deletedDocs = 0;
+    if (expiredIds.length > 0) {
+      const deleteResult = await Message.deleteMany({ _id: { $in: expiredIds } });
+      deletedDocs = deleteResult?.deletedCount ?? 0;
+      if (deletedDocs > 0) {
+        console.log(`[messageCleanup] Purged ${deletedDocs} expired message(s) from MongoDB.`);
+      }
     }
 
     return deletedDocs;
