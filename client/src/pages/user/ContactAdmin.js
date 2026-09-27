@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { userAPI, messageAPI } from '../../services/api';
+import { userAPI, messageAPI, supportAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import { Shield, Send, Clock, CheckCircle, X, Image as ImageIcon, AlertCircle, HelpCircle, CreditCard, User as UserIcon, Settings, Bug, FileText, Mail } from 'lucide-react';
 import BackButton from '../../components/common/BackButton';
@@ -65,22 +65,43 @@ const ContactAdmin = () => {
     }, [fetchAdmin, fetchConversations]);
 
     const handleSendMessage = async () => {
-        if (!admin) {
-            toast.error(t('toast.contact.adminNotAvailable'));
-            return;
-        }
         if (!messageText.trim() && attachments.length === 0) {
             toast.error(t('toast.contact.emptyMessage'));
             return;
         }
         setSending(true);
         try {
-            await messageAPI.sendMessage({
-                to: admin._id,
-                content: messageText.trim(),
-                type: 'text',
-                attachments: attachments,
-            });
+            const categoryMap = {
+                bug: 'technical',
+                payment: 'payments',
+                profile: 'profile',
+                account: 'recovery',
+                report: 'reporting',
+                technical: 'technical',
+                other: 'other',
+            };
+            const mappedCategory = categoryMap[issueType] || 'other';
+            const issueLabel = issueTypes.find(t => t.id === issueType)?.label || 'General Issue';
+            const fullMessageText = messageText.trim() || 'See attached screenshots.';
+
+            // 1. Submit ticket to Admin Support Inbox
+            await supportAPI.createTicket({
+                category: mappedCategory,
+                subject: `[${issueLabel}] Support Request`,
+                message: fullMessageText,
+                priority: 'medium',
+            }).catch(ticketErr => console.warn('Ticket creation secondary error:', ticketErr));
+
+            // 2. Direct message to admin if admin is available
+            if (admin?._id) {
+                await messageAPI.sendMessage({
+                    to: admin._id,
+                    content: `[${issueLabel}] ${fullMessageText}`,
+                    type: 'text',
+                    attachments: attachments,
+                }).catch(msgErr => console.warn('Direct message secondary error:', msgErr));
+            }
+
             toast.success(t('toast.contact.messageSent'));
             setMessageText('');
             setIssueType('');

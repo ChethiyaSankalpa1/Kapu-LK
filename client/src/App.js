@@ -95,6 +95,7 @@ class ChunkErrorBoundary extends React.Component {
 
 // Lazy-loaded pages with automatic deployment retry
 const Home = lazyWithRetry(() => import('./pages/public/Home'));
+const About = lazyWithRetry(() => import('./pages/public/About'));
 const PrivacyPolicy = lazyWithRetry(() => import('./pages/public/PrivacyPolicy'));
 
 const Login = lazyWithRetry(() => import('./pages/auth/Login'));
@@ -374,6 +375,8 @@ function App() {
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<Home />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/about-us" element={<About />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />

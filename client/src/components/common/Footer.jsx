@@ -49,10 +49,10 @@ const Footer = () => {
             <ul className="space-y-2 text-xs">
               {[
                 { to: '/', label: 'Home' },
+                { to: '/about', label: 'About Us' },
                 { to: '/users', label: 'Browse Profiles' },
                 { to: '/register', label: 'Create Free Account' },
                 { to: '/login', label: 'Member Login' },
-                { to: '/forgot-password', label: 'Forgot Password' },
               ].map(({ to, label }) => (
                 <li key={to}>
                   <Link
@@ -130,6 +130,10 @@ const Footer = () => {
             in Sri Lanka
           </p>
           <div className="flex items-center gap-4">
+            <Link to="/about" className="hover:text-purple-400 transition-colors">
+              About Us
+            </Link>
+            <span className="text-slate-700">•</span>
             <Link to="/privacy-policy" className="hover:text-purple-400 transition-colors">
               Privacy
             </Link>
