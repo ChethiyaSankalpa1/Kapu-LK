@@ -84,9 +84,16 @@ const Conversation = () => {
     try {
       const response = await messageAPI.getMessageLimits();
       if (response.data) {
-        setMessageLimits(response.data);
-        if (typeof response.data.cooldownRemaining === 'number' && response.data.cooldownRemaining > 0) {
-          setCooldownSeconds(response.data.cooldownRemaining);
+        const data = response.data;
+        const remCount = typeof data.remaining === 'number' ? data.remaining : data.messagesRemaining;
+        const coolRemSec = typeof data.cooldownRemaining === 'number' ? data.cooldownRemaining : data.cooldownRemainingSeconds;
+        setMessageLimits({
+          ...data,
+          remaining: typeof remCount === 'number' ? remCount : 10,
+          cooldownRemaining: coolRemSec || 0,
+        });
+        if (typeof coolRemSec === 'number' && coolRemSec > 0) {
+          setCooldownSeconds(coolRemSec);
         }
       }
     } catch (error) {
@@ -376,12 +383,15 @@ const Conversation = () => {
         replyTo: activeReplyTo ? activeReplyTo._id : null,
       });
 
-      if (sendRes.data && typeof sendRes.data.messagesRemaining === 'number') {
-        setMessageLimits(prev => ({
-          ...prev,
-          remaining: sendRes.data.messagesRemaining,
-          retentionHours: sendRes.data.retentionHours || prev.retentionHours
-        }));
+      if (sendRes.data) {
+        const rem = typeof sendRes.data.remaining === 'number' ? sendRes.data.remaining : sendRes.data.messagesRemaining;
+        if (typeof rem === 'number') {
+          setMessageLimits(prev => ({
+            ...prev,
+            remaining: rem,
+            retentionHours: sendRes.data.retentionHours || prev.retentionHours
+          }));
+        }
       }
 
       // 60-second cooldown for free users after successfully sending a message
