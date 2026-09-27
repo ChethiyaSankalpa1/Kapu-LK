@@ -494,7 +494,12 @@ const Dashboard = () => {
                             {/* Divider Line */}
                             <div className="my-2 border-t border-gray-150 dark:border-gray-800" />
 
-                            {/* Section 3: Legal */}
+                            {/* Section 3: Legal & Information */}
+                            <Link to="/about" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm transition">
+                                <Sparkles className="w-4.5 h-4.5 text-purple-500 shrink-0" />
+                                <span>About Us</span>
+                            </Link>
+
                             <Link to="/privacy-policy" className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm transition">
                                 <FileText className="w-4.5 h-4.5 text-slate-500 shrink-0" />
                                 <span>Privacy Policy</span>
