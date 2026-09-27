@@ -216,6 +216,8 @@ exports.sendGift = async (req, res) => {
           : `${req.user.name} sent you a gift (${gift.name} ${gift.emoji})! You earned ${pointsEarned} points!`,
         relatedUser: sender,
         relatedGift: transaction._id,
+      }], { session });
+
       const isPremiumConvo = Boolean(
         (recipient && getUserPremiumDetails(recipient).isPremium) ||
         (req.user && getUserPremiumDetails(req.user).isPremium)

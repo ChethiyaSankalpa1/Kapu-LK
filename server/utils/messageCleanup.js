@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Message = require('../models/Message');
 const User = require('../models/User');
 const cloudinary = require('../config/cloudinary');
@@ -29,9 +30,9 @@ const extractCloudinaryPublicId = (url) => {
  */
 const backfillMessageExpiresAt = async () => {
   try {
-    const messagesWithoutExpiry = await Message.find({
+    const messagesWithoutExpiry = await Message.find(mongoose.trusted({
       $or: [{ expiresAt: { $exists: false } }, { expiresAt: null }],
-    })
+    }))
       .limit(1000)
       .select('_id from to createdAt');
 
@@ -92,10 +93,10 @@ const backfillMessageExpiresAt = async () => {
 const cleanupExpiredMessageMedia = async () => {
   try {
     const now = new Date();
-    const expiredImageMessages = await Message.find({
+    const expiredImageMessages = await Message.find(mongoose.trusted({
       expiresAt: { $lte: now },
       type: 'image',
-    }).select('_id content');
+    })).select('_id content');
 
     if (expiredImageMessages.length === 0) return 0;
 
