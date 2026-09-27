@@ -4,6 +4,7 @@ const {
   sendMessage,
   getConversations,
   getConversationWithUser,
+  getMessageLimits,
   uploadChatImage,
   editMessage,
   deleteMessage,
@@ -17,6 +18,7 @@ const upload = require('../middleware/upload');
 const { messageLimiter } = require('../middleware/rateLimiters');
 
 router.get('/', protect, getConversations);
+router.get('/limits', protect, getMessageLimits);
 router.post('/upload', protect, upload('image'), uploadChatImage);
 router.post('/report', protect, reportMessage);
 router.get('/:userId', protect, getConversationWithUser);

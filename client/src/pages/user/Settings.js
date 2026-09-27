@@ -12,6 +12,7 @@ import {
 import PolicyViewerModal from '../../components/common/PolicyViewerModal';
 import BackButton from '../../components/common/BackButton';
 import ProfileAvatar from '../../components/ui/ProfileAvatar';
+import { generateUserDataPDF } from '../../utils/pdfExport';
 
 const Settings = () => {
     const { t } = useTranslation();
@@ -129,6 +130,20 @@ const Settings = () => {
         setDarkMode(newTheme === 'dark');
     };
 
+    const handleExportDataPDF = async () => {
+        setExportingData(true);
+        try {
+            const res = await userAPI.exportUserData();
+            generateUserDataPDF(res.data, user);
+            toast.success('Official Personal Data PDF report generated successfully.');
+        } catch (err) {
+            console.error('Export user data PDF error:', err);
+            toast.error('Failed to generate PDF report. Please try again.');
+        } finally {
+            setExportingData(false);
+        }
+    };
+
     const handleExportData = async () => {
         setExportingData(true);
         try {
@@ -219,15 +234,15 @@ const Settings = () => {
     };
 
     const SettingCard = ({ icon: Icon, title, description, children, danger = false }) => (
-        <div className={`bg-white dark:bg-gray-800 rounded-2xl border ${danger ? 'border-red-200 dark:border-red-800' : 'border-gray-200 dark:border-gray-700'} p-4 sm:p-6 shadow-sm overflow-hidden`}>
-            <div className="flex items-start gap-3 sm:gap-4">
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 ${danger ? 'bg-red-100 dark:bg-red-900/20' : 'bg-purple-100 dark:bg-purple-900/20'}`}>
-                    <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${danger ? 'text-red-600 dark:text-red-400' : 'text-purple-600 dark:text-purple-400'}`} />
+        <div className={`bg-white dark:bg-gray-800 rounded-2xl border ${danger ? 'border-red-200 dark:border-red-800' : 'border-gray-200 dark:border-gray-700'} p-3.5 sm:p-5 shadow-sm overflow-hidden`}>
+            <div className="flex items-start gap-3 sm:gap-3.5">
+                <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${danger ? 'bg-red-100 dark:bg-red-900/20' : 'bg-purple-100 dark:bg-purple-900/20'}`}>
+                    <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${danger ? 'text-red-600 dark:text-red-400' : 'text-purple-600 dark:text-purple-400'}`} />
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h3 className={`text-base sm:text-lg font-semibold break-words ${danger ? 'text-red-900 dark:text-red-100' : 'text-gray-900 dark:text-white'}`}>{title}</h3>
-                    {description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 break-words">{description}</p>}
-                    <div className="mt-4">{children}</div>
+                    <h3 className={`text-xs sm:text-sm font-bold break-words ${danger ? 'text-red-900 dark:text-red-100' : 'text-gray-900 dark:text-white'}`}>{title}</h3>
+                    {description && <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 break-words leading-relaxed">{description}</p>}
+                    <div className="mt-3">{children}</div>
                 </div>
             </div>
         </div>
@@ -666,27 +681,39 @@ const Settings = () => {
 
                             <SettingCard
                                 icon={Download}
-                                title="Download Personal Data (JSON Export)"
-                                description="Under GDPR and Sri Lankan data rights, you can download a complete archive of your personal profile, statistics, wallet balance, and consent logs."
+                                title="Download Personal Data (PDF & JSON Archive)"
+                                description="Under GDPR and Sri Lankan data rights (PDPA), you can download a complete certified report or JSON archive of your personal profile, statistics, wallet balance, and consent logs."
                             >
-                                <button
-                                    type="button"
-                                    onClick={handleExportData}
-                                    disabled={exportingData}
-                                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl text-xs sm:text-sm font-semibold transition shadow-sm"
-                                >
-                                    {exportingData ? (
-                                        <>
-                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            <span>Exporting JSON...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Download className="w-4 h-4" />
-                                            <span>Download My Data (JSON)</span>
-                                        </>
-                                    )}
-                                </button>
+                                <div className="flex flex-wrap gap-2.5">
+                                    <button
+                                        type="button"
+                                        onClick={handleExportDataPDF}
+                                        disabled={exportingData}
+                                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-sm"
+                                    >
+                                        {exportingData ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                <span>Generating PDF...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Download className="w-4 h-4" />
+                                                <span>Download Data Report (PDF)</span>
+                                            </>
+                                        )}
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleExportData}
+                                        disabled={exportingData}
+                                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 disabled:opacity-50 text-gray-800 dark:text-gray-200 rounded-xl text-xs sm:text-sm font-semibold transition"
+                                    >
+                                        <FileText className="w-4 h-4 text-purple-600" />
+                                        <span>Download JSON Archive</span>
+                                    </button>
+                                </div>
                             </SettingCard>
                         </div>
                     </section>

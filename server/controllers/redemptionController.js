@@ -9,52 +9,54 @@ const { Wallet, WalletTransaction } = require('../models/Wallet');
 // @access  Public
 exports.getRedemptionConfigs = async (req, res) => {
   try {
-    let configs = await RedemptionConfig.find({ isActive: true });
+    const filter = req.query.all === 'true' ? {} : { isActive: true };
+    let configs = await RedemptionConfig.find(filter);
     if (!configs || configs.length === 0) {
-      configs = [
+      const defaultConfigs = [
         {
-          _id: 'default_premium_1d',
           rewardType: 'premium',
           rewardName: '1-Day Premium Membership',
           pointsCost: 150,
           isActive: true
         },
         {
-          _id: 'default_premium_7d',
           rewardType: 'premium',
           rewardName: '7 Days Premium Membership',
           pointsCost: 450,
           isActive: true
         },
         {
-          _id: 'default_premium_30d',
           rewardType: 'premium',
           rewardName: '30 Days Premium Membership',
           pointsCost: 1200,
           isActive: true
         },
         {
-          _id: 'default_wallet',
           rewardType: 'wallet',
           rewardName: 'Rs. 500 Wallet Cash',
           pointsCost: 500,
           isActive: true
         },
         {
-          _id: 'default_boost',
           rewardType: 'boost',
           rewardName: '7-Day Profile Boost',
           pointsCost: 300,
           isActive: true
         },
         {
-          _id: 'default_badge',
           rewardType: 'badge',
           rewardName: 'VIP Profile Badge',
           pointsCost: 200,
           isActive: true
         }
       ];
+
+      try {
+        configs = await RedemptionConfig.insertMany(defaultConfigs);
+      } catch (seedErr) {
+        console.error('Error auto-seeding redemption configs:', seedErr);
+        configs = defaultConfigs;
+      }
     }
     res.json(configs);
   } catch (error) {
@@ -328,16 +330,39 @@ exports.getAllRedemptions = async (req, res) => {
 // @access  Private/Admin
 exports.updateRedemptionConfig = async (req, res) => {
   try {
-    const { pointsCost, isActive, metadata } = req.body;
+    const { rewardType, rewardName, pointsCost, isActive, metadata } = req.body;
     
-    const config = await RedemptionConfig.findByIdAndUpdate(
-      req.params.id,
-      { pointsCost, isActive, metadata, updatedAt: Date.now() },
-      { new: true, runValidators: true }
-    );
+    let config = null;
 
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      config = await RedemptionConfig.findByIdAndUpdate(
+        req.params.id,
+        {
+          ...(rewardType && { rewardType }),
+          ...(rewardName && { rewardName }),
+          ...(pointsCost !== undefined && { pointsCost: Number(pointsCost) }),
+          ...(isActive !== undefined && { isActive }),
+          ...(metadata && { metadata }),
+          updatedAt: Date.now()
+        },
+        { new: true, runValidators: true }
+      );
+    }
+
+    // Fallback: if id is a non-ObjectId string (e.g., default string) or not found by ID, upsert by name
     if (!config) {
-      return res.status(404).json({ message: 'Config not found' });
+      config = await RedemptionConfig.findOneAndUpdate(
+        { rewardName: rewardName || req.params.id },
+        {
+          rewardType: rewardType || 'premium',
+          rewardName: rewardName || req.params.id,
+          pointsCost: Number(pointsCost) || 150,
+          isActive: isActive !== undefined ? isActive : true,
+          metadata: metadata || {},
+          updatedAt: Date.now()
+        },
+        { upsert: true, new: true, runValidators: true }
+      );
     }
 
     res.json(config);
@@ -357,7 +382,7 @@ exports.createRedemptionConfig = async (req, res) => {
     const config = await RedemptionConfig.create({
       rewardType,
       rewardName,
-      pointsCost,
+      pointsCost: Number(pointsCost),
       isActive: isActive !== undefined ? isActive : true,
       metadata
     });
@@ -374,7 +399,13 @@ exports.createRedemptionConfig = async (req, res) => {
 // @access  Private/Admin
 exports.deleteRedemptionConfig = async (req, res) => {
   try {
-    const config = await RedemptionConfig.findByIdAndDelete(req.params.id);
+    let config = null;
+
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      config = await RedemptionConfig.findByIdAndDelete(req.params.id);
+    } else {
+      config = await RedemptionConfig.findOneAndDelete({ rewardName: req.params.id });
+    }
 
     if (!config) {
       return res.status(404).json({ message: 'Config not found' });

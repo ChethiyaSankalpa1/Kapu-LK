@@ -20,6 +20,8 @@ const Profile = () => {
         profileName: user?.profileName || '',
         profileAvatar: user?.profileAvatar || '',
         phoneNumber: user?.phoneNumber || '',
+        showPhoneNumber: user?.showPhoneNumber || false,
+        showEmail: user?.showEmail || false,
         age: user?.age || '',
         gender: user?.gender || 'male',
         bio: user?.bio || '',
@@ -65,10 +67,10 @@ const Profile = () => {
     }, [location.state]);
 
     const onChange = (e) => {
-        const { name, value } = e.target;
+        const { name, value, type, checked } = e.target;
         setFormData({
             ...formData,
-            [name]: name === 'phoneNumber' ? value.replace(/\D/g, '') : value,
+            [name]: type === 'checkbox' ? checked : (name === 'phoneNumber' ? value.replace(/\D/g, '') : value),
         });
     };
 

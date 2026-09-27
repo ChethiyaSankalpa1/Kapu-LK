@@ -260,6 +260,7 @@ export const adminAPI = {
 export const messageAPI = {
     getConversations: () => api.get('/messages'),
     getConversationWithUser: (userId, params = {}) => api.get(`/messages/${userId}`, { params }),
+    getMessageLimits: () => api.get('/messages/limits'),
     sendMessage: (data) => api.post('/messages', data),
     uploadChatImage: (formData) => api.post('/messages/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },

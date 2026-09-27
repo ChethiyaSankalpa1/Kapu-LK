@@ -9,7 +9,7 @@ import {
   Send, MessageSquare,
   Check, CheckCheck, Smile, Paperclip,
   Image, Search, X, Edit2, Trash2, MoreVertical, Gift,
-  CornerUpLeft, Copy
+  CornerUpLeft, Copy, Lock, Clock, Sparkles
 } from 'lucide-react';
 import GiftModal from '../../components/ui/GiftModal';
 import PremiumBadge from '../../components/ui/PremiumBadge';
@@ -33,6 +33,18 @@ const Conversation = () => {
   const [chatLoading, setChatLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [messageText, setMessageText] = useState('');
+
+  // Messaging Limits & Cooldown State
+  const [messageLimits, setMessageLimits] = useState({
+    count: 0,
+    limit: 10,
+    remaining: 10,
+    cooldownRemaining: 0,
+    isPremium: false,
+    nextAvailableAt: null,
+    retentionHours: 36,
+  });
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
 
   // UI Interactive States
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -65,6 +77,21 @@ const Conversation = () => {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior });
     }, 50);
+  }, []);
+
+  // Fetch message limits & cooldown info
+  const fetchMessageLimits = useCallback(async () => {
+    try {
+      const response = await messageAPI.getMessageLimits();
+      if (response.data) {
+        setMessageLimits(response.data);
+        if (typeof response.data.cooldownRemaining === 'number' && response.data.cooldownRemaining > 0) {
+          setCooldownSeconds(response.data.cooldownRemaining);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch message limits:', error);
+    }
   }, []);
 
   // Fetch all conversations for the sidebar
@@ -134,6 +161,26 @@ const Conversation = () => {
       if (!silent) setChatLoading(false);
     }
   }, [userId, scrollToBottom]);
+
+  // Load message limits on mount and when active chat user changes
+  useEffect(() => {
+    fetchMessageLimits();
+  }, [fetchMessageLimits, userId]);
+
+  // Cooldown countdown effect
+  useEffect(() => {
+    if (cooldownSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setCooldownSeconds(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldownSeconds]);
 
   // Track visual viewport on mobile — both offsetTop and height.
   // offsetTop is the Y distance the visual viewport has scrolled within the layout viewport.
@@ -287,6 +334,12 @@ const Conversation = () => {
     if (e) e.preventDefault();
     if (!messageText.trim()) return;
 
+    // Check cooldown on frontend
+    if (cooldownSeconds > 0) {
+      toast.warning(`Please wait ${cooldownSeconds}s before sending another message.`);
+      return;
+    }
+
     const textToSend = messageText.trim();
     const activeReplyTo = replyingToMessage;
     setMessageText('');
@@ -316,17 +369,42 @@ const Conversation = () => {
     setSending(true);
 
     try {
-      await messageAPI.sendMessage({
+      const sendRes = await messageAPI.sendMessage({
         to: userId,
         content: textToSend,
         type: 'text',
         replyTo: activeReplyTo ? activeReplyTo._id : null,
       });
+
+      if (sendRes.data && typeof sendRes.data.messagesRemaining === 'number') {
+        setMessageLimits(prev => ({
+          ...prev,
+          remaining: sendRes.data.messagesRemaining,
+          retentionHours: sendRes.data.retentionHours || prev.retentionHours
+        }));
+      }
+
+      // 60-second cooldown for free users after successfully sending a message
+      if (!currentUser?.isPremium && !messageLimits.isPremium) {
+        setCooldownSeconds(60);
+      }
+
       // Refresh list and chat
       fetchChatMessages(true);
       fetchConversationsList(true);
     } catch (error) {
-      if (error.response?.data?.code === 'CONTACT_INFO_RESTRICTED') {
+      if (error.response?.data?.code === 'COOLDOWN_ACTIVE') {
+        const remainingSec = error.response.data.remainingSeconds || 60;
+        setCooldownSeconds(remainingSec);
+        toast.warning(error.response.data.message || `Please wait ${remainingSec}s before sending another message.`);
+      } else if (error.response?.data?.code === 'DAILY_LIMIT_EXCEEDED') {
+        setMessageLimits(prev => ({
+          ...prev,
+          remaining: 0,
+          nextAvailableAt: error.response.data.nextAvailableAt
+        }));
+        toast.error(error.response.data.message || 'Daily limit of 10 messages reached. Upgrade to Premium for unlimited messages!');
+      } else if (error.response?.data?.code === 'CONTACT_INFO_RESTRICTED') {
         toast.error('Sharing contact information is restricted for your tier. Upgrade to Silver or Gold to send contact details!', { duration: 5000 });
       } else {
         toast.error(error.response?.data?.message || t('toast.messaging.sendFailed'));
@@ -693,6 +771,21 @@ const Conversation = () => {
                 </div>
               </div>
 
+              {/* Message Retention Policy Banner */}
+              <div className="bg-purple-50/90 dark:bg-purple-950/40 border-b border-purple-100 dark:border-purple-900/40 px-3.5 py-1.5 flex items-center justify-between text-xs text-purple-800 dark:text-purple-300">
+                <div className="flex items-center gap-1.5 font-medium truncate">
+                  <Lock className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                  <span className="truncate">
+                    Messages auto-deleted after <strong>{messageLimits.retentionHours || (currentUser?.isPremium ? 48 : 36)} hours</strong> ({messageLimits.retentionHours === 48 ? '48h Premium Retention' : '36h Free Retention'})
+                  </span>
+                </div>
+                {!currentUser?.isPremium && (
+                  <Link to="/premium" className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline ml-2">
+                    <Sparkles className="w-3 h-3" /> Upgrade
+                  </Link>
+                )}
+              </div>
+
               {/* Messages scroll area */}
               <div 
                 ref={messagesContainerRef}
@@ -986,6 +1079,41 @@ const Conversation = () => {
 
               {/* Input Area */}
               <div className="p-2 sm:p-3 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] md:pb-3 bg-[#f0f2f5] dark:bg-[#202c33] border-t border-[#d1d7db] dark:border-[#222d34] shrink-0 relative z-30">
+                {/* Free User Daily Allowance & Cooldown Banner */}
+                {!currentUser?.isPremium && !messageLimits.isPremium && (
+                  <div className="mb-2 px-3 py-1.5 rounded-xl bg-white/90 dark:bg-[#111b21]/90 border border-[#d1d7db] dark:border-[#26353d] flex flex-wrap items-center justify-between text-xs gap-2 shadow-xs">
+                    <div className="flex items-center gap-2">
+                      <span className={`font-semibold px-2 py-0.5 rounded-full text-[11px] ${
+                        messageLimits.remaining > 3 
+                          ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300' 
+                          : messageLimits.remaining > 0 
+                          ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300' 
+                          : 'bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-300 font-bold'
+                      }`}>
+                        {messageLimits.remaining}/{messageLimits.limit || 10} messages remaining
+                      </span>
+                      {cooldownSeconds > 0 && (
+                        <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium text-[11px] animate-pulse">
+                          <Clock className="w-3 h-3" /> Wait {cooldownSeconds}s
+                        </span>
+                      )}
+                    </div>
+                    {messageLimits.remaining <= 0 ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-red-500 font-medium">
+                          Limit reached{messageLimits.nextAvailableAt ? ` • Resets ${moment(messageLimits.nextAvailableAt).fromNow()}` : ''}
+                        </span>
+                        <Link to="/premium" className="flex items-center gap-1 text-[11px] font-bold text-purple-600 dark:text-purple-400 hover:underline">
+                          <Sparkles className="w-3 h-3" /> Upgrade
+                        </Link>
+                      </div>
+                    ) : (
+                      <Link to="/premium" className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 font-medium">
+                        Need unlimited? Upgrade to Premium
+                      </Link>
+                    )}
+                  </div>
+                )}
                 {/* Emoji Picker dropdown */}
                 {showEmojiPicker && (
                   <div

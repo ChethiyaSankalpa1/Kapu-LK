@@ -6,7 +6,8 @@ const {
   redeemPoints,
   getAllRedemptions,
   updateRedemptionConfig,
-  createRedemptionConfig
+  createRedemptionConfig,
+  deleteRedemptionConfig
 } = require('../controllers/redemptionController');
 const { protect, admin } = require('../middleware/auth');
 
@@ -21,5 +22,6 @@ router.post('/redeem', protect, redeemPoints);
 router.get('/admin/all', protect, admin, getAllRedemptions);
 router.post('/admin/config', protect, admin, createRedemptionConfig);
 router.put('/admin/config/:id', protect, admin, updateRedemptionConfig);
+router.delete('/admin/config/:id', protect, admin, deleteRedemptionConfig);
 
 module.exports = router;

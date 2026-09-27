@@ -6,7 +6,7 @@ const Report = require('../models/Report');
 const { encryptMessage, decryptMessage } = require('../utils/messageCrypto');
 const cloudinary = require('../config/cloudinary');
 const { logAuditEvent } = require('../middleware/auditLogger');
-const { hasPremiumFeature } = require('../utils/entitlements');
+const { hasPremiumFeature, getUserPremiumDetails } = require('../utils/entitlements');
 const { containsRestrictedContactInfo } = require('../utils/contactDetector');
 
 // @desc    Send a message
@@ -59,51 +59,64 @@ exports.sendMessage = async (req, res) => {
       }
     }
 
-    const FREE_MESSAGE_LIMIT = 5;
-    const MESSAGE_COOLDOWN_MS = 60 * 1000;
+    const FREE_MESSAGE_LIMIT = 10;
+    const MESSAGE_COOLDOWN_MS = 60 * 1000; // 1 minute
+    const FREE_RETENTION_MS = 36 * 60 * 60 * 1000; // 36 hours
+    const PREMIUM_RETENTION_MS = 48 * 60 * 60 * 1000; // 48 hours (2 days)
+
     const isAdminConversation = recipient.role === 'admin';
     const hasUnlimitedMessages = sender.role === 'admin' || hasPremiumFeature(sender, 'unlimited_messages');
 
-    // Only apply cooldown for users without unlimited messages and non-admin conversations
+    // 1-minute cooldown check for non-unlimited users and non-admin conversations
     if (
       !hasUnlimitedMessages &&
       !isAdminConversation &&
       sender.lastMessageSentAt &&
       Date.now() - new Date(sender.lastMessageSentAt).getTime() < MESSAGE_COOLDOWN_MS
     ) {
-      const secondsRemaining = Math.ceil(
-        (MESSAGE_COOLDOWN_MS - (Date.now() - new Date(sender.lastMessageSentAt).getTime())) / 1000
-      );
+      const msRemaining = MESSAGE_COOLDOWN_MS - (Date.now() - new Date(sender.lastMessageSentAt).getTime());
+      const secondsRemaining = Math.ceil(msRemaining / 1000);
       return res.status(429).json({
-        message: 'Please wait 1 minute before sending another message',
+        success: false,
+        code: 'COOLDOWN_ACTIVE',
+        message: `Please wait ${secondsRemaining} second${secondsRemaining === 1 ? '' : 's'} before sending another message.`,
         secondsRemaining,
       });
     }
 
-    // Reset daily message counter if it's a new calendar day
-    const today = new Date();
-    const lastSent = sender.lastMessageSentAt ? new Date(sender.lastMessageSentAt) : null;
-    let isNewDay = false;
-    if (!lastSent) {
-      isNewDay = true;
-    } else {
-      const todayDateStr = today.toDateString();
-      const lastSentDateStr = lastSent.toDateString();
-      if (todayDateStr !== lastSentDateStr) {
-        isNewDay = true;
-      }
-    }
+    // Rolling 24-hour message count check for free users
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const now = new Date();
+    const messagesSentInLast24h = await Message.countDocuments({
+      from: sender._id,
+      createdAt: { $gte: twentyFourHoursAgo },
+      $or: [{ expiresAt: { $gt: now } }, { expiresAt: null }],
+    });
 
-    if (isNewDay) {
-      sender.messagesSent = 0;
-      await sender.save();
-    }
+    if (!hasUnlimitedMessages && !isAdminConversation && messagesSentInLast24h >= FREE_MESSAGE_LIMIT) {
+      const oldestInWindow = await Message.find({
+        from: sender._id,
+        createdAt: { $gte: twentyFourHoursAgo },
+        $or: [{ expiresAt: { $gt: now } }, { expiresAt: null }],
+      })
+        .sort({ createdAt: 1 })
+        .limit(1);
 
-    if (!hasUnlimitedMessages && !isAdminConversation && sender.messagesSent >= FREE_MESSAGE_LIMIT) {
+      const nextAvailableAt = oldestInWindow.length > 0
+        ? new Date(oldestInWindow[0].createdAt.getTime() + 24 * 60 * 60 * 1000)
+        : new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      const msUntilAvailable = Math.max(0, nextAvailableAt.getTime() - Date.now());
+      const minutesUntilAvailable = Math.ceil(msUntilAvailable / (60 * 1000));
+
       return res.status(403).json({
-        message: 'Free message limit reached',
+        success: false,
+        code: 'DAILY_LIMIT_EXCEEDED',
+        message: `Free message limit reached (10 messages per 24 hours). You can send your next message in ${minutesUntilAvailable} minute${minutesUntilAvailable === 1 ? '' : 's'}.`,
         limit: FREE_MESSAGE_LIMIT,
-        sent: sender.messagesSent,
+        sent: messagesSentInLast24h,
+        remaining: 0,
+        nextAvailableAt,
       });
     }
 
@@ -124,6 +137,13 @@ exports.sendMessage = async (req, res) => {
       }
     }
 
+    // Determine retention period securely from sender and recipient state
+    const senderIsPremium = Boolean(sender.role === 'admin' || getUserPremiumDetails(sender).isPremium);
+    const recipientIsPremium = Boolean(recipient.role === 'admin' || getUserPremiumDetails(recipient).isPremium);
+    const isPremiumConversation = senderIsPremium || recipientIsPremium;
+    const retentionMs = isPremiumConversation ? PREMIUM_RETENTION_MS : FREE_RETENTION_MS;
+    const expiresAt = new Date(Date.now() + retentionMs);
+
     const message = await Message.create({
       from: req.user._id,
       to,
@@ -131,10 +151,11 @@ exports.sendMessage = async (req, res) => {
       contentIv: encryptedMessage.iv,
       type: type || 'text',
       replyTo: validatedReplyTo,
+      expiresAt,
     });
 
     if (sender.role !== 'admin' && !isAdminConversation && !hasUnlimitedMessages) {
-      sender.messagesSent += 1;
+      sender.messagesSent = messagesSentInLast24h + 1;
     }
     sender.lastMessageSentAt = new Date();
     await sender.save();
@@ -159,14 +180,13 @@ exports.sendMessage = async (req, res) => {
       }
     } catch (notificationError) {
       console.error('Notification creation error (non-critical):', notificationError);
-      // Don't fail the message send if notification fails
     }
 
     const populatedMsg = await Message.findById(message._id)
-      .populate('from to', 'name profileImageUrl profileAvatar age location isOnline lastLogin')
+      .populate('from to', 'name profileImageUrl profileAvatar age location isOnline lastLogin role isPremium premiumPlan')
       .populate({
         path: 'replyTo',
-        select: 'content contentIv from type isDeletedForEveryone',
+        select: 'content contentIv from type isDeletedForEveryone expiresAt',
         populate: { path: 'from', select: 'name profileImageUrl profileAvatar' },
       });
 
@@ -186,18 +206,104 @@ exports.sendMessage = async (req, res) => {
       };
     }
 
+    const newSentCount = messagesSentInLast24h + 1;
+    const remainingAllowance = hasUnlimitedMessages ? 9999 : Math.max(0, FREE_MESSAGE_LIMIT - newSentCount);
+
     const msgData = populatedMsg ? populatedMsg.toObject() : message.toObject();
     res.status(201).json({
       ...msgData,
       content,
       replyTo: decryptedReplyTo,
-      senderIsPremium: sender.isPremium,
-      messagesSent: sender.messagesSent,
+      senderIsPremium,
+      messagesSent: newSentCount,
+      messagesRemaining: remainingAllowance,
       limit: FREE_MESSAGE_LIMIT,
+      expiresAt,
+      retentionHours: isPremiumConversation ? 48 : 36,
     });
   } catch (error) {
     console.error('Send message error:', error);
     res.status(500).json({ message: error.message || 'Failed to send message' });
+  }
+};
+
+// @desc    Get message limits status for current user
+// @route   GET /api/messages/limits
+// @access  Private
+exports.getMessageLimits = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const hasUnlimitedMessages = user.role === 'admin' || hasPremiumFeature(user, 'unlimited_messages');
+    const FREE_MESSAGE_LIMIT = 10;
+    const MESSAGE_COOLDOWN_MS = 60 * 1000;
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const now = new Date();
+
+    if (hasUnlimitedMessages) {
+      return res.json({
+        isPremium: true,
+        hasUnlimitedMessages: true,
+        limit: FREE_MESSAGE_LIMIT,
+        sentIn24h: 0,
+        messagesRemaining: 9999,
+        cooldownSeconds: 0,
+        cooldownRemainingSeconds: 0,
+        nextAvailableAt: null,
+        retentionHours: 48,
+      });
+    }
+
+    const sentIn24h = await Message.countDocuments({
+      from: user._id,
+      createdAt: { $gte: twentyFourHoursAgo },
+      $or: [{ expiresAt: { $gt: now } }, { expiresAt: null }],
+    });
+
+    const messagesRemaining = Math.max(0, FREE_MESSAGE_LIMIT - sentIn24h);
+
+    let cooldownRemainingSeconds = 0;
+    if (user.lastMessageSentAt) {
+      const msSinceLast = Date.now() - new Date(user.lastMessageSentAt).getTime();
+      if (msSinceLast < MESSAGE_COOLDOWN_MS) {
+        cooldownRemainingSeconds = Math.ceil((MESSAGE_COOLDOWN_MS - msSinceLast) / 1000);
+      }
+    }
+
+    let nextAvailableAt = null;
+    if (sentIn24h >= FREE_MESSAGE_LIMIT) {
+      const oldestInWindow = await Message.find({
+        from: user._id,
+        createdAt: { $gte: twentyFourHoursAgo },
+        $or: [{ expiresAt: { $gt: now } }, { expiresAt: null }],
+      })
+        .sort({ createdAt: 1 })
+        .limit(1);
+
+      if (oldestInWindow.length > 0) {
+        nextAvailableAt = new Date(oldestInWindow[0].createdAt.getTime() + 24 * 60 * 60 * 1000);
+      }
+    }
+
+    const isUserPremium = getUserPremiumDetails(user).isPremium;
+
+    res.json({
+      isPremium: isUserPremium,
+      hasUnlimitedMessages: false,
+      limit: FREE_MESSAGE_LIMIT,
+      sentIn24h,
+      messagesRemaining,
+      cooldownSeconds: 60,
+      cooldownRemainingSeconds,
+      nextAvailableAt,
+      retentionHours: isUserPremium ? 48 : 36,
+    });
+  } catch (error) {
+    console.error('Error fetching message limits:', error);
+    res.status(500).json({ message: 'Failed to fetch message limits' });
   }
 };
 
@@ -207,15 +313,17 @@ exports.sendMessage = async (req, res) => {
 exports.getConversations = async (req, res) => {
   try {
     const userId = req.user._id;
+    const now = new Date();
 
     const messages = await Message.find({
       $and: [
         { $or: [{ from: userId }, { to: userId }] },
         { deletedFor: mongoose.trusted({ $ne: userId }) },
+        { $or: [{ expiresAt: { $gt: now } }, { expiresAt: null }] },
       ],
     })
       .sort({ createdAt: -1 })
-      .populate('from to', 'name profileImageUrl profileAvatar age location isOnline lastLogin');
+      .populate('from to', 'name profileImageUrl profileAvatar age location isOnline lastLogin role isPremium premiumPlan');
 
     const conversationsMap = new Map();
 
@@ -281,12 +389,13 @@ exports.getConversationWithUser = async (req, res) => {
   try {
     const userId = req.user._id;
     const otherUserId = req.params.userId;
+    const now = new Date();
 
     if (!otherUserId || !mongoose.isValidObjectId(otherUserId)) {
       return res.status(400).json({ message: 'Invalid user ID' });
     }
 
-    const otherUser = await User.findById(otherUserId).select('_id name');
+    const otherUser = await User.findById(otherUserId).select('_id name role isPremium premiumPlan');
     if (!otherUser) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -305,15 +414,18 @@ exports.getConversationWithUser = async (req, res) => {
         {
           deletedFor: mongoose.trusted({ $ne: userId }),
         },
+        {
+          $or: [{ expiresAt: { $gt: now } }, { expiresAt: null }],
+        },
       ],
     })
       .sort({ createdAt: 1 })
       .skip(skip)
       .limit(limit)
-      .populate('from to', 'name profileImageUrl isOnline lastLogin')
+      .populate('from to', 'name profileImageUrl profileAvatar isOnline lastLogin role isPremium premiumPlan')
       .populate({
         path: 'replyTo',
-        select: 'content contentIv from type isDeletedForEveryone',
+        select: 'content contentIv from type isDeletedForEveryone expiresAt',
         populate: { path: 'from', select: 'name profileImageUrl' },
       });
 

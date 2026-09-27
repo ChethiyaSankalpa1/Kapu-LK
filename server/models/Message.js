@@ -64,10 +64,19 @@ const messageSchema = new mongoose.Schema(
     deletedForEveryoneAt: {
       type: Date,
     },
+    expiresAt: {
+      type: Date,
+      index: true,
+    },
   },
   {
     timestamps: true,
   }
 );
 
+messageSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+messageSchema.index({ from: 1, createdAt: -1 });
+messageSchema.index({ to: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Message', messageSchema);
+

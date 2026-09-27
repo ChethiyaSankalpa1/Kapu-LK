@@ -184,7 +184,7 @@ const AdminDashboard = () => {
         successStoryAPI.getAdminSuccessStories(),
         blogAPI.getAdminBlogPosts(),
         eventAPI.getEvents(),
-        redemptionAPI.getConfigs(),
+        redemptionAPI.getConfigs({ all: 'true' }),
         walletAPI.getAllPaymentRequests(),
         adminAPI.getReports().catch(() => ({ data: [] })),
         giftAPI.getPremiumGiftTransactions().catch(() => ({ data: [] }))

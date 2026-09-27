@@ -7,6 +7,7 @@ const PremiumPlan = require('../models/PremiumPlan');
 const PremiumGiftTransaction = require('../models/PremiumGiftTransaction');
 const Notification = require('../models/Notification');
 const Message = require('../models/Message');
+const { getUserPremiumDetails } = require('../utils/entitlements');
 
 // Helper function to check achievements
 const { checkAchievements } = require('./achievementController');
@@ -215,7 +216,11 @@ exports.sendGift = async (req, res) => {
           : `${req.user.name} sent you a gift (${gift.name} ${gift.emoji})! You earned ${pointsEarned} points!`,
         relatedUser: sender,
         relatedGift: transaction._id,
-      }], { session });
+      const isPremiumConvo = Boolean(
+        (recipient && getUserPremiumDetails(recipient).isPremium) ||
+        (req.user && getUserPremiumDetails(req.user).isPremium)
+      );
+      const giftMsgExpiresAt = new Date(Date.now() + (isPremiumConvo ? 48 * 60 * 60 * 1000 : 36 * 60 * 60 * 1000));
 
       const giftMessage = isAnonymous
         ? (message ? `🎁 Received an anonymous gift: ${gift.name} ${gift.emoji}\n"${message}"` : `🎁 Received an anonymous gift: ${gift.name} ${gift.emoji}`)
@@ -225,6 +230,7 @@ exports.sendGift = async (req, res) => {
         to,
         content: giftMessage,
         type: 'gift',
+        expiresAt: giftMsgExpiresAt,
       }], { session });
     });
 
