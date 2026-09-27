@@ -326,45 +326,46 @@ exports.getUserById = async (req, res) => {
     const isSelfOrAdmin = user._id.equals(req.user._id) || req.user.role === 'admin';
 
     if (!isSelfOrAdmin) {
-      try {
-        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        const viewerName = req.user.name || 'A member';
+      // Record profile view asynchronously so profile response is instant
+      (async () => {
+        try {
+          const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          const viewerName = req.user.name || 'A member';
 
-        // Fetch recent profile_view notification for this user pair, then filter in JS
-        // to avoid { $gte: date } CastError on Node 26 + Mongoose.
-        const recentNotif = await Notification.findOne({
-          user: user._id,
-          relatedUser: req.user._id,
-          type: 'profile_view',
-        }).select('_id lastViewedAt').sort({ lastViewedAt: -1 }).lean();
-
-        const existingWindow = recentNotif && recentNotif.lastViewedAt
-          && new Date(recentNotif.lastViewedAt) >= twentyFourHoursAgo
-          ? recentNotif
-          : null;
-
-        if (existingWindow) {
-          await Notification.updateOne(
-            { _id: existingWindow._id },
-            {
-              $inc: { viewCount: 1 },
-              $set: { lastViewedAt: new Date() },
-            }
-          );
-        } else {
-          await Notification.create({
+          const recentNotif = await Notification.findOne({
             user: user._id,
             relatedUser: req.user._id,
             type: 'profile_view',
-            message: `${viewerName} viewed your profile`,
-            isRead: false,
-            viewCount: 1,
-            lastViewedAt: new Date(),
-          });
+          }).select('_id lastViewedAt').sort({ lastViewedAt: -1 }).lean();
+
+          const existingWindow = recentNotif && recentNotif.lastViewedAt
+            && new Date(recentNotif.lastViewedAt) >= twentyFourHoursAgo
+            ? recentNotif
+            : null;
+
+          if (existingWindow) {
+            await Notification.updateOne(
+              { _id: existingWindow._id },
+              {
+                $inc: { viewCount: 1 },
+                $set: { lastViewedAt: new Date() },
+              }
+            );
+          } else {
+            await Notification.create({
+              user: user._id,
+              relatedUser: req.user._id,
+              type: 'profile_view',
+              message: `${viewerName} viewed your profile`,
+              isRead: false,
+              viewCount: 1,
+              lastViewedAt: new Date(),
+            });
+          }
+        } catch (notifError) {
+          console.error('Profile view notification error (non-fatal):', notifError);
         }
-      } catch (notifError) {
-        console.error('Profile view notification error (non-fatal):', notifError);
-      }
+      })();
     }
 
     const userObj = user.toObject();

@@ -144,28 +144,6 @@ const Settings = () => {
         }
     };
 
-    const handleExportData = async () => {
-        setExportingData(true);
-        try {
-            const res = await userAPI.exportUserData();
-            const dataStr = JSON.stringify(res.data, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `kapu-lk-user-data-${user?.name?.toLowerCase().replace(/\s+/g, '-') || 'export'}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            toast.success('Your personal data archive was successfully exported and downloaded.');
-        } catch (err) {
-            console.error('Export user data error:', err);
-            toast.error('Failed to export personal data. Please try again.');
-        } finally {
-            setExportingData(false);
-        }
-    };
 
     const handlePasswordChange = async (e) => {
         e.preventDefault();
@@ -196,15 +174,8 @@ const Settings = () => {
             setPasswordError('');
         } catch (error) {
             const msg = error.response?.data?.message || 'Failed to change password. Please try again.';
-            // Show specific validation messages inline; show other errors via toast
-            if (
-                msg === 'Current password is incorrect.' ||
-                msg === 'New password must be different from your current password.'
-            ) {
-                setPasswordError(msg);
-            } else {
-                toast.error(msg);
-            }
+            setPasswordError(msg);
+            toast.error(msg);
         } finally {
             setChangingPassword(false);
         }
@@ -681,8 +652,8 @@ const Settings = () => {
 
                             <SettingCard
                                 icon={Download}
-                                title="Download Personal Data (PDF & JSON Archive)"
-                                description="Under GDPR and Sri Lankan data rights (PDPA), you can download a complete certified report or JSON archive of your personal profile, statistics, wallet balance, and consent logs."
+                                title="Download Personal Data (PDF)"
+                                description="Under GDPR and Sri Lankan data rights (PDPA), you can download a complete certified report of your personal profile, statistics, wallet balance, and consent logs."
                             >
                                 <div className="flex flex-wrap gap-2.5">
                                     <button
@@ -702,16 +673,6 @@ const Settings = () => {
                                                 <span>Download Data Report (PDF)</span>
                                             </>
                                         )}
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={handleExportData}
-                                        disabled={exportingData}
-                                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 disabled:opacity-50 text-gray-800 dark:text-gray-200 rounded-xl text-xs sm:text-sm font-semibold transition"
-                                    >
-                                        <FileText className="w-4 h-4 text-purple-600" />
-                                        <span>Download JSON Archive</span>
                                     </button>
                                 </div>
                             </SettingCard>

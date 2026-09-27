@@ -61,6 +61,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('language', language);
     i18n.changeLanguage(language);
+    document.documentElement.lang = language;
   }, [language, i18n]);
 
   // Fetch user and premium status
