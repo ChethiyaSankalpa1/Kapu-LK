@@ -312,6 +312,14 @@ exports.addAdminReply = async (req, res) => {
       ticket.status = 'in_progress';
     }
 
+    if (ticket.status === 'resolved') {
+      ticket.resolvedAt = ticket.resolvedAt || new Date();
+      ticket.resolvedBy = req.user._id;
+    } else {
+      ticket.resolvedAt = undefined;
+      ticket.resolvedBy = undefined;
+    }
+
     ticket.lastActivityAt = new Date();
     await ticket.save();
 
@@ -369,6 +377,14 @@ exports.updateTicketStatus = async (req, res) => {
     }
     if (assignedTo !== undefined) {
       ticket.assignedTo = assignedTo || null;
+    }
+
+    if (ticket.status === 'resolved') {
+      ticket.resolvedAt = ticket.resolvedAt || new Date();
+      ticket.resolvedBy = req.user._id;
+    } else {
+      ticket.resolvedAt = undefined;
+      ticket.resolvedBy = undefined;
     }
 
     ticket.lastActivityAt = new Date();

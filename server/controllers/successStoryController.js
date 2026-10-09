@@ -84,11 +84,15 @@ exports.createSuccessStory = async (req, res) => {
       photos,
       weddingDate,
       howWeMet,
-      advice
+      advice,
+      isApproved,
+      isFeatured
     } = req.body;
 
     const user1 = user1Id ? await User.findById(user1Id) : null;
     const user2 = user2Id ? await User.findById(user2Id) : null;
+
+    const isAdmin = Boolean(req.user && req.user.role === 'admin');
 
     const successStory = await SuccessStory.create({
       coupleName: String(coupleName).trim(),
@@ -100,7 +104,8 @@ exports.createSuccessStory = async (req, res) => {
       howWeMet,
       advice,
       submittedBy: req.user ? req.user._id : null,
-      isApproved: false // Requires admin approval
+      isApproved: isAdmin ? (isApproved !== undefined ? Boolean(isApproved) : true) : false,
+      isFeatured: isAdmin ? Boolean(isFeatured) : false
     });
 
     const populatedStory = await SuccessStory.findById(successStory._id)

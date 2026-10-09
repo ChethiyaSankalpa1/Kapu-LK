@@ -290,7 +290,8 @@ exports.getDashboardStats = async (req, res) => {
     const maleUsers = await User.countDocuments({ gender: 'male' });
     const femaleUsers = await User.countDocuments({ gender: 'female' });
     const premiumRequests = await PremiumPaymentRequest.countDocuments({ status: 'pending' });
-    const totalMessages = await Message.countDocuments({});
+    const now = new Date();
+    const totalMessages = await Message.countDocuments({ $or: [{ expiresAt: null }, { expiresAt: { $gt: now } }] });
     const complaintsAgg = await User.aggregate([
       { $group: { _id: null, total: { $sum: { $ifNull: ['$complaints', 0] } } } }
     ]);
@@ -298,8 +299,8 @@ exports.getDashboardStats = async (req, res) => {
     const inactivityStatus = await getInactivityStatus();
 
     // Get monthly registrations for last 6 months
-    const now = new Date();
-    const sixMonthsAgo = new Date(now.setMonth(now.getMonth() - 6));
+    const nowDate = new Date();
+    const sixMonthsAgo = new Date(nowDate.setMonth(nowDate.getMonth() - 6));
     const monthlyRegistrations = await User.aggregate([
       {
         $match: {

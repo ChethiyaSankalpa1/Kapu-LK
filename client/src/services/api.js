@@ -300,6 +300,7 @@ export const giftAPI = {
 // Achievement API
 export const achievementAPI = {
     getAchievements: () => api.get('/achievements'),
+    getAdminAchievements: () => api.get('/achievements/admin/all'),
     getMyStats: () => api.get('/achievements/my-stats'),
     dailyCheckIn: () => api.post('/achievements/check-in'),
     createAchievement: (data) => api.post('/achievements/admin', data),
@@ -378,7 +379,7 @@ export const walletAPI = {
 
 // Redemption API
 export const redemptionAPI = {
-    getConfigs: () => api.get('/redemption/configs'),
+    getConfigs: (params = {}) => api.get('/redemption/configs', { params }),
     getHistory: () => api.get('/redemption/history'),
     redeemPoints: (data) => api.post('/redemption/redeem', data),
     // Admin redemption routes

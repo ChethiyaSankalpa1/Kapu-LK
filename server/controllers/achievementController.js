@@ -363,6 +363,19 @@ exports.updateAchievement = async (req, res) => {
   }
 };
 
+// @desc    Get all achievements for admin (includes inactive)
+// @route   GET /api/achievements/admin/all
+// @access  Private/Admin
+exports.getAdminAchievements = async (req, res) => {
+  try {
+    const achievements = await Achievement.find({}).sort({ category: 1, points: -1 });
+    res.json(achievements);
+  } catch (error) {
+    console.error('Error fetching admin achievements:', error);
+    res.status(500).json({ message: 'Failed to fetch achievements' });
+  }
+};
+
 // @desc    Delete achievement (admin only)
 // @route   DELETE /api/achievements/admin/:id
 // @access  Private/Admin

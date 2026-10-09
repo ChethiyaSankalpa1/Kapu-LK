@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { adminAPI, messageAPI, userAPI, giftAPI, achievementAPI, successStoryAPI, blogAPI, eventAPI, redemptionAPI, walletAPI, premiumAPI, maintenanceAPI } from '../../services/api';
+import { adminAPI, messageAPI, userAPI, giftAPI, achievementAPI, successStoryAPI, blogAPI, eventAPI, redemptionAPI, walletAPI, premiumAPI, maintenanceAPI, supportAPI } from '../../services/api';
 import PremiumBadge from '../../components/ui/PremiumBadge';
 import { toast } from 'react-toastify';
 import {
@@ -26,6 +26,7 @@ const AdminDashboard = () => {
   const [premiumGiftTransactions, setPremiumGiftTransactions] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [pendingSupportCount, setPendingSupportCount] = useState(0);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [reportsList, setReportsList] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -121,15 +122,31 @@ const AdminDashboard = () => {
     isFeatured: false
   });
 
+  // Achievement management states
+  const [showAchievementModal, setShowAchievementModal] = useState(false);
+  const [editingAchievement, setEditingAchievement] = useState(null);
+  const [savingAchievement, setSavingAchievement] = useState(false);
+  const [achievementFormData, setAchievementFormData] = useState({
+    name: '',
+    description: '',
+    icon: '🏆',
+    category: 'social',
+    points: 10,
+    rarity: 'bronze',
+    condition: { type: 'messages_sent', target: 1 },
+    isActive: true
+  });
+
   // Success Story management states
   const [showStoryModal, setShowStoryModal] = useState(false);
   const [editingStory, setEditingStory] = useState(null);
+  const [savingStory, setSavingStory] = useState(false);
   const [storyFormData, setStoryFormData] = useState({
     coupleName: '',
     story: '',
-    imageUrl: '',
+    photos: [],
     weddingDate: '',
-    isPublished: false,
+    isApproved: false,
     isFeatured: false
   });
 
@@ -173,21 +190,22 @@ const AdminDashboard = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [statsRes, usersRes, premiumRes, plansRes, conversationsRes, giftsRes, achievementsRes, storiesRes, blogRes, eventsRes, configsRes, walletReqsRes, reportsRes, premiumGiftsRes] = await Promise.all([
+      const [statsRes, usersRes, premiumRes, plansRes, conversationsRes, giftsRes, achievementsRes, storiesRes, blogRes, eventsRes, configsRes, walletReqsRes, reportsRes, premiumGiftsRes, supportRes] = await Promise.all([
         adminAPI.getDashboardStats(),
         adminAPI.getAllUsers(),
         adminAPI.getAllRequests(),
         premiumAPI.getAllPlansAdmin(),
         messageAPI.getConversations(),
         giftAPI.getGifts(),
-        achievementAPI.getAchievements(),
+        achievementAPI.getAdminAchievements(),
         successStoryAPI.getAdminSuccessStories(),
         blogAPI.getAdminBlogPosts(),
         eventAPI.getEvents(),
         redemptionAPI.getConfigs({ all: 'true' }),
         walletAPI.getAllPaymentRequests(),
         adminAPI.getReports().catch(() => ({ data: [] })),
-        giftAPI.getPremiumGiftTransactions().catch(() => ({ data: [] }))
+        giftAPI.getPremiumGiftTransactions().catch(() => ({ data: [] })),
+        supportAPI.getAdminTickets().catch(() => ({ data: { statusCounts: { open: 0, in_progress: 0 } } }))
       ]);
       setStats(statsRes.data);
       setUsers(usersRes.data);
@@ -196,6 +214,8 @@ const AdminDashboard = () => {
       setPremiumPlans(plansRes.data || []);
       setConversations(conversationsRes.data);
       setUnreadMessagesCount(conversationsRes.data.reduce((sum, convo) => sum + (convo.unreadCount || 0), 0));
+      const sCounts = supportRes.data?.statusCounts || {};
+      setPendingSupportCount((sCounts.open || 0) + (sCounts.in_progress || 0));
       setGifts(giftsRes.data);
       setAchievements(achievementsRes.data);
       setSuccessStories(storiesRes.data);
@@ -505,7 +525,29 @@ const AdminDashboard = () => {
     setShowRedemptionModal(true);
   };
 
+  const [savingRedemptionConfig, setSavingRedemptionConfig] = useState(false);
+
+  const handleToggleRedemptionConfig = async (config) => {
+    try {
+      await redemptionAPI.updateRedemptionConfig(config._id, { ...config, isActive: !config.isActive });
+      toast.success(`Config ${config.isActive ? 'deactivated' : 'activated'} successfully`);
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to update config status');
+    }
+  };
+
   const handleSaveRedemptionConfig = async () => {
+    if (!redemptionFormData.rewardName || !redemptionFormData.rewardName.trim()) {
+      toast.error('Reward Name is required');
+      return;
+    }
+    if (!redemptionFormData.pointsCost || Number(redemptionFormData.pointsCost) <= 0) {
+      toast.error('Points cost must be greater than 0');
+      return;
+    }
+
+    setSavingRedemptionConfig(true);
     try {
       if (editingRedemptionConfig) {
         await redemptionAPI.updateRedemptionConfig(editingRedemptionConfig._id, redemptionFormData);
@@ -515,9 +557,86 @@ const AdminDashboard = () => {
         toast.success('Config created successfully');
       }
       setShowRedemptionModal(false);
-      fetchData();
+      await fetchData();
     } catch (error) {
-      toast.error('Failed to save config');
+      toast.error(error.response?.data?.message || 'Failed to save config');
+    } finally {
+      setSavingRedemptionConfig(false);
+    }
+  };
+
+  // Achievement management handlers
+  const handleAddAchievement = () => {
+    setEditingAchievement(null);
+    setAchievementFormData({
+      name: '',
+      description: '',
+      icon: '🏆',
+      category: 'social',
+      points: 10,
+      rarity: 'bronze',
+      condition: { type: 'messages_sent', target: 1 },
+      isActive: true
+    });
+    setShowAchievementModal(true);
+  };
+
+  const handleEditAchievement = (achievement) => {
+    setEditingAchievement(achievement);
+    setAchievementFormData({
+      name: achievement.name || '',
+      description: achievement.description || '',
+      icon: achievement.icon || '🏆',
+      category: achievement.category || 'social',
+      points: achievement.points || 0,
+      rarity: achievement.rarity || 'bronze',
+      condition: achievement.condition || { type: 'messages_sent', target: 1 },
+      isActive: achievement.isActive !== false
+    });
+    setShowAchievementModal(true);
+  };
+
+  const handleSaveAchievement = async () => {
+    if (!achievementFormData.name.trim()) {
+      toast.error('Achievement name is required');
+      return;
+    }
+    setSavingAchievement(true);
+    try {
+      if (editingAchievement) {
+        await achievementAPI.updateAchievement(editingAchievement._id, achievementFormData);
+        toast.success('Achievement updated successfully');
+      } else {
+        await achievementAPI.createAchievement(achievementFormData);
+        toast.success('Achievement created successfully');
+      }
+      setShowAchievementModal(false);
+      await fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to save achievement');
+    } finally {
+      setSavingAchievement(false);
+    }
+  };
+
+  const handleDeleteAchievement = async (id) => {
+    if (!window.confirm('Delete this achievement?')) return;
+    try {
+      await achievementAPI.deleteAchievement(id);
+      toast.success('Achievement deleted');
+      await fetchData();
+    } catch (error) {
+      toast.error('Failed to delete achievement');
+    }
+  };
+
+  const handleToggleAchievementActive = async (achievement) => {
+    try {
+      await achievementAPI.updateAchievement(achievement._id, { ...achievement, isActive: !achievement.isActive });
+      toast.success(`Achievement ${achievement.isActive ? 'disabled' : 'enabled'} successfully`);
+      await fetchData();
+    } catch (error) {
+      toast.error('Failed to update achievement status');
     }
   };
 
@@ -527,9 +646,9 @@ const AdminDashboard = () => {
     setStoryFormData({
       coupleName: '',
       story: '',
-      imageUrl: '',
+      photos: [],
       weddingDate: '',
-      isPublished: false,
+      isApproved: false,
       isFeatured: false
     });
     setShowStoryModal(true);
@@ -538,17 +657,27 @@ const AdminDashboard = () => {
   const handleEditStory = (story) => {
     setEditingStory(story);
     setStoryFormData({
-      coupleName: story.coupleName,
-      story: story.story,
-      imageUrl: story.imageUrl,
-      weddingDate: story.weddingDate,
-      isPublished: story.isPublished,
-      isFeatured: story.isFeatured
+      coupleName: story.coupleName || '',
+      story: story.story || '',
+      photos: Array.isArray(story.photos) ? story.photos : [],
+      weddingDate: story.weddingDate ? story.weddingDate.substring(0, 10) : '',
+      isApproved: Boolean(story.isApproved),
+      isFeatured: Boolean(story.isFeatured)
     });
     setShowStoryModal(true);
   };
 
   const handleSaveStory = async () => {
+    if (!storyFormData.coupleName.trim()) {
+      toast.error('Couple name is required');
+      return;
+    }
+    if (!storyFormData.story.trim()) {
+      toast.error('Story text is required');
+      return;
+    }
+
+    setSavingStory(true);
     try {
       if (editingStory) {
         await successStoryAPI.updateStory(editingStory._id, storyFormData);
@@ -558,9 +687,11 @@ const AdminDashboard = () => {
         toast.success('Story created successfully');
       }
       setShowStoryModal(false);
-      fetchData();
+      await fetchData();
     } catch (error) {
-      toast.error('Failed to save story');
+      toast.error(error.response?.data?.message || 'Failed to save story');
+    } finally {
+      setSavingStory(false);
     }
   };
 
@@ -569,10 +700,32 @@ const AdminDashboard = () => {
       try {
         await successStoryAPI.deleteSuccessStory(storyId);
         toast.success('Story deleted successfully');
-        fetchData();
+        await fetchData();
       } catch (error) {
         toast.error('Failed to delete story');
       }
+    }
+  };
+
+  const handleApproveStory = async (storyId) => {
+    try {
+      await successStoryAPI.approveSuccessStory(storyId);
+      toast.success('Story approved successfully');
+      setSuccessStories(prev => prev.map(s => s._id === storyId ? { ...s, isApproved: true } : s));
+      await fetchData();
+    } catch (error) {
+      toast.error('Failed to approve story');
+    }
+  };
+
+  const handleToggleFeatureStory = async (story) => {
+    try {
+      await successStoryAPI.featureSuccessStory(story._id, !story.isFeatured);
+      toast.success(`Story ${story.isFeatured ? 'unfeatured' : 'featured'} successfully`);
+      setSuccessStories(prev => prev.map(s => s._id === story._id ? { ...s, isFeatured: !s.isFeatured } : s));
+      await fetchData();
+    } catch (error) {
+      toast.error('Failed to update featured status');
     }
   };
 
@@ -621,16 +774,6 @@ const AdminDashboard = () => {
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to save blog post');
-    }
-  };
-
-  const handleApproveStory = async (storyId) => {
-    try {
-      await successStoryAPI.approveSuccessStory(storyId);
-      toast.success('Story approved successfully');
-      fetchData();
-    } catch (error) {
-      toast.error('Failed to approve story');
     }
   };
 
@@ -785,7 +928,7 @@ const AdminDashboard = () => {
   const pendingPremiumReqs = premiumRequests.filter(r => r.status === 'pending').length;
   const pendingPaymentReqs = walletPaymentRequests.filter(r => r.status === 'pending').length;
   const pendingComplaints = reportsList.filter(r => r.status === 'pending').length;
-  const totalPendingBadges = pendingPaymentReqs + pendingPremiumReqs + pendingComplaints;
+  const totalPendingBadges = pendingPaymentReqs + pendingPremiumReqs + pendingComplaints + pendingSupportCount;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-gray-900 dark:text-gray-100 flex flex-col font-sans">
@@ -917,9 +1060,9 @@ const AdminDashboard = () => {
                     <LifeBuoy className="w-4 h-4 text-pink-500" />
                     <span>Support Inbox</span>
                   </div>
-                  {unreadMessagesCount > 0 && (
+                  {pendingSupportCount > 0 && (
                     <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
-                      {unreadMessagesCount}
+                      {pendingSupportCount}
                     </span>
                   )}
                 </button>
@@ -2529,19 +2672,60 @@ const AdminDashboard = () => {
         {/* Achievements Management */}
         {activeTab === 'achievements' && (
           <div className="glass-card overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Achievements Management</h2>
+              <button
+                onClick={handleAddAchievement}
+                className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg text-sm font-semibold hover:from-pink-600 hover:to-purple-600 transition-all flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Achievement
+              </button>
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {achievements.map((achievement) => (
-                  <div key={achievement._id} className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 text-center">
-                    <div className="text-4xl mb-2">{achievement.icon}</div>
-                    <p className="font-semibold text-gray-900 dark:text-white">{achievement.name}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{achievement.points} points</p>
-                  </div>
-                ))}
-              </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Icon</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Category</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Points</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Condition</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {achievements.map((achievement) => (
+                    <tr key={achievement._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap text-2xl">{achievement.icon}</td>
+                      <td className="px-6 py-4">
+                        <p className="font-medium text-gray-900 dark:text-white">{achievement.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">{achievement.description}</p>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 capitalize">{achievement.category}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{achievement.points} pts</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-600 dark:text-gray-300">
+                        {achievement.condition?.type} &ge; {achievement.condition?.target}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          achievement.isActive !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {achievement.isActive !== false ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-semibold space-x-2">
+                        <button onClick={() => handleEditAchievement(achievement)} className="text-blue-600 hover:text-blue-700">Edit</button>
+                        <button onClick={() => handleToggleAchievementActive(achievement)} className={achievement.isActive !== false ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'}>
+                          {achievement.isActive !== false ? 'Disable' : 'Enable'}
+                        </button>
+                        <button onClick={() => handleDeleteAchievement(achievement._id)} className="text-red-600 hover:text-red-700">Delete</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
               {achievements.length === 0 && (
                 <p className="text-center text-gray-500 dark:text-gray-400 py-8">No achievements configured</p>
               )}
@@ -2584,9 +2768,9 @@ const AdminDashboard = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          story.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                          story.isApproved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {story.status}
+                          {story.isApproved ? 'Approved' : 'Pending'}
                         </span>
                         {story.isFeatured && (
                           <span className="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
@@ -2597,8 +2781,8 @@ const AdminDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                         {story.likeCount || 0}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {story.status !== 'approved' && (
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-semibold">
+                        {!story.isApproved && (
                           <button
                             onClick={() => handleApproveStory(story._id)}
                             className="text-green-600 hover:text-green-700 mr-3"
@@ -2606,6 +2790,12 @@ const AdminDashboard = () => {
                             Approve
                           </button>
                         )}
+                        <button
+                          onClick={() => handleToggleFeatureStory(story)}
+                          className="text-purple-600 hover:text-purple-700 mr-3"
+                        >
+                          {story.isFeatured ? 'Unfeature' : 'Feature'}
+                        </button>
                         <button
                           onClick={() => handleEditStory(story)}
                           className="text-blue-600 hover:text-blue-700 mr-3"
@@ -2856,9 +3046,15 @@ const AdminDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
                           onClick={() => handleEditRedemptionConfig(config)}
-                          className="text-blue-600 hover:text-blue-700 mr-3"
+                          className="text-blue-600 hover:text-blue-700 mr-3 text-xs font-semibold"
                         >
                           Edit
+                        </button>
+                        <button
+                          onClick={() => handleToggleRedemptionConfig(config)}
+                          className={`mr-3 text-xs font-semibold ${config.isActive ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'}`}
+                        >
+                          {config.isActive ? 'Deactivate' : 'Activate'}
                         </button>
                         <button
                           onClick={() => {
@@ -3500,16 +3696,16 @@ const AdminDashboard = () => {
                   />
                 </div>
                 <div className="flex items-center gap-4">
-                  <label htmlFor="story_is_published" className="flex items-center gap-2 cursor-pointer">
+                  <label htmlFor="story_is_approved" className="flex items-center gap-2 cursor-pointer">
                     <input
-                      id="story_is_published"
-                      name="isPublished"
+                      id="story_is_approved"
+                      name="isApproved"
                       type="checkbox"
-                      checked={storyFormData.isPublished}
-                      onChange={(e) => setStoryFormData({ ...storyFormData, isPublished: e.target.checked })}
+                      checked={storyFormData.isApproved}
+                      onChange={(e) => setStoryFormData({ ...storyFormData, isApproved: e.target.checked })}
                       className="rounded"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Published</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Approved</span>
                   </label>
                   <label htmlFor="story_is_featured" className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -3527,9 +3723,10 @@ const AdminDashboard = () => {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={handleSaveStory}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg font-semibold hover:from-pink-600 hover:to-purple-600 transition-all"
+                  disabled={savingStory}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg font-semibold hover:from-pink-600 hover:to-purple-600 transition-all disabled:opacity-50"
                 >
-                  {editingStory ? 'Update' : 'Create'}
+                  {savingStory ? 'Saving...' : (editingStory ? 'Update' : 'Create')}
                 </button>
                 <button
                   onClick={() => setShowStoryModal(false)}
@@ -3757,12 +3954,155 @@ const AdminDashboard = () => {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={handleSaveRedemptionConfig}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg font-semibold hover:from-pink-600 hover:to-purple-600 transition-all"
+                  disabled={savingRedemptionConfig}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg font-semibold hover:from-pink-600 hover:to-purple-600 transition-all disabled:opacity-50"
                 >
-                  {editingRedemptionConfig ? 'Update' : 'Create'}
+                  {savingRedemptionConfig ? 'Saving...' : (editingRedemptionConfig ? 'Update' : 'Create')}
                 </button>
                 <button
                   onClick={() => setShowRedemptionModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Achievement Modal */}
+      {showAchievementModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                {editingAchievement ? 'Edit Achievement' : 'Add New Achievement'}
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Icon (Emoji)</label>
+                  <input
+                    type="text"
+                    value={achievementFormData.icon}
+                    onChange={(e) => setAchievementFormData({ ...achievementFormData, icon: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="e.g. 🏆"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
+                  <input
+                    type="text"
+                    value={achievementFormData.name}
+                    onChange={(e) => setAchievementFormData({ ...achievementFormData, name: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="Achievement name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                  <input
+                    type="text"
+                    value={achievementFormData.description}
+                    onChange={(e) => setAchievementFormData({ ...achievementFormData, description: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="Achievement description"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                    <select
+                      value={achievementFormData.category}
+                      onChange={(e) => setAchievementFormData({ ...achievementFormData, category: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="profile">Profile</option>
+                      <option value="messaging">Messaging</option>
+                      <option value="social">Social</option>
+                      <option value="engagement">Engagement</option>
+                      <option value="premium">Premium</option>
+                      <option value="special">Special</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rarity</label>
+                    <select
+                      value={achievementFormData.rarity}
+                      onChange={(e) => setAchievementFormData({ ...achievementFormData, rarity: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="bronze">Bronze</option>
+                      <option value="silver">Silver</option>
+                      <option value="gold">Gold</option>
+                      <option value="platinum">Platinum</option>
+                      <option value="diamond">Diamond</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Points Reward</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={achievementFormData.points}
+                      onChange={(e) => setAchievementFormData({ ...achievementFormData, points: parseInt(e.target.value) || 0 })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Condition Target</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={achievementFormData.condition?.target || 1}
+                      onChange={(e) => setAchievementFormData({ ...achievementFormData, condition: { ...achievementFormData.condition, target: parseInt(e.target.value) || 1 } })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Condition Type</label>
+                  <select
+                    value={achievementFormData.condition?.type || 'messages_sent'}
+                    onChange={(e) => setAchievementFormData({ ...achievementFormData, condition: { ...achievementFormData.condition, type: e.target.value } })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="profile_complete">Profile Complete</option>
+                    <option value="messages_sent">Messages Sent</option>
+                    <option value="login_streak">Login Streak</option>
+                    <option value="referrals">Referrals</option>
+                    <option value="gifts_sent">Gifts Sent</option>
+                    <option value="gifts_received">Gifts Received</option>
+                    <option value="daily_gift_sender">Daily Gift Sender</option>
+                    <option value="events_attended">Events Attended</option>
+                    <option value="blog_posts">Blog Posts</option>
+                    <option value="success_story">Success Story</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="achievement_is_active"
+                    checked={achievementFormData.isActive}
+                    onChange={(e) => setAchievementFormData({ ...achievementFormData, isActive: e.target.checked })}
+                    className="rounded"
+                  />
+                  <label htmlFor="achievement_is_active" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">Active</label>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleSaveAchievement}
+                  disabled={savingAchievement}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg font-semibold hover:from-pink-600 hover:to-purple-600 transition-all disabled:opacity-50"
+                >
+                  {savingAchievement ? 'Saving...' : (editingAchievement ? 'Update' : 'Create')}
+                </button>
+                <button
+                  onClick={() => setShowAchievementModal(false)}
                   className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
                 >
                   Cancel

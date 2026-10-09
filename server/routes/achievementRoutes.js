@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   getAchievements,
+  getAdminAchievements,
   getMyStats,
   dailyCheckIn,
   createAchievement,
@@ -15,6 +16,7 @@ router.route('/my-stats').get(protect, getMyStats);
 router.route('/check-in').post(protect, dailyCheckIn);
 
 // Admin routes
+router.route('/admin/all').get(protect, admin, getAdminAchievements);
 router.route('/admin').post(protect, admin, createAchievement);
 router.route('/admin/:id').put(protect, admin, updateAchievement).delete(protect, admin, deleteAchievement);
 

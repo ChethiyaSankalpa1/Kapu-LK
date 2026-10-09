@@ -41,8 +41,7 @@ const RedemptionConfigSchema = new mongoose.Schema({
   rewardType: {
     type: String,
     enum: ['premium', 'gift', 'boost', 'badge', 'custom', 'wallet'],
-    required: true,
-    unique: true
+    required: true
   },
   rewardName: {
     type: String,

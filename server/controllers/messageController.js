@@ -329,9 +329,11 @@ exports.getConversations = async (req, res) => {
       .sort({ createdAt: -1 })
       .populate('from to', 'name profileImageUrl profileAvatar age location isOnline lastLogin role isPremium premiumPlan');
 
+    const now = new Date();
+    const validMessages = messages.filter((msg) => !msg.expiresAt || new Date(msg.expiresAt) > now);
     const conversationsMap = new Map();
 
-    messages.forEach((msg) => {
+    validMessages.forEach((msg) => {
       if (!msg.from || !msg.to) return; // Skip invalid messages
       
       const fromId = msg.from._id || msg.from;
@@ -444,7 +446,10 @@ exports.getConversationWithUser = async (req, res) => {
       { $set: { isRead: true } }
     );
 
-    const normalizedMessages = messages.map((message) => {
+    const now = new Date();
+    const validMessages = messages.filter((msg) => !msg.expiresAt || new Date(msg.expiresAt) > now);
+
+    const normalizedMessages = validMessages.map((message) => {
       let content = '[Encrypted message]';
       if (message.isDeletedForEveryone) {
         content = 'This message was deleted';

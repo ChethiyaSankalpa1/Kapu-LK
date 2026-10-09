@@ -22,6 +22,7 @@ const WARNING_1D_DAYS = 9; // 1 day remaining (after 9 days of inactivity)
 
 const eligibleUserFilter = () => ({
   role: mongoose.trusted({ $ne: 'admin' }),
+  isPremium: mongoose.trusted({ $ne: true }),
   isDemoAccount: mongoose.trusted({ $ne: true }),
   accountStatus: 'active',
   isActive: mongoose.trusted({ $ne: false }),
@@ -58,9 +59,9 @@ const purgeUserPermanently = async (userId, reason = 'INACTIVITY_10_DAYS') => {
   const user = await User.findById(userId);
   if (!user) return { success: false, message: 'User not found' };
 
-  // Never delete administrators automatically
-  if (user.role === 'admin') {
-    return { success: false, message: 'Administrators cannot be automatically purged' };
+  // Never delete administrators or premium users automatically
+  if (user.role === 'admin' || user.isPremium) {
+    return { success: false, message: 'Administrators and Premium users cannot be automatically purged' };
   }
 
   const purgedStats = {

@@ -93,6 +93,13 @@ const supportTicketSchema = new mongoose.Schema(
       default: Date.now,
       index: true,
     },
+    resolvedAt: {
+      type: Date,
+    },
+    resolvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
   },
   {
     timestamps: true,
