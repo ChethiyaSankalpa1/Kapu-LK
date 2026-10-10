@@ -21,8 +21,10 @@ const {
   deleteGalleryPhoto,
   setMainGalleryPhoto,
   reorderGalleryPhotos,
+  presenceHeartbeat,
+  presenceOffline,
 } = require('../controllers/userController');
-const { protect, approved } = require('../middleware/auth');
+const { protect, optionalProtect, approved } = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const upload = require('../middleware/upload');
 
@@ -59,5 +61,9 @@ router.get('/blocked', protect, getBlockedUsers);
 router.post('/:id/block', protect, blockUser);
 router.post('/:id/unblock', protect, unblockUser);
 router.get('/:id', protect, approved, getUserById);
+
+// Realtime Presence & Active Connection Lifecycle Routes
+router.post('/presence/heartbeat', protect, presenceHeartbeat);
+router.post('/presence/offline', optionalProtect, presenceOffline);
 
 module.exports = router;

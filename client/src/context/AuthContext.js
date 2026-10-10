@@ -95,6 +95,39 @@ export const AuthProvider = ({ children }) => {
     init();
   }, [refreshUser]);
 
+  // Active Presence Heartbeat Lifecycle (Multi-Tab Safe)
+  useEffect(() => {
+    if (!user || !localStorage.getItem('token')) return;
+
+    // Send immediate heartbeat on session start
+    userAPI.presenceHeartbeat().catch(() => {});
+
+    // Periodic heartbeat every 30 seconds
+    const interval = setInterval(() => {
+      userAPI.presenceHeartbeat().catch(() => {});
+    }, 30000);
+
+    // Mark offline on tab close / window unload
+    const handleUnload = () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (token && navigator.sendBeacon) {
+          const blob = new Blob([JSON.stringify({ userId: user._id })], { type: 'application/json' });
+          navigator.sendBeacon('/api/users/presence/offline', blob);
+        }
+      } catch (_e) {}
+    };
+
+    window.addEventListener('beforeunload', handleUnload);
+    window.addEventListener('pagehide', handleUnload);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeunload', handleUnload);
+      window.removeEventListener('pagehide', handleUnload);
+    };
+  }, [user]);
+
   const login = async (loginPayload, token) => {
     localStorage.setItem('token', token);
     const me = await refreshUser();
@@ -107,6 +140,7 @@ export const AuthProvider = ({ children }) => {
           console.error('Failed to fetch premium status', err);
         }
       }
+      userAPI.presenceHeartbeat().catch(() => {});
     } else {
       setUser(loginPayload);
       localStorage.setItem('user', JSON.stringify(loginPayload));
@@ -115,6 +149,9 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      if (user && user._id) {
+        await userAPI.presenceOffline({ userId: user._id }).catch(() => {});
+      }
       await authAPI.logout();
     } catch (_e) {
       // swallow network/server errors so logout never hangs the UI

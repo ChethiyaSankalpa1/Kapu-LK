@@ -1,5 +1,6 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
+const { MongoMemoryServer } = require('mongodb-memory-server');
 const User = require('../models/User');
 const app = require('../server');
 
@@ -7,24 +8,20 @@ describe('Email Verification and Password Reset Tests', () => {
   let testUser;
   let invalidEmailUser;
   let verificationCode;
+  let mongoServer;
 
   beforeAll(async () => {
-    // Connect to test database
-    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/kapu-lk-test', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    mongoServer = await MongoMemoryServer.create();
+    const uri = mongoServer.getUri();
+    await mongoose.connect(uri);
 
     // Clean up test data
-    await User.deleteMany({ email: /test\.com$/ });
-    await User.deleteMany({ email: 'chethiya//56//' });
+    await User.deleteMany({});
   });
 
   afterAll(async () => {
-    // Clean up test data
-    await User.deleteMany({ email: /test\.com$/ });
-    await User.deleteMany({ email: 'chethiya//56//' });
     await mongoose.disconnect();
+    if (mongoServer) await mongoServer.stop();
   });
 
   describe('Email Validation', () => {

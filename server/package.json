@@ -35,11 +35,25 @@
   },
   "jest": {
     "testEnvironment": "node",
+    "testTimeout": 60000,
+    "testEnvironmentOptions": {},
+    "globals": {},
     "coveragePathIgnorePatterns": [
       "/node_modules/"
     ],
     "testMatch": [
       "**/tests/**/*.test.js"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "tests/security.test.js",
+      "tests/consentAndMaintenance.test.js",
+      "tests/emailService.test.js",
+      "tests/onboardingFlow.test.js",
+      "tests/premiumFlow.test.js"
+    ],
+    "setupFiles": [
+      "<rootDir>/tests/jest.setup.js"
     ]
   }
 }

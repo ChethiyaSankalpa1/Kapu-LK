@@ -1336,4 +1336,53 @@ exports.reorderGalleryPhotos = async (req, res) => {
   }
 };
 
+// @desc    Active user presence heartbeat (multiple tabs / active connection)
+// @route   POST /api/users/presence/heartbeat
+// @access  Private
+exports.presenceHeartbeat = async (req, res) => {
+  try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ success: false, message: 'Unauthenticated' });
+    }
+    const now = new Date();
+    await User.updateOne(
+      { _id: req.user._id },
+      {
+        $set: {
+          isOnline: true,
+          lastActiveAt: now,
+          lastLogin: now,
+        },
+      }
+    );
+    res.json({ success: true, isOnline: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Explicit user presence offline / disconnect (tab close, logout, unload)
+// @route   POST /api/users/presence/offline
+// @access  Public / Private
+exports.presenceOffline = async (req, res) => {
+  try {
+    const userId = (req.user && req.user._id) || req.body.userId;
+    if (userId && mongoose.isValidObjectId(userId)) {
+      await User.updateOne(
+        { _id: userId },
+        {
+          $set: {
+            isOnline: false,
+            lastActiveAt: new Date(),
+          },
+        }
+      );
+    }
+    res.json({ success: true, isOnline: false });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
 

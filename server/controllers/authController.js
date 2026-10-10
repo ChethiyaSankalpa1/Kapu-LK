@@ -1425,12 +1425,13 @@ exports.fixInvalidEmail = async (req, res) => {
       return res.status(404).json({ message: 'User account not found' });
     }
 
-    // Verify password if provided
-    if (password) {
-      const isPasswordValid = await user.matchPassword(password);
-      if (!isPasswordValid) {
-        return res.status(401).json({ message: 'Invalid password' });
-      }
+    // Verify password is required for fixing/changing email
+    if (!password) {
+      return res.status(400).json({ message: 'Password confirmation is required to fix email' });
+    }
+    const isPasswordValid = await user.matchPassword(password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid password' });
     }
 
     // Step 5: Check if new email is already registered by any other account
@@ -1585,16 +1586,20 @@ exports.refreshToken = async (req, res) => {
 // @access  Public / Private
 exports.logout = async (req, res) => {
   try {
-    const rawToken = (req.cookies && req.cookies.refreshToken) || req.body.refreshToken;
+    const rawToken = (req.cookies && req.cookies.refreshToken) || (req.body && req.body.refreshToken);
+    let targetUserId = req.user ? req.user._id : null;
     if (rawToken) {
       const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-      await RefreshToken.updateOne({ tokenHash }, { isRevoked: true });
+      const rtDoc = await RefreshToken.findOneAndUpdate({ tokenHash }, { isRevoked: true });
+      if (!targetUserId && rtDoc && rtDoc.user) {
+        targetUserId = rtDoc.user;
+      }
     }
 
-    if (req.user) {
-      await User.updateOne({ _id: req.user._id }, { isOnline: false });
+    if (targetUserId) {
+      await User.updateOne({ _id: targetUserId }, { isOnline: false, lastActiveAt: new Date() });
       logAuditEvent({
-        userId: req.user._id,
+        userId: targetUserId,
         action: 'LOGOUT',
         ipAddress: req.ip,
         userAgent: req.headers['user-agent'],

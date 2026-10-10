@@ -213,6 +213,8 @@ export const userAPI = {
     setMainPhoto: (photoId) => api.put(`/users/photos/${photoId}/main`),
     reorderPhotos: (photoIds) => api.put('/users/photos/reorder', { photoIds }),
     getBlockedUsers: () => api.get('/users/blocked'),
+    presenceHeartbeat: () => api.post('/users/presence/heartbeat'),
+    presenceOffline: (data = {}) => api.post('/users/presence/offline', data),
 };
 
 // Premium API

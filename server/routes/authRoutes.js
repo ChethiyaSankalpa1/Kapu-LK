@@ -64,7 +64,7 @@ router.post(
 );
 
 router.post('/refresh', refreshToken);
-router.post('/logout', logout);
+router.post('/logout', optionalProtect, logout);
 
 // Email Verification
 router.post(

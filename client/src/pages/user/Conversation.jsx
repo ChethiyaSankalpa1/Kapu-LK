@@ -573,21 +573,18 @@ const Conversation = () => {
 
   const getOnlineStatusText = (userObj) => {
     if (!userObj) return '';
-    if (userObj.isOnline) return 'Online';
-    if (userObj.lastLogin) {
-      const lastActive = moment(userObj.lastLogin);
-      if (moment().diff(lastActive, 'minutes') < 5) return 'Online';
-      return `Last active ${lastActive.fromNow()}`;
+    if (userObj.isOnline === true) return t('chat.online', { defaultValue: 'Online' });
+    const lastActiveDate = userObj.lastActiveAt || userObj.lastLogin;
+    if (lastActiveDate) {
+      const lastActive = moment(lastActiveDate);
+      return `${t('chat.lastActive', { defaultValue: 'Last active' })} ${lastActive.fromNow()}`;
     }
-    return 'Offline';
+    return t('chat.offline', { defaultValue: 'Offline' });
   };
 
   const isUserOnline = (userObj) => {
     if (!userObj) return false;
-    // Only return true if explicitly marked as online
-    if (userObj.isOnline === true) return true;
-    // Don't assume online based on lastLogin - this was causing false positives
-    return false;
+    return userObj.isOnline === true;
   };
 
   // Popular emojis list for light-weight picker
