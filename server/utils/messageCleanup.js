@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Message = require('../models/Message');
 const User = require('../models/User');
 const cloudinary = require('../config/cloudinary');
@@ -97,7 +98,7 @@ const cleanupExpiredMessageMedia = async () => {
     // Avoids { $lte: now } date-operator CastError on Node 26 + Mongoose.
     const allImageMessages = await Message.find({
       type: 'image',
-      expiresAt: { $exists: true, $ne: null },
+      expiresAt: mongoose.trusted({ $ne: null }),
     }).select('_id content expiresAt');
 
     const expiredImageMessages = allImageMessages.filter(
@@ -140,7 +141,7 @@ const cleanupExpiredMessageMedia = async () => {
       .concat(
         await Message.find({
           type: { $ne: 'image' },
-          expiresAt: { $exists: true, $ne: null },
+          expiresAt: mongoose.trusted({ $ne: null }),
         }).select('_id expiresAt')
       )
       .filter((m) => m.expiresAt && m.expiresAt <= now)
