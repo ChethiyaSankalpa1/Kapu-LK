@@ -34,11 +34,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://kapu-lk-backend-production-db15.up.railway.app/api/:path*"
+      "destination": "https://kapu-lk-backend-production.up.railway.app/api/:path*"
     },
     {
       "source": "/uploads/:path*",
-      "destination": "https://kapu-lk-backend-production-db15.up.railway.app/uploads/:path*"
+      "destination": "https://kapu-lk-backend-production.up.railway.app/uploads/:path*"
     },
     {
       "source": "/((?!api|uploads|static|favicon\\.ico|manifest\\.json|robots\\.txt).*)",
