@@ -181,7 +181,7 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:", "https://res.cloudinary.com", "https://*.vercel.app"],
-      connectSrc: ["'self'", "https://*.onrender.com", "https://*.vercel.app", "http://localhost:*", "ws:", "wss:"],
+      connectSrc: ["'self'", "https://*.onrender.com", "https://*.up.railway.app", "https://*.railway.app", "https://*.vercel.app", "http://localhost:*", "ws:", "wss:"],
       frameAncestors: ["'none'"],
       objectSrc: ["'none'"],
     },
@@ -222,13 +222,21 @@ const isOriginAllowed = (origin) => {
     if (
       host.endsWith('.vercel.app') ||
       host.endsWith('.onrender.com') ||
+      host.endsWith('.up.railway.app') ||
+      host.endsWith('.railway.app') ||
       host === 'localhost' ||
       host === '127.0.0.1'
     ) {
       return true;
     }
   } catch (e) {
-    if (origin.endsWith('.vercel.app') || origin.endsWith('.onrender.com') || origin.includes('localhost')) {
+    if (
+      origin.endsWith('.vercel.app') ||
+      origin.endsWith('.onrender.com') ||
+      origin.endsWith('.up.railway.app') ||
+      origin.endsWith('.railway.app') ||
+      origin.includes('localhost')
+    ) {
       return true;
     }
   }

@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Kapu LK - Sri Lanka Matrimonial Web Application (MERN Stack)",
   "private": true,
+  "main": "server.js",
   "workspaces": [
     "client",
     "server"
@@ -11,7 +12,7 @@
     "client": "npm start --workspace=client",
     "server": "npm run dev --workspace=server",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "start": "npm start --workspace=server",
+    "start": "node server.js",
     "build": "npm run build --workspace=client",
     "install:all": "npm install && npm install --workspace=client && npm install --workspace=server"
   },

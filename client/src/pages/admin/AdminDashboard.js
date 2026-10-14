@@ -1914,7 +1914,7 @@ const AdminDashboard = () => {
                     const slipUrl = request.paymentSlipUrl?.startsWith('http')
                       ? request.paymentSlipUrl
                       : request.paymentSlipUrl
-                      ? `${(typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app')) ? '' : (process.env.REACT_APP_API_URL || 'https://kapu-lk-2.onrender.com').replace('/api', '')}${request.paymentSlipUrl.startsWith('/') ? '' : '/'}${request.paymentSlipUrl.replace(/\\/g, '/')}`
+                      ? `${(typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app')) ? '' : (process.env.REACT_APP_API_URL || 'https://kapu-lk-backend-production-db15.up.railway.app').replace('/api', '')}${request.paymentSlipUrl.startsWith('/') ? '' : '/'}${request.paymentSlipUrl.replace(/\\/g, '/')}`
                       : null;
 
                     const planBadge = request.planBadge || (request.paymentAmount >= 3000 ? 'gold' : request.paymentAmount >= 1300 ? 'silver' : 'bronze');
@@ -2369,7 +2369,7 @@ const AdminDashboard = () => {
                     const slipUrl = request.slipImageUrl?.startsWith('http')
                       ? request.slipImageUrl
                       : request.slipImageUrl
-                      ? `${(typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app')) ? '' : (process.env.REACT_APP_API_URL || 'https://kapu-lk-2.onrender.com').replace('/api', '')}${request.slipImageUrl.startsWith('/') ? '' : '/'}${request.slipImageUrl.replace(/\\/g, '/')}`
+                      ? `${(typeof window !== 'undefined' && window.location.hostname.endsWith('vercel.app')) ? '' : (process.env.REACT_APP_API_URL || 'https://kapu-lk-backend-production-db15.up.railway.app').replace('/api', '')}${request.slipImageUrl.startsWith('/') ? '' : '/'}${request.slipImageUrl.replace(/\\/g, '/')}`
                       : null;
 
                     return (
