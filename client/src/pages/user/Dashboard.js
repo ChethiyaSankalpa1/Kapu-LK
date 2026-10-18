@@ -7,7 +7,8 @@ import {
     User, CheckCircle, MessageCircle, Search, Heart,
     Crown, Flame, Calendar, Eye, MapPin, ChevronRight, ChevronLeft,
     Settings, Users, Layers, Activity, Edit3, Sparkles,
-    BookOpen, Gift, UserPlus, HelpCircle, Wallet, Trophy, FileText
+    BookOpen, Gift, UserPlus, HelpCircle, Wallet, Trophy, FileText,
+    ShieldCheck, Lock, UserCheck, Star, Award
 } from 'lucide-react';
 import PremiumPopup from '../../components/ui/PremiumPopup';
 import PremiumBadge from '../../components/ui/PremiumBadge';
@@ -757,32 +758,54 @@ const Dashboard = () => {
                             </div>
                         )}
 
-                        {/* Profile Completeness Card */}
-                        <div className="bg-white dark:bg-gray-900 rounded-3xl p-5 border border-gray-150 dark:border-gray-800 shadow-sm space-y-3">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-xs font-extrabold text-gray-900 dark:text-white">Your Profile Completeness</h3>
-                                <span className="text-xs font-black text-purple-600">{completenessPercentage}%</span>
-                            </div>
-
-                            <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
-                                <div className="bg-gradient-to-r from-purple-600 to-pink-600 h-full rounded-full transition-all duration-500" style={{ width: `${completenessPercentage}%` }} />
-                            </div>
-
-                            <div className="space-y-2 pt-1 text-xs">
-                                {profileCompletenessItems.map(item => (
-                                    <div key={item.key} className="flex items-center gap-2">
-                                        {item.done ? (
-                                            <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                                        ) : (
-                                            <div className="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-700 shrink-0" />
-                                        )}
-                                        <span className={item.done ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-gray-400 font-medium'}>
-                                            {item.label}
-                                        </span>
+                        {/* Profile Completeness Card (Adaptive: celebratory badge if 100%, checklist if in progress) */}
+                        {completenessPercentage === 100 ? (
+                            <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-100 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-emerald-900/30 border border-emerald-200/80 dark:border-emerald-800/50 rounded-3xl p-4 shadow-xs">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                                            <Award className="w-4.5 h-4.5" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-xs font-black text-gray-900 dark:text-white">All-Star Profile</h4>
+                                            <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold">100% Completed ⭐</p>
+                                        </div>
                                     </div>
-                                ))}
+                                    <Link to="/profile" className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:underline">
+                                        Edit
+                                    </Link>
+                                </div>
+                                <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-snug">
+                                    Your profile is fully verified and featured in top daily match suggestions!
+                                </p>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="bg-white dark:bg-gray-900 rounded-3xl p-5 border border-gray-150 dark:border-gray-800 shadow-sm space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-xs font-extrabold text-gray-900 dark:text-white">Your Profile Completeness</h3>
+                                    <span className="text-xs font-black text-purple-600">{completenessPercentage}%</span>
+                                </div>
+
+                                <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+                                    <div className="bg-gradient-to-r from-purple-600 to-pink-600 h-full rounded-full transition-all duration-500" style={{ width: `${completenessPercentage}%` }} />
+                                </div>
+
+                                <div className="space-y-2 pt-1 text-xs">
+                                    {profileCompletenessItems.map(item => (
+                                        <div key={item.key} className="flex items-center gap-2">
+                                            {item.done ? (
+                                                <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                                            ) : (
+                                                <div className="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-700 shrink-0" />
+                                            )}
+                                            <span className={item.done ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-gray-400 font-medium'}>
+                                                {item.label}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Recent Activity Card */}
                         <div className="bg-white dark:bg-gray-900 rounded-3xl p-5 border border-gray-150 dark:border-gray-800 shadow-sm space-y-3">
@@ -808,12 +831,95 @@ const Dashboard = () => {
                             </div>
                         </div>
 
+                        {/* FEATURED: Romantic Couple Success Story Visual Card */}
+                        <div className="rounded-3xl overflow-hidden shadow-sm border border-gray-150 dark:border-gray-800 bg-white dark:bg-gray-900 group">
+                            <div className="relative h-44 sm:h-48 w-full overflow-hidden bg-purple-950">
+                                <img
+                                    src="/couple-hero.png"
+                                    alt="LoveLK Success Story"
+                                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/10" />
+                                <div className="absolute top-3 left-3 px-2.5 py-1 bg-pink-600/90 backdrop-blur-md rounded-full text-[10px] font-black text-white flex items-center gap-1 shadow-sm uppercase tracking-wider">
+                                    <Heart className="w-3 h-3 fill-white" />
+                                    <span>Success Story</span>
+                                </div>
+                                <div className="absolute bottom-3 left-3.5 right-3.5 text-white">
+                                    <p className="text-xs font-bold leading-tight drop-shadow-sm">
+                                        "We met on LoveLK in 2025 and knew right away."
+                                    </p>
+                                    <p className="text-[10px] text-pink-200 mt-1 font-medium">
+                                        Dinuka & Samadhi • Happily Married in Kandy
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="p-3.5 flex items-center justify-between bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+                                <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Real Sri Lankan stories</span>
+                                <Link
+                                    to="/stories"
+                                    className="text-xs font-extrabold text-pink-600 hover:text-pink-700 dark:text-pink-400 flex items-center gap-1 hover:underline"
+                                >
+                                    Read Stories →
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* Singles Events & Networking Widget */}
+                        <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950/30 dark:via-purple-950/30 dark:to-pink-950/30 border border-purple-100 dark:border-purple-900/40 rounded-3xl p-4 shadow-xs space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-7 h-7 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                                        <Calendar className="w-3.5 h-3.5" />
+                                    </div>
+                                    <h4 className="text-xs font-extrabold text-gray-900 dark:text-white">Events & Meetups</h4>
+                                </div>
+                                <span className="text-[9px] font-black uppercase text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/50 px-2 py-0.5 rounded-full">
+                                    Live
+                                </span>
+                            </div>
+
+                            <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xs rounded-2xl p-3 border border-purple-100/80 dark:border-purple-900/30 space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-xs font-bold text-gray-900 dark:text-white">Colombo Singles Meetup 🥂</p>
+                                </div>
+                                <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-snug">
+                                    Network with genuine verified singles in Colombo. Light refreshments included.
+                                </p>
+                                <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
+                                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Verified Free Entry</span>
+                                    <Link to="/events" className="text-[11px] font-bold text-purple-600 hover:text-purple-700 dark:text-purple-400 hover:underline">
+                                        View Details →
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Trust & Safety Privacy Guarantee Widget */}
+                        <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl p-4 shadow-xs space-y-2.5">
+                            <div className="flex items-center gap-2 text-xs font-extrabold text-gray-900 dark:text-white">
+                                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                                <span>LoveLK Safe Matrimony</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-600 dark:text-gray-300">
+                                <div className="flex items-center gap-1.5 p-2 bg-gray-50 dark:bg-gray-800/60 rounded-xl">
+                                    <Lock className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                                    <span>Phone Privacy</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 p-2 bg-gray-50 dark:bg-gray-800/60 rounded-xl">
+                                    <UserCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                    <span>100% Screened</span>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Tip of the Day Box */}
-                        <div className="bg-pink-50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900/40 rounded-3xl p-4 text-xs text-pink-800 dark:text-pink-300 flex items-start gap-2.5">
+                        <div className="bg-pink-50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900/40 rounded-3xl p-3.5 text-xs text-pink-800 dark:text-pink-300 flex items-start gap-2.5">
                             <Sparkles className="w-4 h-4 text-pink-600 shrink-0 mt-0.5" />
                             <div>
-                                <p className="font-bold">Tip of the Day</p>
-                                <p className="text-pink-700 dark:text-pink-400 mt-0.5">A complete profile with a clear portrait photo gets 3x more matches! ✨</p>
+                                <p className="font-bold text-[11px]">Matchmaking Tip</p>
+                                <p className="text-pink-700 dark:text-pink-400 text-[10px] mt-0.5">
+                                    Members who start conversations within 24 hours of matching are 4x more likely to meet! 💬
+                                </p>
                             </div>
                         </div>
                     </div>
