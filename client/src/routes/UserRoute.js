@@ -29,34 +29,9 @@ const UserRoute = ({ children }) => {
     // is suppressed only on /verify-email. It handles terms acceptance visually.
     // After the user accepts, it redirects them to /verify-email automatically.
     //
-    // Step 2 (Email): Block unverified users from all protected pages.
-    // /verify-email itself is a public route, so the guard only fires for
-    // everything else, preventing a redirect loop.
+    // Block unverified users from all protected pages
     if (!user.emailVerified && location.pathname !== '/verify-email') {
         return <Navigate to="/verify-email" state={{ email: user.email }} replace />;
-    }
-
-    // Step 3: Profile completeness check — only after email is verified.
-    const isProfileComplete = Boolean(
-        (user?.profileImageUrl || user?.profileAvatar) &&
-        user?.age &&
-        user?.gender &&
-        (user?.district || user?.location) &&
-        (user?.education || '').length > 0 &&
-        (user?.occupation || user?.workplace) &&
-        (user?.maritalStatus || '').length > 0 &&
-        (user?.religion || '').length > 0 &&
-        (user?.bio || '').trim().length > 0 &&
-        user?.partnerPreferences?.minAge &&
-        user?.partnerPreferences?.maxAge &&
-        (user?.partnerPreferences?.religion || '').length > 0 &&
-        (user?.partnerPreferences?.district || '').length > 0 &&
-        (user?.partnerPreferences?.education || '').length > 0 &&
-        (user?.partnerPreferences?.maritalStatus || '').length > 0
-    );
-
-    if (!isProfileComplete && location.pathname !== '/profile') {
-        return <Navigate to="/profile" state={{ reason: 'complete_profile' }} replace />;
     }
 
     return children;

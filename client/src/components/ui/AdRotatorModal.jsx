@@ -56,7 +56,7 @@ export const calculateProfileCompleteness = (user) => {
   };
 };
 
-const COOLDOWN_MS = 2 * 60 * 1000; // 2 minutes cooldown between dismissals
+const COOLDOWN_MS = 60 * 60 * 1000; // 60 minutes cooldown between dismissals (non-intrusive)
 
 const AdRotatorModal = ({ isOpenOverride = false, onCloseOverride = null }) => {
   const navigate = useNavigate();
@@ -108,7 +108,9 @@ const AdRotatorModal = ({ isOpenOverride = false, onCloseOverride = null }) => {
       '/conversations',
       '/chat',
       '/premium',
-      '/payment'
+      '/payment',
+      '/profile',
+      '/settings'
     ];
     return excludedPrefixes.some(prefix => path.startsWith(prefix));
   }, [location.pathname]);
@@ -153,10 +155,10 @@ const AdRotatorModal = ({ isOpenOverride = false, onCloseOverride = null }) => {
     const currentIndex = getSavedAdIndex();
     setAdIndex(currentIndex);
 
-    // Initial delayed appearance on page load (3 seconds)
+    // Friendly delayed appearance (30 seconds after page load to never interrupt immediate navigation)
     const timer = setTimeout(() => {
       setIsVisible(true);
-    }, 3000);
+    }, 30000);
 
     return () => clearTimeout(timer);
   }, [user, premiumStatus, location.pathname, isExcludedRoute, isKeyboardOpen, isOpenOverride]);
@@ -246,89 +248,59 @@ const AdRotatorModal = ({ isOpenOverride = false, onCloseOverride = null }) => {
         };
 
       // ==========================================
-      // AD 4: Complete Your Profile 💜 (Profile Completion)
+      // AD 4: Profile Spotlight Tip (Helpful & polite)
       // ==========================================
       case 4:
-        if (!profileInfo.isComplete) {
-          return {
-            title: "Complete Your Profile 💜",
-            badge: "Ad 4/6 • Profile Setup",
-            subtitle: `Your profile is currently at ${profileInfo.percentage}%. Complete missing details to boost response rates!`,
-            gradientHeader: "from-pink-600 via-purple-600 to-indigo-600",
-            profileProgress: profileInfo.percentage,
-            missingList: profileInfo.missingItems,
-            ctaText: "Complete Profile",
-            ctaPath: "/profile"
-          };
-        } else {
-          return {
-            title: "Keep Your Profile Updated 💜",
-            badge: "Ad 4/6 • 100% Complete",
-            subtitle: "Your profile is 100% complete! Keep your photos & interests fresh to attract new members.",
-            gradientHeader: "from-pink-600 via-purple-600 to-indigo-600",
-            profileProgress: 100,
-            tip: "Profiles updated recently get featured in top match recommendations daily.",
-            ctaText: "Update Photos & Bio",
-            ctaPath: "/profile"
-          };
-        }
+        return {
+          title: "Make a Great Impression ✨",
+          badge: "Tip • Matchmaking Advice",
+          subtitle: "Profiles with a clear photo and a detailed bio receive up to 3x more responses from verified members.",
+          gradientHeader: "from-pink-600 via-purple-600 to-indigo-600",
+          features: [
+            { icon: User, text: "Add clear portrait photos to build instant trust" },
+            { icon: Heart, text: "Share your genuine hobbies, values & interests" },
+            { icon: Sparkles, text: "Specify your partner preferences for tailored matches" }
+          ],
+          ctaText: "Review My Profile",
+          ctaPath: "/profile"
+        };
 
       // ==========================================
-      // AD 5: Almost There ✨ (Profile Completion)
+      // AD 5: Trust & Community Safety (Security)
       // ==========================================
       case 5:
-        if (!profileInfo.isComplete) {
-          return {
-            title: "Almost There ✨",
-            badge: "Ad 5/6 • Profile Completion",
-            subtitle: `You are at ${profileInfo.percentage}% profile completion! Just a few details left to reach 100%.`,
-            gradientHeader: "from-fuchsia-600 via-pink-600 to-purple-800",
-            profileProgress: profileInfo.percentage,
-            missingList: profileInfo.missingItems,
-            ctaText: "Continue Setup",
-            ctaPath: "/profile"
-          };
-        } else {
-          return {
-            title: "Looking Great ✨",
-            badge: "Ad 5/6 • 100% Complete",
-            subtitle: "Your profile is 100% complete and fully verified! Explore top suggestions to start connecting.",
-            gradientHeader: "from-fuchsia-600 via-pink-600 to-purple-800",
-            profileProgress: 100,
-            tip: "Check out our active members browsing matches right now.",
-            ctaText: "Explore Matches",
-            ctaPath: "/users"
-          };
-        }
+        return {
+          title: "Safe & Verified Community 🛡️",
+          badge: "Safety • Verified Members",
+          subtitle: "Your privacy and safety come first. We protect our community with strict moderation and verified profiles.",
+          gradientHeader: "from-emerald-600 via-teal-600 to-cyan-700",
+          features: [
+            { icon: ShieldCheck, text: "Strict screening of verified member profiles" },
+            { icon: Eye, text: "Complete control over your photo and contact visibility" },
+            { icon: Users, text: "Report and block controls available at all times" }
+          ],
+          ctaText: "Browse Verified Matches",
+          ctaPath: "/users"
+        };
 
       // ==========================================
-      // AD 6: Finish Your LoveLK Profile 👤 (Profile Completion)
+      // AD 6: Discover Meaningful Connections (Community)
       // ==========================================
       case 6:
       default:
-        if (!profileInfo.isComplete) {
-          return {
-            title: "Finish Your LoveLK Profile 👤",
-            badge: "Ad 6/6 • Profile Setup",
-            subtitle: `Only ${100 - profileInfo.percentage}% left to reach a 100% profile score. Stand out to serious matches!`,
-            gradientHeader: "from-violet-600 via-purple-600 to-pink-500",
-            profileProgress: profileInfo.percentage,
-            missingList: profileInfo.missingItems,
-            ctaText: "Finish Profile",
-            ctaPath: "/profile"
-          };
-        } else {
-          return {
-            title: "Verified & Active Profile 👤",
-            badge: "Ad 6/6 • 100% Complete",
-            subtitle: "You have a 100% complete LoveLK profile! Upgrade to Premium or send gifts to your favorite matches.",
-            gradientHeader: "from-violet-600 via-purple-600 to-pink-500",
-            profileProgress: 100,
-            tip: "Upgrade to Premium to message anyone directly without limits.",
-            ctaText: "View Profile",
-            ctaPath: "/profile"
-          };
-        }
+        return {
+          title: "Find Your Ideal Match 💖",
+          badge: "Explore • LoveLK Community",
+          subtitle: "Every day, Sri Lankan singles connect on LoveLK to find genuine, lifelong partnerships.",
+          gradientHeader: "from-violet-600 via-purple-600 to-pink-500",
+          features: [
+            { icon: Flame, text: "Smart algorithms matching your lifestyle & values" },
+            { icon: Users, text: "Members across all districts in Sri Lanka and abroad" },
+            { icon: Sparkles, text: "Filter by district, religion, education, and lifestyle" }
+          ],
+          ctaText: "Discover Matches",
+          ctaPath: "/users"
+        };
     }
   };
 

@@ -61,8 +61,9 @@ const Profile = () => {
     const currentIndex = steps.indexOf(tab);
 
     useEffect(() => {
-        if (location.state && location.state.reason === 'complete_profile') {
-            toast.info('Please complete your profile to access other profiles.');
+        // Quietly clear history state without firing repetitive toast messages
+        if (location.state && location.state.reason) {
+            window.history.replaceState({}, document.title);
         }
     }, [location.state]);
 
