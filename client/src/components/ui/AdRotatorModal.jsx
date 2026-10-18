@@ -56,7 +56,7 @@ export const calculateProfileCompleteness = (user) => {
   };
 };
 
-const COOLDOWN_MS = 60 * 60 * 1000; // 60 minutes cooldown between dismissals (non-intrusive)
+const COOLDOWN_MS = 8 * 60 * 1000; // 8 minutes cooldown between dismissals
 
 const AdRotatorModal = ({ isOpenOverride = false, onCloseOverride = null }) => {
   const navigate = useNavigate();
@@ -66,6 +66,16 @@ const AdRotatorModal = ({ isOpenOverride = false, onCloseOverride = null }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [adIndex, setAdIndex] = useState(1);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  // Allow manual preview or testing via custom window event (e.g. from developer console or admin preview)
+  useEffect(() => {
+    const handleTrigger = () => {
+      setAdIndex(getSavedAdIndex());
+      setIsVisible(true);
+    };
+    window.addEventListener('lovelk_trigger_ad', handleTrigger);
+    return () => window.removeEventListener('lovelk_trigger_ad', handleTrigger);
+  }, []);
 
   // Detect virtual keyboard on mobile to avoid covering chat / input elements
   useEffect(() => {
@@ -135,7 +145,7 @@ const AdRotatorModal = ({ isOpenOverride = false, onCloseOverride = null }) => {
       return;
     }
 
-    // Eligibility check
+    // Eligibility check: Only non-admin free users see ads promoting Premium
     const isFreeUser = user && !user.isAdmin && user.role !== 'admin' && !user.isPremium && !premiumStatus?.isPremium;
     if (!isFreeUser || isExcludedRoute() || isKeyboardOpen) {
       setIsVisible(false);
@@ -155,10 +165,10 @@ const AdRotatorModal = ({ isOpenOverride = false, onCloseOverride = null }) => {
     const currentIndex = getSavedAdIndex();
     setAdIndex(currentIndex);
 
-    // Friendly delayed appearance (30 seconds after page load to never interrupt immediate navigation)
+    // Natural 5-second delay on page view
     const timer = setTimeout(() => {
       setIsVisible(true);
-    }, 30000);
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, [user, premiumStatus, location.pathname, isExcludedRoute, isKeyboardOpen, isOpenOverride]);
