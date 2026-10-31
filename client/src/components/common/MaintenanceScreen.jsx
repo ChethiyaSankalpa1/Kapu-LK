@@ -144,7 +144,15 @@ const MaintenanceScreen = ({ maintenanceData, onRetry, onAdminLoginSuccess }) =>
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-950 to-gray-950 text-white flex flex-col items-center justify-between p-4 sm:p-6 md:p-8 relative overflow-hidden">
+    <div
+      className="min-h-screen text-white flex flex-col items-center justify-between p-4 sm:p-6 md:p-8 relative overflow-hidden bg-slate-950 bg-cover bg-center bg-no-repeat bg-fixed"
+      style={{
+        backgroundImage: "url('/images/lovelk-hero-cover.png')"
+      }}
+    >
+      {/* Responsive dark gradient overlay for optimal readability on mobile and PC */}
+      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-[2px] pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/90 via-purple-950/60 to-slate-950/95 pointer-events-none" />
       
       {/* Background Decorative Rings */}
       <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />

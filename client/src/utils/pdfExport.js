@@ -1,3 +1,5 @@
+import { toast } from 'react-toastify';
+
 /**
  * Generates an official, highly professional PDF report of user personal data
  * containing LoveLK branding, logo, identity details, wallet balance, stats,
@@ -11,7 +13,7 @@ export const generateUserDataPDF = (exportData, currentUser) => {
 
   const printWindow = window.open('', '_blank', 'width=900,height=1000');
   if (!printWindow) {
-    alert('Please allow popups to download your official PDF data report.');
+    toast.error('Please allow browser popups to generate and view your official PDF data report.');
     return;
   }
 

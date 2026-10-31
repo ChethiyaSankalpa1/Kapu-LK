@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { adminAPI, messageAPI, userAPI, giftAPI, achievementAPI, successStoryAPI, blogAPI, eventAPI, redemptionAPI, walletAPI, premiumAPI, maintenanceAPI, supportAPI } from '../../services/api';
 import PremiumBadge from '../../components/ui/PremiumBadge';
 import { toast } from 'react-toastify';
+import { confirmAction } from '../../context/ConfirmContext';
 import {
   Users, User, UserCheck, Activity,
   CheckCircle, XCircle, Trash2, Shield, ShieldCheck, Crown, AlertTriangle, DollarSign, MessageSquare, MoreVertical,
@@ -18,7 +19,7 @@ import AdminReportsTab from '../../components/admin/AdminReportsTab';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
-  const { logout } = useAuth();
+  const { logout, login } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
@@ -52,6 +53,19 @@ const AdminDashboard = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleViewSite = async () => {
+    try {
+      const res = await adminAPI.startMaintenanceTesting();
+      if (res.data?.token) {
+        await login(res.data.user || res.data, res.data.token);
+        toast.success('Switched to Demo Account. You can test the site live!');
+        navigate('/browse');
+      }
+    } catch (err) {
+      toast.error('Failed to switch to preview mode');
+    }
   };
 
   // New feature states
@@ -289,7 +303,14 @@ const AdminDashboard = () => {
   };
 
   const handleDeletePlan = async (id) => {
-    if (window.confirm('Are you sure you want to delete this plan?')) {
+    const confirmed = await confirmAction({
+      title: 'Delete Premium Plan',
+      message: 'Are you sure you want to delete this subscription plan? Existing active subscriptions will remain intact.',
+      confirmText: 'Delete Plan',
+      cancelText: 'Cancel',
+      type: 'danger',
+    });
+    if (confirmed) {
       try {
         await premiumAPI.deletePlan(id);
         toast.success('Plan deleted');
@@ -347,7 +368,14 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteWalletPayment = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this wallet payment request record?')) return;
+    const confirmed = await confirmAction({
+      title: 'Delete Payment Record',
+      message: 'Are you sure you want to delete this wallet payment request record? This action cannot be reversed.',
+      confirmText: 'Delete Record',
+      cancelText: 'Cancel',
+      type: 'danger',
+    });
+    if (!confirmed) return;
     try {
       await walletAPI.deletePaymentRequest(id);
       toast.success('Wallet payment request record deleted');
@@ -427,7 +455,14 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteGift = async (giftId) => {
-    if (window.confirm('Are you sure you want to delete this gift?')) {
+    const confirmed = await confirmAction({
+      title: 'Delete Gift Item',
+      message: 'Are you sure you want to delete this virtual gift from the catalog?',
+      confirmText: 'Delete Gift',
+      cancelText: 'Cancel',
+      type: 'danger',
+    });
+    if (confirmed) {
       try {
         await giftAPI.deleteGift(giftId);
         toast.success('Gift deleted successfully');
@@ -502,7 +537,14 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteEvent = async (eventId) => {
-    if (window.confirm('Are you sure you want to delete this event?')) {
+    const confirmed = await confirmAction({
+      title: 'Delete Event',
+      message: 'Are you sure you want to delete this event? Registered attendees will no longer see this listing.',
+      confirmText: 'Delete Event',
+      cancelText: 'Cancel',
+      type: 'danger',
+    });
+    if (confirmed) {
       try {
         await eventAPI.deleteEvent(eventId);
         toast.success('Event deleted successfully');
@@ -620,7 +662,14 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteAchievement = async (id) => {
-    if (!window.confirm('Delete this achievement?')) return;
+    const confirmed = await confirmAction({
+      title: 'Delete Achievement',
+      message: 'Are you sure you want to delete this gamification badge? Users who unlocked it will no longer see it.',
+      confirmText: 'Delete Achievement',
+      cancelText: 'Cancel',
+      type: 'danger',
+    });
+    if (!confirmed) return;
     try {
       await achievementAPI.deleteAchievement(id);
       toast.success('Achievement deleted');
@@ -696,7 +745,14 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteStory = async (storyId) => {
-    if (window.confirm('Are you sure you want to delete this story?')) {
+    const confirmed = await confirmAction({
+      title: 'Delete Success Story',
+      message: 'Are you sure you want to permanently delete this couple success story?',
+      confirmText: 'Delete Story',
+      cancelText: 'Cancel',
+      type: 'danger',
+    });
+    if (confirmed) {
       try {
         await successStoryAPI.deleteSuccessStory(storyId);
         toast.success('Story deleted successfully');
@@ -778,7 +834,14 @@ const AdminDashboard = () => {
   };
 
   const handleDelete = async (userId) => {
-    if (!window.confirm(t('admin.confirmDeleteUser', { defaultValue: 'Are you sure you want to delete this user?' }))) return;
+    const confirmed = await confirmAction({
+      title: 'Delete User Account',
+      message: 'Are you sure you want to delete this user? Their profile, active conversations, and uploads will be permanently removed.',
+      confirmText: 'Delete User',
+      cancelText: 'Cancel',
+      type: 'danger',
+    });
+    if (!confirmed) return;
 
     try {
       await adminAPI.deleteUser(userId);
@@ -856,7 +919,14 @@ const AdminDashboard = () => {
   };
 
   const handleDeletePremiumRequest = async (requestId) => {
-    if (!window.confirm(t('admin.confirmDeletePremiumRequest', { defaultValue: 'Are you sure you want to delete this premium request?' }))) return;
+    const confirmed = await confirmAction({
+      title: 'Delete Premium Request',
+      message: 'Are you sure you want to delete this premium upgrade request record?',
+      confirmText: 'Delete Request',
+      cancelText: 'Cancel',
+      type: 'danger',
+    });
+    if (!confirmed) return;
 
     try {
       await adminAPI.deletePremiumRequest(requestId);
@@ -894,7 +964,14 @@ const AdminDashboard = () => {
   };
 
   const handleSeedSriLankanContent = async () => {
-    if (!window.confirm('This will clear existing events, blogs, and success stories and add Sri Lankan content. Continue?')) {
+    const confirmed = await confirmAction({
+      title: 'Reset & Seed Sri Lankan Content',
+      message: 'This action will replace existing demo events, blogs, and stories with default Sri Lankan matrimonial content. Continue?',
+      confirmText: 'Seed Content',
+      cancelText: 'Cancel',
+      type: 'warning',
+    });
+    if (!confirmed) {
       return;
     }
     try {
@@ -963,7 +1040,7 @@ const AdminDashboard = () => {
         {/* Right: Quick actions, notifications, admin profile, status */}
         <div className="flex items-center space-x-2 sm:space-x-3">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={handleViewSite}
             className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 text-xs font-bold hover:bg-purple-100 transition"
           >
             <ArrowUpRight className="w-3.5 h-3.5" />
@@ -1289,7 +1366,7 @@ const AdminDashboard = () => {
           {/* Sidebar Footer Actions */}
           <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-800 space-y-2">
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={handleViewSite}
               className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition"
             >
               <div className="flex items-center space-x-2.5">
@@ -2887,8 +2964,15 @@ const AdminDashboard = () => {
                           </button>
 
                           <button
-                            onClick={() => {
-                              if (window.confirm('Are you sure you want to delete this article?')) {
+                            onClick={async () => {
+                              const confirmed = await confirmAction({
+                                title: 'Delete Blog Article',
+                                message: 'Are you sure you want to delete this published blog article?',
+                                confirmText: 'Delete Article',
+                                cancelText: 'Cancel',
+                                type: 'danger',
+                              });
+                              if (confirmed) {
                                 blogAPI.deleteBlogPost(post._id).then(() => {
                                   toast.success('Article deleted successfully');
                                   fetchData();
@@ -3057,8 +3141,15 @@ const AdminDashboard = () => {
                           {config.isActive ? 'Deactivate' : 'Activate'}
                         </button>
                         <button
-                          onClick={() => {
-                            if (window.confirm('Delete this config?')) {
+                          onClick={async () => {
+                            const confirmed = await confirmAction({
+                              title: 'Delete Redemption Configuration',
+                              message: 'Are you sure you want to delete this points redemption reward tier?',
+                              confirmText: 'Delete Configuration',
+                              cancelText: 'Cancel',
+                              type: 'danger',
+                            });
+                            if (confirmed) {
                               redemptionAPI.deleteRedemptionConfig(config._id).then(() => {
                                 toast.success('Config deleted');
                                 fetchData();

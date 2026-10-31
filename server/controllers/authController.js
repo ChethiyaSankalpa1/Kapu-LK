@@ -189,6 +189,8 @@ exports.register = async (req, res) => {
       interests,
       hobbies,
       agreedToTerms,
+      agreedToAll,
+      agreedToAllTerms,
       is18OrOlder,
       isAccurateInfo,
       acceptedTermsAndPrivacy,
@@ -249,15 +251,16 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: 'Age or birth date is required to verify legal eligibility (18+)' });
     }
 
-    // Required 4 Consent Agreements Validation
-    const consent18 = is18OrOlder === true || consentAgreements?.is18OrOlder === true;
-    const consentAccurate = isAccurateInfo === true || consentAgreements?.isAccurateInfo === true;
-    const consentTerms = (
+    // Required Consent Agreements Validation (Supports unified single agreement or individual agreements)
+    const isAllAgreed = agreedToAll === true || agreedToAllTerms === true;
+    const consent18 = isAllAgreed || is18OrOlder === true || consentAgreements?.is18OrOlder === true;
+    const consentAccurate = isAllAgreed || isAccurateInfo === true || consentAgreements?.isAccurateInfo === true;
+    const consentTerms = isAllAgreed || (
       acceptedTermsAndPrivacy === true ||
       agreedToTerms === true ||
       consentAgreements?.acceptedTermsAndPrivacy === true
     );
-    const consentInactivity = (
+    const consentInactivity = isAllAgreed || (
       acceptedInactivityDeletion === true ||
       consentAgreements?.acceptedInactivityDeletion === true
     );
@@ -338,6 +341,7 @@ exports.register = async (req, res) => {
       email: finalEmail,
       password,
       gender: gender || 'male',
+      profileAvatar: gender === 'female' ? 'female-1' : 'male-1',
       interests: interests || '',
       hobbies: hobbies || '',
       language: ['en', 'si', 'ta'].includes(language) ? language : undefined,
@@ -757,6 +761,11 @@ exports.getMe = async (req, res) => {
     const user = await User.findById(req.user._id).select('-password -twoFactorSecret -twoFactorRecoveryCodes');
     if (!user) {
       return res.status(401).json({ message: 'User no longer exists' });
+    }
+    // Ensure every user always has a profile photo or avatar
+    if (!user.profileImageUrl && !user.profileAvatar) {
+      user.profileAvatar = user.gender === 'female' ? 'female-1' : 'male-1';
+      await User.updateOne({ _id: user._id }, { $set: { profileAvatar: user.profileAvatar } });
     }
     res.json(user);
   } catch (error) {

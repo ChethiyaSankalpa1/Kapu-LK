@@ -28,7 +28,7 @@ const MaintenanceTab = () => {
     try {
       const res = await adminAPI.startMaintenanceTesting();
       if (res.data?.token) {
-        login(res.data.token, res.data.user);
+        await login(res.data.user || res.data, res.data.token);
         toast.success('Switched to Maintenance Test Mode as Demo Account!');
         navigate('/browse');
       }

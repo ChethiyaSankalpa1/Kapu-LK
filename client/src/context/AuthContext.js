@@ -128,11 +128,25 @@ export const AuthProvider = ({ children }) => {
     };
   }, [user]);
 
-  const login = async (loginPayload, token) => {
-    localStorage.setItem('token', token);
+  const login = async (param1, param2) => {
+    let userPayload = param1;
+    let tokenStr = param2;
+
+    // Handle flexible argument order: login(token, user) or login(user, token)
+    if (typeof param1 === 'string' && (typeof param2 === 'object' || !param2)) {
+      tokenStr = param1;
+      userPayload = param2 || null;
+    } else if (param1 && typeof param1 === 'object' && param1.token && !param2) {
+      tokenStr = param1.token;
+      userPayload = param1.user || param1;
+    }
+
+    if (tokenStr && typeof tokenStr === 'string') {
+      localStorage.setItem('token', tokenStr);
+    }
     const me = await refreshUser();
     if (me) {
-      if (me.emailVerified || me.role === 'admin') {
+      if (me.emailVerified || me.role === 'admin' || me.isDemoAccount) {
         try {
           const statusRes = await premiumAPI.getStatus();
           setPremiumStatus(statusRes.data);
@@ -141,9 +155,9 @@ export const AuthProvider = ({ children }) => {
         }
       }
       userAPI.presenceHeartbeat().catch(() => {});
-    } else {
-      setUser(loginPayload);
-      localStorage.setItem('user', JSON.stringify(loginPayload));
+    } else if (userPayload) {
+      setUser(userPayload);
+      localStorage.setItem('user', JSON.stringify(userPayload));
     }
   };
 

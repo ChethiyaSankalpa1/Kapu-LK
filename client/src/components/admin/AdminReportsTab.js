@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { adminAPI } from '../../services/api';
 import { toast } from 'react-toastify';
+import { confirmAction } from '../../context/ConfirmContext';
 import ProfileAvatar from '../ui/ProfileAvatar';
 import {
   AlertTriangle, Trash2, Eye, ShieldAlert
@@ -62,7 +63,14 @@ const AdminReportsTab = () => {
   };
 
   const handleDeleteReport = async (id) => {
-    if (window.confirm('Are you sure you want to delete this report record?')) {
+    const confirmed = await confirmAction({
+      title: 'Delete Report Record',
+      message: 'Are you sure you want to permanently delete this report record? This action cannot be reversed.',
+      confirmText: 'Delete Report',
+      cancelText: 'Cancel',
+      type: 'danger',
+    });
+    if (confirmed) {
       try {
         await adminAPI.deleteReport(id);
         toast.success('Report record deleted');

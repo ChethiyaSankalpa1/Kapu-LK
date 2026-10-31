@@ -18,7 +18,7 @@ const MaintenanceTestModeBanner = () => {
     try {
       const res = await adminAPI.stopMaintenanceTesting();
       if (res.data && res.data.token) {
-        login(res.data.token, res.data.user);
+        await login(res.data.user || res.data, res.data.token);
         toast.success('Returned to Admin session successfully');
         navigate('/admin');
       }

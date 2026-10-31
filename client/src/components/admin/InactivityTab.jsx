@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { inactivityAPI } from '../../services/api';
 import { toast } from 'react-toastify';
+import { confirmAction } from '../../context/ConfirmContext';
 import {
   Shield,
   Clock,
@@ -38,11 +39,14 @@ export default function InactivityTab() {
   }, [fetchStatus]);
 
   const handleRunCleanup = async () => {
-    if (
-      !window.confirm(
-        'Are you sure you want to run the inactivity cleanup now? This will immediately process 5d, 2d, and 1d warning alerts, and permanently cascade purge accounts inactive for 10+ days.'
-      )
-    ) {
+    const confirmed = await confirmAction({
+      title: 'Run Inactivity Retention Engine',
+      message: 'This will process 5-day, 2-day, and 1-day warning notices and permanently purge accounts inactive for 10 or more days. Do you wish to continue?',
+      confirmText: 'Run Engine Now',
+      cancelText: 'Cancel',
+      type: 'warning',
+    });
+    if (!confirmed) {
       return;
     }
 

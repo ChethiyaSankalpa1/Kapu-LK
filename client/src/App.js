@@ -1,9 +1,10 @@
 import React, { Suspense, lazy, useState, useEffect, useRef, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ConfirmProvider } from './context/ConfirmContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
+import { initNotificationSystem } from './utils/notify';
 import GiftReceiveModal from './components/ui/GiftReceiveModal';
 import AchievementUnlockModal from './components/ui/AchievementUnlockModal';
 import WalletTopupModal from './components/ui/WalletTopupModal';
@@ -25,6 +26,9 @@ import AdminMaintenanceBar from './components/admin/AdminMaintenanceBar';
 import MaintenanceTestModeBanner from './components/common/MaintenanceTestModeBanner';
 import Footer from './components/common/Footer';
 import { maintenanceAPI } from './services/api';
+
+// Initialize enterprise notification styling
+initNotificationSystem();
 
 // Resilient chunk loader that automatically recovers from deployment hash mismatches
 const lazyWithRetry = (componentImport) =>
@@ -356,14 +360,15 @@ const AppLayout = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
-      <Router
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >
-        <MaintenanceGate>
-          <AppLayout>
+      <ConfirmProvider>
+        <Router
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
+          <MaintenanceGate>
+            <AppLayout>
             <ChunkErrorBoundary>
               <Suspense
                 fallback={
@@ -593,7 +598,7 @@ function App() {
           </AppLayout>
           <ToastContainer
             position="top-right"
-            autoClose={1800}
+            autoClose={3500}
             hideProgressBar={false}
             newestOnTop
             closeOnClick
@@ -604,10 +609,10 @@ function App() {
             toastClassName="kapu-toast"
             bodyClassName="kapu-toast-body"
             progressClassName="kapu-toast-progress"
-            closeButton={false}
           />
         </MaintenanceGate>
       </Router>
+      </ConfirmProvider>
     </AuthProvider>
   );
 }

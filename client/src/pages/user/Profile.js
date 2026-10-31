@@ -18,7 +18,7 @@ const Profile = () => {
     const [formData, setFormData] = useState({
         name: user?.name || '',
         profileName: user?.profileName || '',
-        profileAvatar: user?.profileAvatar || '',
+        profileAvatar: user?.profileAvatar || (user?.profileImageUrl ? '' : (user?.gender === 'female' ? 'female-1' : 'male-1')),
         phoneNumber: user?.phoneNumber || '',
         showPhoneNumber: user?.showPhoneNumber || false,
         showEmail: user?.showEmail || false,

@@ -27,7 +27,8 @@ const Register = () => {
         interests: '',
         hobbies: '',
         referralCode: '',
-        // 4 Mandatory Consent Agreements (Unchecked by default)
+        // Unified Consent Agreement
+        agreedToAll: false,
         is18OrOlder: false,
         isAccurateInfo: false,
         acceptedTermsAndPrivacy: false,
@@ -89,6 +90,17 @@ const Register = () => {
     const onChange = (e) => {
         const { name, value, type, checked } = e.target;
         if (type === 'checkbox') {
+            if (name === 'agreedToAll') {
+                setFormData(prev => ({
+                    ...prev,
+                    agreedToAll: checked,
+                    is18OrOlder: checked,
+                    isAccurateInfo: checked,
+                    acceptedTermsAndPrivacy: checked,
+                    acceptedInactivityDeletion: checked,
+                }));
+                return;
+            }
             setFormData(prev => ({ ...prev, [name]: checked }));
             return;
         }
@@ -121,7 +133,8 @@ const Register = () => {
     const effectiveAge = birthDate ? calculateAge(birthDate) : (age ? Number(age) : null);
     const isAgeValid = effectiveAge !== null && effectiveAge >= 18 && effectiveAge <= 100;
     const allConsentsAccepted = Boolean(
-        is18OrOlder && isAccurateInfo && acceptedTermsAndPrivacy && acceptedInactivityDeletion
+        formData.agreedToAll ||
+        (formData.is18OrOlder && formData.isAccurateInfo && formData.acceptedTermsAndPrivacy && formData.acceptedInactivityDeletion)
     );
     const isFormReady = allConsentsAccepted && isAgeValid && !loading;
 
@@ -139,7 +152,7 @@ const Register = () => {
 
         if (!allConsentsAccepted) {
             toast.error(t('auth.allConsentsRequired', { 
-                defaultValue: 'Please review and accept all 4 required Privacy and Consent agreements before continuing.' 
+                defaultValue: 'Please accept the terms, guidelines, and privacy policy to continue.' 
             }));
             return;
         }
@@ -453,52 +466,22 @@ const Register = () => {
                             </button>
                         </div>
 
-                        {/* 4 Required Checkboxes (Unchecked by default) */}
-                        <div className="space-y-2.5 pt-1">
-                            
-                            {/* Checkbox 1: 18+ */}
-                            <label className="flex items-start gap-2.5 text-xs sm:text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                        {/* Unified Single Consent Agreement */}
+                        <div className="pt-1">
+                            <label className="flex items-start gap-3 p-3.5 bg-purple-50/70 dark:bg-purple-950/25 border border-purple-200 dark:border-purple-800/60 rounded-xl text-xs sm:text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none hover:bg-purple-100/50 dark:hover:bg-purple-950/40 transition">
                                 <input
                                     type="checkbox"
-                                    name="is18OrOlder"
-                                    checked={is18OrOlder}
+                                    name="agreedToAll"
+                                    checked={Boolean(formData.agreedToAll || (is18OrOlder && isAccurateInfo && acceptedTermsAndPrivacy && acceptedInactivityDeletion))}
                                     onChange={onChange}
-                                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer shrink-0"
                                 />
-                                <span>
-                                    I confirm that I am <strong>18 years of age or older</strong> and legally eligible to use Kapu‑LK. <span className="text-red-500">*</span>
-                                </span>
-                            </label>
-
-                            {/* Checkbox 2: Accurate Info */}
-                            <label className="flex items-start gap-2.5 text-xs sm:text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-                                <input
-                                    type="checkbox"
-                                    name="isAccurateInfo"
-                                    checked={isAccurateInfo}
-                                    onChange={onChange}
-                                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                                />
-                                <span>
-                                    I confirm that the information provided in my profile is <strong>accurate and truthful</strong>. <span className="text-red-500">*</span>
-                                </span>
-                            </label>
-
-                            {/* Checkbox 3: Policies Agreement */}
-                            <label className="flex items-start gap-2.5 text-xs sm:text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-                                <input
-                                    type="checkbox"
-                                    name="acceptedTermsAndPrivacy"
-                                    checked={acceptedTermsAndPrivacy}
-                                    onChange={onChange}
-                                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                                />
-                                <span>
-                                    I have read and agree to the{' '}
+                                <span className="leading-relaxed">
+                                    I confirm that I am <strong>18 years of age or older</strong> and that my details are <strong>accurate and truthful</strong>. I have read and agree to the{' '}
                                     <button
                                         type="button"
                                         onClick={(e) => openPolicyModal(e, 'privacy')}
-                                        className="text-purple-600 font-semibold hover:underline"
+                                        className="text-purple-600 dark:text-purple-400 font-semibold hover:underline"
                                     >
                                         Privacy Policy
                                     </button>
@@ -506,33 +489,19 @@ const Register = () => {
                                     <button
                                         type="button"
                                         onClick={(e) => openPolicyModal(e, 'terms')}
-                                        className="text-purple-600 font-semibold hover:underline"
+                                        className="text-purple-600 dark:text-purple-400 font-semibold hover:underline"
                                     >
                                         Terms of Service
                                     </button>
-                                    , and{' '}
+                                    ,{' '}
                                     <button
                                         type="button"
                                         onClick={(e) => openPolicyModal(e, 'guidelines')}
-                                        className="text-purple-600 font-semibold hover:underline"
+                                        className="text-purple-600 dark:text-purple-400 font-semibold hover:underline"
                                     >
                                         Community Guidelines
                                     </button>
-                                    . <span className="text-red-500">*</span>
-                                </span>
-                            </label>
-
-                            {/* Checkbox 4: 10-Day Inactivity Deletion Rule */}
-                            <label className="flex items-start gap-2.5 text-xs sm:text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-                                <input
-                                    type="checkbox"
-                                    name="acceptedInactivityDeletion"
-                                    checked={acceptedInactivityDeletion}
-                                    onChange={onChange}
-                                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                                />
-                                <span>
-                                    I understand and accept that inactive accounts are <strong>permanently deleted after 10 days of inactivity</strong> following advance warning notices. <span className="text-red-500">*</span>
+                                    , and accept the <strong>10-day inactivity retention policy</strong>. <span className="text-red-500">*</span>
                                 </span>
                             </label>
                         </div>
@@ -563,7 +532,7 @@ const Register = () => {
                         <p className="text-center text-xs text-gray-500 dark:text-gray-400">
                             {!isAgeValid
                                 ? 'Please enter a valid birth date (must be at least 18 years of age).'
-                                : 'Please accept all 4 required consent checkboxes above to activate account registration.'}
+                                : 'Please confirm the agreement checkbox above to activate account registration.'}
                         </p>
                     )}
                 </form>

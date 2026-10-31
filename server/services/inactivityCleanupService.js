@@ -12,6 +12,7 @@ const Report = require('../models/Report');
 const { GiftTransaction } = require('../models/Gift');
 const cloudinary = require('../config/cloudinary');
 const { logAuditEvent } = require('../middleware/auditLogger');
+const { sendInactivityReminderEmail } = require('./emailService');
 
 // Constants (in milliseconds)
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -201,6 +202,11 @@ const runInactivityChecks = async () => {
       }
       try {
         await Notification.create({ user: user._id, type: 'system', message: 'Final 24-Hour Notice: Your account will be permanently deleted in 24 hours due to inactivity. Log in or browse to cancel deletion.' });
+        if (user.email) {
+          sendInactivityReminderEmail({ to: user.email, name: user.name, daysRemaining: 1 }).catch((err) => {
+            console.warn(`[InactivityCleanup] Could not send 1-day warning email to ${user.email}:`, err.message);
+          });
+        }
         summary.warnings1d += 1;
         console.log(`[InactivityCleanup] Sent final warning to ${user._id}.`);
       } catch (error) {
@@ -228,6 +234,11 @@ const runInactivityChecks = async () => {
       }
       try {
         await Notification.create({ user: user._id, type: 'system', message: 'Urgent Warning: Your account has been inactive for 8 days and will be permanently deleted in 2 days. Any login or browsing will immediately cancel deletion.' });
+        if (user.email) {
+          sendInactivityReminderEmail({ to: user.email, name: user.name, daysRemaining: 2 }).catch((err) => {
+            console.warn(`[InactivityCleanup] Could not send 2-day warning email to ${user.email}:`, err.message);
+          });
+        }
         summary.warnings2d += 1;
         console.log(`[InactivityCleanup] Sent 2-day warning to ${user._id}.`);
       } catch (error) {
@@ -255,6 +266,11 @@ const runInactivityChecks = async () => {
       }
       try {
         await Notification.create({ user: user._id, type: 'system', message: 'Notice: Your account has been inactive for 5 days. Due to our 10-day inactivity policy, accounts inactive for 10 days are permanently deleted. Log in to keep your account active (5 days remaining).' });
+        if (user.email) {
+          sendInactivityReminderEmail({ to: user.email, name: user.name, daysRemaining: 5 }).catch((err) => {
+            console.warn(`[InactivityCleanup] Could not send 5-day warning email to ${user.email}:`, err.message);
+          });
+        }
         summary.warnings5d += 1;
         console.log(`[InactivityCleanup] Sent 5-day warning to ${user._id}.`);
       } catch (error) {

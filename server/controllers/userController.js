@@ -137,6 +137,10 @@ exports.updateProfile = async (req, res) => {
       };
     }
 
+    if (!user.profileImageUrl && !user.profileAvatar) {
+      user.profileAvatar = user.gender === 'female' ? 'female-1' : 'male-1';
+    }
+
     const updatedUser = await user.save();
 
     // Check if profile is complete and send welcome email once
@@ -709,14 +713,15 @@ exports.acknowledgePrivacyPolicy = async (req, res) => {
       consentSource,
     } = req.body;
 
-    const consent18 = is18OrOlder === true || consentAgreements?.is18OrOlder === true;
-    const consentAccurate = isAccurateInfo === true || consentAgreements?.isAccurateInfo === true;
-    const consentTerms = (
+    const isAllAgreed = req.body.agreedToAll === true || req.body.agreedToAllTerms === true;
+    const consent18 = isAllAgreed || is18OrOlder === true || consentAgreements?.is18OrOlder === true;
+    const consentAccurate = isAllAgreed || isAccurateInfo === true || consentAgreements?.isAccurateInfo === true;
+    const consentTerms = isAllAgreed || (
       acceptedTermsAndPrivacy === true ||
       req.body.agreedToTerms === true ||
       consentAgreements?.acceptedTermsAndPrivacy === true
     );
-    const consentInactivity = (
+    const consentInactivity = isAllAgreed || (
       acceptedInactivityDeletion === true ||
       consentAgreements?.acceptedInactivityDeletion === true
     );
@@ -1182,6 +1187,7 @@ exports.deleteGalleryPhoto = async (req, res) => {
       }
       user.profileImageUrl = '';
       user.photos = [];
+      if (!user.profileAvatar) user.profileAvatar = user.gender === 'female' ? 'female-1' : 'male-1';
       await user.save();
       return res.json({
         success: true,

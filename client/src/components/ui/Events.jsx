@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { eventAPI } from '../../services/api';
 import { Calendar, MapPin, Users, Heart, Share2, Plus, Check, X } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { confirmAction } from '../../context/ConfirmContext';
 import moment from 'moment';
 import ProfileAvatar from './ProfileAvatar';
 
@@ -102,10 +103,17 @@ const Events = ({ isAdmin = false }) => {
   };
 
   const handleDelete = async (eventId) => {
-    if (!window.confirm('Are you sure you want to delete this event?')) return;
+    const confirmed = await confirmAction({
+      title: 'Delete Event',
+      message: 'Are you sure you want to remove this matrimonial event? This cannot be undone.',
+      confirmText: 'Delete Event',
+      cancelText: 'Cancel',
+      type: 'danger',
+    });
+    if (!confirmed) return;
     try {
       await eventAPI.deleteEvent(eventId);
-      toast.success('Event deleted!');
+      toast.success('Event deleted successfully');
       fetchEvents();
       if (selectedEvent?._id === eventId) setSelectedEvent(null);
     } catch (error) {

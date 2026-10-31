@@ -20,9 +20,12 @@ const ProfileAvatar = ({
     fallbackClassName = 'text-xl font-bold text-white',
 }) => {
     const [imageFailed, setImageFailed] = useState(false);
-    const avatar = PROFILE_AVATARS.find((option) => option.id === user?.profileAvatar);
-    const imageUrl = !avatar && !imageFailed ? user?.profileImageUrl : '';
-    const initial = user?.name?.charAt(0)?.toUpperCase() || 'U';
+    const chosenAvatar = PROFILE_AVATARS.find((option) => option.id === user?.profileAvatar);
+    const hasPhoto = Boolean(user?.profileImageUrl && !imageFailed);
+    const imageUrl = !chosenAvatar && hasPhoto ? user.profileImageUrl : '';
+    const defaultAvatarId = user?.gender === 'female' ? 'female-1' : 'male-1';
+    const defaultAvatar = PROFILE_AVATARS.find((o) => o.id === defaultAvatarId) || PROFILE_AVATARS[0];
+    const activeAvatar = chosenAvatar || (!imageUrl ? defaultAvatar : null);
 
     return (
         <div className={`relative flex items-center justify-center overflow-hidden ${className}`}>
@@ -33,13 +36,9 @@ const ProfileAvatar = ({
                     onError={() => setImageFailed(true)}
                     className={imageClassName}
                 />
-            ) : avatar ? (
-                <span className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${avatar.color} ${avatarClassName}`} aria-label={`${avatar.label} avatar`}>
-                    {avatar.emoji}
-                </span>
             ) : (
-                <span className={`flex h-full w-full items-center justify-center ${fallbackClassName}`}>
-                    {initial}
+                <span className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${activeAvatar?.color || 'from-sky-300 to-cyan-500'} ${avatarClassName}`} aria-label={`${activeAvatar?.label || 'Avatar'} avatar`}>
+                    {activeAvatar?.emoji || '👤'}
                 </span>
             )}
         </div>
