@@ -5,6 +5,7 @@ const PremiumPlan = require('../models/PremiumPlan');
 const Notification = require('../models/Notification');
 const { Wallet, WalletTransaction } = require('../models/Wallet');
 const cloudinary = require('../config/cloudinary');
+const { uploadFile } = require('../utils/uploader');
 const { checkUserPremiumStatus } = require('../utils/premiumExpiryChecker');
 const { logAuditEvent } = require('../middleware/auditLogger');
 const { getUserPremiumDetails, PLAN_DURATIONS } = require('../utils/entitlements');
@@ -208,20 +209,23 @@ exports.purchaseWithWallet = async (req, res) => {
       status: 'completed'
     });
 
-    // Grant premium
-    user.isPremium = true;
-    user.premiumPlan = planBadge;
-    user.premiumSince = new Date();
-    user.premiumStartedAt = new Date();
-    user.premiumStatus = 'active';
-    
-    // Extend expiry if already premium and active
+    // Grant premium  use atomic update to avoid full User schema re-validation
     const currentExpiry = (user.premiumExpiresAt && new Date(user.premiumExpiresAt) > new Date())
       ? new Date(user.premiumExpiresAt)
       : new Date();
-    user.premiumExpiresAt = new Date(currentExpiry.getTime() + durationDays * 24 * 60 * 60 * 1000);
-    user.premiumExpirySentNotification = false;
-    await user.save();
+    const newExpiry = new Date(currentExpiry.getTime() + durationDays * 24 * 60 * 60 * 1000);
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: {
+        isPremium: true,
+        premiumPlan: planBadge,
+        premiumSince: new Date(),
+        premiumStartedAt: new Date(),
+        premiumStatus: 'active',
+        premiumExpiresAt: newExpiry,
+        premiumExpirySentNotification: false,
+      },
+    });
+    user.premiumExpiresAt = newExpiry;
 
     logAuditEvent({
       userId: user._id,
@@ -237,7 +241,7 @@ exports.purchaseWithWallet = async (req, res) => {
     await Notification.create({
       user: user._id,
       type: 'premium_activated',
-      message: `🎉 Congratulations! Your ${planBadge.toUpperCase()} Premium membership is now active for ${durationDays} days!`,
+      message: `ð Congratulations! Your ${planBadge.toUpperCase()} Premium membership is now active for ${durationDays} days!`,
     });
 
     res.json({ 
@@ -298,13 +302,8 @@ exports.createPaymentRequest = async (req, res) => {
     const selectedBadge = plan?.badge || planBadge || (parseFloat(paymentAmount) >= 3000 ? 'gold' : parseFloat(paymentAmount) >= 1300 ? 'silver' : 'bronze');
     const selectedDuration = plan?.durationDays || (selectedBadge === 'gold' ? 60 : selectedBadge === 'silver' ? 21 : 10);
 
-    // Upload payment slip to Cloudinary
-    const b64 = Buffer.from(req.file.buffer).toString('base64');
-    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
-    const result = await cloudinary.uploader.upload(dataURI, {
-      folder: 'premium_payment_slips',
-      resource_type: 'auto',
-    });
+    // Upload payment slip (Cloudinary or local fallback)
+    const slipUrl = await uploadFile(req.file.buffer, req.file.mimetype, 'payment-slips');
 
     const paymentRequest = await PremiumPaymentRequest.create({
       user: req.user._id,
@@ -316,16 +315,20 @@ exports.createPaymentRequest = async (req, res) => {
       transactionReference: transactionReference || `PREM-${Date.now()}`,
       paymentDate,
       paymentAmount: parseFloat(paymentAmount),
-      paymentSlipUrl: result.secure_url,
+      paymentSlipUrl: slipUrl,
       notes: notes || '',
       plan: plan?._id || null,
       planBadge: selectedBadge,
       durationDays: selectedDuration,
     });
 
-    user.premiumRequested = true;
-    user.pendingPremiumRequest = paymentRequest._id;
-    await user.save();
+    // Use atomic update to avoid triggering full User schema re-validation on unrelated fields
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: {
+        premiumRequested: true,
+        pendingPremiumRequest: paymentRequest._id,
+      },
+    });
 
     res.status(201).json(paymentRequest);
   } catch (error) {
@@ -411,20 +414,26 @@ exports.approveRequest = async (req, res) => {
     const planBadge = request.planBadge || (request.paymentAmount >= 3000 ? 'gold' : request.paymentAmount >= 1300 ? 'silver' : 'bronze');
     const durationDays = request.durationDays || (planBadge === 'gold' ? 60 : planBadge === 'silver' ? 21 : 10);
 
-    user.isPremium = true;
-    user.premiumPlan = planBadge;
-    user.premiumSince = new Date();
-    user.premiumStartedAt = new Date();
-    user.premiumStatus = 'active';
-    
     const currentExpiry = (user.premiumExpiresAt && new Date(user.premiumExpiresAt) > new Date())
       ? new Date(user.premiumExpiresAt)
       : new Date();
-    user.premiumExpiresAt = new Date(currentExpiry.getTime() + durationDays * 24 * 60 * 60 * 1000);
-    user.premiumRequested = false;
-    user.pendingPremiumRequest = null;
-    user.premiumExpirySentNotification = false;
-    await user.save();
+    const newExpiry = new Date(currentExpiry.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
+    // Atomic update to avoid triggering full User schema re-validation on unrelated fields
+    await User.findByIdAndUpdate(user._id, {
+      $set: {
+        isPremium: true,
+        premiumPlan: planBadge,
+        premiumSince: new Date(),
+        premiumStartedAt: new Date(),
+        premiumStatus: 'active',
+        premiumExpiresAt: newExpiry,
+        premiumRequested: false,
+        pendingPremiumRequest: null,
+        premiumExpirySentNotification: false,
+      },
+    });
+    user.premiumExpiresAt = newExpiry;
 
     // Create a completed WalletTransaction of type purchase for transaction history
     let wallet = await Wallet.findOne({ user: user._id });
@@ -459,7 +468,7 @@ exports.approveRequest = async (req, res) => {
     await Notification.create({
       user: user._id,
       type: 'premium_activated',
-      message: `🎉 Great news! Admin approved your payment. Your ${planBadge.toUpperCase()} Premium membership is active for ${durationDays} days!`,
+      message: `ð Great news! Admin approved your payment. Your ${planBadge.toUpperCase()} Premium membership is active for ${durationDays} days!`,
     });
 
     res.json({ message: 'Premium request approved successfully', user, request });
@@ -491,9 +500,10 @@ exports.rejectRequest = async (req, res) => {
 
     const user = await User.findById(request.user);
     if (user) {
-      user.premiumRequested = false;
-      user.pendingPremiumRequest = null;
-      await user.save();
+      // Use atomic update to avoid full User schema re-validation
+      await User.findByIdAndUpdate(user._id, {
+        $set: { premiumRequested: false, pendingPremiumRequest: null },
+      });
 
       await Notification.create({
         user: user._id,

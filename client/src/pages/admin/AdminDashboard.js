@@ -55,16 +55,26 @@ const AdminDashboard = () => {
     navigate('/login');
   };
 
+  const [viewSiteLoading, setViewSiteLoading] = useState(false);
+
   const handleViewSite = async () => {
+    if (viewSiteLoading) return;
+    setViewSiteLoading(true);
     try {
       const res = await adminAPI.startMaintenanceTesting();
       if (res.data?.token) {
         await login(res.data.user || res.data, res.data.token);
         toast.success('Switched to Demo Account. You can test the site live!');
         navigate('/browse');
+      } else {
+        toast.error('Server did not return a session token. Please try again.');
       }
     } catch (err) {
-      toast.error('Failed to switch to preview mode');
+      const msg = err?.response?.data?.message || 'Failed to switch to preview mode';
+      toast.error(msg);
+      console.error('View site error:', err);
+    } finally {
+      setViewSiteLoading(false);
     }
   };
 
@@ -1041,10 +1051,15 @@ const AdminDashboard = () => {
         <div className="flex items-center space-x-2 sm:space-x-3">
           <button
             onClick={handleViewSite}
-            className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 text-xs font-bold hover:bg-purple-100 transition"
+            disabled={viewSiteLoading}
+            className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 text-xs font-bold hover:bg-purple-100 transition disabled:opacity-60"
           >
-            <ArrowUpRight className="w-3.5 h-3.5" />
-            <span>View Site</span>
+            {viewSiteLoading ? (
+              <div className="w-3.5 h-3.5 border-2 border-purple-400/40 border-t-purple-600 rounded-full animate-spin" />
+            ) : (
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            )}
+            <span>{viewSiteLoading ? 'Switching...' : 'View Site'}</span>
           </button>
 
           <button
@@ -1664,8 +1679,19 @@ const AdminDashboard = () => {
         {/* Users Table */}
         {activeTab === 'users' && (
           <div className="glass-card overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('admin.tabs.users')}</h2>
+              {searchTerm && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Showing {users.filter(u => {
+                    const q = searchTerm.toLowerCase();
+                    return (u.name || '').toLowerCase().includes(q)
+                      || (u.email || '').toLowerCase().includes(q)
+                      || (u.location || '').toLowerCase().includes(q)
+                      || (u.district || '').toLowerCase().includes(q);
+                  }).length} of {users.length} users matching &quot;{searchTerm}&quot;
+                </p>
+              )}
             </div>
 
             <div className="overflow-x-auto">
@@ -1682,7 +1708,15 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {users.map((user) => (
+                  {users.filter((user) => {
+                    if (!searchTerm.trim()) return true;
+                    const q = searchTerm.toLowerCase();
+                    return (user.name || '').toLowerCase().includes(q)
+                      || (user.email || '').toLowerCase().includes(q)
+                      || (user.location || '').toLowerCase().includes(q)
+                      || (user.district || '').toLowerCase().includes(q)
+                      || (user.role || '').toLowerCase().includes(q);
+                  }).map((user) => (
                     <tr key={user._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">

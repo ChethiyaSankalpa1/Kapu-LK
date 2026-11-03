@@ -289,6 +289,7 @@ app.use(rateLimit({
 const path = require('path');
 const { protect } = require('./middleware/auth');
 const { PaymentRequest } = require('./models/Wallet');
+const PremiumPaymentRequest = require('./models/PremiumPaymentRequest');
 
 // Request body size limits
 app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
@@ -321,10 +322,10 @@ app.use('/uploads/payment-slips', (req, res, next) => {
       if (req.user && req.user.role === 'admin') {
         return res.sendFile(path.join(__dirname, 'uploads/payment-slips', filename));
       }
-      const isOwner = req.user && (await PaymentRequest.exists({
-        user: req.user._id,
-        slipImageUrl: { $regex: filename }
-      }));
+      const isOwner = req.user && (
+        (await PaymentRequest.exists({ user: req.user._id, slipImageUrl: { $regex: filename } })) ||
+        (await PremiumPaymentRequest.exists({ user: req.user._id, paymentSlipUrl: { $regex: filename } }))
+      );
       if (isOwner) {
         return res.sendFile(path.join(__dirname, 'uploads/payment-slips', filename));
       }

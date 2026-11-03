@@ -26,14 +26,21 @@ const MaintenanceTab = () => {
 
   const handleStartMaintenanceTestMode = async () => {
     try {
+      setSaving(true);
       const res = await adminAPI.startMaintenanceTesting();
       if (res.data?.token) {
         await login(res.data.user || res.data, res.data.token);
         toast.success('Switched to Maintenance Test Mode as Demo Account!');
         navigate('/browse');
+      } else {
+        toast.error('Server did not return a session token. Please try again.');
       }
     } catch (err) {
-      toast.error('Failed to enter Maintenance Test Mode');
+      const msg = err?.response?.data?.message || 'Failed to enter Maintenance Test Mode';
+      toast.error(msg);
+      console.error('Maintenance test mode error:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -220,7 +227,8 @@ const MaintenanceTab = () => {
           <button
             type="button"
             onClick={handleStartMaintenanceTestMode}
-            className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl transition shadow-md flex items-center space-x-1.5"
+            disabled={saving}
+            className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl transition shadow-md flex items-center space-x-1.5 disabled:opacity-50"
             title="Securely switch session to demo tester account to preview client-side updates during maintenance"
           >
             <Sparkles className="w-4 h-4" />

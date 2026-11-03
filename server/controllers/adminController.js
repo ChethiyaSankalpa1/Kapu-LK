@@ -876,15 +876,20 @@ exports.deleteReport = async (req, res) => {
 // @access  Private/Admin
 exports.startMaintenanceTesting = async (req, res) => {
   try {
-    // Find or create dedicated hidden demo maintenance testing user
-    let demoUser = await User.findOne({ email: 'demo.tester@lovelk.com' });
+    const DEMO_EMAIL = 'demo.tester@kapu-lk.com';
+
+    // Find or create dedicated hidden demo maintenance testing user.
+    // Also check the old legacy email in case a previous run created it.
+    let demoUser = await User.findOne({
+      $or: [{ email: DEMO_EMAIL }, { email: 'demo.tester@lovelk.com' }],
+    });
+
     if (!demoUser) {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash('MaintTester#2026!SecureKey', salt);
-      demoUser = await User.create({
-        name: 'LoveLK Maintenance Tester',
-        email: 'demo.tester@lovelk.com',
-        password: hashedPassword,
+      // Use raw password — the pre-save hook in User model handles hashing
+      demoUser = new User({
+        name: 'Kapu-LK Maintenance Tester',
+        email: DEMO_EMAIL,
+        password: 'MaintTester#2026!SecureKey',
         gender: 'female',
         age: 26,
         location: 'Colombo',
@@ -892,11 +897,15 @@ exports.startMaintenanceTesting = async (req, res) => {
         isApproved: true,
         emailVerified: true,
         isDemoAccount: true,
-        bio: 'Official LoveLK Maintenance Preview & Verification Account.',
+        bio: 'Official Kapu-LK Maintenance Preview & Verification Account.',
       });
-    } else if (!demoUser.isDemoAccount) {
-      demoUser.isDemoAccount = true;
       await demoUser.save();
+    } else {
+      // Ensure demo flag is set and update email to canonical form if needed
+      let needsSave = false;
+      if (!demoUser.isDemoAccount) { demoUser.isDemoAccount = true; needsSave = true; }
+      if (demoUser.email !== DEMO_EMAIL) { demoUser.email = DEMO_EMAIL; needsSave = true; }
+      if (needsSave) await demoUser.save({ validateModifiedOnly: true });
     }
 
     const token = generateToken(demoUser._id);

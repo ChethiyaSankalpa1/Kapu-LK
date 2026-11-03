@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { UserStats } = require('../models/Achievement');
 const cloudinary = require('../config/cloudinary');
+const { uploadFile } = require('../utils/uploader');
 const { logAuditEvent } = require('../middleware/auditLogger');
 
 // Canonical Bank & Payment Account Details
@@ -159,13 +160,7 @@ exports.createPaymentRequest = async (req, res) => {
     let slipImageUrl = '';
 
     if (req.file) {
-      const b64 = Buffer.from(req.file.buffer).toString('base64');
-      const dataURI = `data:${req.file.mimetype};base64,${b64}`;
-      const uploadRes = await cloudinary.uploader.upload(dataURI, {
-        folder: 'wallet_payment_slips',
-        resource_type: 'auto',
-      });
-      slipImageUrl = uploadRes.secure_url;
+      slipImageUrl = await uploadFile(req.file.buffer, req.file.mimetype, 'payment-slips');
     } else if (req.body.slipImageUrl) {
       slipImageUrl = req.body.slipImageUrl;
     } else {
