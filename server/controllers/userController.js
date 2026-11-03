@@ -6,6 +6,7 @@ const Message = require('../models/Message');
 const { Wallet } = require('../models/Wallet');
 const { UserStats } = require('../models/Achievement');
 const cloudinary = require('../config/cloudinary');
+const { uploadFile } = require('../utils/uploader');
 const { purgeUserPermanently } = require('../services/inactivityCleanupService');
 const { checkAndSendWelcomeEmail } = require('../services/welcomeEmailService');
 const { logAuditEvent } = require('../middleware/auditLogger');
@@ -1057,39 +1058,29 @@ exports.uploadGalleryPhoto = async (req, res) => {
         });
       }
 
-      // Convert buffer to base64 for Cloudinary upload
-      const b64 = Buffer.from(req.file.buffer).toString('base64');
-      const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+      // Upload image (Cloudinary or local fallback)
+      const result = await uploadFile(req.file.buffer, req.file.mimetype, 'gallery');
 
-      const result = await cloudinary.uploader.upload(dataURI, {
-        folder: 'matrimonial_profiles',
-        resource_type: 'image',
-        transformation: [
-          { width: 1000, height: 1000, crop: 'limit' },
-          { quality: 'auto' },
-        ],
-      });
-
-      // Cleanup old Cloudinary asset
+      // Cleanup old Cloudinary asset if applicable
       const oldPubId = user.photos[existingPhotoIndex].publicId || extractCloudinaryPublicId(user.photos[existingPhotoIndex].url);
-      if (oldPubId) {
+      if (oldPubId && !oldPubId.startsWith('gallery-')) {
         try {
           await cloudinary.uploader.destroy(oldPubId);
         } catch (cErr) {
-          console.warn('Could not destroy old Cloudinary image during replace:', cErr.message);
+          // ignore cleanup failures
         }
       }
 
       // Update existing photo
-      user.photos[existingPhotoIndex].url = result.secure_url;
-      user.photos[existingPhotoIndex].publicId = result.public_id;
+      user.photos[existingPhotoIndex].url = result.url;
+      user.photos[existingPhotoIndex].publicId = result.publicId;
 
       if (user.photos[existingPhotoIndex].isMain || user.photos.length === 1) {
         user.photos[existingPhotoIndex].isMain = true;
-        user.profileImageUrl = result.secure_url;
+        user.profileImageUrl = result.url;
       }
 
-      await user.save();
+      await user.save({ validateModifiedOnly: true });
 
       return res.json({
         success: true,
@@ -1113,30 +1104,20 @@ exports.uploadGalleryPhoto = async (req, res) => {
       });
     }
 
-    // Convert buffer to base64 for Cloudinary upload
-    const b64 = Buffer.from(req.file.buffer).toString('base64');
-    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
-
-    const result = await cloudinary.uploader.upload(dataURI, {
-      folder: 'matrimonial_profiles',
-      resource_type: 'image',
-      transformation: [
-        { width: 1000, height: 1000, crop: 'limit' },
-        { quality: 'auto' },
-      ],
-    });
+    // Upload image (Cloudinary or local fallback)
+    const result = await uploadFile(req.file.buffer, req.file.mimetype, 'gallery');
 
     const isFirstPhoto = user.photos.length === 0;
     const isMainRequested = req.body.isMain === 'true' || req.body.isMain === true || isFirstPhoto;
 
     if (isMainRequested) {
       user.photos.forEach(p => { p.isMain = false; });
-      user.profileImageUrl = result.secure_url;
+      user.profileImageUrl = result.url;
     }
 
     const newPhoto = {
-      url: result.secure_url,
-      publicId: result.public_id,
+      url: result.url,
+      publicId: result.publicId,
       isMain: isMainRequested,
       order: user.photos.length,
     };
@@ -1149,7 +1130,7 @@ exports.uploadGalleryPhoto = async (req, res) => {
       user.profileImageUrl = user.photos[0].url;
     }
 
-    await user.save();
+    await user.save({ validateModifiedOnly: true });
 
     res.json({
       success: true,

@@ -50,7 +50,7 @@ const About = () => {
               <Heart className="w-3.5 h-3.5 text-white fill-white" />
             </div>
             <span className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-purple-700 to-pink-600 dark:from-purple-300 dark:to-pink-300 bg-clip-text text-transparent">
-              LoveLK • Modern &amp; Trusted Matrimonial Platform
+              Kapu-LK • Modern &amp; Trusted Matrimonial Platform
             </span>
           </div>
 
@@ -64,7 +64,7 @@ const About = () => {
 
           {/* Subheading */}
           <p className="text-base sm:text-lg lg:text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed mb-8 sm:mb-10 font-normal">
-            LoveLK (Kapu-LK) is designed to help adults discover genuine, lasting relationships in a safe, friendly, and respectful Sri Lankan environment built on trust, cultural values, and modern privacy standards.
+            Kapu-LK is designed to help adults discover genuine, lasting relationships in a safe, friendly, and respectful Sri Lankan environment built on trust, cultural values, and modern privacy standards.
           </p>
 
           {/* Hero CTAs */}
@@ -84,7 +84,7 @@ const About = () => {
                   className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold text-base shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-[1.02] transition-all flex items-center justify-center gap-2.5"
                 >
                   <Sparkles className="w-5 h-5" />
-                  <span>Join LoveLK Free</span>
+                  <span>Join Kapu-LK Free</span>
                 </Link>
                 <Link
                   to="/login"
@@ -135,10 +135,10 @@ const About = () => {
                   Our Story
                 </h2>
                 <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed space-y-3">
-                  LoveLK (Kapu-LK) was created with a clear vision: to reimagine traditional Sri Lankan matchmaking for the modern digital age. We recognized that finding a life partner requires more than casual browsing—it demands mutual respect, cultural alignment, verified security, and privacy.
+                  Kapu-LK was created with a clear vision: to reimagine traditional Sri Lankan matchmaking for the modern digital age. We recognized that finding a life partner requires more than casual browsing—it demands mutual respect, cultural alignment, verified security, and privacy.
                 </p>
                 <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed mt-3">
-                  By blending traditional values with smart compatibility matching, horoscope Porondam insights, and privacy controls, LoveLK provides a dignified space where singles and families connect with confidence.
+                  By blending traditional values with smart compatibility matching, horoscope Porondam insights, and privacy controls, Kapu-LK provides a dignified space where singles and families connect with confidence.
                 </p>
               </div>
             </div>
@@ -181,7 +181,7 @@ const About = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
           <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-4">
-              Why Choose LoveLK?
+              Why Choose Kapu-LK?
             </h2>
             <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300">
               Built specifically with safety, compatibility, and simplicity at heart.
@@ -266,7 +266,7 @@ const About = () => {
         </div>
       </section>
 
-      {/* How LoveLK Works */}
+      {/* How Kapu-LK Works */}
       <section className="py-12 sm:py-20 bg-gradient-to-br from-purple-900 via-indigo-900 to-slate-900 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-pink-500/10 via-transparent to-transparent pointer-events-none" />
 
@@ -276,7 +276,7 @@ const About = () => {
               Simple Step-by-Step Guide
             </span>
             <h2 className="text-2xl sm:text-4xl font-extrabold text-white mb-4">
-              How LoveLK Works
+              How Kapu-LK Works
             </h2>
             <p className="text-sm sm:text-base text-purple-200">
               Start your journey toward a meaningful relationship in three easy steps.
@@ -342,7 +342,7 @@ const About = () => {
             </div>
 
             <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed">
-              We believe online matchmaking must always prioritize security. LoveLK implements state-of-the-art encryption, HTTP-only authentication, profile blocking, and continuous moderation to help protect users from harassment or fraudulent activity.
+              We believe online matchmaking must always prioritize security. Kapu-LK implements state-of-the-art encryption, HTTP-only authentication, profile blocking, and continuous moderation to help protect users from harassment or fraudulent activity.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm text-slate-700 dark:text-slate-300">

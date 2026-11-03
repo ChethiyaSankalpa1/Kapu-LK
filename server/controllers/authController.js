@@ -8,6 +8,7 @@ const Notification = require('../models/Notification');
 const { Referral, ReferralCode } = require('../models/Referral');
 const { UserStats } = require('../models/Achievement');
 const cloudinary = require('../config/cloudinary');
+const { uploadFile } = require('../utils/uploader');
 const {
   sendEmailVerificationCode,
   sendPasswordResetCode,
@@ -784,24 +785,13 @@ exports.uploadProfileImage = async (req, res) => {
       return res.status(400).json({ message: 'Please upload an image' });
     }
 
-    // Convert buffer to base64
-    const b64 = Buffer.from(req.file.buffer).toString('base64');
-    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
-
-    // Upload to Cloudinary
-    const result = await cloudinary.uploader.upload(dataURI, {
-      folder: 'matrimonial_profiles',
-      resource_type: 'auto',
-      transformation: [
-        { width: 500, height: 500, crop: 'fill', gravity: 'face' },
-        { quality: 'auto' },
-      ],
-    });
+    // Upload image (Cloudinary or local fallback)
+    const result = await uploadFile(req.file.buffer, req.file.mimetype, 'profiles');
 
     // Update user profile
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { profileImageUrl: result.secure_url },
+      { profileImageUrl: result.url },
       { new: true }
     );
 

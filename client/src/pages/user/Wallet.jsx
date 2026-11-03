@@ -94,7 +94,7 @@ const DEFAULT_REDEMPTION_OPTIONS = [
 ];
 
 const DEFAULT_ACHIEVEMENTS_LIST = [
-    { _id: 'def_1', name: '🌅 Daily Check-in', description: 'Log in to LoveLK daily', icon: '🌅', points: 5, target: 1, progress: 0, earned: false },
+    { _id: 'def_1', name: '🌅 Daily Check-in', description: 'Log in to Kapu-LK daily', icon: '🌅', points: 5, target: 1, progress: 0, earned: false },
     { _id: 'def_2', name: '💬 Social Butterfly', description: 'Send 10 messages in chat', icon: '💬', points: 15, target: 10, progress: 0, earned: false },
     { _id: 'def_3', name: '🎁 Generous Heart', description: 'Send a gift to a match', icon: '🎁', points: 20, target: 1, progress: 0, earned: false },
     { _id: 'def_4', name: '🔥 7-Day Streak', description: 'Log in 7 consecutive days', icon: '🔥', points: 50, target: 7, progress: 0, earned: false },
@@ -335,7 +335,7 @@ const Wallet = () => {
                     <div>
                         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-bold text-xs uppercase tracking-wider mb-2">
                             <WalletIcon className="w-3.5 h-3.5" />
-                            <span>LoveLK Financial Hub</span>
+                            <span>Kapu-LK Financial Hub</span>
                         </div>
                         <h1 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
                             Wallet & Balances
@@ -866,7 +866,7 @@ const Wallet = () => {
                                     <div>
                                         <p className="text-[11px] font-bold uppercase text-amber-700 dark:text-amber-300">eZ Cash Number</p>
                                         <h4 className="text-lg font-black text-slate-900 dark:text-white mt-0.5">0764134658</h4>
-                                        <p className="text-xs text-slate-500">Holder: LoveLK Official • Add TOPUP in remarks</p>
+                                        <p className="text-xs text-slate-500">Holder: Kapu-LK Official • Add TOPUP in remarks</p>
                                     </div>
                                     <button
                                         type="button"

@@ -72,7 +72,7 @@ const ReportUserModal = ({ isOpen, onClose, reportedUser }) => {
             </div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-white">Report Received</h3>
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              Thank you for keeping LoveLK safe. Our administrative safety team will review <strong>{reportedUser.name}</strong> promptly and take appropriate action.
+              Thank you for keeping Kapu-LK safe. Our administrative safety team will review <strong>{reportedUser.name}</strong> promptly and take appropriate action.
             </p>
           </div>
         ) : (

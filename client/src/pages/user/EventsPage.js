@@ -15,7 +15,7 @@ const EventsPage = () => {
                             <span>Community & Matchmaking Events</span>
                         </h1>
                         <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                            Join matrimonial meetups, speed dating, and cultural events organized by LoveLK
+                            Join matrimonial meetups, speed dating, and cultural events organized by Kapu-LK
                         </p>
                     </div>
                 </div>

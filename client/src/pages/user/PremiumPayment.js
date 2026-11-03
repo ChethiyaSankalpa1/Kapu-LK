@@ -309,7 +309,7 @@ const PremiumPayment = () => {
         <div id="plans-section" className="text-center max-w-3xl mx-auto mb-8 sm:mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-pink-500/10 to-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 font-bold text-xs uppercase tracking-wider mb-3">
             <Sparkles className="w-3.5 h-3.5 text-pink-500" />
-            <span>LoveLK Premium Memberships</span>
+            <span>Kapu-LK Premium Memberships</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
             Unlock Full Matchmaking Power
@@ -558,7 +558,7 @@ const PremiumPayment = () => {
                     <div>
                       <span className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">eZ Cash Direct Transfer</span>
                       <h4 className="text-xl font-black text-slate-900 dark:text-white mt-0.5">0764134658</h4>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Recipient: LoveLK Official • Remark: TOPUP</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Recipient: Kapu-LK Official • Remark: TOPUP</p>
                     </div>
 
                     <button

@@ -206,8 +206,8 @@ const AdRotatorModal = ({ isOpenOverride = false, onCloseOverride = null }) => {
       case 1:
         return {
           title: "Get More Connections 💖",
-          badge: "Ad 1/6 • LoveLK Premium",
-          subtitle: "Upgrade to LoveLK Premium to send unlimited direct messages and match 3x faster.",
+          badge: "Ad 1/6 • Kapu-LK Premium",
+          subtitle: "Upgrade to Kapu-LK Premium to send unlimited direct messages and match 3x faster.",
           gradientHeader: "from-pink-600 via-purple-600 to-rose-500",
           features: [
             { icon: MessageSquare, text: "Send unlimited direct messages to all members" },
@@ -300,8 +300,8 @@ const AdRotatorModal = ({ isOpenOverride = false, onCloseOverride = null }) => {
       default:
         return {
           title: "Find Your Ideal Match 💖",
-          badge: "Explore • LoveLK Community",
-          subtitle: "Every day, Sri Lankan singles connect on LoveLK to find genuine, lifelong partnerships.",
+          badge: "Explore • Kapu-LK Community",
+          subtitle: "Every day, Sri Lankan singles connect on Kapu-LK to find genuine, lifelong partnerships.",
           gradientHeader: "from-violet-600 via-purple-600 to-pink-500",
           features: [
             { icon: Flame, text: "Smart algorithms matching your lifestyle & values" },

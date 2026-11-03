@@ -170,7 +170,7 @@ const Users = ({ isMatchesOnly = false }) => {
         try {
             await messageAPI.sendMessage({
                 to: targetUserId,
-                content: 'sent you a like on LoveLK',
+                content: 'sent you a like on Kapu-LK',
                 type: 'like',
             });
             toast.success(t('users.likeSent', { defaultValue: 'Like sent successfully! ❤️' }));

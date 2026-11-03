@@ -101,6 +101,8 @@ class ChunkErrorBoundary extends React.Component {
 const Home = lazyWithRetry(() => import('./pages/public/Home'));
 const About = lazyWithRetry(() => import('./pages/public/About'));
 const PrivacyPolicy = lazyWithRetry(() => import('./pages/public/PrivacyPolicy'));
+const TermsOfService = lazyWithRetry(() => import('./pages/common/TermsOfService'));
+const NotFound = lazyWithRetry(() => import('./pages/common/NotFound'));
 
 const Login = lazyWithRetry(() => import('./pages/auth/Login'));
 const Register = lazyWithRetry(() => import('./pages/auth/Register'));
@@ -583,6 +585,10 @@ function App() {
                   }
                 />
 
+                {/* Public Legal / Terms Routes */}
+                <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/terms-of-service" element={<TermsOfService />} />
+
                 {/* Admin Routes */}
                 <Route
                   path="/admin"
@@ -592,6 +598,9 @@ function App() {
                     </AdminRoute>
                   }
                 />
+
+                {/* Catch-All 404 Route */}
+                <Route path="*" element={<NotFound />} />
               </Routes>
               </Suspense>
             </ChunkErrorBoundary>

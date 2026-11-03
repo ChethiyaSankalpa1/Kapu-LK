@@ -35,7 +35,7 @@ const MaintenanceTestModeBanner = () => {
           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-300"></span>
         </span>
         <ShieldAlert className="w-4 h-4 text-amber-200 shrink-0" />
-        <span>MAINTENANCE TEST MODE — You are previewing LoveLK as a Demo Tester account while Maintenance Mode is ACTIVE.</span>
+        <span>MAINTENANCE TEST MODE — You are previewing Kapu-LK as a Demo Tester account while Maintenance Mode is ACTIVE.</span>
       </div>
 
       <button

@@ -5,6 +5,7 @@ const User = require('../models/User');
 const Report = require('../models/Report');
 const { encryptMessage, decryptMessage } = require('../utils/messageCrypto');
 const cloudinary = require('../config/cloudinary');
+const { uploadFile } = require('../utils/uploader');
 const { logAuditEvent } = require('../middleware/auditLogger');
 const { hasPremiumFeature, getUserPremiumDetails } = require('../utils/entitlements');
 const { containsRestrictedContactInfo } = require('../utils/contactDetector');
@@ -500,23 +501,12 @@ exports.uploadChatImage = async (req, res) => {
       return res.status(400).json({ message: 'Please upload an image' });
     }
 
-    // Convert buffer to base64
-    const b64 = Buffer.from(req.file.buffer).toString('base64');
-    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
-
-    // Upload to Cloudinary
-    const result = await cloudinary.uploader.upload(dataURI, {
-      folder: 'matrimonial_chats',
-      resource_type: 'auto',
-      transformation: [
-        { width: 1200, height: 1200, crop: 'limit' },
-        { quality: 'auto' },
-      ],
-    });
+    // Upload image (Cloudinary or local fallback)
+    const result = await uploadFile(req.file.buffer, req.file.mimetype, 'chats');
 
     res.json({
       message: 'Chat image uploaded successfully',
-      imageUrl: result.secure_url,
+      imageUrl: result.url,
     });
   } catch (error) {
     console.error('Chat image upload error:', error);

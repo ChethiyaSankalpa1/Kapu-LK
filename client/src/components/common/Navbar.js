@@ -349,7 +349,7 @@ const Navbar = () => {
                             <div className="flex flex-col">
                                 <div className="flex items-center gap-1.5 leading-none">
                                     <span className="bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent font-black text-xl sm:text-2xl tracking-tight">
-                                        LoveLK
+                                        Kapu-LK
                                     </span>
                                 </div>
                                 <p className="text-[10px] text-gray-400 dark:text-gray-400 font-medium leading-tight mt-0.5 hidden sm:block">
@@ -543,7 +543,7 @@ const Navbar = () => {
                                 <Heart className="w-6 h-6 text-white" />
                             </div>
                             <div>
-                                <p className="text-white font-bold text-lg">LoveLK</p>
+                                <p className="text-white font-bold text-lg">Kapu-LK</p>
                                 <p className="text-white/70 text-xs">Find your soulmate</p>
                             </div>
                         </div>

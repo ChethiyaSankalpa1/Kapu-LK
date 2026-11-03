@@ -132,7 +132,7 @@ const UserDetail = () => {
         try {
             await messageAPI.sendMessage({
                 to: user._id,
-                content: 'sent you an interest on LoveLK',
+                content: 'sent you an interest on Kapu-LK',
                 type: 'like',
             });
             setInterestSent(true);
@@ -405,7 +405,7 @@ const UserDetail = () => {
                                     <div>
                                         <h3 className="text-xs font-extrabold text-slate-900 dark:text-white">Report or Block</h3>
                                         <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                                            Help us keep LoveLK safe, verified, and respectful.
+                                            Help us keep Kapu-LK safe, verified, and respectful.
                                         </p>
                                     </div>
                                 </div>

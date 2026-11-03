@@ -128,7 +128,7 @@ const Dashboard = () => {
         try {
             await messageAPI.sendMessage({
                 to: targetUserId,
-                content: 'sent you a like on LoveLK',
+                content: 'sent you a like on Kapu-LK',
                 type: 'like',
             });
             toast.success('Like sent successfully! ❤️');
@@ -174,7 +174,7 @@ const Dashboard = () => {
                         </video>
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-purple-950/20 to-black/10 pointer-events-none" />
                         <div className="absolute top-3 right-3 px-2.5 py-0.5 bg-black/40 backdrop-blur-md rounded-full text-[9px] font-extrabold text-white/90 tracking-wider uppercase border border-white/20 z-10 shadow-xs">
-                            LoveLK
+                            Kapu-LK
                         </div>
                     </div>
 
@@ -846,7 +846,7 @@ const Dashboard = () => {
                                 </div>
                                 <div className="absolute bottom-3 left-3.5 right-3.5 text-white">
                                     <p className="text-xs font-bold leading-tight drop-shadow-sm">
-                                        "We met on LoveLK in 2025 and knew right away."
+                                        "We met on Kapu-LK in 2025 and knew right away."
                                     </p>
                                     <p className="text-[10px] text-pink-200 mt-1 font-medium">
                                         Dinuka & Samadhi • Happily Married in Kandy
@@ -898,7 +898,7 @@ const Dashboard = () => {
                         <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl p-4 shadow-xs space-y-2.5">
                             <div className="flex items-center gap-2 text-xs font-extrabold text-gray-900 dark:text-white">
                                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                                <span>LoveLK Safe Matrimony</span>
+                                <span>Kapu-LK Safe Matrimony</span>
                             </div>
                             <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-600 dark:text-gray-300">
                                 <div className="flex items-center gap-1.5 p-2 bg-gray-50 dark:bg-gray-800/60 rounded-xl">

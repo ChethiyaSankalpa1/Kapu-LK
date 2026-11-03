@@ -78,7 +78,7 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/privacy-policy" className="text-slate-400 hover:text-purple-400 transition-colors duration-150">
+                <Link to="/terms" className="text-slate-400 hover:text-purple-400 transition-colors duration-150">
                   Terms of Service
                 </Link>
               </li>
@@ -138,7 +138,7 @@ const Footer = () => {
               Privacy
             </Link>
             <span className="text-slate-700">•</span>
-            <Link to="/privacy-policy" className="hover:text-purple-400 transition-colors">
+            <Link to="/terms" className="hover:text-purple-400 transition-colors">
               Terms
             </Link>
             <span className="text-slate-700">•</span>

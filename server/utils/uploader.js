@@ -16,10 +16,13 @@ const isCloudinaryConfigured = () => {
  * Uploads a file buffer. Uses Cloudinary if configured; otherwise gracefully
  * saves to local disk in /uploads/{folder} so uploads never fail with a 500 error.
  *
+ * Returns an object with { url, publicId } that also coerces to string (url)
+ * for seamless compatibility with string-based callers.
+ *
  * @param {Buffer} fileBuffer
  * @param {string} mimetype
- * @param {string} folder - 'payment-slips' or similar
- * @returns {Promise<string>} public URL or local path
+ * @param {string} folder - 'payment-slips', 'profiles', 'gallery', 'chats'
+ * @returns {Promise<{url: string, publicId: string, toString: () => string}>}
  */
 const uploadFile = async (fileBuffer, mimetype, folder = 'payment-slips') => {
   if (isCloudinaryConfigured()) {
@@ -31,7 +34,16 @@ const uploadFile = async (fileBuffer, mimetype, folder = 'payment-slips') => {
         resource_type: 'auto',
       });
       if (result && result.secure_url) {
-        return result.secure_url;
+        const url = result.secure_url;
+        const publicId = result.public_id || '';
+        return {
+          url,
+          publicId,
+          secure_url: url,
+          toString() {
+            return this.url;
+          },
+        };
       }
     } catch (err) {
       console.warn('[Uploader] Cloudinary upload failed, using local storage fallback:', err.message);
@@ -54,7 +66,15 @@ const uploadFile = async (fileBuffer, mimetype, folder = 'payment-slips') => {
   const filePath = path.join(targetDir, filename);
   fs.writeFileSync(filePath, fileBuffer);
 
-  return `/uploads/${folder}/${filename}`;
+  const localUrl = `/uploads/${folder}/${filename}`;
+  return {
+    url: localUrl,
+    publicId: filename,
+    secure_url: localUrl,
+    toString() {
+      return this.url;
+    },
+  };
 };
 
 module.exports = {

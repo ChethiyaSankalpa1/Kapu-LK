@@ -15,7 +15,7 @@ const Stories = () => {
                             <span>Love Stories & Testimonials</span>
                         </h1>
                         <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                            Inspiring matrimonial journeys from members who found their soulmate on LoveLK
+                            Inspiring matrimonial journeys from members who found their soulmate on Kapu-LK
                         </p>
                     </div>
                 </div>

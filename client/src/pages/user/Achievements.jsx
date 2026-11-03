@@ -95,7 +95,7 @@ const Achievements = () => {
                             Achievements
                         </h1>
                         <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm mt-0.5">
-                            Complete daily tasks, earn points, and unlock badges as you build connections on LoveLK.
+                            Complete daily tasks, earn points, and unlock badges as you build connections on Kapu-LK.
                         </p>
                     </div>
                     <div className="flex items-center gap-3">

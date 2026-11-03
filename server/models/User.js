@@ -307,9 +307,6 @@ const userSchema = new mongoose.Schema({
     default: 0,
     select: false,
   },
-  lastMessageSentAt: {
-    type: Date,
-  },
   // Security & Account Protection
   loginAttempts: {
     type: Number,
@@ -412,11 +409,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: '2.0',
   },
-  // Blocked users array & Demo account flag
-  blockedUsers: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-  }],
+  // Demo account flag
   isDemoAccount: {
     type: Boolean,
     default: false,

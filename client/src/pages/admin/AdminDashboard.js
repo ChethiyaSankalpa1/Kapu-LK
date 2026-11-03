@@ -1028,7 +1028,7 @@ const AdminDashboard = () => {
               <Heart className="w-5 h-5 fill-current" />
             </div>
             <div>
-              <span className="text-lg font-black bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent block leading-tight">LoveLK</span>
+              <span className="text-lg font-black bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent block leading-tight">Kapu-LK</span>
               <span className="text-[10px] text-gray-400 font-semibold block leading-tight">Find Your Perfect Match</span>
             </div>
           </div>
@@ -1404,7 +1404,7 @@ const AdminDashboard = () => {
           <div className="mt-4 p-4 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-lg space-y-2">
             <div className="flex items-center space-x-2 font-bold text-xs">
               <Crown className="w-4 h-4 text-yellow-300" />
-              <span>Keep LoveLK Safe</span>
+              <span>Keep Kapu-LK Safe</span>
             </div>
             <p className="text-[11px] text-purple-100 leading-tight">
               Your administrative moderation creates genuine Sri Lankan matchmaking connections.
@@ -1461,7 +1461,7 @@ const AdminDashboard = () => {
                     <span>Admin Dashboard</span>
                   </h1>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Manage users, payments, content and keep LoveLK safe, secure and active.
+                    Manage users, payments, content and keep Kapu-LK safe, secure and active.
                   </p>
                 </div>
 
