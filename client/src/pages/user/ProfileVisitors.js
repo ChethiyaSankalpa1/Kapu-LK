@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 import moment from 'moment';
 import {
     Eye, Crown, RefreshCw, Sparkles,
-    MessageCircle
+    MessageCircle, Clock
 } from 'lucide-react';
 import ProfileCard from '../../components/ui/ProfileCard';
 import BackButton from '../../components/common/BackButton';
@@ -61,6 +61,28 @@ const ProfileVisitors = () => {
     const handleMessage = (userId) => {
         navigate(`/conversation/${userId}`);
     };
+
+    if (!currentUser?.isApproved && currentUser?.role !== 'admin') {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 max-w-md w-full text-center border border-gray-200 dark:border-gray-700">
+                    <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Clock className="w-8 h-8 text-amber-500" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Approval Required</h2>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6 text-sm leading-relaxed">
+                        Your account has not yet been approved by an administrator. You will be able to see who viewed your profile once your account is approved.
+                    </p>
+                    <button
+                        onClick={() => navigate('/dashboard')}
+                        className="btn-primary w-full py-3"
+                    >
+                        Go to Dashboard
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-4 pb-24 md:py-8 transition-colors duration-300">

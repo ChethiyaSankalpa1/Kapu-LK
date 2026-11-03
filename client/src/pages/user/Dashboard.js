@@ -8,7 +8,7 @@ import {
     Crown, Flame, Calendar, Eye, MapPin, ChevronRight, ChevronLeft,
     Settings, Users, Layers, Activity, Edit3, Sparkles,
     BookOpen, Gift, UserPlus, HelpCircle, Wallet, Trophy, FileText,
-    ShieldCheck, Lock, UserCheck, Star, Award
+    ShieldCheck, Lock, UserCheck, Award, Clock
 } from 'lucide-react';
 import PremiumPopup from '../../components/ui/PremiumPopup';
 import PremiumBadge from '../../components/ui/PremiumBadge';
@@ -50,6 +50,7 @@ const Dashboard = () => {
     const completenessPercentage = Math.round((completedCount / profileCompletenessItems.length) * 100);
 
     const isVisitorsAllowed = user?.role === 'admin' || (user?.isPremium && (user?.premiumPlan === 'silver' || user?.premiumPlan === 'gold' || premiumStatus?.premiumPlan === 'silver' || premiumStatus?.premiumPlan === 'gold'));
+    const isAccountApproved = Boolean(user?.isApproved || user?.role === 'admin');
 
     // Fetch dashboard data
     const fetchDashboardData = useCallback(async () => {
@@ -152,6 +153,26 @@ const Dashboard = () => {
             {/* ========================================================================= */}
             <div className="md:hidden px-4 pt-3 space-y-4 max-w-lg mx-auto">
 
+                {/* Mobile Pending Approval Alert Banner */}
+                {!isAccountApproved && (
+                    <div className="p-4 rounded-2xl bg-amber-50/95 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/60 shadow-xs flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/60 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
+                            <Clock className="w-5 h-5 animate-pulse" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h4 className="text-xs sm:text-sm font-extrabold text-amber-900 dark:text-amber-200">
+                                Account Pending Approval
+                            </h4>
+                            <p className="text-[11px] sm:text-xs text-amber-700 dark:text-amber-300/90 mt-0.5 leading-relaxed">
+                                Welcome to Kapu-LK! Your profile is currently awaiting administrator review. Partner suggestions and messaging will activate as soon as your account is approved.
+                            </p>
+                            <Link to="/profile" className="inline-block mt-2 text-[11px] font-bold text-amber-800 dark:text-amber-200 underline">
+                                Complete your profile & photos →
+                            </Link>
+                        </div>
+                    </div>
+                )}
+
                 {/* Mobile Welcome Card with Large 180-220px Responsive Cover Video */}
                 <div className="relative bg-white dark:bg-gray-900 rounded-3xl border border-gray-150 dark:border-gray-800 shadow-sm overflow-hidden">
                     {/* Dedicated Cover Video Header (192px / h-48 height on mobile) */}
@@ -205,14 +226,14 @@ const Dashboard = () => {
 
                         {/* Badges Row (Profile Approved, Wallet Balance, Premium Member) */}
                         <div className="flex flex-wrap items-center gap-1.5 mt-3">
-                            {user?.isApproved !== false ? (
+                            {isAccountApproved ? (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/50 text-[10px] sm:text-[11px] font-bold text-emerald-700 dark:text-emerald-300 rounded-full">
                                     <CheckCircle className="w-3 h-3 text-emerald-600" />
                                     Profile approved
                                 </span>
                             ) : (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-800/50 text-[10px] sm:text-[11px] font-bold text-amber-700 dark:text-amber-300 rounded-full">
-                                    <CheckCircle className="w-3 h-3 text-amber-500" />
+                                    <Clock className="w-3 h-3 text-amber-500" />
                                     Pending Approval
                                 </span>
                             )}
@@ -337,23 +358,51 @@ const Dashboard = () => {
                             <Flame className="w-4 h-4 text-pink-600 fill-pink-600" />
                             Suggested for You
                         </h2>
-                        <Link to="/users" className="text-xs font-bold text-purple-600 hover:underline flex items-center gap-0.5">
-                            See All <ChevronRight className="w-3.5 h-3.5" />
-                        </Link>
+                        {isAccountApproved && featuredUsers.length > 0 && (
+                            <Link to="/users" className="text-xs font-bold text-purple-600 hover:underline flex items-center gap-0.5">
+                                See All <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
+                        )}
                     </div>
 
-                    <div className="flex gap-3 overflow-x-auto pb-2 pt-1 hide-scrollbar scrollbar-none snap-x overscroll-x-contain">
-                        {featuredUsers.slice(0, 8).map((u) => (
-                            <div key={u._id} className="snap-start shrink-0 w-44">
-                                <ProfileCard
-                                    user={u}
-                                    onView={() => navigate(`/users/${u._id}`)}
-                                    onMessage={() => navigate(`/conversation/${u._id}`)}
-                                    onLike={handleQuickLike}
-                                />
+                    {!isAccountApproved ? (
+                        <div className="bg-gradient-to-r from-purple-50/80 via-pink-50/60 to-purple-50/80 dark:from-purple-950/20 dark:via-pink-950/20 dark:to-purple-950/20 border-2 border-dashed border-purple-200 dark:border-purple-800/50 rounded-2xl p-4 text-center space-y-2">
+                            <div className="w-10 h-10 mx-auto rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-300">
+                                <Clock className="w-5 h-5 animate-pulse" />
                             </div>
-                        ))}
-                    </div>
+                            <h4 className="text-xs font-extrabold text-gray-900 dark:text-white">
+                                Waiting for Admin Approval
+                            </h4>
+                            <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                                Partner suggestions and matches will appear here as soon as our admin team reviews and approves your account.
+                            </p>
+                            <div className="pt-1">
+                                <Link
+                                    to="/profile"
+                                    className="inline-block px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold rounded-xl shadow-xs transition"
+                                >
+                                    Complete Profile & Photos →
+                                </Link>
+                            </div>
+                        </div>
+                    ) : featuredUsers.length > 0 ? (
+                        <div className="flex gap-3 overflow-x-auto pb-2 pt-1 hide-scrollbar scrollbar-none snap-x overscroll-x-contain">
+                            {featuredUsers.slice(0, 8).map((u) => (
+                                <div key={u._id} className="snap-start shrink-0 w-44">
+                                    <ProfileCard
+                                        user={u}
+                                        onView={() => navigate(`/users/${u._id}`)}
+                                        onMessage={() => navigate(`/conversation/${u._id}`)}
+                                        onLike={handleQuickLike}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200/80 dark:border-gray-800 rounded-2xl p-4 text-center text-gray-500 text-xs">
+                            No suggestions available right now. Update your partner preferences in your profile to find new matches.
+                        </div>
+                    )}
                 </div>
 
                 {/* Mobile Recent Activity */}
@@ -532,6 +581,31 @@ const Dashboard = () => {
                     {/* Center Main Dashboard Area (7 cols on lg - wider and responsive) */}
                     <div className="col-span-12 md:col-span-9 lg:col-span-7 min-w-0 space-y-6">
 
+                        {/* Desktop Pending Approval Alert Banner */}
+                        {!isAccountApproved && (
+                            <div className="p-4 sm:p-5 rounded-3xl bg-amber-50/95 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/60 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                <div className="flex items-start gap-3.5">
+                                    <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-900/60 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 sm:mt-0">
+                                        <Clock className="w-5 h-5 animate-pulse" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-extrabold text-amber-900 dark:text-amber-200">
+                                            Account Verification in Progress
+                                        </h4>
+                                        <p className="text-xs text-amber-700 dark:text-amber-300/90 mt-0.5 leading-relaxed">
+                                            Welcome to Kapu-LK! Your profile is awaiting administrator approval. Partner suggestions, profile browsing, and direct messaging will become active as soon as our team approves your account.
+                                        </p>
+                                    </div>
+                                </div>
+                                <Link
+                                    to="/profile"
+                                    className="self-stretch sm:self-auto px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold text-center transition shrink-0 shadow-xs"
+                                >
+                                    Complete Profile & Photos →
+                                </Link>
+                            </div>
+                        )}
+
                         {/* Scenic Hero Header Card */}
                         <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-150 dark:border-gray-800 shadow-sm overflow-hidden">
                             {/* Scenic Banner Cover with custom LoveLK hero cover video */}
@@ -571,10 +645,15 @@ const Dashboard = () => {
                                                 <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white truncate">
                                                     {user?.name || firstName}
                                                 </h2>
-                                                {user?.isApproved && (
+                                                {isAccountApproved ? (
                                                     <span className="px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-bold rounded-full text-[11px] flex items-center gap-1 shrink-0">
                                                         <CheckCircle className="w-3 h-3 text-emerald-500" />
                                                         <span>Profile approved</span>
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-2.5 py-0.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 font-bold rounded-full text-[11px] flex items-center gap-1 shrink-0">
+                                                        <Clock className="w-3 h-3 text-amber-500" />
+                                                        <span>Pending Approval</span>
                                                     </span>
                                                 )}
                                                 {isPremium && (
@@ -692,42 +771,78 @@ const Dashboard = () => {
                                     <p className="text-xs text-gray-500">Profiles you might be interested in</p>
                                 </div>
 
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => scrollSuggested('left')}
-                                        className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-200 transition"
-                                        aria-label="Previous profiles"
-                                    >
-                                        <ChevronLeft className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => scrollSuggested('right')}
-                                        className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-200 transition"
-                                        aria-label="Next profiles"
-                                    >
-                                        <ChevronRight className="w-4 h-4" />
-                                    </button>
-                                    <Link to="/users" className="text-xs font-bold text-purple-600 hover:underline ml-2">
-                                        View All →
-                                    </Link>
-                                </div>
+                                {isAccountApproved && featuredUsers.length > 0 && (
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => scrollSuggested('left')}
+                                            className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-200 transition"
+                                            aria-label="Previous profiles"
+                                        >
+                                            <ChevronLeft className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => scrollSuggested('right')}
+                                            className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-200 transition"
+                                            aria-label="Next profiles"
+                                        >
+                                            <ChevronRight className="w-4 h-4" />
+                                        </button>
+                                        <Link to="/users" className="text-xs font-bold text-purple-600 hover:underline ml-2">
+                                            View All →
+                                        </Link>
+                                    </div>
+                                )}
                             </div>
 
-                            <div
-                                ref={suggestedRef}
-                                className="flex gap-4 overflow-x-auto pb-2 pt-1 hide-scrollbar scrollbar-none snap-x scroll-smooth overscroll-x-contain"
-                            >
-                                {featuredUsers.map((u) => (
-                                    <div key={u._id} className="snap-start shrink-0 w-48 sm:w-52">
-                                        <ProfileCard
-                                            user={u}
-                                            onView={() => navigate(`/users/${u._id}`)}
-                                            onMessage={() => navigate(`/conversation/${u._id}`)}
-                                            onLike={handleQuickLike}
-                                        />
+                            {!isAccountApproved ? (
+                                <div className="bg-gradient-to-r from-purple-50/70 via-pink-50/50 to-purple-50/70 dark:from-purple-950/20 dark:via-pink-950/20 dark:to-purple-950/20 border-2 border-dashed border-purple-200/80 dark:border-purple-800/50 rounded-3xl p-6 sm:p-8 text-center space-y-3">
+                                    <div className="w-14 h-14 mx-auto rounded-2xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-300 shadow-xs">
+                                        <Clock className="w-7 h-7 animate-pulse" />
                                     </div>
-                                ))}
-                            </div>
+                                    <div className="max-w-md mx-auto space-y-1">
+                                        <h4 className="text-base font-extrabold text-gray-900 dark:text-white">
+                                            Waiting for Admin Approval
+                                        </h4>
+                                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                                            Partner suggestions, daily recommendations, and matching profiles will appear here as soon as our admin team reviews and approves your account.
+                                        </p>
+                                    </div>
+                                    <div className="pt-2 flex flex-wrap items-center justify-center gap-2">
+                                        <Link
+                                            to="/profile"
+                                            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-xs transition"
+                                        >
+                                            Complete Profile & Photos
+                                        </Link>
+                                        <Link
+                                            to="/contact-admin"
+                                            className="px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-xl border border-gray-200 dark:border-gray-700 transition"
+                                        >
+                                            Contact Support
+                                        </Link>
+                                    </div>
+                                </div>
+                            ) : featuredUsers.length > 0 ? (
+                                <div
+                                    ref={suggestedRef}
+                                    className="flex gap-4 overflow-x-auto pb-2 pt-1 hide-scrollbar scrollbar-none snap-x scroll-smooth overscroll-x-contain"
+                                >
+                                    {featuredUsers.map((u) => (
+                                        <div key={u._id} className="snap-start shrink-0 w-48 sm:w-52">
+                                            <ProfileCard
+                                                user={u}
+                                                onView={() => navigate(`/users/${u._id}`)}
+                                                onMessage={() => navigate(`/conversation/${u._id}`)}
+                                                onLike={handleQuickLike}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200/80 dark:border-gray-800 rounded-3xl p-6 text-center text-gray-500 text-xs">
+                                    No suggestions available right now. Update your partner preferences in your profile to find new matches.
+                                </div>
+                            )}
                         </div>
                     </div>
 

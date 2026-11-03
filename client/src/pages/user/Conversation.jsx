@@ -602,6 +602,54 @@ const Conversation = () => {
     c?.user && c.user.name && c.user.name.toLowerCase().includes(searchQuery.toLowerCase())
   ) : [];
 
+  const isAccountApproved = Boolean(currentUser?.isApproved || currentUser?.role === 'admin');
+
+  if (!isAccountApproved) {
+    return (
+      <div className="min-h-[calc(100vh-4.5rem)] bg-[#efeae2]/60 dark:bg-[#0b141a] flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-[#111b21] rounded-3xl shadow-xl p-6 sm:p-8 max-w-lg w-full text-center border border-gray-200 dark:border-[#222d34]">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-amber-50 dark:bg-amber-950/40 rounded-3xl flex items-center justify-center mx-auto mb-4 text-amber-500 shadow-xs">
+            <Clock className="w-8 h-8 sm:w-10 sm:h-10 animate-pulse" />
+          </div>
+          <span className="inline-block px-3 py-1 bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 rounded-full text-[11px] font-extrabold uppercase tracking-wider mb-3">
+            Account Under Review
+          </span>
+          <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white mb-2">
+            Messaging Awaits Admin Approval
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm leading-relaxed mb-6">
+            For the trust, privacy, and safety of all members on Kapu-LK, new accounts must be approved by an administrator before direct messaging, chat, and member contact features are enabled.
+          </p>
+          <div className="bg-purple-50/60 dark:bg-purple-950/20 rounded-2xl p-4 text-left mb-6 border border-purple-100 dark:border-purple-900/40 text-xs space-y-2">
+            <p className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+              <span>What can you do in the meantime?</span>
+            </p>
+            <ul className="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-1">
+              <li>Complete your profile bio, career, and education details</li>
+              <li>Upload a clear profile picture and verification photo</li>
+              <li>Set your partner preferences to get matched as soon as you are approved</li>
+            </ul>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link
+              to="/profile"
+              className="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs sm:text-sm text-center shadow-xs transition"
+            >
+              Complete My Profile
+            </Link>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="flex-1 py-3 px-4 bg-gray-100 dark:bg-[#202c33] hover:bg-gray-200 dark:hover:bg-[#2a3942] text-gray-700 dark:text-gray-200 rounded-xl font-bold text-xs sm:text-sm transition"
+            >
+              Return to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`fixed left-0 right-0 bg-[#efeae2] dark:bg-[#0b141a] transition-colors duration-150 overflow-hidden ${
