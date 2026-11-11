@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { messageAPI } from '../../services/api';
-import { LayoutDashboard, Search, Heart, MessageSquare, User, LogIn, Users } from 'lucide-react';
+import { LayoutDashboard, Flame, Heart, MessageSquare, User, LogIn, Sparkles } from 'lucide-react';
 
 const MobileBottomNav = () => {
     const { t } = useTranslation();
@@ -75,11 +75,11 @@ const MobileBottomNav = () => {
     }
 
     const checkIsActive = (to) => {
-        if (to === '/dashboard') {
-            return location.pathname === '/dashboard' || location.pathname === '/';
-        }
         if (to === '/users') {
             return (location.pathname === '/users' || location.pathname === '/browse') && location.pathname !== '/matches';
+        }
+        if (to === '/visitors') {
+            return location.pathname.startsWith('/visitors');
         }
         if (to === '/matches') {
             return location.pathname.startsWith('/matches');
@@ -88,7 +88,7 @@ const MobileBottomNav = () => {
             return location.pathname.startsWith('/conversation') || location.pathname.startsWith('/messages');
         }
         if (to === '/profile') {
-            return location.pathname.startsWith('/profile') || location.pathname.startsWith('/settings');
+            return location.pathname.startsWith('/profile') || location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/settings');
         }
         return false;
     };
@@ -96,19 +96,19 @@ const MobileBottomNav = () => {
     const navItems = user
         ? [
               {
-                  to: '/dashboard',
-                  label: t('nav.dashboard', { defaultValue: 'Dashboard' }),
-                  icon: LayoutDashboard,
-              },
-              {
                   to: '/users',
-                  label: t('nav.browse', { defaultValue: 'Browse' }),
-                  icon: Search,
+                  label: t('nav.discover', { defaultValue: 'Discover' }),
+                  icon: Flame,
               },
               {
                   to: '/matches',
                   label: t('nav.matches', { defaultValue: 'Matches' }),
                   icon: Heart,
+              },
+              {
+                  to: '/visitors',
+                  label: t('nav.likes', { defaultValue: 'Likes' }),
+                  icon: Sparkles,
               },
               {
                   to: '/conversation',
@@ -130,6 +130,11 @@ const MobileBottomNav = () => {
                   matchExact: true,
               },
               {
+                  to: '/users',
+                  label: t('nav.discover', { defaultValue: 'Discover' }),
+                  icon: Flame,
+              },
+              {
                   to: '/login',
                   label: t('nav.login', { defaultValue: 'Sign In' }),
                   icon: LogIn,
@@ -137,7 +142,7 @@ const MobileBottomNav = () => {
               {
                   to: '/register',
                   label: t('nav.register', { defaultValue: 'Join Free' }),
-                  icon: Users,
+                  icon: Heart,
                   highlight: true,
               },
           ];
@@ -161,9 +166,9 @@ const MobileBottomNav = () => {
                                 to={item.to}
                                 className={`relative flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all duration-150 active:scale-95 min-w-[54px] ${
                                     item.highlight
-                                        ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md shadow-purple-500/30 font-bold'
+                                        ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-md shadow-rose-600/30 font-bold'
                                         : isActive
-                                        ? 'text-purple-600 dark:text-purple-400 font-bold bg-purple-50/90 dark:bg-purple-950/60'
+                                        ? 'text-rose-600 dark:text-rose-400 font-bold bg-rose-50/90 dark:bg-rose-950/60'
                                         : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium'
                                 }`}
                             >

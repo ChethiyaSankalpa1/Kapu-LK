@@ -173,27 +173,16 @@ const Dashboard = () => {
                     </div>
                 )}
 
-                {/* Mobile Welcome Card with Large 180-220px Responsive Cover Video */}
+                {/* Mobile Welcome Card with Large 180-220px Responsive Cover Banner */}
                 <div className="relative bg-white dark:bg-gray-900 rounded-3xl border border-gray-150 dark:border-gray-800 shadow-sm overflow-hidden">
-                    {/* Dedicated Cover Video Header (192px / h-48 height on mobile) */}
-                    <div className="relative h-48 sm:h-52 w-full overflow-hidden bg-purple-950">
-                        <video
-                            autoPlay
-                            muted
-                            loop
-                            playsInline
-                            preload="metadata"
-                            poster="/images/love-connect-belong.jpg"
-                            className="w-full h-full object-cover object-center opacity-95"
-                        >
-                            <source src="/video/PixVerse_V6_Image_Text_540P_Create_a_beautiful.mp4" type="video/mp4" />
-                            <img
-                                src="/images/love-connect-belong.jpg"
-                                alt="LoveLK Cover"
-                                className="w-full h-full object-cover object-center"
-                            />
-                        </video>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-purple-950/20 to-black/10 pointer-events-none" />
+                    {/* Dedicated Cover Header (192px / h-48 height on mobile) */}
+                    <div className="relative h-48 sm:h-52 w-full overflow-hidden bg-rose-950">
+                        <img
+                            src="/images/kapu-hero-cover.png"
+                            alt="Kapu-LK Cover"
+                            className="w-full h-full object-cover object-center"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none" />
                         <div className="absolute top-3 right-3 px-2.5 py-0.5 bg-black/40 backdrop-blur-md rounded-full text-[9px] font-extrabold text-white/90 tracking-wider uppercase border border-white/20 z-10 shadow-xs">
                             Kapu-LK
                         </div>
@@ -556,25 +545,18 @@ const Dashboard = () => {
                             </Link>
                         </div>
 
-                        {/* Promotional Couple Video Card */}
-                        <div className="rounded-3xl overflow-hidden shadow-sm border border-gray-150 dark:border-gray-800 relative bg-purple-950">
-                            <video
-                                autoPlay
-                                muted
-                                loop
-                                playsInline
-                                preload="metadata"
-                                poster="/images/love-connect-belong.jpg"
-                                className="w-full h-56 lg:h-64 object-cover object-center opacity-95"
-                            >
-                                <source src="/video/PixVerse_V6_Image_Text_540P_Create_a_beautiful.mp4" type="video/mp4" />
-                                <img
-                                    src="/images/love-connect-belong.jpg"
-                                    alt="Love Connect Belong"
-                                    className="w-full h-56 lg:h-64 object-cover"
-                                />
-                            </video>
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+                        {/* Romantic Couple Banner Card */}
+                        <div className="rounded-3xl overflow-hidden shadow-sm border border-gray-150 dark:border-gray-800 relative bg-rose-950">
+                            <img
+                                src="/images/kapu-hero-cover.png"
+                                alt="Kapu-LK Couples"
+                                className="w-full h-56 lg:h-64 object-cover object-center"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                            <div className="absolute bottom-3 left-4 right-4 text-white">
+                                <p className="text-xs font-bold">Meaningful Connections</p>
+                                <p className="text-[10px] text-rose-200">Meet genuine Sri Lankan singles</p>
+                            </div>
                         </div>
                     </div>
 
@@ -608,25 +590,14 @@ const Dashboard = () => {
 
                         {/* Scenic Hero Header Card */}
                         <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-150 dark:border-gray-800 shadow-sm overflow-hidden">
-                            {/* Scenic Banner Cover with custom LoveLK hero cover video */}
-                            <div className="h-44 sm:h-52 md:h-60 relative overflow-hidden bg-purple-950">
-                                <video
-                                    autoPlay
-                                    muted
-                                    loop
-                                    playsInline
-                                    preload="metadata"
-                                    poster="/images/lovelk-hero-cover.png"
-                                    className="w-full h-full object-cover object-center opacity-90"
-                                >
-                                    <source src="/video/PixVerse_V6_Image_Text_540P_Create_a_beautiful.mp4" type="video/mp4" />
-                                    <img
-                                        src="/images/lovelk-hero-cover.png"
-                                        alt="LoveLK Cover"
-                                        className="w-full h-full object-cover object-center"
-                                    />
-                                </video>
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-purple-950/20 to-black/20 pointer-events-none" />
+                            {/* Scenic Banner Cover */}
+                            <div className="h-44 sm:h-52 md:h-64 relative overflow-hidden bg-rose-950">
+                                <img
+                                    src="/images/kapu-hero-cover.png"
+                                    alt="Kapu-LK Scenic Cover"
+                                    className="w-full h-full object-cover object-center"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent pointer-events-none" />
                             </div>
 
                             {/* Clean Compact Profile Overview below Cover */}

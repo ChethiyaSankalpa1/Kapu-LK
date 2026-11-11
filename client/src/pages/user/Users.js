@@ -4,10 +4,23 @@ import { userAPI, messageAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import ProfileCard from '../../components/ui/ProfileCard';
+import ProfileAvatar from '../../components/ui/ProfileAvatar';
+import PremiumBadge from '../../components/ui/PremiumBadge';
 import CustomSelect from '../../components/ui/CustomSelect';
-import { Search, Filter, RefreshCw, Heart, Sparkles } from 'lucide-react';
+import { 
+    Filter, RefreshCw, Heart, Sparkles, Flame, LayoutGrid,
+    X, RotateCcw, Info, MapPin, Briefcase,
+    CheckCircle2, ShieldCheck
+} from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import BackButton from '../../components/common/BackButton';
+
+const SRI_LANKAN_DISTRICTS = [
+    'All Sri Lanka', 'Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya',
+    'Galle', 'Matara', 'Hambantota', 'Jaffna', 'Kilinochchi', 'Mannar', 'Vavuniya', 'Mullaitivu',
+    'Batticaloa', 'Ampara', 'Trincomalee', 'Kurunegala', 'Puttalam', 'Anuradhapura', 'Polonnaruwa',
+    'Badulla', 'Monaragala', 'Ratnapura', 'Kegalle', 'Overseas / Expat'
+];
 
 const Users = ({ isMatchesOnly = false }) => {
     const { t } = useTranslation();
@@ -20,6 +33,12 @@ const Users = ({ isMatchesOnly = false }) => {
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
 
+    // View Mode: 'swipe' (Tinder/Bumble-style discovery deck) or 'grid' (classic catalog)
+    const [viewMode, setViewMode] = useState(searchParams.get('mode') || 'swipe');
+    const [swipeIndex, setSwipeIndex] = useState(0);
+    const [lastSwiped, setLastSwiped] = useState(null);
+    const [matchModalUser, setMatchModalUser] = useState(null);
+
     const isMatchesMode = isMatchesOnly || searchParams.get('matches') === 'true';
 
     const initialGender = searchParams.get('gender') || '';
@@ -30,8 +49,6 @@ const Users = ({ isMatchesOnly = false }) => {
 
     const hasInitialSearch = Boolean(initialGender || initialMinAge || initialLocation || initialReligion);
 
-    const [isSearching, setIsSearching] = useState(hasInitialSearch);
-
     const [filters, setFilters] = useState({
         gender: initialGender,
         minAge: initialMinAge,
@@ -40,17 +57,18 @@ const Users = ({ isMatchesOnly = false }) => {
         religion: initialReligion,
         maritalStatus: searchParams.get('maritalStatus') || '',
         interests: searchParams.get('interests') || '',
+        intent: searchParams.get('intent') || '',
     });
     const [showFilters, setShowFilters] = useState(hasInitialSearch);
     const observer = useRef(null);
 
-    // Cleanup observer on unmount (prevents leaks)
+    // Cleanup observer on unmount
     useEffect(() => {
         return () => observer.current?.disconnect?.();
     }, []);
 
     const lastUserElementRef = useCallback(node => {
-        if (loading || loadingMore) return;
+        if (loading || loadingMore || viewMode === 'swipe') return;
         if (observer.current) observer.current.disconnect();
         observer.current = new IntersectionObserver(entries => {
             if (entries[0].isIntersecting && hasMore) {
@@ -58,14 +76,14 @@ const Users = ({ isMatchesOnly = false }) => {
             }
         });
         if (node) observer.current.observe(node);
-    }, [loading, loadingMore, hasMore]);
+    }, [loading, loadingMore, hasMore, viewMode]);
 
     const fetchMatches = useCallback(async (pageNum = 1) => {
         if (pageNum === 1) setLoading(true);
         else setLoadingMore(true);
 
         try {
-            const response = await userAPI.getMatches({ page: pageNum, limit: 12 });
+            const response = await userAPI.getMatches({ page: pageNum, limit: 16 });
             const filteredUsers = (response.data.data || response.data || []).filter(
                 (u) => u._id !== currentUser?._id && u.role !== 'admin'
             );
@@ -85,7 +103,7 @@ const Users = ({ isMatchesOnly = false }) => {
         else setLoadingMore(true);
 
         try {
-            const response = await userAPI.getAllUsers({ page: pageNum, limit: 12 });
+            const response = await userAPI.getAllUsers({ page: pageNum, limit: 16 });
             const filteredUsers = (response.data.data || response.data || []).filter(
                 (u) => u._id !== currentUser?._id && u.role !== 'admin'
             );
@@ -100,49 +118,48 @@ const Users = ({ isMatchesOnly = false }) => {
         }
     }, [currentUser?._id, t]);
 
-    const fetchSearchResults = useCallback(async (pageNum = 1) => {
-        if (pageNum === 1) setLoading(true);
-        else setLoadingMore(true);
+    const performSearch = useCallback(async () => {
+        setLoading(true);
+        setSwipeIndex(0);
 
         try {
-            const response = await userAPI.searchUsers({ ...filters, page: pageNum, limit: 12 });
+            const cleanedFilters = Object.fromEntries(
+                Object.entries(filters).filter(([_, v]) => v !== '' && v !== null && v !== undefined)
+            );
+            const response = await userAPI.searchUsers(cleanedFilters);
             const filteredUsers = (response.data.data || response.data || []).filter(
                 (u) => u._id !== currentUser?._id && u.role !== 'admin'
             );
 
-            setUsers(prev => pageNum === 1 ? filteredUsers : [...prev, ...filteredUsers]);
-            setHasMore(response.data.hasMore ?? false);
-            if (pageNum === 1) {
-                toast.success(t('users.profilesFound', { defaultValue: 'Found {{count}} profiles', count: response.data.totalCount || filteredUsers.length }));
-            }
+            setUsers(filteredUsers);
+            setHasMore(false);
         } catch (error) {
-            toast.error(t('users.searchFailed', { defaultValue: 'Search failed' }));
+            toast.error(t('users.searchFailed', { defaultValue: 'Failed to perform search' }));
         } finally {
             setLoading(false);
-            setLoadingMore(false);
         }
-    }, [currentUser?._id, filters, t]);
+    }, [filters, currentUser?._id, t]);
 
     useEffect(() => {
+        if (!currentUser?.isApproved && currentUser?.role !== 'admin') {
+            setLoading(false);
+            return;
+        }
+
+        if (hasInitialSearch) {
+            performSearch();
+            return;
+        }
+
         if (isMatchesMode) {
             fetchMatches(page);
-        } else if (isSearching) {
-            fetchSearchResults(page);
         } else {
             fetchUsers(page);
         }
-    }, [page, isMatchesMode, isSearching, fetchMatches, fetchSearchResults, fetchUsers]);
+    }, [page, isMatchesMode, hasInitialSearch, performSearch, fetchMatches, fetchUsers, currentUser]);
 
-    const handleSearch = () => {
-        setIsSearching(true);
-        setHasMore(true);
-
-        // If already on page 1, trigger fetch directly (otherwise useEffect will run)
-        if (page !== 1) {
-            setPage(1);
-        } else {
-            fetchSearchResults(1);
-        }
+    const handleApplyFilters = () => {
+        performSearch();
     };
 
     const handleReset = () => {
@@ -154,11 +171,10 @@ const Users = ({ isMatchesOnly = false }) => {
             religion: '',
             maritalStatus: '',
             interests: '',
+            intent: '',
         });
-        setIsSearching(false);
-        setHasMore(true);
+        setSwipeIndex(0);
 
-        // If already on page 1, trigger fetch directly (otherwise useEffect will run)
         if (page !== 1) {
             setPage(1);
         } else {
@@ -166,16 +182,50 @@ const Users = ({ isMatchesOnly = false }) => {
         }
     };
 
-    const handleLike = async (targetUserId) => {
+    const handleLike = async (targetUser) => {
+        if (!currentUser?.isApproved && currentUser?.role !== 'admin') {
+            toast.error('Account approval is required before messaging or liking.');
+            return;
+        }
+
+        const targetId = typeof targetUser === 'object' ? targetUser._id : targetUser;
+        const targetObj = typeof targetUser === 'object' ? targetUser : users.find(u => u._id === targetId);
+
         try {
             await messageAPI.sendMessage({
-                to: targetUserId,
+                to: targetId,
                 content: 'sent you a like on Kapu-LK',
                 type: 'like',
             });
-            toast.success(t('users.likeSent', { defaultValue: 'Like sent successfully! ❤️' }));
+            
+            // Trigger mutual match notification modal
+            if (targetObj) {
+                setMatchModalUser(targetObj);
+            } else {
+                toast.success('Like sent successfully! ❤️');
+            }
         } catch (error) {
-            toast.error(error.response?.data?.message || t('users.likeFailed', { defaultValue: 'Failed to send like' }));
+            toast.error(error.response?.data?.message || 'Failed to send like');
+        }
+
+        if (viewMode === 'swipe') {
+            setLastSwiped({ index: swipeIndex, user: targetObj, action: 'like' });
+            setSwipeIndex(prev => prev + 1);
+        }
+    };
+
+    const handlePass = () => {
+        if (swipeIndex < users.length) {
+            setLastSwiped({ index: swipeIndex, user: users[swipeIndex], action: 'pass' });
+            setSwipeIndex(prev => prev + 1);
+        }
+    };
+
+    const handleUndo = () => {
+        if (lastSwiped && swipeIndex > 0) {
+            setSwipeIndex(lastSwiped.index);
+            setLastSwiped(null);
+            toast.info(`Restored ${lastSwiped.user?.name || 'profile'}`);
         }
     };
 
@@ -195,20 +245,35 @@ const Users = ({ isMatchesOnly = false }) => {
         navigate(`/conversation/${id}`);
     };
 
+    // Keyboard support for swipe deck
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (viewMode !== 'swipe' || matchModalUser || showFilters) return;
+            if (e.key === 'ArrowLeft') {
+                handlePass();
+            } else if (e.key === 'ArrowRight' && users[swipeIndex]) {
+                handleLike(users[swipeIndex]);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [viewMode, swipeIndex, users, matchModalUser, showFilters]);
+
     if (!currentUser?.isApproved && currentUser?.role !== 'admin') {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 max-w-md w-full text-center border border-gray-250/30">
-                    <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-3xl text-amber-500">🔒</span>
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
+                <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 max-w-md w-full text-center border border-slate-200 dark:border-slate-800">
+                    <div className="w-16 h-16 bg-amber-100 dark:bg-amber-950/40 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-500">
+                        <ShieldCheck className="w-8 h-8" />
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Approval Required</h2>
-                    <p className="text-gray-600 dark:text-gray-300 mb-6">
-                        Your account has not yet been approved by an administrator. You must wait for account approval before you can browse, search, or view other member profiles.
+                    <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Account Under Review</h2>
+                    <p className="text-slate-600 dark:text-slate-300 text-sm mb-6 leading-relaxed">
+                        For the privacy and protection of all members, an administrator must approve your account before you can browse member profiles or swipe matches.
                     </p>
                     <button
                         onClick={() => navigate('/dashboard')}
-                        className="btn-primary w-full py-3"
+                        className="w-full py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-md transition"
                     >
                         Go to Dashboard
                     </button>
@@ -217,254 +282,447 @@ const Users = ({ isMatchesOnly = false }) => {
         );
     }
 
+    const currentCard = users[swipeIndex];
+
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-6 pb-24 md:py-8 transition-colors duration-300">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pt-4 pb-24 md:py-8 transition-colors duration-300">
             <div className="container mx-auto px-4 max-w-7xl">
-                <div className="mb-6 sm:mb-8">
-                    <div className="mb-4">
+                
+                {/* Header Controls Bar */}
+                <div className="mb-6">
+                    <div className="mb-3">
                         <BackButton label="Back" />
                     </div>
-                    <div className="flex items-center justify-between gap-3 mb-4">
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                            {isMatchesMode ? (
-                                <div className="w-10 h-10 rounded-2xl bg-pink-50 dark:bg-pink-950/40 flex items-center justify-center text-pink-600">
-                                    <Heart className="w-5 h-5 fill-pink-600 stroke-pink-600" />
-                                </div>
-                            ) : (
-                                <div className="w-10 h-10 rounded-2xl bg-purple-50 dark:bg-purple-950/40 flex items-center justify-center text-purple-600">
-                                    <Search className="w-5 h-5" />
-                                </div>
-                            )}
+                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-600 to-pink-500 flex items-center justify-center text-white shadow-md shadow-rose-600/20">
+                                {isMatchesMode ? <Heart className="w-5 h-5 fill-white" /> : <Flame className="w-5 h-5 fill-white" />}
+                            </div>
                             <div>
-                                <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-                                    {isMatchesMode
-                                        ? t('nav.matches', { defaultValue: 'My Matches' })
-                                        : t('nav.browse', { defaultValue: 'Browse Profiles' })}
+                                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                                    {isMatchesMode ? 'My Matches' : 'Discover Connections'}
                                 </h1>
-                                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                                     {isMatchesMode
-                                        ? 'Recommended partner profiles based on your mutual preferences'
-                                        : 'Explore members and discover compatible connections'}
+                                        ? 'Recommended partner profiles based on mutual preferences'
+                                        : 'Find genuine Sri Lankan singles ready for meaningful relationships'}
                                 </p>
                             </div>
                         </div>
 
-                        {/* Filter Toggle */}
-                        <button
-                            onClick={() => setShowFilters(!showFilters)}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all text-sm font-semibold ${
-                                showFilters
-                                    ? 'bg-purple-600 border-purple-600 text-white shadow-md shadow-purple-500/25'
-                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/60 shadow-xs'
-                            }`}
-                            aria-expanded={showFilters}
-                        >
-                            <Filter className="w-4 h-4" />
-                            <span>{showFilters ? t('users.hideFilters', { defaultValue: 'Hide Filters' }) : t('users.showFilters', { defaultValue: 'Filter Profiles' })}</span>
-                        </button>
-                    </div>
-
-                    {/* Redesigned Premium Filters Container */}
-                    {showFilters && (
-                        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-[1.5rem] shadow-xl border border-gray-150 dark:border-gray-800 p-5 sm:p-6 mb-6 transition-all duration-500 animate-in fade-in slide-in-from-top-4">
-                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-5 font-medium">
-                                Refine your match preferences below to find compatible profiles.
-                            </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {/* Gender */}
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                                        {t('auth.gender', { defaultValue: 'Gender' })}
-                                    </label>
-                                    <CustomSelect
-                                        value={filters.gender}
-                                        onChange={(val) => setFilters({ ...filters, gender: val })}
-                                        options={[
-                                            { value: '', label: t('common.all', { defaultValue: 'All' }) },
-                                            { value: 'male', label: t('common.male', { defaultValue: 'Male' }) },
-                                            { value: 'female', label: t('common.female', { defaultValue: 'Female' }) },
-                                            { value: 'other', label: t('common.other', { defaultValue: 'Other' }) }
-                                        ]}
-                                    />
-                                </div>
-
-                                {/* Age Range Grouped */}
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Min Age</label>
-                                        <input
-                                            type="number"
-                                            value={filters.minAge}
-                                            onChange={(e) => setFilters({ ...filters, minAge: e.target.value })}
-                                            className="form-input"
-                                            placeholder="18"
-                                            min="18"
-                                            max="100"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Max Age</label>
-                                        <input
-                                            type="number"
-                                            value={filters.maxAge}
-                                            onChange={(e) => setFilters({ ...filters, maxAge: e.target.value })}
-                                            className="form-input"
-                                            placeholder="50"
-                                            min="18"
-                                            max="100"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Location */}
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                                        {t('users.location', { defaultValue: 'Location' })}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={filters.location}
-                                        onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-                                        className="form-input"
-                                        placeholder="Enter city or district"
-                                    />
-                                </div>
-
-                                {/* Religion */}
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                                        {t('users.religion', { defaultValue: 'Religion' })}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={filters.religion}
-                                        onChange={(e) => setFilters({ ...filters, religion: e.target.value })}
-                                        className="form-input"
-                                        placeholder="Enter religion"
-                                    />
-                                </div>
-
-                                {/* Marital Status */}
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                                        {t('users.maritalStatus', { defaultValue: 'Marital Status' })}
-                                    </label>
-                                    <CustomSelect
-                                        value={filters.maritalStatus}
-                                        onChange={(val) => setFilters({ ...filters, maritalStatus: val })}
-                                        options={[
-                                            { value: '', label: t('common.all', { defaultValue: 'All' }) },
-                                            { value: 'single', label: t('users.single', { defaultValue: 'Single' }) },
-                                            { value: 'divorced', label: t('users.divorced', { defaultValue: 'Divorced' }) },
-                                            { value: 'widowed', label: t('users.widowed', { defaultValue: 'Widowed' }) }
-                                        ]}
-                                    />
-                                </div>
-
-                                {/* Interests */}
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
-                                        {t('profile.interests', { defaultValue: 'Interests' })}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={filters.interests}
-                                        onChange={(e) => setFilters({ ...filters, interests: e.target.value })}
-                                        className="form-input"
-                                        placeholder="e.g. music, travel"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Actions Grouped in a clean Flex layout */}
-                            <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
+                        {/* Top Right Controls: Swipe/Grid Toggle & Filter Button */}
+                        <div className="flex items-center gap-2">
+                            {/* Mode Toggle */}
+                            <div className="p-1 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center">
                                 <button
-                                    onClick={handleSearch}
-                                    className="flex-1 btn-primary text-sm py-2.5"
+                                    type="button"
+                                    onClick={() => setViewMode('swipe')}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                        viewMode === 'swipe'
+                                            ? 'bg-rose-600 text-white shadow-xs'
+                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                    }`}
                                 >
-                                    <Search className="w-4 h-4" />
-                                    <span>{t('common.search', { defaultValue: 'Search' })}</span>
+                                    <Flame className="w-3.5 h-3.5" />
+                                    <span>Swipe</span>
                                 </button>
                                 <button
-                                    onClick={handleReset}
-                                    className="flex-1 btn-secondary text-sm py-2.5"
+                                    type="button"
+                                    onClick={() => setViewMode('grid')}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                        viewMode === 'grid'
+                                            ? 'bg-rose-600 text-white shadow-xs'
+                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                    }`}
                                 >
-                                    <RefreshCw className="w-4 h-4 text-gray-500" />
-                                    <span>{t('users.reset', { defaultValue: 'Reset' })}</span>
+                                    <LayoutGrid className="w-3.5 h-3.5" />
+                                    <span>Grid</span>
                                 </button>
                             </div>
+
+                            {/* Filter Toggle */}
+                            <button
+                                onClick={() => setShowFilters(!showFilters)}
+                                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border text-xs sm:text-sm font-bold transition shadow-xs ${
+                                    showFilters
+                                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent'
+                                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                }`}
+                            >
+                                <Filter className="w-4 h-4" />
+                                <span>Filters</span>
+                            </button>
                         </div>
-                    )}
+                    </div>
                 </div>
 
-                {/* Users Grid */}
-                {loading ? (
-                    <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-3xl border border-gray-150 dark:border-gray-800 shadow-xs">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-purple-500 mx-auto mb-4"></div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Loading profiles...</p>
-                    </div>
-                ) : users.length > 0 ? (
-                    <>
-                        <div className="flex items-center justify-between mb-5">
-                            <p className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                                <Sparkles className="w-4 h-4 text-purple-600" />
-                                <span>{t('users.profilesFound', { defaultValue: 'Found {{count}} profiles', count: users.length })}</span>
-                            </p>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">Showing members</span>
+                {/* Filter Drawer / Panel */}
+                {showFilters && (
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 mb-8 animate-in fade-in slide-in-from-top-3">
+                        <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+                            <div>
+                                <h3 className="text-base font-bold text-slate-900 dark:text-white">Refine Discovery Preferences</h3>
+                                <p className="text-xs text-slate-500">Target matches tailored to your lifestyle and values</p>
+                            </div>
+                            <button onClick={() => setShowFilters(false)} className="p-1 rounded-full text-slate-400 hover:text-slate-600">
+                                <X className="w-5 h-5" />
+                            </button>
                         </div>
 
-                        {/* Responsive Grid matching modern cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {/* Gender */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                                    Gender
+                                </label>
+                                <CustomSelect
+                                    value={filters.gender}
+                                    onChange={(val) => setFilters({ ...filters, gender: val })}
+                                    options={[
+                                        { value: '', label: 'All Genders' },
+                                        { value: 'male', label: 'Male' },
+                                        { value: 'female', label: 'Female' },
+                                        { value: 'other', label: 'Other' }
+                                    ]}
+                                />
+                            </div>
+
+                            {/* Age Range */}
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Min Age</label>
+                                    <input
+                                        type="number"
+                                        value={filters.minAge}
+                                        onChange={(e) => setFilters({ ...filters, minAge: e.target.value })}
+                                        className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm"
+                                        placeholder="18"
+                                        min="18"
+                                        max="100"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Max Age</label>
+                                    <input
+                                        type="number"
+                                        value={filters.maxAge}
+                                        onChange={(e) => setFilters({ ...filters, maxAge: e.target.value })}
+                                        className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm"
+                                        placeholder="50"
+                                        min="18"
+                                        max="100"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* District */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                                    District / Location
+                                </label>
+                                <select
+                                    value={filters.location}
+                                    onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+                                    className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-semibold outline-none"
+                                >
+                                    <option value="">Any District</option>
+                                    {SRI_LANKAN_DISTRICTS.filter(d => d !== 'All Sri Lanka').map(d => (
+                                        <option key={d} value={d}>{d}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Marital Status */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                                    Relationship Status
+                                </label>
+                                <CustomSelect
+                                    value={filters.maritalStatus}
+                                    onChange={(val) => setFilters({ ...filters, maritalStatus: val })}
+                                    options={[
+                                        { value: '', label: 'Any Status' },
+                                        { value: 'single', label: 'Never Married / Single' },
+                                        { value: 'divorced', label: 'Divorced' },
+                                        { value: 'widowed', label: 'Widowed' }
+                                    ]}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <button
+                                onClick={handleReset}
+                                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1.5"
+                            >
+                                <RefreshCw className="w-3.5 h-3.5" />
+                                <span>Reset</span>
+                            </button>
+
+                            <button
+                                onClick={handleApplyFilters}
+                                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md transition"
+                            >
+                                Apply Preferences
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Loading state */}
+                {loading ? (
+                    <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs max-w-lg mx-auto">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-rose-600 mx-auto mb-4"></div>
+                        <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Discovering compatible members...</p>
+                        <p className="text-xs text-slate-400 mt-1">Reviewing verified profiles in Sri Lanka</p>
+                    </div>
+                ) : users.length === 0 ? (
+                    <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs max-w-md mx-auto p-8">
+                        <div className="w-16 h-16 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-600 flex items-center justify-center mx-auto mb-4">
+                            <Heart className="w-8 h-8" />
+                        </div>
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2">No Profiles Found</h3>
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
+                            {isMatchesMode
+                                ? 'No direct matches found matching your current preference filters.'
+                                : 'Try broadening your age or district filters to discover more connections.'}
+                        </p>
+                        <button
+                            onClick={handleReset}
+                            className="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md transition"
+                        >
+                            Reset Filters
+                        </button>
+                    </div>
+                ) : viewMode === 'swipe' ? (
+                    
+                    /* ================= SWIPE DISCOVERY CARD DECK ================= */
+                    <div className="max-w-md mx-auto">
+                        {currentCard ? (
+                            <div className="space-y-4">
+                                {/* Card */}
+                                <div className="relative bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden border border-slate-200/90 dark:border-slate-800 shadow-2xl shadow-rose-950/20 transition-all duration-300">
+                                    
+                                    {/* Large Photo Section */}
+                                    <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-900">
+                                        <ProfileAvatar
+                                            user={currentCard}
+                                            className="h-full w-full"
+                                            imageClassName="h-full w-full object-cover object-center"
+                                            avatarClassName="text-8xl"
+                                            fallbackClassName="text-5xl font-black text-white bg-gradient-to-tr from-rose-600 to-pink-500"
+                                        />
+
+                                        {/* Multi-layered dark gradient overlay */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/30 pointer-events-none" />
+
+                                        {/* Top Badges */}
+                                        <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
+                                            {(currentCard.isPremium || currentCard.role === 'admin') ? (
+                                                <PremiumBadge plan={currentCard.premiumPlan} isAdmin={currentCard.role === 'admin'} size="sm" />
+                                            ) : (
+                                                <div className="px-3 py-1 rounded-full bg-black/50 backdrop-blur-md text-[10px] font-bold text-white border border-white/20">
+                                                    Member
+                                                </div>
+                                            )}
+
+                                            {currentCard.isApproved && (
+                                                <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-rose-600/90 backdrop-blur-md text-white text-[10px] font-extrabold shadow-sm">
+                                                    <CheckCircle2 className="w-3.5 h-3.5 fill-white text-rose-600" />
+                                                    <span>Verified</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Card Info Overlay */}
+                                        <div className="absolute bottom-5 left-5 right-5 text-white space-y-2 pointer-events-auto">
+                                            <div className="flex items-baseline justify-between">
+                                                <h2 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
+                                                    {currentCard.name || 'Member'}, {currentCard.age || '25'}
+                                                </h2>
+                                            </div>
+
+                                            <p className="text-xs text-rose-200 flex items-center gap-1 font-semibold">
+                                                <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                                                <span>{currentCard.district || currentCard.location || 'Sri Lanka'}</span>
+                                                {currentCard.maritalStatus && <span>• {currentCard.maritalStatus}</span>}
+                                            </p>
+
+                                            {(currentCard.occupation || currentCard.education) && (
+                                                <p className="text-xs text-slate-200 flex items-center gap-1">
+                                                    <Briefcase className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+                                                    <span className="truncate">{currentCard.occupation || currentCard.education}</span>
+                                                </p>
+                                            )}
+
+                                            {currentCard.bio && (
+                                                <p className="text-xs text-slate-300 line-clamp-2 italic pt-1 border-t border-white/15">
+                                                    "{currentCard.bio}"
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Action Bar (Pass, Undo, Info, Like) */}
+                                    <div className="p-4 sm:p-5 flex items-center justify-around bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+                                        {/* Undo button */}
+                                        <button
+                                            type="button"
+                                            onClick={handleUndo}
+                                            disabled={!lastSwiped}
+                                            title="Undo last swipe"
+                                            className="w-12 h-12 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-amber-500 disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition active:scale-90 shadow-sm"
+                                        >
+                                            <RotateCcw className="w-5 h-5" />
+                                        </button>
+
+                                        {/* Pass button */}
+                                        <button
+                                            type="button"
+                                            onClick={handlePass}
+                                            title="Pass (Left arrow)"
+                                            className="w-16 h-16 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 flex items-center justify-center transition active:scale-90 shadow-md"
+                                        >
+                                            <X className="w-8 h-8 stroke-[2.5]" />
+                                        </button>
+
+                                        {/* View Details button */}
+                                        <button
+                                            type="button"
+                                            onClick={() => handleView(currentCard._id)}
+                                            title="View Full Profile"
+                                            className="w-12 h-12 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-blue-500 flex items-center justify-center transition active:scale-90 shadow-sm"
+                                        >
+                                            <Info className="w-5 h-5" />
+                                        </button>
+
+                                        {/* Like button */}
+                                        <button
+                                            type="button"
+                                            onClick={() => handleLike(currentCard)}
+                                            title="Like & Connect (Right arrow)"
+                                            className="w-16 h-16 rounded-full bg-gradient-to-tr from-rose-600 via-pink-600 to-rose-700 hover:from-rose-500 hover:to-pink-500 text-white flex items-center justify-center transition active:scale-90 shadow-lg shadow-rose-600/30"
+                                        >
+                                            <Heart className="w-8 h-8 fill-white" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Deck counter & Hint */}
+                                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-3">
+                                    <span>Profile {swipeIndex + 1} of {users.length}</span>
+                                    <span>Tip: Use ← Left to pass, → Right to like</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-xs">
+                                <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center mx-auto mb-4">
+                                    <Sparkles className="w-8 h-8" />
+                                </div>
+                                <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">You're All Caught Up!</h3>
+                                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
+                                    You have reviewed all available profiles for your current filters. Switch to Grid view or adjust your preferences to meet more members.
+                                </p>
+                                <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                                    <button
+                                        onClick={() => setSwipeIndex(0)}
+                                        className="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition"
+                                    >
+                                        Review Deck Again
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode('grid')}
+                                        className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-xs"
+                                    >
+                                        Switch to Grid View
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                ) : (
+
+                    /* ================= GRID BROWSE VIEW ================= */
+                    <>
+                        <div className="flex items-center justify-between mb-5">
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                <Sparkles className="w-4 h-4 text-rose-600" />
+                                <span>Found {users.length} active member profiles</span>
+                            </p>
+                        </div>
+
                         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
                             {users.map((u, index) => {
-                                if (users.length === index + 1) {
-                                    return (
-                                        <div ref={lastUserElementRef} key={u._id}>
-                                            <ProfileCard
-                                                user={u}
-                                                onView={() => handleView(u._id)}
-                                                onMessage={() => handleMessage(u._id)}
-                                                onLike={handleLike}
-                                                isOwnProfile={false}
-                                            />
-                                        </div>
-                                    );
-                                } else {
-                                    return (
+                                const isLast = users.length === index + 1;
+                                return (
+                                    <div ref={isLast ? lastUserElementRef : null} key={u._id}>
                                         <ProfileCard
-                                            key={u._id}
                                             user={u}
                                             onView={() => handleView(u._id)}
                                             onMessage={() => handleMessage(u._id)}
-                                            onLike={handleLike}
+                                            onLike={() => handleLike(u)}
                                             isOwnProfile={false}
                                         />
-                                    );
-                                }
+                                    </div>
+                                );
                             })}
                         </div>
 
                         {loadingMore && (
                             <div className="text-center py-6 mt-4">
-                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500 mx-auto"></div>
+                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-rose-600 mx-auto"></div>
                             </div>
                         )}
                     </>
-                ) : (
-                    <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-3xl border border-gray-150 dark:border-gray-800 shadow-xs max-w-md mx-auto">
-                        <p className="text-gray-600 dark:text-gray-300 text-sm font-medium mb-3">
-                            {isMatchesMode
-                                ? 'No direct matches found matching your preferences yet.'
-                                : t('users.noResults', { defaultValue: 'No profiles found matching your criteria.' })}
-                        </p>
-                        <button
-                            onClick={handleReset}
-                            className="btn-primary text-xs py-2 px-4"
-                        >
-                            Reset Filters
-                        </button>
-                    </div>
                 )}
+
             </div>
+
+            {/* MUTUAL MATCH CELEBRATION MODAL */}
+            {matchModalUser && (
+                <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-6 text-center border border-rose-200 dark:border-rose-900/60 shadow-2xl space-y-4">
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-rose-600 to-pink-500 text-white flex items-center justify-center mx-auto shadow-lg shadow-rose-600/40 animate-bounce">
+                            <Heart className="w-8 h-8 fill-white" />
+                        </div>
+
+                        <div>
+                            <span className="text-[11px] font-extrabold text-rose-600 uppercase tracking-widest">
+                                Connection Started
+                            </span>
+                            <h3 className="text-xl font-black text-slate-900 dark:text-white mt-1">
+                                You Liked {matchModalUser.name}!
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                                A notification was sent to {matchModalUser.name}. When they like you back, you'll be able to chat freely.
+                            </p>
+                        </div>
+
+                        <div className="pt-2 flex flex-col gap-2">
+                            <button
+                                onClick={() => {
+                                    const uId = matchModalUser._id;
+                                    setMatchModalUser(null);
+                                    handleMessage(uId);
+                                }}
+                                className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold text-xs shadow-md hover:from-rose-500 hover:to-pink-500 transition"
+                            >
+                                Send a Message Now
+                            </button>
+
+                            <button
+                                onClick={() => setMatchModalUser(null)}
+                                className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                            >
+                                Keep Discovering
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };

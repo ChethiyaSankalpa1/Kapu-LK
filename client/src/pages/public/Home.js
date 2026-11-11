@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { 
-    Heart, Shield, Sparkles, Search, CheckCircle2, Lock, ScrollText, ArrowRight, MapPin, Award
+    Heart, Shield, Sparkles, Search, CheckCircle2, Lock, ArrowRight, MapPin,
+    Award, MessageCircle, Flame, Star, ChevronDown, 
+    ShieldCheck, Zap, Smile
 } from 'lucide-react';
 
 const SRI_LANKAN_DISTRICTS = [
@@ -13,19 +14,98 @@ const SRI_LANKAN_DISTRICTS = [
     'Badulla', 'Monaragala', 'Ratnapura', 'Kegalle', 'Overseas / Expat'
 ];
 
+const SAMPLE_MEMBERS = [
+    {
+        name: 'Sanduni',
+        age: 26,
+        district: 'Colombo',
+        occupation: 'Software Engineer',
+        intent: 'Marriage / Long-term',
+        image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+        quote: 'Looking for someone who values kindness, laughing together, and travel.'
+    },
+    {
+        name: 'Kavinda',
+        age: 29,
+        district: 'Kandy',
+        occupation: 'Medical Doctor',
+        intent: 'Serious Relationship',
+        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80',
+        quote: 'Passionate about outdoor hiking, books, and deep conversations over tea.'
+    },
+    {
+        name: 'Nadeesha',
+        age: 27,
+        district: 'Galle',
+        occupation: 'Financial Analyst',
+        intent: 'Marriage & Family',
+        image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=600&q=80',
+        quote: 'Love coastal sunsets, acoustic music, and someone with ambition and warmth.'
+    },
+    {
+        name: 'Dinuka',
+        age: 31,
+        district: 'Gampaha',
+        occupation: 'Architect',
+        intent: 'Dating with Purpose',
+        image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80',
+        quote: 'Creative thinker who appreciates art, weekend road trips, and honesty.'
+    }
+];
+
+const SUCCESS_STORIES = [
+    {
+        couple: 'Kasun & Oshadi',
+        location: 'Colombo & Kandy',
+        time: 'Together 1 year',
+        story: 'We were both tired of traditional arranged matchmaking that felt impersonal. On Kapu-LK, our shared values and interests made talking effortless. We are engaged to be married this December!',
+        image: 'https://images.unsplash.com/photo-1522529599102-193c0d76b5b6?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+        couple: 'Raveen & Chamari',
+        location: 'Galle & Matara',
+        time: 'Married 6 months',
+        story: 'The verified profiles gave us peace of mind from day one. Kapu-LK made it easy to connect with someone from the south who shared my culture, dreams, and family perspective.',
+        image: 'https://images.unsplash.com/photo-1621252179027-94459d278660?auto=format&fit=crop&w=600&q=80'
+    }
+];
+
+const FAQS = [
+    {
+        q: 'Is Kapu-LK free to join and use?',
+        a: 'Yes! Joining Kapu-LK is completely free. You can create your detailed profile, upload photos, specify your preferences, and browse matches across Sri Lanka. Premium upgrades are optional for members desiring unlimited messaging and VIP visibility.'
+    },
+    {
+        q: 'How does account verification work for new members?',
+        a: 'Every new account and photograph submitted on Kapu-LK is carefully reviewed by our human admin team. This ensures our community remains 100% real, safe, and free from fake profiles, spam, and disrespectful behavior.'
+    },
+    {
+        q: 'Is my personal contact information safe?',
+        a: 'Absolutely. Your phone number and email address are strictly private and never displayed publicly on your profile card. You are in complete control of when and with whom you share your contact details.'
+    },
+    {
+        q: 'How is Kapu-LK different from other dating apps in Sri Lanka?',
+        a: 'Kapu-LK is custom-tailored for Sri Lankan young adults and families. We combine the modern, intuitive discovery experience of apps like Tinder and Hinge with the safety, cultural respect, and serious relationship intentions of traditional matchmaking.'
+    },
+    {
+        q: 'Can I access Kapu-LK on mobile?',
+        a: 'Yes, Kapu-LK is built mobile-first. It runs smoothly as a responsive web app on all Android and iPhone smartphones, complete with a convenient bottom navigation dock for instant discovery, matches, and chats.'
+    }
+];
+
 const Home = () => {
-    const { t } = useTranslation();
     const { user, loading } = useAuth();
     const navigate = useNavigate();
 
-    // Quick match finder state
     const [finderData, setFinderData] = useState({
         iAm: 'male',
         seeking: 'female',
         ageRange: '22-30',
         district: 'All Sri Lanka',
-        religion: 'All'
+        intent: 'all'
     });
+
+    const [openFaq, setOpenFaq] = useState(null);
 
     useEffect(() => {
         if (!loading && user) {
@@ -35,8 +115,8 @@ const Home = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-500"></div>
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+                <div className="animate-spin rounded-full h-14 w-14 border-t-4 border-b-4 border-rose-600"></div>
             </div>
         );
     }
@@ -54,306 +134,606 @@ const Home = () => {
         if (finderData.district && finderData.district !== 'All Sri Lanka') {
             queryParams.set('location', finderData.district);
         }
-        if (finderData.religion && finderData.religion !== 'All') {
-            queryParams.set('religion', finderData.religion);
-        }
 
         if (user) {
             navigate(`/users?${queryParams.toString()}`);
         } else {
-            // Send new visitors to register with these preferences pre-selected
             navigate(`/register?gender=${finderData.iAm}&seeking=${finderData.seeking}&district=${encodeURIComponent(finderData.district)}`);
         }
     };
 
     return (
-        <div className="w-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-300">
-            {/* Hero Section */}
-            <div className="relative overflow-hidden pt-6 pb-10 sm:pt-8 sm:pb-12 md:pt-10 md:pb-14 text-white">
-                {/* Background Video with Fallback Image */}
-                <video
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    preload="metadata"
-                    poster="/couple-hero.png"
-                    className="absolute inset-0 w-full h-full object-cover object-[70%_center] opacity-90"
-                >
-                    <source src="/video/PixVerse_V6_Image_Text_540P_Create_a_beautiful.mp4" type="video/mp4" />
-                    <img src="/couple-hero.png" className="w-full h-full object-cover object-[70%_center]" alt="" aria-hidden="true" />
-                </video>
+        <div className="w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
+            
+            {/* HERO SECTION */}
+            <section className="relative overflow-hidden pt-8 pb-16 sm:pt-14 sm:pb-24 text-white">
+                {/* Hero Scenic Background Image */}
+                <div className="absolute inset-0 bg-slate-950">
+                    <img 
+                        src="/images/kapu-hero-cover.png"
+                        alt="Kapu-LK Romantic Sunset"
+                        className="w-full h-full object-cover object-[center_35%] opacity-85 scale-105 transform animate-fade-in"
+                    />
+                    {/* Multi-layered cinematic gradient overlays */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-rose-950/80 to-purple-950/60" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-black/20" />
+                </div>
 
-                {/* Overlay: darker left, lighter right */}
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-950/95 via-purple-950/80 to-purple-900/30" aria-hidden="true" />
-                {/* Bottom fade: transparent to slate-950/30 */}
-                <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-slate-950/30 to-transparent" aria-hidden="true" />
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 max-w-7xl">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+                        
+                        {/* Hero Text Copy (7 cols) */}
+                        <div className="lg:col-span-7 text-center lg:text-left space-y-6">
+                            
+                            {/* Verification Pill */}
+                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/20 text-xs sm:text-sm font-semibold text-rose-200 shadow-sm">
+                                <Sparkles className="w-4 h-4 text-rose-400" />
+                                <span>Sri Lanka's Modern Dating &amp; Matchmaking Platform</span>
+                                <span className="hidden sm:inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-1" />
+                            </div>
 
-                <div className="container mx-auto px-4 relative z-10">
-                    {/* Top Pill - centered on sm, left-aligned on md+ */}
-                    <div className="flex justify-center md:justify-start mb-6">
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/15 text-xs sm:text-sm font-semibold text-pink-200 shadow-sm animate-fade-in">
-                            <Sparkles className="w-4 h-4 text-pink-400" />
-                            <span>{t('home.heroPill', { defaultValue: "Sri Lanka's Most Trusted Modern Matrimony Platform" })}</span>
+                            {/* Emotional Headline */}
+                            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.12]">
+                                Your Story Starts With <br />
+                                <span className="bg-gradient-to-r from-rose-400 via-pink-400 to-amber-300 bg-clip-text text-transparent">
+                                    A Connection.
+                                </span>
+                            </h1>
+
+                            {/* Supporting Text */}
+                            <p className="text-base sm:text-lg text-slate-200 max-w-xl mx-auto lg:mx-0 font-normal leading-relaxed">
+                                Meet genuine people, discover meaningful connections, and find someone special with Kapu-LK. A safe, respectful space designed for young adults and singles across Sri Lanka.
+                            </p>
+
+                            {/* CTAs */}
+                            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4">
+                                <Link
+                                    to="/register"
+                                    className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-rose-600 via-pink-600 to-rose-700 hover:from-rose-500 hover:to-pink-500 text-white font-extrabold text-base shadow-xl shadow-rose-600/30 active:scale-95 transition-all text-center flex items-center justify-center gap-2"
+                                >
+                                    <Heart className="w-5 h-5 fill-white" />
+                                    <span>Join Free Today</span>
+                                    <ArrowRight className="w-4 h-4" />
+                                </Link>
+
+                                <Link
+                                    to="/users"
+                                    className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/25 text-white font-bold text-base transition-all text-center flex items-center justify-center gap-2"
+                                >
+                                    <Search className="w-4 h-4 text-rose-300" />
+                                    <span>Find Your Match</span>
+                                </Link>
+                            </div>
+
+                            {/* Social Proof Stats Strip */}
+                            <div className="pt-4 grid grid-cols-3 gap-3 max-w-md mx-auto lg:mx-0 text-left border-t border-white/15">
+                                <div>
+                                    <span className="block text-xl sm:text-2xl font-black text-rose-300">100%</span>
+                                    <span className="text-[11px] text-slate-300">Admin Verified</span>
+                                </div>
+                                <div>
+                                    <span className="block text-xl sm:text-2xl font-black text-pink-300">25</span>
+                                    <span className="text-[11px] text-slate-300">Districts &amp; Global</span>
+                                </div>
+                                <div>
+                                    <span className="block text-xl sm:text-2xl font-black text-amber-300">18+</span>
+                                    <span className="text-[11px] text-slate-300">Safe &amp; Private</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Quick Match Finder Glass Widget (5 cols) */}
+                        <div className="lg:col-span-5">
+                            <div className="backdrop-blur-2xl bg-white/90 dark:bg-slate-900/90 border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-rose-950/50 rounded-3xl p-5 sm:p-7 text-slate-900 dark:text-slate-100 relative overflow-hidden">
+                                
+                                {/* Accent gradient line */}
+                                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500" />
+
+                                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+                                    <div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center text-rose-600">
+                                        <Heart className="w-5 h-5 fill-rose-600" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white leading-tight">
+                                            Quick Match Finder
+                                        </h2>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                            Discover singles matching your exact preferences
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <form onSubmit={handleQuickSearch} className="space-y-3.5">
+                                    {/* I Am / Looking For Row */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                                I Am A
+                                            </label>
+                                            <select
+                                                value={finderData.iAm}
+                                                onChange={(e) => setFinderData({
+                                                    ...finderData,
+                                                    iAm: e.target.value,
+                                                    seeking: e.target.value === 'male' ? 'female' : 'male'
+                                                })}
+                                                className="w-full px-3 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold focus:ring-2 focus:ring-rose-500 outline-none transition"
+                                            >
+                                                <option value="male">Man</option>
+                                                <option value="female">Woman</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                                Seeking A
+                                            </label>
+                                            <select
+                                                value={finderData.seeking}
+                                                onChange={(e) => setFinderData({ ...finderData, seeking: e.target.value })}
+                                                className="w-full px-3 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold focus:ring-2 focus:ring-rose-500 outline-none transition"
+                                            >
+                                                <option value="female">Woman</option>
+                                                <option value="male">Man</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {/* Age Range */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                            Age Preference
+                                        </label>
+                                        <select
+                                            value={finderData.ageRange}
+                                            onChange={(e) => setFinderData({ ...finderData, ageRange: e.target.value })}
+                                            className="w-full px-3 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold focus:ring-2 focus:ring-rose-500 outline-none transition"
+                                        >
+                                            <option value="18-24">18 - 24 years</option>
+                                            <option value="22-30">22 - 30 years</option>
+                                            <option value="25-35">25 - 35 years</option>
+                                            <option value="30-45">30 - 45 years</option>
+                                            <option value="40-60">40 - 60 years</option>
+                                            <option value="all">Any Age</option>
+                                        </select>
+                                    </div>
+
+                                    {/* District Location */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                            District / Location
+                                        </label>
+                                        <select
+                                            value={finderData.district}
+                                            onChange={(e) => setFinderData({ ...finderData, district: e.target.value })}
+                                            className="w-full px-3 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold focus:ring-2 focus:ring-rose-500 outline-none transition"
+                                        >
+                                            {SRI_LANKAN_DISTRICTS.map((d) => (
+                                                <option key={d} value={d}>{d}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Submit Action */}
+                                    <button
+                                        type="submit"
+                                        className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-rose-600 via-pink-600 to-rose-700 hover:from-rose-500 hover:to-pink-500 text-white font-bold text-sm shadow-lg shadow-rose-600/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-2"
+                                    >
+                                        <Search className="w-4 h-4" />
+                                        <span>Find Compatible Matches</span>
+                                        <ArrowRight className="w-4 h-4 ml-0.5" />
+                                    </button>
+
+                                    <p className="text-[11px] text-center text-slate-500 dark:text-slate-400 pt-1">
+                                        🔒 Free registration • 100% confidential • Respectful
+                                    </p>
+                                </form>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+
+            {/* TRUST & SAFETY HIGHLIGHTS STRIP */}
+            <section className="border-y border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-6">
+                <div className="container mx-auto px-4 max-w-7xl">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                        <div className="flex flex-col items-center">
+                            <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 mb-2">
+                                <CheckCircle2 className="w-6 h-6" />
+                            </div>
+                            <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Admin Verified Profiles</span>
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400">Manual review for every member</span>
+                        </div>
+
+                        <div className="flex flex-col items-center">
+                            <div className="w-11 h-11 rounded-2xl bg-rose-50 dark:bg-rose-950/50 flex items-center justify-center text-rose-600 mb-2">
+                                <Lock className="w-6 h-6" />
+                            </div>
+                            <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Privacy &amp; Contact Shield</span>
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400">Phone &amp; email never made public</span>
+                        </div>
+
+                        <div className="flex flex-col items-center">
+                            <div className="w-11 h-11 rounded-2xl bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 mb-2">
+                                <ShieldCheck className="w-6 h-6" />
+                            </div>
+                            <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Respectful 18+ Community</span>
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400">Strict zero-tolerance for harassment</span>
+                        </div>
+
+                        <div className="flex flex-col items-center">
+                            <div className="w-11 h-11 rounded-2xl bg-purple-50 dark:bg-purple-950/50 flex items-center justify-center text-purple-600 mb-2">
+                                <MapPin className="w-6 h-6" />
+                            </div>
+                            <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">All 25 Districts &amp; Expats</span>
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400">Local islandwide and overseas diaspora</span>
                         </div>
                     </div>
+                </div>
+            </section>
 
-                    {/* Main Headline - centered on sm, left-aligned on md+ */}
-                    <div className="max-w-4xl text-center md:text-left mb-10">
-                        <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.15] mb-4 sm:mb-6">
-                            {t('home.heroTitle', { defaultValue: 'Find Your Perfect Life Partner' })}
-                        </h1>
-                        <p className="text-base sm:text-xl text-slate-300 max-w-2xl mx-auto md:mx-0 font-normal leading-relaxed">
-                            {t('home.heroSubtitle', { defaultValue: 'Connect with genuine, verified Sri Lankan brides and grooms with shared values, traditions, and aspirations.' })}
-                        </p>
-                    </div>
 
-                    {/* Interactive Quick Match Finder Widget - Glass styled */}
-                    <div className="max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto md:ml-0 backdrop-blur-2xl bg-white/85 dark:bg-slate-900/80 border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-purple-900/40 rounded-3xl p-5 sm:p-7 text-slate-900 dark:text-slate-100 mb-12 relative overflow-hidden">
-                        {/* Top interior accent gradient strip */}
-                        <div className="absolute top-0 left-5 right-5 h-0.5 bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-600 rounded-full" aria-hidden="true" />
-
-                        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
-                            <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
-                            <h2 className="text-base sm:text-lg font-bold">
-                                {t('home.quickFinderTitle', { defaultValue: 'Quick Match Finder' })}
+            {/* DISCOVER FEATURED MEMBERS PREVIEW */}
+            <section className="py-14 sm:py-20 bg-slate-50 dark:bg-slate-950">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+                    
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+                        <div>
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-xs font-bold mb-2">
+                                <Flame className="w-3.5 h-3.5 fill-rose-600 text-rose-600" />
+                                <span>Featured Profiles</span>
+                            </div>
+                            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                                Meet Genuine Sri Lankan Singles
                             </h2>
-                            <span className="ml-auto text-xs text-slate-400 font-medium hidden sm:inline">
-                                {t('home.quickFinderSubtitle', { defaultValue: 'Filter by preferences in seconds' })}
-                            </span>
+                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
+                                Discover verified profiles looking for sincere relationships, shared values, and life companionship.
+                            </p>
                         </div>
 
-                        <form onSubmit={handleQuickSearch} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {/* I Am / Seeking */}
-                            <div>
-                                <label htmlFor="quick_find_iam" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
-                                    {t('home.iAm', { defaultValue: 'I Am A' })}
-                                </label>
-                                <select
-                                    id="quick_find_iam"
-                                    name="iAm"
-                                    autoComplete="off"
-                                    value={finderData.iAm}
-                                    onChange={(e) => setFinderData({
-                                        ...finderData,
-                                        iAm: e.target.value,
-                                        seeking: e.target.value === 'male' ? 'female' : 'male'
-                                    })}
-                                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border-0 text-sm font-medium focus:ring-2 focus:ring-purple-500 transition"
-                                >
-                                    <option value="male">{t('common.male', { defaultValue: 'Man' })}</option>
-                                    <option value="female">{t('common.female', { defaultValue: 'Woman' })}</option>
-                                </select>
-                            </div>
-
-                            {/* Looking For */}
-                            <div>
-                                <label htmlFor="quick_find_seeking" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
-                                    {t('home.seeking', { defaultValue: 'Looking For' })}
-                                </label>
-                                <select
-                                    id="quick_find_seeking"
-                                    name="seeking"
-                                    autoComplete="off"
-                                    value={finderData.seeking}
-                                    onChange={(e) => setFinderData({ ...finderData, seeking: e.target.value })}
-                                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border-0 text-sm font-medium focus:ring-2 focus:ring-purple-500 transition"
-                                >
-                                    <option value="female">{t('common.female', { defaultValue: 'Woman' })}</option>
-                                    <option value="male">{t('common.male', { defaultValue: 'Man' })}</option>
-                                </select>
-                            </div>
-
-                            {/* Age Range */}
-                            <div>
-                                <label htmlFor="quick_find_agerange" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
-                                    {t('home.ageRange', { defaultValue: 'Age Range' })}
-                                </label>
-                                <select
-                                    id="quick_find_agerange"
-                                    name="ageRange"
-                                    autoComplete="off"
-                                    value={finderData.ageRange}
-                                    onChange={(e) => setFinderData({ ...finderData, ageRange: e.target.value })}
-                                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border-0 text-sm font-medium focus:ring-2 focus:ring-purple-500 transition"
-                                >
-                                    <option value="18-25">18 - 25 yrs</option>
-                                    <option value="22-30">22 - 30 yrs</option>
-                                    <option value="25-35">25 - 35 yrs</option>
-                                    <option value="30-42">30 - 42 yrs</option>
-                                    <option value="40-60">40 - 60 yrs</option>
-                                    <option value="all">{t('common.all', { defaultValue: 'Any Age' })}</option>
-                                </select>
-                            </div>
-
-                            {/* District */}
-                            <div>
-                                <label htmlFor="quick_find_district" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
-                                    {t('home.district', { defaultValue: 'District' })}
-                                </label>
-                                <select
-                                    id="quick_find_district"
-                                    name="district"
-                                    autoComplete="off"
-                                    value={finderData.district}
-                                    onChange={(e) => setFinderData({ ...finderData, district: e.target.value })}
-                                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border-0 text-sm font-medium focus:ring-2 focus:ring-purple-500 transition"
-                                >
-                                    {SRI_LANKAN_DISTRICTS.map((d) => (
-                                        <option key={d} value={d}>{d}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Submit Button */}
-                            <div className="sm:col-span-2 lg:col-span-4 mt-2">
-                                <button
-                                    type="submit"
-                                    className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-pink-600 via-rose-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold text-base shadow-lg shadow-pink-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 min-h-[48px]"
-                                >
-                                    <Search className="w-5 h-5" />
-                                    <span>{t('home.searchMatchesBtn', { defaultValue: 'Find Compatible Matches' })}</span>
-                                    <ArrowRight className="w-4 h-4 ml-1" />
-                                </button>
-                            </div>
-                        </form>
+                        <Link
+                            to="/users"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-slate-800 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40 text-xs sm:text-sm font-bold shadow-xs transition shrink-0"
+                        >
+                            <span>Explore All Profiles</span>
+                            <ArrowRight className="w-4 h-4" />
+                        </Link>
                     </div>
 
-                    {/* Live Preview Match Cards */}
-                    <div className="max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto md:ml-0 grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                        <div className="bg-white/10 dark:bg-white/5 backdrop-blur-md rounded-2xl p-3.5 border border-white/10 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-pink-500/30 flex items-center justify-center font-bold text-pink-300">
-                                S
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-xs font-bold text-white truncate">Sanduni, 26 • Colombo</p>
-                                <p className="text-[11px] text-pink-200">Software Engineer • 96% Match</p>
-                            </div>
-                        </div>
+                    {/* Member Cards Carousel Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {SAMPLE_MEMBERS.map((m, idx) => (
+                            <div
+                                key={idx}
+                                className="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-xl dark:hover:shadow-rose-950/30 transition-all duration-300 flex flex-col transform hover:-translate-y-1.5"
+                            >
+                                {/* Portrait Photo */}
+                                <div className="relative aspect-[4/5] overflow-hidden bg-slate-200 dark:bg-slate-800">
+                                    <img
+                                        src={m.image}
+                                        alt={m.name}
+                                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                                        loading="lazy"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none" />
 
-                        <div className="bg-white/10 dark:bg-white/5 backdrop-blur-md rounded-2xl p-3.5 border border-white/10 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-purple-500/30 flex items-center justify-center font-bold text-purple-300">
-                                K
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-xs font-bold text-white truncate">Kavinda, 29 • Kandy</p>
-                                <p className="text-[11px] text-purple-200">Doctor • Porondam Verified</p>
-                            </div>
-                        </div>
+                                    {/* Intent pill */}
+                                    <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[10px] font-bold text-white shadow-xs">
+                                        {m.intent}
+                                    </div>
 
-                        <div className="bg-white/10 dark:bg-white/5 backdrop-blur-md rounded-2xl p-3.5 border border-white/10 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-indigo-500/30 flex items-center justify-center font-bold text-indigo-300">
-                                N
+                                    {/* Verification badge */}
+                                    <div className="absolute top-3 right-3 p-1 rounded-full bg-rose-600 text-white shadow-sm" title="Verified Member">
+                                        <CheckCircle2 className="w-3.5 h-3.5 fill-white text-rose-600" />
+                                    </div>
+
+                                    {/* Overlay info */}
+                                    <div className="absolute bottom-3 left-3 right-3 text-white">
+                                        <h3 className="text-lg font-black leading-tight flex items-center gap-1.5">
+                                            <span>{m.name}, {m.age}</span>
+                                        </h3>
+                                        <p className="text-xs text-slate-200 flex items-center gap-1 mt-0.5">
+                                            <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
+                                            <span>{m.district} • {m.occupation}</span>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Quote */}
+                                <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                                    <p className="text-xs text-slate-600 dark:text-slate-300 italic line-clamp-2">
+                                        "{m.quote}"
+                                    </p>
+
+                                    <Link
+                                        to="/register"
+                                        className="w-full py-2 px-3 text-center rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-600 hover:text-white text-rose-700 dark:text-rose-300 font-bold text-xs transition duration-200 flex items-center justify-center gap-1.5"
+                                    >
+                                        <MessageCircle className="w-3.5 h-3.5" />
+                                        <span>Connect With {m.name}</span>
+                                    </Link>
+                                </div>
                             </div>
-                            <div className="min-w-0">
-                                <p className="text-xs font-bold text-white truncate">Nadeesha, 28 • Galle</p>
-                                <p className="text-[11px] text-indigo-200">Accountant • Verified Member</p>
-                            </div>
-                        </div>
+                        ))}
                     </div>
+
                 </div>
-            </div>
+            </section>
 
-            {/* Trust Highlights Strip */}
-            <div className="border-y border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-6">
-                <div className="container mx-auto px-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                        <div className="flex flex-col items-center p-2">
-                            <CheckCircle2 className="w-6 h-6 text-emerald-500 mb-1.5" />
-                            <span className="text-xs sm:text-sm font-bold">{t('home.trust1', { defaultValue: '100% Verified Profiles' })}</span>
-                            <span className="text-[11px] text-slate-500 dark:text-slate-400">{t('home.trust1Sub', { defaultValue: 'Admin authenticated members' })}</span>
-                        </div>
-                        <div className="flex flex-col items-center p-2">
-                            <Lock className="w-6 h-6 text-purple-500 mb-1.5" />
-                            <span className="text-xs sm:text-sm font-bold">{t('home.trust2', { defaultValue: 'Privacy Protected' })}</span>
-                            <span className="text-[11px] text-slate-500 dark:text-slate-400">{t('home.trust2Sub', { defaultValue: 'Control who views your photos' })}</span>
-                        </div>
-                        <div className="flex flex-col items-center p-2">
-                            <ScrollText className="w-6 h-6 text-amber-500 mb-1.5" />
-                            <span className="text-xs sm:text-sm font-bold">{t('home.trust3', { defaultValue: 'Porondam Matching' })}</span>
-                            <span className="text-[11px] text-slate-500 dark:text-slate-400">{t('home.trust3Sub', { defaultValue: 'Sri Lankan astrological compatibility' })}</span>
-                        </div>
-                        <div className="flex flex-col items-center p-2">
-                            <MapPin className="w-6 h-6 text-rose-500 mb-1.5" />
-                            <span className="text-xs sm:text-sm font-bold">{t('home.trust4', { defaultValue: '25 Districts & Global' })}</span>
-                            <span className="text-[11px] text-slate-500 dark:text-slate-400">{t('home.trust4Sub', { defaultValue: 'Local and expat Sri Lankans' })}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            {/* Modern Features Section */}
-            <div className="py-14 sm:py-20">
-                <div className="container mx-auto px-4 max-w-6xl">
-                    <div className="text-center max-w-2xl mx-auto mb-12">
-                        <h2 className="text-2xl sm:text-4xl font-extrabold mb-3">
-                            {t('home.whyChooseUs', { defaultValue: 'Designed for Sri Lankan Marriages' })}
+            {/* HOW KAPU-LK WORKS */}
+            <section className="py-14 sm:py-20 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+                    
+                    <div className="text-center max-w-2xl mx-auto mb-14">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 text-xs font-bold mb-2">
+                            <Zap className="w-3.5 h-3.5 text-pink-600" />
+                            <span>Simple &amp; Respectful</span>
+                        </div>
+                        <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                            How Kapu-LK Works
                         </h2>
-                        <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base">
-                            {t('home.featuresSubtitle', { defaultValue: 'We combine cultural traditions with modern technology to ensure a safe, respectful matchmaking experience.' })}
+                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2">
+                            A seamless journey from initial discovery to real-life companionship.
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-800 hover:shadow-xl transition-all duration-300">
-                            <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-950/50 flex items-center justify-center text-purple-600 dark:text-purple-400 mb-6">
-                                <Shield className="w-7 h-7" />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+                        {/* Step 1 */}
+                        <div className="relative bg-slate-50 dark:bg-slate-950 rounded-3xl p-7 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center space-y-4">
+                            <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center text-xl font-black shadow-xs">
+                                1
                             </div>
-                            <h3 className="text-lg font-bold mb-2">{t('home.verifiedProfiles', { defaultValue: 'Manual Profile Screening' })}</h3>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                                {t('home.verifiedProfilesDesc', { defaultValue: 'Every profile is reviewed by our administration team before being visible, eliminating spam and fake accounts.' })}
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                                Create Your Genuine Profile
+                            </h3>
+                            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                                Share your background, hobbies, education, career, and partner preferences. Choose a custom avatar or upload genuine photographs.
                             </p>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-800 hover:shadow-xl transition-all duration-300">
-                            <div className="w-14 h-14 rounded-2xl bg-pink-100 dark:bg-pink-950/50 flex items-center justify-center text-pink-600 dark:text-pink-400 mb-6">
-                                <Heart className="w-7 h-7" />
+                        {/* Step 2 */}
+                        <div className="relative bg-slate-50 dark:bg-slate-950 rounded-3xl p-7 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center space-y-4">
+                            <div className="w-14 h-14 mx-auto rounded-2xl bg-pink-100 dark:bg-pink-950/60 text-pink-600 flex items-center justify-center text-xl font-black shadow-xs">
+                                2
                             </div>
-                            <h3 className="text-lg font-bold mb-2">{t('home.privacyTitle', { defaultValue: '100% Privacy & Safety' })}</h3>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                                {t('home.privacyDesc', { defaultValue: 'Your contact numbers and sensitive details remain confidential until you choose to share them with verified matches.' })}
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                                Discover Compatible Matches
+                            </h3>
+                            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                                Use modern swipe discovery or filter by age, district, religion, and lifestyle. Discover verified singles aligned with your values.
                             </p>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-800 hover:shadow-xl transition-all duration-300">
-                            <div className="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-6">
-                                <Award className="w-7 h-7" />
+                        {/* Step 3 */}
+                        <div className="relative bg-slate-50 dark:bg-slate-950 rounded-3xl p-7 border border-slate-200/80 dark:border-slate-800 shadow-sm text-center space-y-4">
+                            <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center text-xl font-black shadow-xs">
+                                3
                             </div>
-                            <h3 className="text-lg font-bold mb-2">{t('home.successStories', { defaultValue: 'Trusted Community' })}</h3>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                                {t('home.successStoriesDesc', { defaultValue: 'Thousands of Sri Lankan families have successfully discovered meaningful relationships through our service.' })}
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                                Connect &amp; Meet Safely
+                            </h3>
+                            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                                Send likes, spark conversations with built-in icebreakers, and chat in private WhatsApp-style messaging when you both express mutual interest.
                             </p>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            {/* Modern CTA Strip */}
-            <div className="py-12 sm:py-16 bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white relative overflow-hidden">
-                <div className="container mx-auto px-4 text-center relative z-10 max-w-3xl">
-                    <Heart className="w-12 h-12 mx-auto mb-4 text-pink-400 animate-pulse" />
-                    <h2 className="text-2xl sm:text-4xl font-extrabold mb-3">
-                        {t('home.ctaTitle', { defaultValue: 'Ready to Meet Your Life Partner?' })}
+                </div>
+            </section>
+
+
+            {/* WHY CHOOSE KAPU-LK – 4 PILLARS */}
+            <section className="py-14 sm:py-20 bg-slate-50 dark:bg-slate-950">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+                    <div className="text-center max-w-2xl mx-auto mb-14">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-xs font-bold mb-2">
+                            <Star className="w-3.5 h-3.5 text-rose-600" />
+                            <span>The Kapu-LK Difference</span>
+                        </div>
+                        <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                            Built Specifically for Sri Lanka
+                        </h2>
+                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2">
+                            Combining modern dating app excitement with the sincerity and respect our culture values.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center shrink-0">
+                                <Shield className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1.5">
+                                    Zero Tolerance for Fake Accounts
+                                </h3>
+                                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                                    No bots, no fabricated profiles. Our dedicated moderation team reviews every submission before activation, creating an authentic, trustworthy community.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-pink-100 dark:bg-pink-950/60 text-pink-600 flex items-center justify-center shrink-0">
+                                <Smile className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1.5">
+                                    Engaging, Fun &amp; Intuitive
+                                </h3>
+                                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                                    Enjoy Tinder and Bumble-style swipe interactions, attractive profile cards, gift reactions, and rich icebreaker prompts that make starting conversations natural.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-950/60 text-purple-600 flex items-center justify-center shrink-0">
+                                <MapPin className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1.5">
+                                    Islandwide &amp; Diaspora Reach
+                                </h3>
+                                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                                    Whether you live in Colombo, Kandy, Galle, Jaffna, or are a Sri Lankan expat living in Australia, the UK, or the Middle East, discover singles from your hometown.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center shrink-0">
+                                <Award className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1.5">
+                                    Serious &amp; Meaningful Intentions
+                                </h3>
+                                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                                    From dating with marriage in mind to lifelong partnerships, members clearly specify their intentions so nobody wastes time on misaligned expectations.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+
+            {/* SUCCESS STORIES SECTION */}
+            <section className="py-14 sm:py-20 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+                    <div className="text-center max-w-2xl mx-auto mb-14">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-xs font-bold mb-2">
+                            <Heart className="w-3.5 h-3.5 fill-rose-600 text-rose-600" />
+                            <span>Real Love Stories</span>
+                        </div>
+                        <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                            They Found Their Person on Kapu-LK
+                        </h2>
+                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2">
+                            Inspiring journeys of Sri Lankan couples who started with a single hello.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {SUCCESS_STORIES.map((s, idx) => (
+                            <div 
+                                key={idx}
+                                className="bg-slate-50 dark:bg-slate-950 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row gap-6 items-center"
+                            >
+                                <img
+                                    src={s.image}
+                                    alt={s.couple}
+                                    className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl object-cover object-center shadow-md shrink-0"
+                                />
+                                <div className="space-y-2 text-center sm:text-left">
+                                    <div className="flex items-center justify-center sm:justify-start gap-1 text-amber-500">
+                                        {[...Array(5)].map((_, i) => (
+                                            <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                        ))}
+                                    </div>
+                                    <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                                        {s.couple}
+                                    </h3>
+                                    <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold">
+                                        {s.location} • {s.time}
+                                    </p>
+                                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 italic leading-relaxed">
+                                        "{s.story}"
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+
+            {/* FREQUENTLY ASKED QUESTIONS (ACCORDION) */}
+            <section className="py-14 sm:py-20 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+                    <div className="text-center max-w-2xl mx-auto mb-12">
+                        <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                            Frequently Asked Questions
+                        </h2>
+                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2">
+                            Everything you need to know about starting your dating journey with Kapu-LK.
+                        </p>
+                    </div>
+
+                    <div className="space-y-3">
+                        {FAQS.map((faq, idx) => {
+                            const isOpen = openFaq === idx;
+                            return (
+                                <div
+                                    key={idx}
+                                    className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-xs"
+                                >
+                                    <button
+                                        type="button"
+                                        onClick={() => setOpenFaq(isOpen ? null : idx)}
+                                        className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-slate-900 dark:text-white"
+                                    >
+                                        <span>{faq.q}</span>
+                                        <ChevronDown className={`w-4 h-4 text-rose-600 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    {isOpen && (
+                                        <div className="px-4 pb-5 sm:px-5 sm:pb-5 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed border-t border-slate-100 dark:border-slate-800 pt-3">
+                                            {faq.a}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </section>
+
+
+            {/* EMOTIONAL BOTTOM CTA BANNER */}
+            <section className="py-16 sm:py-20 bg-gradient-to-r from-rose-900 via-pink-900 to-slate-950 text-white relative overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-rose-500/20 via-transparent to-transparent pointer-events-none" />
+
+                <div className="container mx-auto px-4 text-center relative z-10 max-w-3xl space-y-5">
+                    <div className="w-16 h-16 mx-auto rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-rose-400 shadow-xl">
+                        <Heart className="w-8 h-8 fill-rose-400 animate-pulse" />
+                    </div>
+
+                    <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+                        Ready to Meet Your Someone Special?
                     </h2>
-                    <p className="text-slate-300 text-sm sm:text-base mb-8 max-w-xl mx-auto">
-                        {t('home.ctaSubtitle', { defaultValue: 'Create your free profile in just 2 minutes and start exploring genuine matches today.' })}
+
+                    <p className="text-slate-200 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
+                        Join thousands of genuine Sri Lankan singles looking for love, shared happiness, and lifelong companionship on Kapu-LK.
                     </p>
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+
+                    <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3">
                         <Link
                             to="/register"
-                            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-white text-purple-900 font-bold text-base hover:bg-slate-100 shadow-xl transition active:scale-95"
+                            className="w-full sm:w-auto px-9 py-4 rounded-2xl bg-white hover:bg-slate-100 text-rose-900 font-extrabold text-base shadow-2xl active:scale-95 transition-all text-center flex items-center justify-center gap-2"
                         >
-                            {t('home.registerNow', { defaultValue: 'Create Free Profile' })}
+                            <span>Create Free Profile</span>
+                            <ArrowRight className="w-4 h-4" />
                         </Link>
                         <Link
                             to="/login"
-                            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-base transition"
+                            className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold text-base transition-all text-center"
                         >
-                            {t('nav.login', { defaultValue: 'Already a Member? Sign In' })}
+                            Already a Member? Sign In
                         </Link>
                     </div>
+
+                    <p className="text-[11px] text-slate-400 pt-2">
+                        18+ Adults Only • Strict Privacy Controls • Sri Lanka &amp; Global Expats
+                    </p>
                 </div>
-            </div>
+            </section>
+
         </div>
     );
 };

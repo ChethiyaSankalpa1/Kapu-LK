@@ -343,17 +343,17 @@ const Navbar = () => {
                             to={user ? (isAdmin ? '/admin' : '/dashboard') : '/'}
                             className="flex items-center gap-2.5 shrink-0"
                         >
-                            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-md shadow-purple-500/20">
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-rose-600 to-pink-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-md shadow-rose-600/25">
                                 <Heart className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-white fill-white" />
                             </div>
                             <div className="flex flex-col">
                                 <div className="flex items-center gap-1.5 leading-none">
-                                    <span className="bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent font-black text-xl sm:text-2xl tracking-tight">
+                                    <span className="bg-gradient-to-r from-rose-600 via-pink-600 to-amber-500 bg-clip-text text-transparent font-black text-xl sm:text-2xl tracking-tight">
                                         Kapu-LK
                                     </span>
                                 </div>
                                 <p className="text-[10px] text-gray-400 dark:text-gray-400 font-medium leading-tight mt-0.5 hidden sm:block">
-                                    Find Your Perfect Match
+                                    Modern Dating &amp; Matchmaking
                                 </p>
                             </div>
                         </Link>

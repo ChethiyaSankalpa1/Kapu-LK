@@ -9,7 +9,7 @@ const Footer = () => {
   return (
     <footer className="bg-slate-900 text-slate-400 text-sm mt-auto overflow-hidden">
       {/* Gradient accent bar */}
-      <div className="h-1 w-full bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500" />
+      <div className="h-1 w-full bg-gradient-to-r from-rose-600 via-pink-500 to-amber-500" />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-7 sm:py-8 md:py-9 max-w-7xl">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-6 sm:mb-7">
@@ -17,16 +17,16 @@ const Footer = () => {
           {/* Col 1 — Brand */}
           <div className="sm:col-span-2 lg:col-span-1 space-y-4">
             <Link to="/" className="flex items-center gap-2.5 w-fit group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-900/40 group-hover:scale-105 transition-transform shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-rose-600 to-pink-600 flex items-center justify-center shadow-lg shadow-rose-900/40 group-hover:scale-105 transition-transform shrink-0">
                 <Heart className="w-5 h-5 fill-white text-white" />
               </div>
-              <span className="text-xl font-extrabold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <span className="text-xl font-extrabold bg-gradient-to-r from-rose-400 via-pink-400 to-amber-300 bg-clip-text text-transparent">
                 Kapu-LK
               </span>
             </Link>
 
-            <p className="text-xs leading-relaxed text-slate-400 max-w-[220px]">
-              Sri Lanka's premier matrimonial platform connecting singles and families with dignity, safety, and authentic Porondam compatibility.
+            <p className="text-xs leading-relaxed text-slate-400 max-w-[240px]">
+              Sri Lanka's modern dating &amp; matchmaking platform connecting genuine singles with dignity, safety, and authentic compatibility.
             </p>
 
             <div className="flex flex-col gap-2">
@@ -34,9 +34,9 @@ const Footer = () => {
                 <Shield className="w-3.5 h-3.5 shrink-0" />
                 <span>100% Screened Profiles</span>
               </div>
-              <div className="inline-flex items-center gap-2 text-xs text-slate-500 px-1">
-                <MapPin className="w-3 h-3 text-slate-600 shrink-0" />
-                <span>Serving all Sri Lanka</span>
+              <div className="inline-flex items-center gap-2 text-xs text-rose-300/80 px-1 font-medium">
+                <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
+                <span>Serving all 25 Districts &amp; Expats</span>
               </div>
             </div>
           </div>
@@ -122,7 +122,7 @@ const Footer = () => {
         {/* Bottom strip */}
         <div className="pt-5 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <p className="flex items-center gap-1.5 text-center sm:text-left">
-            <span>© {CURRENT_YEAR} Kapu-LK Matrimonial. All rights reserved.</span>
+            <span>© {CURRENT_YEAR} Kapu-LK (KapuLK.online). All rights reserved. 18+ Adults Only.</span>
           </p>
           <p className="flex items-center gap-1.5 text-slate-600">
             Made with
