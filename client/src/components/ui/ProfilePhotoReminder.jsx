@@ -74,11 +74,11 @@ export const isReminderDismissed = (userId) => {
     if (!userId) return false;
     try {
         // 1. Suppressed during this browser session
-        if (sessionStorage.getItem(`lovelk_photo_reminder_session_${userId}`) === 'true') {
+        if (sessionStorage.getItem(`kapulk_photo_reminder_session_${userId}`) === 'true') {
             return true;
         }
         // 2. Suppressed within 24-hour cooldown
-        const dismissedAt = localStorage.getItem(`lovelk_photo_reminder_dismissed_${userId}`);
+        const dismissedAt = localStorage.getItem(`kapulk_photo_reminder_dismissed_${userId}`);
         if (!dismissedAt) return false;
         const diff = Date.now() - parseInt(dismissedAt, 10);
         return diff < COOLDOWN_MS;
@@ -90,8 +90,8 @@ export const isReminderDismissed = (userId) => {
 export const dismissReminder = (userId) => {
     if (!userId) return;
     try {
-        sessionStorage.setItem(`lovelk_photo_reminder_session_${userId}`, 'true');
-        localStorage.setItem(`lovelk_photo_reminder_dismissed_${userId}`, String(Date.now()));
+        sessionStorage.setItem(`kapulk_photo_reminder_session_${userId}`, 'true');
+        localStorage.setItem(`kapulk_photo_reminder_dismissed_${userId}`, String(Date.now()));
     } catch {
         // Ignore storage errors
     }
@@ -100,8 +100,8 @@ export const dismissReminder = (userId) => {
 export const clearReminderCooldown = (userId) => {
     if (!userId) return;
     try {
-        sessionStorage.removeItem(`lovelk_photo_reminder_session_${userId}`);
-        localStorage.removeItem(`lovelk_photo_reminder_dismissed_${userId}`);
+        sessionStorage.removeItem(`kapulk_photo_reminder_session_${userId}`);
+        localStorage.removeItem(`kapulk_photo_reminder_dismissed_${userId}`);
     } catch {
         // Ignore
     }
@@ -269,7 +269,7 @@ export const ProfilePhotoReminderModal = ({ user, onPhotoUploaded }) => {
                         </div>
                         <div>
                             <span className="inline-block px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-bold tracking-wide mb-1">
-                                LoveLK Profile Boost
+                                Kapu-LK Profile Boost
                             </span>
                             <h2 className="text-lg sm:text-xl font-black text-white leading-snug">
                                 📸 ඔබේ සැබෑ ඡායාරූපයක් එක් කරන්න!
@@ -286,7 +286,7 @@ export const ProfilePhotoReminderModal = ({ user, onPhotoUploaded }) => {
                         </p>
 
                         <p className="text-gray-600 dark:text-gray-300">
-                            ඔබේ LoveLK පැතිකඩට තවමත් සැබෑ පුද්ගලික ඡායාරූපයක් එක් කර නොමැති බව අපට පෙනේ.
+                            ඔබේ Kapu-LK පැතිකඩට තවමත් සැබෑ පුද්ගලික ඡායාරූපයක් එක් කර නොමැති බව අපට පෙනේ.
                         </p>
 
                         <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/40 dark:to-pink-950/30 border border-purple-100 dark:border-purple-900/50 flex items-start gap-3">
@@ -467,7 +467,7 @@ export const ProfilePhotoReminderBanner = ({ user, onPhotoUploaded, className = 
                                 📸 ඔබේ සැබෑ ඡායාරූපයක් එක් කරන්න!
                             </h3>
                             <span className="px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-950 text-pink-700 dark:text-pink-300 text-[10px] font-bold">
-                                LoveLK
+                                Kapu-LK
                             </span>
                         </div>
                         <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-0.5 leading-relaxed">

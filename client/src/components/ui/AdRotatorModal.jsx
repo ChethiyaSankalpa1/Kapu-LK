@@ -73,8 +73,8 @@ const AdRotatorModal = ({ isOpenOverride = false, onCloseOverride = null }) => {
       setAdIndex(getSavedAdIndex());
       setIsVisible(true);
     };
-    window.addEventListener('lovelk_trigger_ad', handleTrigger);
-    return () => window.removeEventListener('lovelk_trigger_ad', handleTrigger);
+    window.addEventListener('kapulk_trigger_ad', handleTrigger);
+    return () => window.removeEventListener('kapulk_trigger_ad', handleTrigger);
   }, []);
 
   // Detect virtual keyboard on mobile to avoid covering chat / input elements
@@ -128,7 +128,7 @@ const AdRotatorModal = ({ isOpenOverride = false, onCloseOverride = null }) => {
   // Read rotation index from localStorage
   const getSavedAdIndex = () => {
     try {
-      const saved = localStorage.getItem('lovelk_ad_rotation_index');
+      const saved = localStorage.getItem('kapulk_ad_rotation_index');
       const idx = parseInt(saved, 10);
       if (idx >= 1 && idx <= 6) return idx;
     } catch (e) {
@@ -153,7 +153,7 @@ const AdRotatorModal = ({ isOpenOverride = false, onCloseOverride = null }) => {
     }
 
     // Cooldown check
-    const lastDismissed = localStorage.getItem('lovelk_ad_last_dismissed');
+    const lastDismissed = localStorage.getItem('kapulk_ad_last_dismissed');
     if (lastDismissed) {
       const elapsed = Date.now() - parseInt(lastDismissed, 10);
       if (elapsed < COOLDOWN_MS) {
@@ -177,8 +177,8 @@ const AdRotatorModal = ({ isOpenOverride = false, onCloseOverride = null }) => {
   const handleDismiss = () => {
     const nextIdx = (adIndex % 6) + 1;
     try {
-      localStorage.setItem('lovelk_ad_rotation_index', nextIdx.toString());
-      localStorage.setItem('lovelk_ad_last_dismissed', Date.now().toString());
+      localStorage.setItem('kapulk_ad_rotation_index', nextIdx.toString());
+      localStorage.setItem('kapulk_ad_last_dismissed', Date.now().toString());
     } catch (e) {
       console.error('Error saving ad state:', e);
     }

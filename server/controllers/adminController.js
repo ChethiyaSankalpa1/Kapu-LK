@@ -881,7 +881,7 @@ exports.startMaintenanceTesting = async (req, res) => {
     // Find or create dedicated hidden demo maintenance testing user.
     // Also check the old legacy email in case a previous run created it.
     let demoUser = await User.findOne({
-      $or: [{ email: DEMO_EMAIL }, { email: 'demo.tester@lovelk.com' }],
+      $or: [{ email: DEMO_EMAIL }, { email: 'demo.tester@kapu-lk.online' }],
     });
 
     if (!demoUser) {

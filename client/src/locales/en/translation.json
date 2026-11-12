@@ -221,7 +221,7 @@
     }
   },
   "auth": {
-    "loginTitle": "Sign In to LoveLK",
+    "loginTitle": "Sign In to Kapu-LK",
     "registerTitle": "Create Your Free Profile",
     "name": "Name",
     "email": "Email",
@@ -287,7 +287,7 @@
     "fixInvalidEmailTitle": "Update to a Valid Email Address",
     "agreeTo18Plus": "I confirm that I am 18 years of age or older (Legal eligibility requirement)",
     "agreeToAccurateInfo": "I declare that all information provided in my profile is genuine and accurate",
-    "agreeToTermsPrivacy": "I have read and agree to the LoveLK Terms of Service & Privacy Policy",
+    "agreeToTermsPrivacy": "I have read and agree to the Kapu-LK Terms of Service & Privacy Policy",
     "agreeToInactivity": "I acknowledge that inactive accounts (10+ days without login) are deactivated to preserve a fresh community",
     "referralCode": "Referral Code (Optional)",
     "referralCodePlaceholder": "Enter friend's referral code",
@@ -326,7 +326,7 @@
     "trust4Sub": "Local and expat Sri Lankans",
     "featuresSubtitle": "We combine cultural traditions with modern technology to ensure a safe, respectful matchmaking experience.",
     "browseProfiles": "Browse Profiles",
-    "featuresTitle": "Why Choose LoveLK?",
+    "featuresTitle": "Why Choose Kapu-LK?",
     "feature1Title": "100% Verified Profiles",
     "feature1Desc": "Every member goes through mandatory 18+ age verification and privacy consent validation.",
     "feature2Title": "Privacy & Confidentiality",
@@ -472,10 +472,10 @@
     "contactSupportDesc": "Get help with any issues or questions",
     "contactAdmin": "Contact Admin",
     "about": "About",
-    "aboutApp": "About LoveLK",
+    "aboutApp": "About Kapu-LK",
     "aboutAppDesc": "Version 1.0.0",
-    "appDescription": "LoveLK is a premium matrimonial platform designed to help you find your perfect life partner.",
-    "copyright": "© 2024 LoveLK. All rights reserved.",
+    "appDescription": "Kapu-LK is a premium matrimonial platform designed to help you find your perfect life partner.",
+    "copyright": "© 2024 Kapu-LK. All rights reserved.",
     "dangerZone": "Danger Zone",
     "deleteAccount": "Delete My Account",
     "deleteAccountDesc": "Permanently delete your account and all data",
@@ -499,7 +499,7 @@
     "giftingPrivacy": "Allow matches to send me digital gifts"
   },
   "premium": {
-    "title": "LoveLK Premium Membership",
+    "title": "Kapu-LK Premium Membership",
     "price": "Rs. 500",
     "description": "Unlock all premium features!",
     "benefits": {
@@ -708,10 +708,10 @@
     "giftSent": "Sent a Gift"
   },
   "about": {
-    "title": "About LoveLK Matrimonial",
+    "title": "About Kapu-LK Matrimonial",
     "subtitle": "Sri Lanka's most trusted, modern matrimonial platform connecting hearts with dignity, safety, and respect.",
     "storyTitle": "Our Mission",
-    "storyDesc": "LoveLK was founded to modernize traditional Sri Lankan matchmaking. We combine technology, strict privacy safeguards, and cultural values to help Sri Lankan families and individuals find their lifelong partners.",
+    "storyDesc": "Kapu-LK was founded to modernize traditional Sri Lankan matchmaking. We combine technology, strict privacy safeguards, and cultural values to help Sri Lankan families and individuals find their lifelong partners.",
     "valuesTitle": "Our Core Values",
     "valSafety": "Trust & Safety First",
     "valSafetyDesc": "Zero tolerance for harassment, automated spam detection, and encrypted conversations.",
@@ -722,10 +722,10 @@
   },
   "privacy": {
     "title": "Privacy Policy & Terms of Service",
-    "subtitle": "How LoveLK safeguards your personal information, data retention, and privacy rights.",
+    "subtitle": "How Kapu-LK safeguards your personal information, data retention, and privacy rights.",
     "lastUpdated": "Last updated: 2026",
     "section1Title": "1. Eligibility & Age Restriction",
-    "section1Desc": "LoveLK is strictly for individuals who are 18 years of age or older. We verify birthdates upon registration.",
+    "section1Desc": "Kapu-LK is strictly for individuals who are 18 years of age or older. We verify birthdates upon registration.",
     "section2Title": "2. Data Privacy & Confidentiality",
     "section2Desc": "Your phone numbers and direct contact info are protected from public scraping and only visible when you grant permission or to authorized Premium members.",
     "section3Title": "3. Inactivity Data Policy",
@@ -752,7 +752,7 @@
     "unblockConfirm": "Unblock this user?"
   },
   "wallet": {
-    "title": "LoveLK Wallet",
+    "title": "Kapu-LK Wallet",
     "subtitle": "Manage your funds for premium upgrades, profile boosts, and gifts.",
     "balance": "Current Balance",
     "topup": "Top Up Wallet",
@@ -760,7 +760,7 @@
     "topupDesc": "Transfer funds to our official bank account and upload your payment slip for instant verification.",
     "bankDetails": "Official Bank Account Details",
     "bankName": "Sampath Bank",
-    "accName": "LoveLK Matrimonial Services",
+    "accName": "Kapu-LK Matrimonial Services",
     "accNumber": "1098 2345 6789",
     "branch": "Colombo Super Branch",
     "uploadSlip": "Upload Bank Deposit / Transfer Slip",
@@ -795,7 +795,7 @@
   },
   "referrals": {
     "title": "Invite Friends & Earn Points",
-    "subtitle": "Share LoveLK with friends and earn 50 reward points for every friend who registers.",
+    "subtitle": "Share Kapu-LK with friends and earn 50 reward points for every friend who registers.",
     "yourCode": "Your Unique Referral Code",
     "yourLink": "Your Referral Link",
     "copyLink": "Copy Link",
@@ -803,12 +803,12 @@
     "statsPoints": "Total Points Earned",
     "howItWorks": "How It Works",
     "step1": "Share your referral link with eligible friends.",
-    "step2": "They create a free profile on LoveLK.",
+    "step2": "They create a free profile on Kapu-LK.",
     "step3": "You instantly receive 50 bonus points in your wallet."
   },
   "stories": {
     "title": "Real Sri Lankan Success Stories",
-    "subtitle": "Read genuine wedding and engagement stories from couples who met on LoveLK.",
+    "subtitle": "Read genuine wedding and engagement stories from couples who met on Kapu-LK.",
     "submitStory": "Share Your Story",
     "coupleName": "Couple Names",
     "weddingDate": "Wedding / Engagement Date",
@@ -849,9 +849,9 @@
   },
   "maintenance": {
     "title": "Under Scheduled Maintenance",
-    "subtitle": "LoveLK is currently undergoing system enhancements to bring you a faster and safer experience.",
+    "subtitle": "Kapu-LK is currently undergoing system enhancements to bring you a faster and safer experience.",
     "estimatedCompletion": "Estimated completion time",
-    "notifyMe": "Notify me when LoveLK is back online",
+    "notifyMe": "Notify me when Kapu-LK is back online",
     "enterEmail": "Enter your email address",
     "notifyButton": "Get Notified",
     "subscribedSuccess": "Thank you! We will email you the moment we are live.",

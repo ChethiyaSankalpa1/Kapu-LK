@@ -40,14 +40,14 @@ const PAYMENT_ACCOUNTS = {
     name: 'eZ Cash',
     account: '0764134658',
     branch: 'Mobile Wallet',
-    accountHolder: 'LoveLK Official',
+    accountHolder: 'Kapu-LK Official',
     type: 'ez_cash',
   },
   'Binance': {
     name: 'Binance Pay',
     account: '520375906',
     branch: 'Crypto Transfer (USDT/BUSD)',
-    accountHolder: 'LoveLK Binance ID',
+    accountHolder: 'Kapu-LK Binance ID',
     type: 'binance',
   },
 };

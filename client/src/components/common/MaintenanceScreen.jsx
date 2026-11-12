@@ -147,7 +147,7 @@ const MaintenanceScreen = ({ maintenanceData, onRetry, onAdminLoginSuccess }) =>
     <div
       className="min-h-screen text-white flex flex-col items-center justify-between p-4 sm:p-6 md:p-8 relative overflow-hidden bg-slate-950 bg-cover bg-center bg-no-repeat bg-fixed"
       style={{
-        backgroundImage: "url('/images/lovelk-hero-cover.png')"
+        backgroundImage: "url('/images/kapu-hero-cover.png')"
       }}
     >
       {/* Responsive dark gradient overlay for optimal readability on mobile and PC */}

@@ -2,7 +2,7 @@ import { toast } from 'react-toastify';
 
 /**
  * Generates an official, highly professional PDF report of user personal data
- * containing LoveLK branding, logo, identity details, wallet balance, stats,
+ * containing Kapu-LK branding, logo, identity details, wallet balance, stats,
  * message retention policy, and legal privacy consent logs.
  */
 export const generateUserDataPDF = (exportData, currentUser) => {

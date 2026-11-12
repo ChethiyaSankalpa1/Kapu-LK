@@ -938,7 +938,7 @@ const Dashboard = () => {
                             <div className="relative h-44 sm:h-48 w-full overflow-hidden bg-purple-950">
                                 <img
                                     src="/couple-hero.png"
-                                    alt="LoveLK Success Story"
+                                    alt="Kapu-LK Success Story"
                                     className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/10" />
