@@ -192,6 +192,7 @@ export const authAPI = {
 
 // User API
 export const userAPI = {
+    getFeaturedUsers: () => api.get('/users/featured'),
     getAllUsers: (params = {}) => api.get('/users', { params }),
     getUserById: (id) => api.get(`/users/${id}`),
     updateProfile: (data) => api.put('/users/profile', data),

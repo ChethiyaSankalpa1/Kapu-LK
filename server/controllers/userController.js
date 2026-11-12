@@ -1005,6 +1005,31 @@ exports.getSpotlightUsers = async (req, res) => {
   }
 };
 
+// @desc    Get public featured member profiles for landing page (Real app members only)
+// @route   GET /api/users/featured
+// @access  Public
+exports.getPublicFeaturedUsers = async (req, res) => {
+  try {
+    const query = {
+      isApproved: true,
+      isActive: true,
+      role: { $ne: 'admin' },
+      accountStatus: { $ne: 'deactivated' },
+    };
+
+    const featuredUsers = await User.find(query)
+      .select('name age gender district location occupation bio profileImageUrl profileAvatar isPremium premiumPlan isApproved isOnline photos createdAt')
+      .sort({ isPremium: -1, updatedAt: -1, createdAt: -1 })
+      .limit(8)
+      .lean();
+
+    res.json(featuredUsers);
+  } catch (error) {
+    console.error('Error fetching public featured users:', error);
+    res.status(500).json({ message: 'Failed to fetch featured users' });
+  }
+};
+
 // @desc    Upload or replace photo in user's gallery (max 1 for free, max 4 for premium)
 // @route   POST /api/users/photos
 // @access  Private

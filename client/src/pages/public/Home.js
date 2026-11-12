@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { userAPI } from '../../services/api';
+import ProfileAvatar from '../../components/ui/ProfileAvatar';
 import { 
     Heart, Shield, Sparkles, Search, CheckCircle2, Lock, ArrowRight, MapPin,
     Award, MessageCircle, Flame, Star, ChevronDown, 
@@ -106,6 +108,19 @@ const Home = () => {
     });
 
     const [openFaq, setOpenFaq] = useState(null);
+    const [featuredProfiles, setFeaturedProfiles] = useState([]);
+
+    useEffect(() => {
+        let isMounted = true;
+        userAPI.getFeaturedUsers()
+            .then((res) => {
+                if (isMounted && Array.isArray(res.data) && res.data.length > 0) {
+                    setFeaturedProfiles(res.data);
+                }
+            })
+            .catch(() => {});
+        return () => { isMounted = false; };
+    }, []);
 
     useEffect(() => {
         if (!loading && user) {
@@ -403,61 +418,93 @@ const Home = () => {
                         </Link>
                     </div>
 
-                    {/* Member Cards Carousel Grid */}
+                    {/* Member Cards Carousel Grid (Real Profiles from App) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {SAMPLE_MEMBERS.map((m, idx) => (
-                            <div
-                                key={idx}
-                                className="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-xl dark:hover:shadow-rose-950/30 transition-all duration-300 flex flex-col transform hover:-translate-y-1.5"
-                            >
-                                {/* Portrait Photo */}
-                                <div className="relative aspect-[4/5] overflow-hidden bg-slate-200 dark:bg-slate-800">
-                                    <img
-                                        src={m.image}
-                                        alt={m.name}
-                                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                                        loading="lazy"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none" />
+                        {(featuredProfiles.length > 0 ? featuredProfiles : SAMPLE_MEMBERS).slice(0, 8).map((m, idx) => {
+                            const isReal = Boolean(m._id);
+                            const name = isReal ? (m.name ? m.name.split(' ')[0] : 'Member') : m.name;
+                            const age = m.age ? `, ${m.age}` : '';
+                            const location = m.district || m.location || 'Sri Lanka';
+                            const occupation = m.occupation || m.education || 'Member';
+                            const quote = m.bio 
+                                ? (m.bio.split('\n')[0].slice(0, 95) + (m.bio.length > 95 ? '...' : '')) 
+                                : (m.quote || 'Looking for meaningful connections on Kapu-LK.');
+                            const intentPill = m.isPremium 
+                                ? '⭐ VIP Member' 
+                                : (m.maritalStatus ? m.maritalStatus : (m.intent || 'Verified Single'));
 
-                                    {/* Intent pill */}
-                                    <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[10px] font-bold text-white shadow-xs">
-                                        {m.intent}
+                            return (
+                                <div
+                                    key={m._id || idx}
+                                    className="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-xl dark:hover:shadow-rose-950/30 transition-all duration-300 flex flex-col transform hover:-translate-y-1.5"
+                                >
+                                    {/* Portrait Photo */}
+                                    <div className="relative aspect-[4/5] overflow-hidden bg-slate-200 dark:bg-slate-800">
+                                        {isReal ? (
+                                            m.profileImageUrl ? (
+                                                <img
+                                                    src={m.profileImageUrl}
+                                                    alt={name}
+                                                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                                                    loading="lazy"
+                                                />
+                                            ) : (
+                                                <ProfileAvatar
+                                                    user={m}
+                                                    className="w-full h-full"
+                                                    avatarClassName="text-7xl"
+                                                    fallbackClassName="text-4xl font-extrabold text-white bg-gradient-to-tr from-rose-600 to-pink-600"
+                                                />
+                                            )
+                                        ) : (
+                                            <img
+                                                src={m.image}
+                                                alt={name}
+                                                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                                                loading="lazy"
+                                            />
+                                        )}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none" />
+
+                                        {/* Intent / Status pill */}
+                                        <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[10px] font-bold text-white shadow-xs capitalize">
+                                            {intentPill}
+                                        </div>
+
+                                        {/* Verification badge */}
+                                        <div className="absolute top-3 right-3 p-1 rounded-full bg-rose-600 text-white shadow-sm" title="Verified Member">
+                                            <CheckCircle2 className="w-3.5 h-3.5 fill-white text-rose-600" />
+                                        </div>
+
+                                        {/* Overlay info */}
+                                        <div className="absolute bottom-3 left-3 right-3 text-white">
+                                            <h3 className="text-lg font-black leading-tight flex items-center gap-1.5">
+                                                <span>{name}{age}</span>
+                                            </h3>
+                                            <p className="text-xs text-slate-200 flex items-center gap-1 mt-0.5">
+                                                <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
+                                                <span>{location} • {occupation}</span>
+                                            </p>
+                                        </div>
                                     </div>
 
-                                    {/* Verification badge */}
-                                    <div className="absolute top-3 right-3 p-1 rounded-full bg-rose-600 text-white shadow-sm" title="Verified Member">
-                                        <CheckCircle2 className="w-3.5 h-3.5 fill-white text-rose-600" />
-                                    </div>
-
-                                    {/* Overlay info */}
-                                    <div className="absolute bottom-3 left-3 right-3 text-white">
-                                        <h3 className="text-lg font-black leading-tight flex items-center gap-1.5">
-                                            <span>{m.name}, {m.age}</span>
-                                        </h3>
-                                        <p className="text-xs text-slate-200 flex items-center gap-1 mt-0.5">
-                                            <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
-                                            <span>{m.district} • {m.occupation}</span>
+                                    {/* Quote */}
+                                    <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                                        <p className="text-xs text-slate-600 dark:text-slate-300 italic line-clamp-2">
+                                            "{quote}"
                                         </p>
+
+                                        <Link
+                                            to={isReal ? `/users/${m._id}` : '/register'}
+                                            className="w-full py-2 px-3 text-center rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-600 hover:text-white text-rose-700 dark:text-rose-300 font-bold text-xs transition duration-200 flex items-center justify-center gap-1.5"
+                                        >
+                                            <MessageCircle className="w-3.5 h-3.5" />
+                                            <span>Connect With {name}</span>
+                                        </Link>
                                     </div>
                                 </div>
-
-                                {/* Quote */}
-                                <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                                    <p className="text-xs text-slate-600 dark:text-slate-300 italic line-clamp-2">
-                                        "{m.quote}"
-                                    </p>
-
-                                    <Link
-                                        to="/register"
-                                        className="w-full py-2 px-3 text-center rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-600 hover:text-white text-rose-700 dark:text-rose-300 font-bold text-xs transition duration-200 flex items-center justify-center gap-1.5"
-                                    >
-                                        <MessageCircle className="w-3.5 h-3.5" />
-                                        <span>Connect With {m.name}</span>
-                                    </Link>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                 </div>

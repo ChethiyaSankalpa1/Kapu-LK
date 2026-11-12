@@ -17,6 +17,7 @@ const {
   requestAccountDeletion,
   getProfileVisitors,
   getSpotlightUsers,
+  getPublicFeaturedUsers,
   uploadGalleryPhoto,
   deleteGalleryPhoto,
   setMainGalleryPhoto,
@@ -60,6 +61,7 @@ router.post('/acknowledge-privacy-policy', protect, acknowledgePrivacyPolicy);
 router.get('/blocked', protect, getBlockedUsers);
 router.post('/:id/block', protect, blockUser);
 router.post('/:id/unblock', protect, unblockUser);
+router.get('/featured', getPublicFeaturedUsers);
 router.get('/:id', protect, approved, getUserById);
 
 // Realtime Presence & Active Connection Lifecycle Routes
