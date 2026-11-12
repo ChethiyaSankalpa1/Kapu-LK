@@ -5,8 +5,9 @@ import { authAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 import { 
-    Eye, EyeOff, Heart, Gift, ShieldCheck, 
-    ChevronDown, ChevronUp, Info, Calendar, AlertCircle, CheckCircle2 
+    Eye, EyeOff, Heart, Gift, ShieldCheck, Sparkles,
+    ChevronDown, ChevronUp, Info, Calendar, AlertCircle, CheckCircle2,
+    User as UserIcon, Mail, Lock, Phone, ArrowRight
 } from 'lucide-react';
 import PolicyViewerModal from '../../components/common/PolicyViewerModal';
 
@@ -58,8 +59,8 @@ const Register = () => {
 
     if (user || authLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary-600"></div>
+            <div className="min-h-screen flex items-center justify-center bg-slate-900">
+                <div className="animate-spin rounded-full h-14 w-14 border-t-4 border-b-4 border-rose-500"></div>
             </div>
         );
     }
@@ -194,356 +195,330 @@ const Register = () => {
     };
 
     return (
-        <div className="w-full flex-1 relative flex items-center justify-center py-8 sm:py-12 px-4 overflow-hidden">
-            <video
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="metadata"
-                poster="/couple-hero.png"
-                className="absolute inset-0 w-full h-full object-cover object-center opacity-90"
-            >
-                <source src="/video/PixVerse_V6_Image_Text_540P_Create_a_beautiful.mp4" type="video/mp4" />
-                <img src="/couple-hero.png" className="w-full h-full object-cover object-center" alt="" aria-hidden="true" />
-            </video>
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/90 via-purple-950/85 to-rose-950/80" aria-hidden="true" />
-            <div className="absolute inset-0 bg-gray-50/30 dark:bg-gray-900/40" aria-hidden="true" />
+        <div className="w-full flex-1 relative flex items-center justify-center py-10 sm:py-16 px-4 overflow-hidden min-h-[calc(100vh-4rem)]">
+            {/* Background Hero Image */}
+            <img
+                src="/images/kapu-hero-cover.png"
+                alt="Romantic couple sunset"
+                className="absolute inset-0 w-full h-full object-cover object-[center_35%]"
+            />
+            
+            {/* Multi-layer cinematic romantic gradients */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/95 via-rose-950/75 to-slate-950/90" aria-hidden="true" />
+            <div className="absolute inset-0 bg-radial-at-c from-rose-500/10 via-transparent to-black/60 pointer-events-none" aria-hidden="true" />
 
-            <div className="max-w-lg w-full bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border border-white/40 dark:border-gray-700/60 rounded-2xl shadow-2xl p-6 sm:p-8 relative z-10">
+            <div className="max-w-xl w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/60 dark:border-rose-900/30 rounded-3xl shadow-2xl p-6 sm:p-9 relative z-10 transition-all duration-300 my-4">
                 
                 {/* Brand Header */}
-                <div className="text-center mb-6 sm:mb-8">
-                    <Heart className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-primary-600 mb-3 sm:mb-4" />
-                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                        {t('auth.createAccount', { defaultValue: 'Create Account' })}
+                <div className="text-center mb-6">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/60 text-rose-600 dark:text-rose-400 text-xs font-bold tracking-wide uppercase mb-3 shadow-sm">
+                        <Sparkles className="w-3.5 h-3.5 text-rose-500" />
+                        <span>Kapu-LK • Sri Lanka's Modern Dating</span>
+                    </div>
+
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-2xl bg-gradient-to-tr from-rose-500 via-pink-500 to-rose-600 flex items-center justify-center shadow-lg shadow-rose-500/30 mb-3">
+                        <Heart className="w-7 h-7 sm:w-8 sm:h-8 text-white fill-white" />
+                    </div>
+
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                        {t('auth.createAccount', { defaultValue: 'Create Your Profile' })}
                     </h2>
-                    <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm sm:text-base">
-                        {t('auth.registerSubtitle', { defaultValue: 'Join Sri Lanka\'s trusted matrimonial platform' })}
+                    <p className="text-slate-600 dark:text-slate-300 mt-1.5 text-xs sm:text-sm">
+                        {t('auth.registerSubtitle', { defaultValue: 'Meet genuine people and find your special connection' })}
                     </p>
                 </div>
 
                 <form onSubmit={onSubmit} className="space-y-4">
                     
-                    {/* Full Name */}
-                    <div>
-                        <label htmlFor="reg-name-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {t('auth.fullName', { defaultValue: 'Full Name' })} <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            id="reg-name-input"
-                            type="text"
-                            name="name"
-                            autoComplete="name"
-                            value={name}
-                            onChange={onChange}
-                            required
-                            className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
-                            placeholder={t('auth.fullNamePlaceholder', { defaultValue: 'Enter your full name' })}
-                        />
-                    </div>
+                    {/* Full Name & Username in 2 cols */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                            <label htmlFor="reg-name-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                {t('auth.fullName', { defaultValue: 'Full Name' })} <span className="text-rose-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                    <UserIcon className="w-4 h-4" />
+                                </div>
+                                <input
+                                    id="reg-name-input"
+                                    type="text"
+                                    name="name"
+                                    autoComplete="name"
+                                    value={name}
+                                    onChange={onChange}
+                                    required
+                                    className="w-full pl-9 pr-3 py-2.5 border border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 text-xs sm:text-sm outline-none transition bg-slate-50/50"
+                                    placeholder={t('auth.fullNamePlaceholder', { defaultValue: 'Enter your full name' })}
+                                />
+                            </div>
+                        </div>
 
-                    {/* Username */}
-                    <div>
-                        <label htmlFor="reg-username-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {t('auth.username', { defaultValue: 'Username' })}
-                            <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">({t('auth.optional', { defaultValue: 'optional' })})</span>
-                        </label>
-                        <input
-                            id="reg-username-input"
-                            type="text"
-                            name="username"
-                            autoComplete="username"
-                            value={username}
-                            onChange={onChange}
-                            className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
-                            placeholder={t('auth.usernamePlaceholder', { defaultValue: 'Choose a unique username' })}
-                        />
+                        <div>
+                            <label htmlFor="reg-username-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                {t('auth.username', { defaultValue: 'Username' })}
+                                <span className="ml-1 text-[11px] text-slate-400">({t('auth.optional', { defaultValue: 'optional' })})</span>
+                            </label>
+                            <input
+                                id="reg-username-input"
+                                type="text"
+                                name="username"
+                                autoComplete="username"
+                                value={username}
+                                onChange={onChange}
+                                className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 text-xs sm:text-sm outline-none transition bg-slate-50/50"
+                                placeholder={t('auth.usernamePlaceholder', { defaultValue: 'Choose a username' })}
+                            />
+                        </div>
                     </div>
 
                     {/* Email */}
                     <div>
-                        <label htmlFor="reg-email-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {t('auth.email', { defaultValue: 'Email Address' })} <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            id="reg-email-input"
-                            type="email"
-                            name="email"
-                            autoComplete="email"
-                            value={email}
-                            onChange={onChange}
-                            required
-                            className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
-                            placeholder={t('auth.emailPlaceholder', { defaultValue: 'Enter your email' })}
-                        />
-                    </div>
-
-                    {/* Password */}
-                    <div>
-                        <label htmlFor="reg-password-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {t('auth.password', { defaultValue: 'Password' })} <span className="text-red-500">*</span>
+                        <label htmlFor="reg-email-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                            {t('auth.email', { defaultValue: 'Email Address' })} <span className="text-rose-500">*</span>
                         </label>
                         <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <Mail className="w-4 h-4" />
+                            </div>
                             <input
-                                id="reg-password-input"
-                                type={showPassword ? 'text' : 'password'}
-                                name="password"
-                                autoComplete="new-password"
-                                value={password}
+                                id="reg-email-input"
+                                type="email"
+                                name="email"
+                                autoComplete="email"
+                                value={email}
                                 onChange={onChange}
                                 required
-                                minLength="6"
-                                className="w-full px-4 py-2.5 sm:py-3 pr-12 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
-                                placeholder={t('auth.passwordPlaceholder', { defaultValue: 'At least 6 characters' })}
+                                className="w-full pl-9 pr-3 py-2.5 border border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 text-xs sm:text-sm outline-none transition bg-slate-50/50"
+                                placeholder={t('auth.emailPlaceholder', { defaultValue: 'Enter your email' })}
                             />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(prev => !prev)}
-                                className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                            >
-                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                            </button>
                         </div>
                     </div>
 
-                    {/* Phone Number */}
-                    <div>
-                        <label htmlFor="reg-phone-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {t('auth.phone', { defaultValue: 'Phone Number' })}
-                        </label>
-                        <input
-                            id="reg-phone-input"
-                            type="tel"
-                            name="phoneNumber"
-                            autoComplete="tel"
-                            value={phoneNumber}
-                            onChange={onChange}
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
-                            placeholder={t('auth.phonePlaceholder', { defaultValue: 'Enter your phone number' })}
-                        />
-                    </div>
-
-                    {/* Birth Date and Age Fields */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    {/* Password & Phone in 2 cols */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         <div>
-                            <label htmlFor="reg-birth-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
-                                <Calendar className="w-4 h-4 text-purple-600" />
-                                {t('auth.birthDate', { defaultValue: 'Date of Birth' })} <span className="text-red-500">*</span>
+                            <label htmlFor="reg-password-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                {t('auth.password', { defaultValue: 'Password' })} <span className="text-rose-500">*</span>
                             </label>
-                            <input
-                                id="reg-birth-input"
-                                type="date"
-                                name="birthDate"
-                                max={new Date(Date.now() - 18 * 365.25 * 24 * 3600 * 1000).toISOString().split('T')[0]}
-                                value={birthDate}
-                                onChange={onChange}
-                                required
-                                className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
-                            />
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                    <Lock className="w-4 h-4" />
+                                </div>
+                                <input
+                                    id="reg-password-input"
+                                    type={showPassword ? 'text' : 'password'}
+                                    name="password"
+                                    autoComplete="new-password"
+                                    value={password}
+                                    onChange={onChange}
+                                    required
+                                    minLength="6"
+                                    className="w-full pl-9 pr-9 py-2.5 border border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 text-xs sm:text-sm outline-none transition bg-slate-50/50"
+                                    placeholder={t('auth.passwordPlaceholder', { defaultValue: 'At least 6 chars' })}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword((prev) => !prev)}
+                                    className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                >
+                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                            </div>
                         </div>
 
                         <div>
-                            <label htmlFor="reg-gender-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                {t('auth.gender', { defaultValue: 'Gender' })} <span className="text-red-500">*</span>
+                            <label htmlFor="reg-phone-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                {t('auth.phone', { defaultValue: 'Phone Number' })}
+                                <span className="ml-1 text-[11px] text-slate-400">({t('auth.optional', { defaultValue: 'optional' })})</span>
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                    <Phone className="w-4 h-4" />
+                                </div>
+                                <input
+                                    id="reg-phone-input"
+                                    type="tel"
+                                    name="phoneNumber"
+                                    autoComplete="tel"
+                                    value={phoneNumber}
+                                    onChange={onChange}
+                                    className="w-full pl-9 pr-3 py-2.5 border border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 text-xs sm:text-sm outline-none transition bg-slate-50/50"
+                                    placeholder={t('auth.phonePlaceholder', { defaultValue: 'e.g. 0771234567' })}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Birth Date & Gender in 2 cols */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                            <label htmlFor="reg-dob-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                {t('auth.birthDate', { defaultValue: 'Date of Birth' })} <span className="text-rose-500">* (18+)</span>
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                    <Calendar className="w-4 h-4" />
+                                </div>
+                                <input
+                                    id="reg-dob-input"
+                                    type="date"
+                                    name="birthDate"
+                                    value={birthDate}
+                                    onChange={onChange}
+                                    required
+                                    max={new Date(Date.now() - 18 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                                    className="w-full pl-9 pr-3 py-2.5 border border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 text-xs sm:text-sm outline-none transition bg-slate-50/50"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="reg-gender-select" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                {t('auth.gender', { defaultValue: 'Gender' })} <span className="text-rose-500">*</span>
                             </label>
                             <select
                                 id="reg-gender-select"
                                 name="gender"
                                 value={gender}
                                 onChange={onChange}
-                                className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
+                                required
+                                className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 text-xs sm:text-sm outline-none transition bg-slate-50/50"
                             >
-                                <option value="male">{t('common.male', { defaultValue: 'Male' })}</option>
-                                <option value="female">{t('common.female', { defaultValue: 'Female' })}</option>
-                                <option value="other">{t('common.other', { defaultValue: 'Other' })}</option>
+                                <option value="male">{t('auth.male', { defaultValue: 'Male' })}</option>
+                                <option value="female">{t('auth.female', { defaultValue: 'Female' })}</option>
+                                <option value="other">{t('auth.other', { defaultValue: 'Other' })}</option>
                             </select>
                         </div>
                     </div>
 
-                    {/* Age Status Feedback */}
-                    {effectiveAge !== null && (
-                        <div className={`p-2.5 rounded-lg text-xs flex items-center gap-2 ${
-                            isAgeValid 
-                                ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800'
-                                : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
-                        }`}>
-                            {isAgeValid ? (
-                                <>
-                                    <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
-                                    <span>Age verified: <strong>{effectiveAge} years old</strong> (Eligible to register)</span>
-                                </>
-                            ) : (
-                                <>
-                                    <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-                                    <span>Age: <strong>{effectiveAge} years old</strong>. You must be at least 18 years old to join Kapu-LK.</span>
-                                </>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Referral Code (Optional) */}
+                    {/* Referral Code (optional) */}
                     <div>
-                        <label htmlFor="reg-referral-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
-                            <Gift className="w-4 h-4 text-purple-500" />
-                            {t('auth.referralCode', { defaultValue: 'Referral Code (Optional)' })}
+                        <label htmlFor="reg-referral-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                            {t('auth.referralCode', { defaultValue: 'Referral Code' })}
+                            <span className="ml-1 text-[11px] text-slate-400">({t('auth.optional', { defaultValue: 'optional' })})</span>
                         </label>
-                        <input
-                            id="reg-referral-input"
-                            type="text"
-                            name="referralCode"
-                            autoComplete="off"
-                            value={formData.referralCode}
-                            onChange={onChange}
-                            className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
-                            placeholder={t('auth.referralCodePlaceholder', { defaultValue: 'Enter referral code for bonus rewards' })}
-                        />
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <Gift className="w-4 h-4 text-rose-500" />
+                            </div>
+                            <input
+                                id="reg-referral-input"
+                                type="text"
+                                name="referralCode"
+                                value={formData.referralCode}
+                                onChange={onChange}
+                                className="w-full pl-9 pr-3 py-2.5 border border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 text-xs sm:text-sm outline-none transition bg-slate-50/50 uppercase"
+                                placeholder="e.g. FRIEND2026"
+                            />
+                        </div>
                     </div>
 
-                    {/* SECTION: Privacy & Consent */}
-                    <div className="pt-3 border-t border-gray-200 dark:border-gray-700 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
-                                <ShieldCheck className="w-5 h-5 text-purple-600" />
-                                <span>Privacy & Consent</span>
+                    {/* Privacy & Trust info banner */}
+                    <div className="p-3.5 bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200/70 dark:border-rose-900/40 rounded-2xl text-xs space-y-2">
+                        <div className="flex items-center justify-between font-semibold text-rose-900 dark:text-rose-200">
+                            <div className="flex items-center gap-1.5">
+                                <ShieldCheck className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                                <span>100% Privacy & Verification Guarantee</span>
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setShowPrivacySummary(prev => !prev)}
-                                className="text-xs text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 font-medium"
+                                onClick={() => setShowPrivacySummary(!showPrivacySummary)}
+                                className="text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-0.5 cursor-pointer"
                             >
-                                {showPrivacySummary ? 'Hide summary' : 'Read privacy summary'}
                                 {showPrivacySummary ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                             </button>
                         </div>
-
-                        {/* Collapsible Key Privacy Summary */}
                         {showPrivacySummary && (
-                            <div className="p-3.5 bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-xl text-xs space-y-2 text-gray-700 dark:text-gray-300 animate-fade-in">
-                                <p className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
-                                    <Info className="w-4 h-4 text-purple-600" />
-                                    Summary of Key Privacy & Data Terms
-                                </p>
-                                <ul className="list-disc list-inside space-y-1 pl-1">
-                                    <li><strong>What data is collected:</strong> Name, verified phone, age/DOB, preferences, profile photos, and encrypted chat messages.</li>
-                                    <li><strong>How it is used:</strong> Exclusively for legitimate matrimonial matchmaking and account security.</li>
-                                    <li><strong>Who can see it:</strong> Registered, verified members based on your privacy settings.</li>
-                                    <li><strong>How it is protected:</strong> SSL/TLS encryption, secure HTTP-only cookies, and sanitized queries.</li>
-                                    <li><strong>10-Day Inactivity Rule:</strong> Accounts inactive for 10 consecutive days are permanently deleted after warnings at 5d, 2d, and 1d. Any login cancels deletion.</li>
-                                    <li><strong>User rights:</strong> Access, update, download your complete data export (JSON), or request permanent deletion at any time via Account Settings.</li>
-                                </ul>
-                            </div>
+                            <ul className="text-[11px] text-slate-600 dark:text-slate-400 space-y-1 pt-1 border-t border-rose-200/50 dark:border-rose-900/30">
+                                <li>• Your contact number and email are never publicly displayed.</li>
+                                <li>• Profile photographs are verified for community safety.</li>
+                                <li>• You control who can view and interact with your profile.</li>
+                            </ul>
                         )}
+                    </div>
 
-                        {/* Document Links Modal Launcher (Never clears form state) */}
-                        <div className="p-3 bg-purple-50/70 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl text-xs text-gray-700 dark:text-gray-300 flex flex-wrap items-center gap-2">
-                            <span className="font-medium text-gray-900 dark:text-white">Review policies:</span>
-                            <button
-                                type="button"
-                                onClick={(e) => openPolicyModal(e, 'privacy')}
-                                className="underline font-semibold text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
-                            >
-                                Privacy Policy
-                            </button>
-                            <span>•</span>
-                            <button
-                                type="button"
-                                onClick={(e) => openPolicyModal(e, 'terms')}
-                                className="underline font-semibold text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
-                            >
-                                Terms of Service
-                            </button>
-                            <span>•</span>
-                            <button
-                                type="button"
-                                onClick={(e) => openPolicyModal(e, 'guidelines')}
-                                className="underline font-semibold text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
-                            >
-                                Community Guidelines
-                            </button>
-                        </div>
-
-                        {/* Unified Single Consent Agreement */}
-                        <div className="pt-1">
-                            <label className="flex items-start gap-3 p-3.5 bg-purple-50/70 dark:bg-purple-950/25 border border-purple-200 dark:border-purple-800/60 rounded-xl text-xs sm:text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none hover:bg-purple-100/50 dark:hover:bg-purple-950/40 transition">
-                                <input
-                                    type="checkbox"
-                                    name="agreedToAll"
-                                    checked={Boolean(formData.agreedToAll || (is18OrOlder && isAccurateInfo && acceptedTermsAndPrivacy && acceptedInactivityDeletion))}
-                                    onChange={onChange}
-                                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer shrink-0"
-                                />
-                                <span className="leading-relaxed">
-                                    I confirm that I am <strong>18 years of age or older</strong> and that my details are <strong>accurate and truthful</strong>. I have read and agree to the{' '}
-                                    <button
-                                        type="button"
-                                        onClick={(e) => openPolicyModal(e, 'privacy')}
-                                        className="text-purple-600 dark:text-purple-400 font-semibold hover:underline"
-                                    >
-                                        Privacy Policy
-                                    </button>
-                                    ,{' '}
-                                    <button
-                                        type="button"
-                                        onClick={(e) => openPolicyModal(e, 'terms')}
-                                        className="text-purple-600 dark:text-purple-400 font-semibold hover:underline"
-                                    >
-                                        Terms of Service
-                                    </button>
-                                    ,{' '}
-                                    <button
-                                        type="button"
-                                        onClick={(e) => openPolicyModal(e, 'guidelines')}
-                                        className="text-purple-600 dark:text-purple-400 font-semibold hover:underline"
-                                    >
-                                        Community Guidelines
-                                    </button>
-                                    , and accept the <strong>10-day inactivity retention policy</strong>. <span className="text-red-500">*</span>
-                                </span>
-                            </label>
-                        </div>
+                    {/* Consent Checkbox */}
+                    <div className="pt-2">
+                        <label className="flex items-start gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                name="agreedToAll"
+                                checked={formData.agreedToAll}
+                                onChange={onChange}
+                                className="mt-0.5 w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-slate-300 dark:border-slate-600 cursor-pointer accent-rose-600"
+                            />
+                            <span className="leading-relaxed">
+                                I confirm that I am <strong>18 years of age or older</strong> and that my details are truthful. I have read and agree to the{' '}
+                                <button
+                                    type="button"
+                                    onClick={(e) => openPolicyModal(e, 'privacy')}
+                                    className="text-rose-600 dark:text-rose-400 font-bold hover:underline cursor-pointer"
+                                >
+                                    Privacy Policy
+                                </button>
+                                ,{' '}
+                                <button
+                                    type="button"
+                                    onClick={(e) => openPolicyModal(e, 'terms')}
+                                    className="text-rose-600 dark:text-rose-400 font-bold hover:underline cursor-pointer"
+                                >
+                                    Terms of Service
+                                </button>
+                                , and{' '}
+                                <button
+                                    type="button"
+                                    onClick={(e) => openPolicyModal(e, 'guidelines')}
+                                    className="text-rose-600 dark:text-rose-400 font-bold hover:underline cursor-pointer"
+                                >
+                                    Community Guidelines
+                                </button>. <span className="text-rose-500">*</span>
+                            </span>
+                        </label>
                     </div>
 
                     {/* Submit Button */}
                     <button
                         type="submit"
                         disabled={!isFormReady}
-                        className={`w-full py-3 sm:py-3.5 rounded-xl font-semibold text-sm sm:text-base transition shadow-md flex items-center justify-center gap-2 ${
+                        className={`w-full py-3.5 px-6 rounded-xl font-bold text-sm sm:text-base transition-all shadow-lg flex items-center justify-center gap-2 ${
                             isFormReady
-                                ? 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-500/25 cursor-pointer'
-                                : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-80'
+                                ? 'bg-gradient-to-r from-rose-600 via-pink-600 to-rose-500 hover:from-rose-700 hover:via-pink-700 hover:to-rose-600 text-white shadow-rose-500/25 hover:shadow-rose-500/40 cursor-pointer active:scale-[0.99]'
+                                : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed'
                         }`}
                     >
                         {loading ? (
                             <>
                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                {t('auth.creatingAccount', { defaultValue: 'Creating Account...' })}
+                                <span>{t('auth.creatingAccount', { defaultValue: 'Creating Profile...' })}</span>
                             </>
                         ) : (
-                            t('auth.registerBtn', { defaultValue: 'Create Account' })
+                            <>
+                                <span>{t('auth.registerBtn', { defaultValue: 'Create Free Account' })}</span>
+                                <ArrowRight className="w-4 h-4" />
+                            </>
                         )}
                     </button>
 
-                    {/* Helpful helper text when button is disabled */}
                     {!isFormReady && (
-                        <p className="text-center text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-center text-[11px] text-slate-400 dark:text-slate-500">
                             {!isAgeValid
-                                ? 'Please enter a valid birth date (must be at least 18 years of age).'
-                                : 'Please confirm the agreement checkbox above to activate account registration.'}
+                                ? 'Please enter a valid birth date (must be 18 years or older).'
+                                : 'Please confirm the agreement checkbox above to proceed.'}
                         </p>
                     )}
                 </form>
 
                 {/* Login Redirect */}
-                <p className="text-center text-gray-600 dark:text-gray-300 mt-6 text-sm sm:text-base">
-                    {t('auth.hasAccount', { defaultValue: 'Already have an account?' })}{' '}
-                    <Link to="/login" className="text-primary-600 hover:text-primary-700 font-semibold">
-                        {t('auth.loginBtn', { defaultValue: 'Log In' })}
-                    </Link>
-                </p>
+                <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 text-center">
+                    <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm">
+                        {t('auth.hasAccount', { defaultValue: 'Already have an account?' })}{' '}
+                        <Link to="/login" className="text-rose-600 dark:text-rose-400 hover:text-rose-700 font-bold hover:underline">
+                            {t('auth.loginBtn', { defaultValue: 'Sign In here' })}
+                        </Link>
+                    </p>
+                </div>
             </div>
 
             {/* Non-destructive Policy Viewer Modal */}

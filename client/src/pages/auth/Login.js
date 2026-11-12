@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { authAPI, maintenanceAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
-import { Eye, EyeOff, Heart, ShieldAlert } from 'lucide-react';
+import { Eye, EyeOff, Heart, ShieldAlert, Sparkles, ArrowRight, Lock, User as UserIcon } from 'lucide-react';
 
 const Login = () => {
     const { t } = useTranslation();
@@ -43,8 +43,8 @@ const Login = () => {
 
     if (user || authLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary-600"></div>
+            <div className="min-h-screen flex items-center justify-center bg-slate-900">
+                <div className="animate-spin rounded-full h-14 w-14 border-t-4 border-b-4 border-rose-500"></div>
             </div>
         );
     }
@@ -53,8 +53,6 @@ const Login = () => {
 
     const onChange = (e) => {
         const { name, value } = e.target;
-        // Normalise email/username: strip leading/trailing spaces and lowercase
-        // so mobile auto-capitalise never sends wrong credentials to the backend
         const normalised = name === 'email' ? value.trim().toLowerCase() : value;
         setFormData({ ...formData, [name]: normalised });
     };
@@ -91,66 +89,87 @@ const Login = () => {
     };
 
     return (
-        <div className="w-full flex-1 relative flex items-center justify-center py-8 sm:py-12 px-4 overflow-hidden">
-            <video
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="metadata"
-                poster="/couple-hero.png"
-                className="absolute inset-0 w-full h-full object-cover object-center opacity-90"
-            >
-                <source src="/video/PixVerse_V6_Image_Text_540P_Create_a_beautiful.mp4" type="video/mp4" />
-                <img src="/couple-hero.png" className="w-full h-full object-cover object-center" alt="" aria-hidden="true" />
-            </video>
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/90 via-purple-950/85 to-rose-950/80" aria-hidden="true" />
-            <div className="absolute inset-0 bg-gray-50/30 dark:bg-gray-900/40" aria-hidden="true" />
+        <div className="w-full flex-1 relative flex items-center justify-center py-10 sm:py-16 px-4 overflow-hidden min-h-[calc(100vh-4rem)]">
+            {/* Background Hero Image */}
+            <img
+                src="/images/kapu-hero-cover.png"
+                alt="Romantic couple sunset"
+                className="absolute inset-0 w-full h-full object-cover object-[center_35%]"
+            />
+            
+            {/* Multi-layer cinematic romantic gradients */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/95 via-rose-950/75 to-slate-950/90" aria-hidden="true" />
+            <div className="absolute inset-0 bg-radial-at-c from-rose-500/10 via-transparent to-black/60 pointer-events-none" aria-hidden="true" />
 
-            <div className="max-w-md w-full bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border border-white/40 dark:border-gray-700/60 rounded-xl sm:rounded-lg shadow-2xl p-6 sm:p-8 relative z-10">
-                <div className="text-center mb-6 sm:mb-8">
-                    <Heart className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-primary-600 mb-3 sm:mb-4" />
-                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{t('auth.welcomeBack', { defaultValue: 'Welcome Back' })}</h2>
-                    <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm sm:text-base">{t('auth.signInSubtitle', { defaultValue: 'Sign in to your account' })}</p>
+            <div className="max-w-md w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/60 dark:border-rose-900/30 rounded-3xl shadow-2xl p-7 sm:p-9 relative z-10 transition-all duration-300">
+                {/* Brand pill */}
+                <div className="text-center mb-6">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/60 text-rose-600 dark:text-rose-400 text-xs font-bold tracking-wide uppercase mb-4 shadow-sm">
+                        <Sparkles className="w-3.5 h-3.5 text-rose-500" />
+                        <span>Kapu-LK • Sri Lanka's Matchmaking</span>
+                    </div>
+                    
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-2xl bg-gradient-to-tr from-rose-500 via-pink-500 to-rose-600 flex items-center justify-center shadow-lg shadow-rose-500/30 mb-3">
+                        <Heart className="w-7 h-7 sm:w-8 sm:h-8 text-white fill-white" />
+                    </div>
+                    
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                        {t('auth.welcomeBack', { defaultValue: 'Welcome Back' })}
+                    </h2>
+                    <p className="text-slate-600 dark:text-slate-300 mt-1.5 text-xs sm:text-sm">
+                        {t('auth.signInSubtitle', { defaultValue: 'Sign in to connect with genuine people' })}
+                    </p>
                 </div>
 
                 {maintenanceInfo?.isActive && (
-                    <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700/50 rounded-xl flex items-start gap-3 text-xs sm:text-sm text-amber-800 dark:text-amber-200 shadow-sm">
+                    <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700/50 rounded-2xl flex items-start gap-3 text-xs sm:text-sm text-amber-800 dark:text-amber-200 shadow-sm">
                         <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                         <div>
                             <span className="font-bold block text-sm">Platform Maintenance Break Active</span>
-                            <span>Public access is temporarily paused. Only administrators may log in to preview or deactivate maintenance.</span>
+                            <span>Public access is temporarily paused. Only administrators may log in.</span>
                         </div>
                     </div>
                 )}
 
-                <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
+                <form onSubmit={onSubmit} className="space-y-4 sm:space-y-5">
                     <div>
-                        <label htmlFor="login-email-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.email')}</label>
-                        <input
-                            id="login-email-input"
-                            type="text"
-                            name="email"
-                            autoComplete="username email"
-                            autoCapitalize="none"
-                            autoCorrect="off"
-                            spellCheck="false"
-                            value={email}
-                            onChange={onChange}
-                            required
-                            className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
-                            placeholder={t('auth.emailPlaceholder', { defaultValue: 'Enter your email or username' })}
-                        />
+                        <label htmlFor="login-email-input" className="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                            {t('auth.email', { defaultValue: 'Email or Username' })}
+                        </label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                <UserIcon className="w-4 h-4" />
+                            </div>
+                            <input
+                                id="login-email-input"
+                                type="text"
+                                name="email"
+                                autoComplete="username email"
+                                autoCapitalize="none"
+                                autoCorrect="off"
+                                spellCheck="false"
+                                value={email}
+                                onChange={onChange}
+                                required
+                                className="w-full pl-10 pr-4 py-2.5 sm:py-3 border border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 text-sm outline-none transition bg-slate-50/50 dark:placeholder-slate-500"
+                                placeholder={t('auth.emailPlaceholder', { defaultValue: 'Enter your email or username' })}
+                            />
+                        </div>
                     </div>
 
                     <div>
-                        <div className="flex items-center justify-between mb-1">
-                            <label htmlFor="login-password-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('auth.password')}</label>
-                            <Link to="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-                                {t('auth.forgotPassword')}
+                        <div className="flex items-center justify-between mb-1.5">
+                            <label htmlFor="login-password-input" className="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                {t('auth.password', { defaultValue: 'Password' })}
+                            </label>
+                            <Link to="/forgot-password" className="text-xs text-rose-600 hover:text-rose-700 dark:text-rose-400 font-semibold hover:underline">
+                                {t('auth.forgotPassword', { defaultValue: 'Forgot password?' })}
                             </Link>
                         </div>
                         <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                <Lock className="w-4 h-4" />
+                            </div>
                             <input
                                 id="login-password-input"
                                 type={showPassword ? 'text' : 'password'}
@@ -159,16 +178,16 @@ const Login = () => {
                                 value={password}
                                 onChange={onChange}
                                 required
-                                className="w-full px-4 py-2.5 sm:py-3 pr-12 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
+                                className="w-full pl-10 pr-11 py-2.5 sm:py-3 border border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 text-sm outline-none transition bg-slate-50/50 dark:placeholder-slate-500"
                                 placeholder={t('auth.passwordPlaceholder', { defaultValue: 'Enter your password' })}
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword((prev) => !prev)}
-                                className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                                aria-label={showPassword ? t('auth.hidePassword', { defaultValue: 'Hide password' }) : t('auth.showPassword', { defaultValue: 'Show password' })}
+                                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
                             >
-                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
                         </div>
                     </div>
@@ -176,23 +195,34 @@ const Login = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-primary-600 text-white py-3 sm:py-3.5 rounded-lg hover:bg-primary-700 transition disabled:bg-gray-400 font-semibold text-sm sm:text-base"
+                        className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-rose-600 via-pink-600 to-rose-500 hover:from-rose-700 hover:via-pink-700 hover:to-rose-600 text-white font-bold text-sm sm:text-base shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40 transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 active:scale-[0.99]"
                     >
-                        {loading ? t('auth.signingIn', { defaultValue: 'Signing In...' }) : t('auth.loginBtn')}
+                        {loading ? (
+                            <span>{t('auth.signingIn', { defaultValue: 'Signing In...' })}</span>
+                        ) : (
+                            <>
+                                <span>{t('auth.loginBtn', { defaultValue: 'Sign In' })}</span>
+                                <ArrowRight className="w-4 h-4" />
+                            </>
+                        )}
                     </button>
                 </form>
 
-                <p className="text-center text-gray-600 dark:text-gray-300 mt-6 text-sm sm:text-base">
-                    {t('auth.noAccount')}{' '}
-                    <Link to="/register" className="text-primary-600 hover:text-primary-700 font-semibold">
-                        {t('auth.registerBtn')}
-                    </Link>
-                </p>
-                <p className="text-center text-gray-500 dark:text-gray-400 mt-4 text-xs">
-                    <Link to="/privacy-policy" className="hover:text-purple-600 dark:hover:text-purple-400 transition">
-                        Privacy Policy
-                    </Link>
-                </p>
+                {/* Footer links */}
+                <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center space-y-3">
+                    <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm">
+                        {t('auth.noAccount', { defaultValue: "Don't have an account?" })}{' '}
+                        <Link to="/register" className="text-rose-600 dark:text-rose-400 hover:text-rose-700 font-bold hover:underline">
+                            {t('auth.registerBtn', { defaultValue: 'Join Free Today' })}
+                        </Link>
+                    </p>
+                    <p className="text-slate-400 dark:text-slate-500 text-[11px]">
+                        By continuing, you agree to Kapu-LK's{' '}
+                        <Link to="/terms" className="hover:text-rose-600 dark:hover:text-rose-400 transition underline">Terms</Link>
+                        {' '}and{' '}
+                        <Link to="/privacy-policy" className="hover:text-rose-600 dark:hover:text-rose-400 transition underline">Privacy Policy</Link>
+                    </p>
+                </div>
             </div>
         </div>
     );
