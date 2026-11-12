@@ -1103,15 +1103,22 @@ exports.uploadGalleryPhoto = async (req, res) => {
       if (user.photos[existingPhotoIndex].isMain || user.photos.length === 1) {
         user.photos[existingPhotoIndex].isMain = true;
         user.profileImageUrl = result.url;
+        user.profileAvatar = '';
       }
 
       await user.save({ validateModifiedOnly: true });
+
+      // Clean up any pending profile reminder notifications immediately upon personal photo upload
+      try {
+        await Notification.deleteMany({ user: user._id, type: 'profile_reminder' });
+      } catch (_nErr) {}
 
       return res.json({
         success: true,
         message: 'Photo updated successfully.',
         photos: user.photos,
         profileImageUrl: user.profileImageUrl,
+        profileAvatar: user.profileAvatar || '',
       });
     }
 
@@ -1138,6 +1145,7 @@ exports.uploadGalleryPhoto = async (req, res) => {
     if (isMainRequested) {
       user.photos.forEach(p => { p.isMain = false; });
       user.profileImageUrl = result.url;
+      user.profileAvatar = '';
     }
 
     const newPhoto = {
@@ -1153,15 +1161,22 @@ exports.uploadGalleryPhoto = async (req, res) => {
     if (!user.photos.some(p => p.isMain)) {
       user.photos[0].isMain = true;
       user.profileImageUrl = user.photos[0].url;
+      user.profileAvatar = '';
     }
 
     await user.save({ validateModifiedOnly: true });
+
+    // Clean up any pending profile reminder notifications immediately upon personal photo upload
+    try {
+      await Notification.deleteMany({ user: user._id, type: 'profile_reminder' });
+    } catch (_nErr) {}
 
     res.json({
       success: true,
       message: 'Photo uploaded successfully.',
       photos: user.photos,
       profileImageUrl: user.profileImageUrl,
+      profileAvatar: user.profileAvatar || '',
     });
   } catch (error) {
     console.error('Gallery photo upload error:', error);
@@ -1278,13 +1293,19 @@ exports.setMainGalleryPhoto = async (req, res) => {
     });
 
     user.profileImageUrl = targetPhoto.url;
+    user.profileAvatar = '';
     await user.save();
+
+    try {
+      await Notification.deleteMany({ user: user._id, type: 'profile_reminder' });
+    } catch (_nErr) {}
 
     res.json({
       success: true,
       message: 'Main profile photo updated.',
       photos: user.photos,
       profileImageUrl: user.profileImageUrl,
+      profileAvatar: user.profileAvatar || '',
     });
   } catch (error) {
     console.error('Set main photo error:', error);

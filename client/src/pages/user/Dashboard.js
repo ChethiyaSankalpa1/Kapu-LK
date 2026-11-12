@@ -14,6 +14,7 @@ import PremiumPopup from '../../components/ui/PremiumPopup';
 import PremiumBadge from '../../components/ui/PremiumBadge';
 import ProfileAvatar from '../../components/ui/ProfileAvatar';
 import ProfileCard from '../../components/ui/ProfileCard';
+import { ProfilePhotoReminderModal, ProfilePhotoReminderBanner, isEligibleForPhotoReminder } from '../../components/ui/ProfilePhotoReminder';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -39,8 +40,9 @@ const Dashboard = () => {
     };
 
     // Profile completeness calculation
+    const hasPersonalPhoto = !isEligibleForPhotoReminder(user);
     const profileCompletenessItems = [
-        { key: 'photo', label: 'Profile photo', done: Boolean(user?.profileImageUrl || user?.profileAvatar) },
+        { key: 'photo', label: hasPersonalPhoto ? 'Personal profile photo' : 'Real photo (සැබෑ ඡායාරූපය)', done: hasPersonalPhoto },
         { key: 'basic', label: 'Basic information', done: Boolean(user?.age && user?.gender && (user?.district || user?.location)) },
         { key: 'about', label: 'About you', done: Boolean(user?.bio && user.bio.trim().length > 0) },
         { key: 'interests', label: 'Interests', done: Boolean(user?.interests || user?.hobbies) },
@@ -146,12 +148,16 @@ const Dashboard = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-300 pb-28 md:pb-12">
+            {/* Professional Sinhala Profile Photo Reminder Modal Popup */}
+            <ProfilePhotoReminderModal user={user} onPhotoUploaded={fetchDashboardData} />
 
             {/* ========================================================================= */}
             {/* MOBILE DASHBOARD VIEW (Visible on screens < 768px)                       */}
             {/* NOTE: Top header is handled globally by Navbar.js (NO duplicate header!)   */}
             {/* ========================================================================= */}
             <div className="md:hidden px-4 pt-3 space-y-4 max-w-lg mx-auto">
+                {/* Mobile Profile Photo Reminder Inline Banner */}
+                <ProfilePhotoReminderBanner user={user} onPhotoUploaded={fetchDashboardData} />
 
                 {/* Mobile Pending Approval Alert Banner */}
                 {!isAccountApproved && (
@@ -563,6 +569,9 @@ const Dashboard = () => {
                     {/* Center Main Dashboard Area (7 cols on lg - wider and responsive) */}
                     <div className="col-span-12 md:col-span-9 lg:col-span-7 min-w-0 space-y-6">
 
+                        {/* Professional Sinhala Profile Photo Reminder Banner */}
+                        <ProfilePhotoReminderBanner user={user} onPhotoUploaded={fetchDashboardData} />
+
                         {/* Desktop Pending Approval Alert Banner */}
                         {!isAccountApproved && (
                             <div className="p-4 sm:p-5 rounded-3xl bg-amber-50/95 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/60 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -878,15 +887,22 @@ const Dashboard = () => {
 
                                 <div className="space-y-2 pt-1 text-xs">
                                     {profileCompletenessItems.map(item => (
-                                        <div key={item.key} className="flex items-center gap-2">
-                                            {item.done ? (
-                                                <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                                            ) : (
-                                                <div className="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-700 shrink-0" />
+                                        <div key={item.key} className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                {item.done ? (
+                                                    <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                                                ) : (
+                                                    <div className="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-700 shrink-0" />
+                                                )}
+                                                <span className={item.done ? 'text-gray-700 dark:text-gray-300 font-medium truncate' : 'text-gray-500 dark:text-gray-400 font-medium truncate'}>
+                                                    {item.label}
+                                                </span>
+                                            </div>
+                                            {!item.done && item.key === 'photo' && (
+                                                <Link to="/profile" className="text-[10px] font-bold text-pink-600 dark:text-pink-400 hover:underline shrink-0">
+                                                    📸 එක් කරන්න
+                                                </Link>
                                             )}
-                                            <span className={item.done ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-gray-400 font-medium'}>
-                                                {item.label}
-                                            </span>
                                         </div>
                                     ))}
                                 </div>

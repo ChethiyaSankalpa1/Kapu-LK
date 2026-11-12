@@ -9,6 +9,7 @@ import PremiumBadge from '../../components/ui/PremiumBadge';
 import PhotoGalleryManager from '../../components/ui/PhotoGalleryManager';
 import ProfileAvatar, { PROFILE_AVATARS } from '../../components/ui/ProfileAvatar';
 import BackButton from '../../components/common/BackButton';
+import { ProfilePhotoReminderBanner } from '../../components/ui/ProfilePhotoReminder';
 
 const Profile = () => {
     const { t } = useTranslation();
@@ -229,6 +230,20 @@ const Profile = () => {
                     <span>My Profile</span>
                     {user?.isPremium && <PremiumBadge plan={user?.premiumPlan} size="md" />}
                 </h1>
+
+                {/* Professional Sinhala Profile Photo Reminder Banner */}
+                <ProfilePhotoReminderBanner
+                    user={user}
+                    onPhotoUploaded={(updatedUser) => {
+                        updateUser(updatedUser);
+                        setFormData((prev) => ({
+                            ...prev,
+                            profileImageUrl: updatedUser.profileImageUrl,
+                            profileAvatar: '',
+                        }));
+                    }}
+                    className="mb-4 sm:mb-6"
+                />
 
                 {/* Profile Photo Gallery Section (1 to 4 Photos) */}
                 <div className="glass-card mb-4 sm:mb-6 p-4 sm:p-6 rounded-3xl bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 shadow-sm">

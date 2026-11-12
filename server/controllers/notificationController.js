@@ -83,6 +83,42 @@ async function mergeProfileViewDuplicates(targetUser = null) {
 //            - With `page` or `limit` query params -> returns object envelope with pagination
 exports.getNotifications = async (req, res) => {
   try {
+    // Sync professional Sinhala profile photo reminder notification:
+    // Display to eligible users whose profile pictures are non-personal (avatar, placeholder, or none).
+    // Automatically remove reminder notifications when the user has uploaded a genuine personal photo.
+    try {
+      const placeholderPatterns = [
+        'placeholder', 'default-avatar', 'default_avatar', 'default-profile',
+        'default_profile', 'dicebear', 'ui-avatars', 'pravatar', 'multiavatar',
+        'robohash', 'couple-hero', '/images/default', 'assets/default', 'avatar/'
+      ];
+      const userImg = (req.user?.profileImageUrl || '').toLowerCase();
+      const isPlaceholder = !userImg || placeholderPatterns.some((p) => userImg.includes(p));
+      const hasAvatar = Boolean(req.user?.profileAvatar && req.user.profileAvatar.trim() !== '');
+
+      if (hasAvatar || isPlaceholder) {
+        const existingReminder = await Notification.findOne({
+          user: req.user._id,
+          type: 'profile_reminder',
+        });
+        if (!existingReminder) {
+          await Notification.create({
+            user: req.user._id,
+            type: 'profile_reminder',
+            message: '📸 ඔබේ සැබෑ ඡායාරූපයක් එක් කරන්න! සැබෑ ඡායාරූපයක් එක් කිරීමෙන් ඔබව වඩාත් ඉක්මනින් සහ විශ්වාසදායක ලෙස අනෙකුත් සාමාජිකයින්ට හඳුනාගත හැක.',
+            isRead: false,
+          });
+        }
+      } else {
+        await Notification.deleteMany({
+          user: req.user._id,
+          type: 'profile_reminder',
+        });
+      }
+    } catch (_syncErr) {
+      // Non-blocking sync error handling
+    }
+
     const pageRaw = req.query.page;
     const limitRaw = req.query.limit;
     const wantsPagination = pageRaw !== undefined || limitRaw !== undefined;

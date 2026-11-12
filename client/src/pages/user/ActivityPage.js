@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 import moment from 'moment';
 import {
     Activity, RefreshCw, Eye, Heart, MessageCircle,
-    Gift, Sparkles, Trophy, ChevronRight, Crown
+    Gift, Sparkles, Trophy, ChevronRight, Crown, Camera
 } from 'lucide-react';
 import PremiumBadge from '../../components/ui/PremiumBadge';
 import ProfileAvatar from '../../components/ui/ProfileAvatar';
@@ -72,6 +72,8 @@ const ActivityPage = () => {
                 return <Gift className="w-4 h-4 text-amber-600" />;
             case 'achievement':
                 return <Trophy className="w-4 h-4 text-yellow-600" />;
+            case 'profile_reminder':
+                return <Camera className="w-4 h-4 text-rose-600" />;
             case 'premium_activated':
             case 'wallet_topup':
                 return <Crown className="w-4 h-4 text-amber-500 fill-amber-500" />;
@@ -96,12 +98,18 @@ const ActivityPage = () => {
                 return 'bg-amber-100 dark:bg-amber-950/60 text-amber-600';
             case 'achievement':
                 return 'bg-yellow-100 dark:bg-yellow-950/60 text-yellow-600';
+            case 'profile_reminder':
+                return 'bg-rose-100 dark:bg-rose-950/60 text-rose-600';
             default:
                 return 'bg-purple-100 dark:bg-purple-950/60 text-purple-600';
         }
     };
 
     const handleItemClick = (item) => {
+        if (item.type === 'profile_reminder') {
+            navigate('/profile');
+            return;
+        }
         if (item.relatedUser?._id || item.relatedUser) {
             const uid = item.relatedUser?._id || item.relatedUser;
             if (item.type === 'message' || item.type === 'chat') {

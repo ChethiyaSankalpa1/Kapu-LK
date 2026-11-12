@@ -233,7 +233,11 @@ const Navbar = () => {
                                     key={index}
                                     onClick={() => {
                                         setNotifOpen(false);
-                                        navigate('/activity');
+                                        if (notif.type === 'profile_reminder') {
+                                            navigate('/profile');
+                                        } else {
+                                            navigate('/activity');
+                                        }
                                     }}
                                     className={`p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
                                         !notif.read ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''
