@@ -48,16 +48,16 @@ const ProfileCard = ({
     return (
         <div
             onClick={handleViewClick}
-            className="group relative bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl border border-gray-150 dark:border-gray-800 shadow-xs hover:shadow-xl dark:hover:shadow-purple-950/30 transition-all duration-300 overflow-hidden flex flex-col cursor-pointer transform hover:-translate-y-1"
+            className="group relative bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl border border-gray-150 dark:border-gray-800 shadow-xs hover:shadow-xl dark:hover:shadow-rose-950/40 transition-all duration-300 overflow-hidden flex flex-col cursor-pointer transform hover:-translate-y-1"
         >
             {/* Top Photo Area (Portrait 4:5 Aspect Ratio matching Dashboard Cards) */}
-            <div className="relative aspect-[4/5] w-full bg-gradient-to-br from-purple-100 via-pink-50 to-purple-200 dark:from-purple-950/40 dark:via-gray-900 dark:to-pink-950/30 overflow-hidden">
+            <div className="relative aspect-[4/5] w-full bg-gradient-to-br from-rose-100 via-pink-50 to-rose-200 dark:from-rose-950/40 dark:via-gray-900 dark:to-pink-950/30 overflow-hidden">
                 <ProfileAvatar
                     user={user}
-                    className="h-full w-full bg-gradient-to-br from-purple-100 via-pink-50 to-purple-200 dark:from-purple-950/40 dark:via-gray-900 dark:to-pink-950/30"
+                    className="h-full w-full bg-gradient-to-br from-rose-100 via-pink-50 to-rose-200 dark:from-rose-950/40 dark:via-gray-900 dark:to-pink-950/30"
                     imageClassName="h-full w-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-105"
                     avatarClassName="text-7xl sm:text-8xl"
-                    fallbackClassName="text-3xl sm:text-4xl font-black text-white bg-gradient-to-tr from-purple-600 to-pink-500"
+                    fallbackClassName="text-3xl sm:text-4xl font-black text-white bg-gradient-to-tr from-rose-600 via-pink-600 to-rose-500"
                 />
 
                 {/* Subtle dark gradient overlay on bottom of image for readability */}
@@ -84,19 +84,19 @@ const ProfileCard = ({
                         type="button"
                         onClick={handleLikeClick}
                         title={isLiked ? 'Liked' : 'Send Like'}
-                        className={`absolute top-2.5 right-2.5 p-1.5 sm:p-2 rounded-full backdrop-blur-md transition-transform duration-200 hover:scale-110 active:scale-90 shadow-sm ${
+                        className={`absolute top-2.5 right-2.5 p-1.5 sm:p-2 rounded-full backdrop-blur-md transition-transform duration-200 hover:scale-110 active:scale-90 shadow-sm cursor-pointer ${
                             isLiked
-                                ? 'bg-pink-600 text-white shadow-pink-500/30'
-                                : 'bg-white/85 dark:bg-gray-800/85 text-pink-600 dark:text-pink-400 hover:bg-white dark:hover:bg-gray-800'
+                                ? 'bg-rose-600 text-white shadow-rose-500/30'
+                                : 'bg-white/85 dark:bg-gray-800/85 text-rose-600 dark:text-rose-400 hover:bg-white dark:hover:bg-gray-800'
                         }`}
                     >
-                        <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLiked ? 'fill-white stroke-white' : 'fill-pink-500/20 stroke-pink-600'}`} />
+                        <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLiked ? 'fill-white stroke-white' : 'fill-rose-500/20 stroke-rose-600'}`} />
                     </button>
                 )}
 
                 {/* Viewed time tag if in Visitors page */}
                 {showViewedInfo && viewedAt && (
-                    <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 bg-purple-900/80 backdrop-blur-md rounded-full text-[9px] font-semibold text-purple-200 flex items-center gap-1">
+                    <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 bg-rose-950/80 backdrop-blur-md rounded-full text-[9px] font-semibold text-rose-200 flex items-center gap-1">
                         <Eye className="w-2.5 h-2.5" />
                         {viewCount > 1 ? `${viewCount}x` : 'Viewed'}
                     </span>
@@ -122,7 +122,7 @@ const ProfileCard = ({
 
                     {/* Location */}
                     <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-purple-500 shrink-0" />
+                        <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
                         <span className="truncate">{location}</span>
                     </p>
 
@@ -140,7 +140,7 @@ const ProfileCard = ({
                     <button
                         type="button"
                         onClick={handleViewClick}
-                        className="w-full py-1.5 sm:py-2 px-2 text-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-[11px] sm:text-xs font-bold text-gray-700 dark:text-gray-200 rounded-xl transition active:scale-95 flex items-center justify-center gap-1"
+                        className="w-full py-1.5 sm:py-2 px-2 text-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-[11px] sm:text-xs font-bold text-gray-700 dark:text-gray-200 rounded-xl transition active:scale-95 flex items-center justify-center gap-1 cursor-pointer"
                     >
                         <span>{t('dashboard.viewProfile', { defaultValue: 'View' })}</span>
                     </button>
@@ -149,7 +149,7 @@ const ProfileCard = ({
                         <button
                             type="button"
                             onClick={handleMessageClick}
-                            className="w-full py-1.5 sm:py-2 px-2 text-center bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-[11px] sm:text-xs font-bold text-white rounded-xl shadow-xs hover:shadow-md hover:shadow-purple-500/20 transition active:scale-95 flex items-center justify-center gap-1"
+                            className="w-full py-1.5 sm:py-2 px-2 text-center bg-gradient-to-r from-rose-600 via-pink-600 to-rose-500 hover:from-rose-700 hover:to-rose-600 text-[11px] sm:text-xs font-bold text-white rounded-xl shadow-xs hover:shadow-md hover:shadow-rose-500/20 transition active:scale-95 flex items-center justify-center gap-1 cursor-pointer"
                         >
                             <MessageCircle className="w-3.5 h-3.5 shrink-0" />
                             <span>{t('dashboard.message', { defaultValue: 'Message' })}</span>
@@ -162,4 +162,3 @@ const ProfileCard = ({
 };
 
 export default React.memo(ProfileCard);
-
